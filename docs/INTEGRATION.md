@@ -100,7 +100,7 @@ bootstrap.py: settings에 따라 port 구현을 조립
 | 8013 | Agent Runtime | RFA → Runtime: `RUNTIME_API_TOKEN` |
 | 8014 | Policy decision | Domain Graph → Policy: `POLICY_API_TOKEN` |
 | 7670 | NeMo Retriever service boundary | RFA/Runtime → Retriever: `NEMO_RETRIEVER_API_TOKEN` |
-| 3000 | Langfuse | trace producer → Langfuse project key pair |
+| 3000 | Langfuse (opt-in, loopback self-host만) | trace producer → Langfuse project key pair |
 
 `uv run rfa init-env --output .env.dev`는 각 내부 통신 구간에 서로 다른 credential을 생성하고 profile을 `0600`으로 저장한다. `uv run rfa --env-file .env.dev <command>`로 명시적으로 로드한다. 실제 수신 서비스는 대응 값을 별도 secret store에서 받아 constant-time 비교 등으로 검증해야 한다. 현재 reference fixture는 authorization header를 검증하지 않으므로 token 생성만으로 fixture 보안이 강화됐다고 주장하지 않는다. Langfuse key pair는 self-host 초기화에도 같은 pair를 주입해야 하고, `NVIDIA_API_KEY`는 외부 발급값이라 자동 생성하지 않는다.
 
@@ -168,7 +168,7 @@ response can self-authorize a Team selection, access grant or approval.
 | `PolicyPort` | 자료 접근·공유·tool 정책 | `LocalPolicy` | `PolicyHttpAdapter` | application policy이며 OS 강제 아님 |
 | `JudgePort` | 근거 충실도·질문 해결도·작업 후보 유용성의 비권위적 보조 평가 | `MockJudge` | 실제 Judge는 P1 opt-in | privacy/access 규칙은 application의 결정적 evaluator가 별도 판정 |
 | `WorkRepositoryPort` | run, DRAFT, checkpoint, KB | `SqliteWorkRepository` | 미정 | 다른 서비스 DB를 공유하지 않음 |
-| `TracePort` | metadata trace | `LocalJsonlTrace` | Langfuse는 reserved | 본문 관측이나 live LLMOps 아님 |
+| `TracePort` | metadata trace | `LocalJsonlTrace` | `LangfuseExportTrace`(P1-006C): 로컬 trace를 감싸는 opt-in loopback OTLP export | 로컬 JSONL/SQLite 원장이 원본이고 Langfuse는 allowlist metadata 사본이다. 본문 관측 아님, 비loopback은 미구현 |
 
 ## 공통 DTO
 
@@ -422,7 +422,9 @@ P0의 canary redact는 최후 방어선이며 사전 authorization을 대체하�
 - native run/resume의 Model/Retrieval/Policy/Runtime/Response 경계만 명시적 decorator로 수집한다. `provider_kind=reference_http`는 설정에서 선택한 loopback reference adapter, `mode=local`은 그 로컬 경로다. 이는 실제 팀원 승인 원본/OpenShell 증거가 아니다. builtin mock은 mock, local runtime은 local이며 sandbox를 주장하지 않는다. provider가 제공하지 않는 token은 null. ToolPort·게시·내부 노드 미수집은 `uncollected/calls=null`이며 호출 0회와 다르다.
 - 테스트 sink는 실제 합성 payload를 수신/기록한 후 활성 `observations.scope(run_id, principal)` 안에서 `record_test_sink(received=True)`를 호출한다. 이 trusted in-process instrumentation은 `origin=test_sink/provider_kind=test`로 별도 집계하며 실제 게시·승인을 만들지 않는다. payload와 승인 결합 검증은 후속 평가 consumer가 보호된 fixture/실행 기록으로 별도 수행한다.
 - 기본 export는 allowlist DTO + DB의 동일 불변 record 확인을 요구한다. legacy `emit`/임의 `emit_event`는 거절한다. raw prompt/context/인자·헤더·provider 자유 텍스트·caller ID는 export하지 않는다. 오류 DTO는 고정 code/message로 투영하며 422의 loc/msg/type은 고정값만 사용한다. 정상 응답의 기존 request/trace correlation은 유지한다.
-- native LangGraph 실행/재개는 공개 LangSmith `tracing_context(enabled=False, parent=False)`로 환경변수 기반 raw tracing을 억제한다. NAT 외부 wrapper는 별도 P0-028 검증 대상이다. 새 관측 서버나 외부 exporter는 활성화하지 않는다.
+- native LangGraph 실행/재개는 공개 LangSmith `tracing_context(enabled=False, parent=False)`로 환경변수 기반 raw tracing을 억제한다. NAT 외부 wrapper는 별도 P0-028 검증 대상이다. 기본 설정은 관측 서버나 외부 exporter를 활성화하지 않는다. 유일한 예외는 아래 opt-in Langfuse export다.
+- **Langfuse export (P1-006C, opt-in).** `TRACE_BACKEND=langfuse`, `LANGFUSE_EXPORT_ENABLED=true`, loopback `LANGFUSE_BASE_URL`, project key pair가 모두 있어야 켜진다. key나 `TRACE_BACKEND`만으로는 egress 허가가 아니다. 비loopback endpoint(Langfuse Cloud 등)는 `endpoint:LANGFUSE_BASE_URL:non_loopback`(not implemented)으로 거절하며 mock이나 local-only로 조용히 바꾸지 않는다. `LangfuseExportTrace`는 `LocalJsonlTrace`를 감싸고, 로컬 trace가 DB와 대조해 기록한 record만 record당 OTLP/HTTP JSON span 하나로 `POST /api/public/otel/v1/traces`에 보낸다. 보내는 값은 명시 allowlist(opaque alias, 단계·상태·사유 code, 호출 수, duration, version 참조)뿐이다. 제공되지 않은 token은 0이 아니라 생략하고, 설정된 secret이 들어간 payload는 보내지 않는다. 재시도는 없다. receipt는 `exported`/`failed`/`not_attempted`와 고정 code만 담고 프로세스 메모리에만 있다. 확인 응답을 받은 2xx만 `exported`다. export 실패는 run을 실패시키지 않는다. **로컬 JSONL과 SQLite 원장이 계속 원본이다.**
+- Langfuse 쪽 보존은 적용되지 않는다. `TRACE_RETENTION_DAYS`는 로컬 소유 JSONL에만 적용된다. OSS Langfuse 4.46은 `LANGFUSE_INIT_PROJECT_RETENTION`을 Enterprise `data-retention` entitlement가 있을 때만 적용하므로, export된 metadata는 trace ID로 지우기(`DELETE /api/public/traces/{id}`) 전까지 남는다. ID 기반 삭제는 실제로 동작했지만 원본 OTLP upload blob(MinIO `events/otel/…`)은 남았다. 실행 기록과 한계는 [LLMOps 증거](evidence/llmops.md)에 있다.
 - `TRACE_RETENTION_DAYS`는 **`TRACE_DIR/rfa-observations-v1`의 private 소유 manifest에 등록된 제품 JSONL 파일만** 다음 export 때 정리한다. SQLite 원장·run metadata·alias는 삭제하지 않으며 별도 DB 보존 정책은 미구현이다. legacy 파일, symlink, `.agent/evidence`, source manifest는 관리하지 않는다. manifest/log는 0600, 소유 디렉터리는 0700; 이는 같은 OS 사용자에 대한 sandbox가 아니다.
 - 파일 생성 전 manifest에 소유권을 예약한다. 예약 후 crash는 다음 export가 파일을 생성해 복구한다. append 후 crash/re-export는 중복 line을 만들 수 있으므로 `observation_id`로 중복 제거한다. DB 원장이 원본이며 여러 파일 rename을 단일 transaction이라고 주장하지 않는다. 미등록/변조 파일은 채택·삭제하지 않고 안전한 configuration error로 중단하므로 운영자가 별도 보존/복구해야 한다.
 
