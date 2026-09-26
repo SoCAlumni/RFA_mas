@@ -771,6 +771,80 @@ class TeamLifecycle(ExtendedContractModel):
         return self
 
 
+TeamRole = Literal[
+    "supervisor",
+    "paper_scout",
+    "experiment_runner",
+    "result_analyst",
+    "source_scout",
+    "evidence_reviewer",
+]
+
+
+class TeamExecutionRequest(ExtendedContractModel):
+    """Explicit team-execution intent (P0-020). No capability, identity or grant claims.
+
+    Template choice, role capabilities and budgets are decided server-side by the
+    TeamSelector/TeamFactory from the authenticated principal.
+    """
+
+    goal: str = Field(min_length=1, max_length=2000)
+    outputs: tuple[OpaqueId, ...] = Field(default=("evidence_summary",), min_length=1, max_length=8)
+    requested_pattern: Literal["benchmark", "research"] | None = None
+
+
+class RoleOutcome(ExtendedContractModel):
+    """One role execution receipt collected by the team Supervisor."""
+
+    role: TeamRole
+    agent_id: OpaqueId
+    execution_key: OpaqueId
+    status: Literal[
+        "succeeded", "failed", "denied", "timed_out", "cancelled", "budget_exceeded", "unknown"
+    ]
+    output: dict[str, Any] = Field(default_factory=dict)
+    evidence: tuple[EvidenceRef, ...] = ()
+    tool_calls: int = Field(default=0, ge=0)
+    steps: int = Field(default=0, ge=0)
+    duration_ms: float | None = Field(default=None, ge=0)
+    # Provider-reported usage only; unknown usage stays null, never 0.
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    simulated: bool
+    error_code: OpaqueId | None = None
+
+
+class TeamBudgetUsage(ExtendedContractModel):
+    steps: int = Field(ge=0)
+    tool_calls: int = Field(ge=0)
+    elapsed_ms: float = Field(ge=0)
+    tokens: int | None = Field(default=None, ge=0)
+    max_concurrency_observed: int = Field(ge=0)
+    limits: TeamBudget
+
+
+class TeamRunResult(ExtendedContractModel):
+    """Supervisor-collected team result for one product Run (not approval authority)."""
+
+    run_id: str
+    task_id: OpaqueId
+    team_id: OpaqueId
+    pattern: Literal["benchmark", "research"]
+    status: Literal["completed", "partial", "failed", "cancelled"]
+    stop_reason: OpaqueId | None = None
+    roles: tuple[RoleOutcome, ...] = ()
+    summary: str = Field(default="", max_length=20000)
+    findings: dict[str, Any] = Field(default_factory=dict)
+    usage: TeamBudgetUsage
+    simulated: bool
+
+    @model_validator(mode="after")
+    def completed_requires_success(self) -> TeamRunResult:
+        if self.status == "completed" and any(r.status != "succeeded" for r in self.roles):
+            raise ValueError("completed team result requires every role to succeed")
+        return self
+
+
 class ScheduleSpec(ExtendedContractModel):
     schedule_id: OpaqueId
     owner_id: OpaqueId
@@ -789,6 +863,8 @@ class DirectWorkRequest(WorkRequest):
     ingress: Literal["direct"] = "direct"
     session_id: OpaqueId | None = None
     task_id: OpaqueId | None = None
+    # Explicit team execution (P0-020). Absent means the existing single-domain path.
+    team: TeamExecutionRequest | None = None
 
 
 class ChannelWorkRequest(DirectWorkRequest):

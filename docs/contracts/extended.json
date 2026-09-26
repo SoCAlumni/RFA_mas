@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "28fc4df544ea6b7d0ade44dd9318621dc58da7a5fb7c34df24fa1fe0f7648cf4",
+  "digest": "8d0a3c54faf4f17c58c5ba70aafe28ee3fd8e6f757b8c7cad61c3d6e4c109b0c",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -138,6 +138,16 @@
                   }
                 ],
                 "title": "Task Id"
+              },
+              "team": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TeamExecutionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "trace_id": {
                 "title": "Trace Id",
@@ -1555,6 +1565,59 @@
               "message"
             ],
             "title": "StructuredError",
+            "type": "object"
+          },
+          "TeamExecutionRequest": {
+            "additionalProperties": false,
+            "description": "Explicit team-execution intent (P0-020). No capability, identity or grant claims.\n\nTemplate choice, role capabilities and budgets are decided server-side by the\nTeamSelector/TeamFactory from the authenticated principal.",
+            "properties": {
+              "goal": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "title": "Goal",
+                "type": "string"
+              },
+              "outputs": {
+                "default": [
+                  "evidence_summary"
+                ],
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                  "type": "string"
+                },
+                "maxItems": 8,
+                "minItems": 1,
+                "title": "Outputs",
+                "type": "array"
+              },
+              "requested_pattern": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "benchmark",
+                      "research"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Requested Pattern"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "goal"
+            ],
+            "title": "TeamExecutionRequest",
             "type": "object"
           },
           "ValidationError": {
@@ -4283,6 +4346,17 @@
             "default": null,
             "title": "Task Id"
           },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TeamExecutionRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "trace_id": {
             "title": "Trace Id",
             "type": "string"
@@ -4693,6 +4767,17 @@
             ],
             "default": null,
             "title": "Task Id"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TeamExecutionRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "trace_id": {
             "title": "Trace Id",
@@ -6863,6 +6948,149 @@
         "title": "ReviewStatus",
         "type": "string"
       },
+      "RoleOutcome": {
+        "additionalProperties": false,
+        "description": "One role execution receipt collected by the team Supervisor.",
+        "properties": {
+          "agent_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration Ms"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Code"
+          },
+          "evidence": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/EvidenceRef"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "execution_key": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Execution Key",
+            "type": "string"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Input Tokens"
+          },
+          "output": {
+            "additionalProperties": true,
+            "title": "Output",
+            "type": "object"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Tokens"
+          },
+          "role": {
+            "enum": [
+              "supervisor",
+              "paper_scout",
+              "experiment_runner",
+              "result_analyst",
+              "source_scout",
+              "evidence_reviewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "denied",
+              "timed_out",
+              "cancelled",
+              "budget_exceeded",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "steps": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Steps",
+            "type": "integer"
+          },
+          "tool_calls": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Tool Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "role",
+          "agent_id",
+          "execution_key",
+          "status",
+          "simulated"
+        ],
+        "title": "RoleOutcome",
+        "type": "object"
+      },
       "RunRecord": {
         "additionalProperties": false,
         "description": "Owner-authorized metadata, including runs without a final result yet.",
@@ -7750,6 +7978,116 @@
         "title": "TeamBudget",
         "type": "object"
       },
+      "TeamBudgetUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "elapsed_ms": {
+            "minimum": 0,
+            "title": "Elapsed Ms",
+            "type": "number"
+          },
+          "limits": {
+            "$ref": "#/$defs/TeamBudget"
+          },
+          "max_concurrency_observed": {
+            "minimum": 0,
+            "title": "Max Concurrency Observed",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "steps": {
+            "minimum": 0,
+            "title": "Steps",
+            "type": "integer"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tokens"
+          },
+          "tool_calls": {
+            "minimum": 0,
+            "title": "Tool Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "steps",
+          "tool_calls",
+          "elapsed_ms",
+          "max_concurrency_observed",
+          "limits"
+        ],
+        "title": "TeamBudgetUsage",
+        "type": "object"
+      },
+      "TeamExecutionRequest": {
+        "additionalProperties": false,
+        "description": "Explicit team-execution intent (P0-020). No capability, identity or grant claims.\n\nTemplate choice, role capabilities and budgets are decided server-side by the\nTeamSelector/TeamFactory from the authenticated principal.",
+        "properties": {
+          "goal": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "outputs": {
+            "default": [
+              "evidence_summary"
+            ],
+            "items": {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Outputs",
+            "type": "array"
+          },
+          "requested_pattern": {
+            "anyOf": [
+              {
+                "enum": [
+                  "benchmark",
+                  "research"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requested Pattern"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "TeamExecutionRequest",
+        "type": "object"
+      },
       "TeamInstance": {
         "additionalProperties": false,
         "properties": {
@@ -7966,6 +8304,106 @@
           "spec"
         ],
         "title": "TeamMember",
+        "type": "object"
+      },
+      "TeamRunResult": {
+        "additionalProperties": false,
+        "description": "Supervisor-collected team result for one product Run (not approval authority).",
+        "properties": {
+          "findings": {
+            "additionalProperties": true,
+            "title": "Findings",
+            "type": "object"
+          },
+          "pattern": {
+            "enum": [
+              "benchmark",
+              "research"
+            ],
+            "title": "Pattern",
+            "type": "string"
+          },
+          "roles": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/RoleOutcome"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "partial",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stop Reason"
+          },
+          "summary": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Summary",
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "team_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Team Id",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/$defs/TeamBudgetUsage"
+          }
+        },
+        "required": [
+          "run_id",
+          "task_id",
+          "team_id",
+          "pattern",
+          "status",
+          "usage",
+          "simulated"
+        ],
+        "title": "TeamRunResult",
         "type": "object"
       },
       "TeamSpec": {
@@ -8736,6 +9174,10 @@
     }
   },
   "public_model_names": [
+    "TeamExecutionRequest",
+    "RoleOutcome",
+    "TeamBudgetUsage",
+    "TeamRunResult",
     "SourceMetadata",
     "SourceRead",
     "KnowledgeAcl",
@@ -8791,9 +9233,9 @@
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
     "src/rfa_mas/api/app.py": "c501c81bb697b8a5b068014b38bfc3ea910add98c691d3e00c62c297a35cf94c",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "bc24bd0a354d27151f91b8eceefc51ee65755d5da8df68201de8cd1725ce8dde",
+    "src/rfa_mas/contracts/__init__.py": "49a84647770a1c8f29caa71e7da28bcd344ebe406e022dd9a69b9b09b5180c26",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "88a74db5ed3823096963c3ca7b1124d4031dba924331c92249471dbe8b469d13",
+    "src/rfa_mas/contracts/models.py": "2c91b04ed266c6a5408a368128651461a142f1d84d01f7b8c36e425e967dd917",
     "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },

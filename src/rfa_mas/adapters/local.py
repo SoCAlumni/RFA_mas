@@ -35,6 +35,7 @@ from rfa_mas.contracts import (
     PolicyDecision,
     PolicyRequest,
     ResultStatus,
+    RoleOutcome,
     RunRecord,
     RunResult,
     SessionDetail,
@@ -48,8 +49,11 @@ from rfa_mas.contracts import (
     TaskResult,
     TeamInstance,
     TeamLifecycle,
+    TeamRunResult,
     TeamSpec,
     ToolEffect,
+    ToolRequest,
+    ToolResult,
     TraceEvent,
     TrustedPrincipal,
     WorkRequest,
@@ -406,6 +410,34 @@ class SqliteWorkRepository:
                     self._backfill_context(connection)
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (5, ?)",
                                        (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=6"
+                ).fetchone():
+                    # P0-020: Run<->Task<->Team binding and durable role receipts.
+                    for statement in (
+                        "CREATE TABLE run_team_bindings (run_id TEXT PRIMARY KEY REFERENCES "
+                        "runs(run_id), task_id TEXT NOT NULL REFERENCES product_tasks(task_id), "
+                        "team_id TEXT NOT NULL, owner_id TEXT NOT NULL, domain_id TEXT NOT NULL, "
+                        "bound_at TEXT NOT NULL)",
+                        "CREATE TABLE role_executions (execution_key TEXT PRIMARY KEY, "
+                        "run_id TEXT NOT NULL REFERENCES run_team_bindings(run_id), "
+                        "role TEXT NOT NULL, agent_id TEXT NOT NULL, status TEXT NOT NULL, "
+                        "outcome_json TEXT, started_at TEXT NOT NULL, finished_at TEXT, "
+                        "UNIQUE(run_id, role))",
+                        "CREATE TABLE team_run_results (run_id TEXT PRIMARY KEY REFERENCES "
+                        "run_team_bindings(run_id), result_json TEXT NOT NULL, "
+                        "created_at TEXT NOT NULL)",
+                    ):
+                        connection.execute(statement)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (6, ?)",
+                                       (datetime.now(UTC).isoformat(),))
+                # A role receipt left running by a previous process is unknown: never
+                # success, never permission to re-execute a possibly effectful step.
+                connection.execute(
+                    "UPDATE role_executions SET status='unknown', finished_at=? "
+                    "WHERE status='running'",
+                    (datetime.now(UTC).isoformat(),),
+                )
                 # Credentials authenticate this installation's owner, not a fixture
                 # or a user ID supplied in a request. No membership is implied.
                 connection.execute(
@@ -571,6 +603,192 @@ class SqliteWorkRepository:
                 return self._owned_team(connection, task_id, owner)
 
         return await asyncio.to_thread(operation)
+
+    # -- P0-020 Run<->Task<->Team binding and role receipts ------------------------
+    async def bind_run_team(
+        self, run_id: str, principal: TrustedPrincipal, *, task_id: str, team_id: str
+    ) -> tuple[str, str]:
+        owner = self._authenticated(principal)
+        now = datetime.now(UTC).isoformat()
+
+        def operation() -> tuple[str, str]:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                run = connection.execute(
+                    "SELECT session_id, task_id, request_json FROM runs "
+                    "WHERE run_id = ? AND owner_id = ?",
+                    (run_id, owner),
+                ).fetchone()
+                if run is None:
+                    raise ResourceNotFoundError("run")
+                lifecycle = self._owned_team(connection, task_id, owner)
+                if (
+                    lifecycle.team.spec.team_id != team_id
+                    or lifecycle.team.state != "ready"
+                    or lifecycle.operation != "prepare"
+                    or lifecycle.phase != "finished"
+                    or lifecycle.task.status != "active"
+                ):
+                    raise RfaError("team_not_ready", "준비된 팀에만 실행을 결합할 수 있습니다.")
+                domain = json.loads(run["request_json"]).get("domain_id")
+                if domain != lifecycle.task.domain_id.value:
+                    raise RfaError("task_domain_mismatch", "Task와 실행의 도메인이 다릅니다.")
+                if run["task_id"] is not None and run["task_id"] != task_id:
+                    raise RfaError("team_binding_conflict", "이 실행은 다른 Task에 결합되어 있습니다.")
+                existing = connection.execute(
+                    "SELECT task_id, team_id FROM run_team_bindings WHERE run_id = ?", (run_id,)
+                ).fetchone()
+                if existing is not None:
+                    if (existing[0], existing[1]) != (task_id, team_id):
+                        raise RfaError(
+                            "team_binding_conflict", "이 실행은 다른 팀에 결합되어 있습니다."
+                        )
+                    return task_id, team_id
+                connection.execute(
+                    "INSERT INTO run_team_bindings VALUES (?, ?, ?, ?, ?, ?)",
+                    (run_id, task_id, team_id, owner, domain, now),
+                )
+                connection.execute(
+                    "UPDATE runs SET task_id = ? WHERE run_id = ? AND task_id IS NULL",
+                    (task_id, run_id),
+                )
+                connection.execute(
+                    "INSERT OR IGNORE INTO session_tasks VALUES (?, ?)",
+                    (run["session_id"], task_id),
+                )
+                return task_id, team_id
+
+        return await asyncio.to_thread(operation)
+
+    async def run_team_binding(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[str, str] | None:
+        owner = self._authenticated(principal)
+
+        def operation():
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT task_id, team_id FROM run_team_bindings "
+                    "WHERE run_id = ? AND owner_id = ?",
+                    (run_id, owner),
+                ).fetchone()
+                return (row[0], row[1]) if row else None
+
+        return await asyncio.to_thread(operation)
+
+    async def begin_role_execution(
+        self,
+        run_id: str,
+        principal: TrustedPrincipal,
+        *,
+        execution_key: str,
+        role: str,
+        agent_id: str,
+    ) -> tuple[str, RoleOutcome | None]:
+        """Return ('started', None) for a new receipt, or the durable prior state."""
+        owner = self._authenticated(principal)
+        now = datetime.now(UTC).isoformat()
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                if connection.execute(
+                    "SELECT 1 FROM run_team_bindings WHERE run_id = ? AND owner_id = ?",
+                    (run_id, owner),
+                ).fetchone() is None:
+                    raise ResourceNotFoundError("run")
+                row = connection.execute(
+                    "SELECT execution_key, agent_id, status, outcome_json FROM role_executions "
+                    "WHERE run_id = ? AND role = ?",
+                    (run_id, role),
+                ).fetchone()
+                if row is None:
+                    connection.execute(
+                        "INSERT INTO role_executions VALUES (?, ?, ?, ?, 'running', NULL, ?, NULL)",
+                        (execution_key, run_id, role, agent_id, now),
+                    )
+                    return "started", None
+                if row["execution_key"] != execution_key or row["agent_id"] != agent_id:
+                    raise RfaError("team_binding_conflict", "역할 실행 key가 일치하지 않습니다.")
+                outcome = (
+                    RoleOutcome.model_validate_json(row["outcome_json"])
+                    if row["outcome_json"]
+                    else None
+                )
+                return row["status"], outcome
+
+        return await asyncio.to_thread(operation)
+
+    async def finish_role_execution(
+        self, run_id: str, principal: TrustedPrincipal, outcome: RoleOutcome
+    ) -> None:
+        owner = self._authenticated(principal)
+        outcome = RoleOutcome.model_validate(outcome.model_dump())
+        now = datetime.now(UTC).isoformat()
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                updated = connection.execute(
+                    "UPDATE role_executions SET status = ?, outcome_json = ?, finished_at = ? "
+                    "WHERE execution_key = ? AND run_id = ? AND role = ? AND status = 'running' "
+                    "AND run_id IN (SELECT run_id FROM run_team_bindings WHERE owner_id = ?)",
+                    (
+                        outcome.status,
+                        outcome.model_dump_json(),
+                        now,
+                        outcome.execution_key,
+                        run_id,
+                        outcome.role,
+                        owner,
+                    ),
+                ).rowcount
+                if updated != 1:
+                    # Terminal receipts (including restart-unknown) are never overwritten.
+                    raise RfaError("invalid_state_transition", "역할 실행 상태를 바꿀 수 없습니다.")
+
+        await asyncio.to_thread(operation)
+
+    async def save_team_result(
+        self, run_id: str, principal: TrustedPrincipal, result: TeamRunResult
+    ) -> None:
+        owner = self._authenticated(principal)
+        result = TeamRunResult.model_validate(result.model_dump())
+        now = datetime.now(UTC).isoformat()
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                if connection.execute(
+                    "SELECT 1 FROM run_team_bindings WHERE run_id = ? AND owner_id = ? "
+                    "AND task_id = ? AND team_id = ?",
+                    (run_id, owner, result.task_id, result.team_id),
+                ).fetchone() is None:
+                    raise ResourceNotFoundError("run")
+                connection.execute(
+                    "INSERT INTO team_run_results VALUES (?, ?, ?) ON CONFLICT(run_id) "
+                    "DO UPDATE SET result_json = excluded.result_json",
+                    (run_id, result.model_dump_json(), now),
+                )
+
+        await asyncio.to_thread(operation)
+
+    async def get_team_result(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> TeamRunResult | None:
+        owner = self._authenticated(principal)
+
+        def operation():
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT r.result_json FROM team_run_results r JOIN run_team_bindings b "
+                    "ON r.run_id = b.run_id WHERE r.run_id = ? AND b.owner_id = ?",
+                    (run_id, owner),
+                ).fetchone()
+                return TeamRunResult.model_validate_json(row[0]) if row else None
+
+        return await asyncio.to_thread(operation)
+
 
     async def reserve_team(
         self,
@@ -913,6 +1131,11 @@ class SqliteWorkRepository:
         fields["agent_id"] = await self.observation_alias(
             run_id, principal, "actor", "assistant-supervisor"
         )
+        # P0-020: link the team only after the durable Run<->Task<->Team binding exists.
+        # Earlier observations keep null; stored records are never rewritten.
+        binding = await self.run_team_binding(run_id, principal)
+        if binding is not None and "task_id" in fields:
+            fields["team_id"] = await self.observation_alias(run_id, principal, "team_id")
 
         def bound_domain():
             with self._connect() as connection:
@@ -1948,6 +2171,11 @@ class LocalRuntime:
         self._results: dict[str, TaskResult] = {}
         self._idempotency: dict[str, tuple[str, TaskResult]] = {}
         self._inflight: dict[str, tuple[str, asyncio.Task[TaskResult]]] = {}
+        # Keyed by TaskRequest.run_id (a role execution key for team roles), so several
+        # roles of one product Run never overwrite each other's status.
+        self._running: dict[str, asyncio.Task[TaskResult]] = {}
+        self._running_requests: dict[str, TaskRequest] = {}
+        self._cancelled: dict[str, TaskResult] = {}
         self._lock = asyncio.Lock()
         self._teams: dict[str, TeamInstance] = {}
         self._team_keys: dict[str, tuple[str, TeamInstance]] = {}
@@ -2073,15 +2301,30 @@ class LocalRuntime:
             else:
                 task = asyncio.create_task(self._execute(spec, request))
                 self._inflight[request.idempotency_key] = (fingerprint, task)
+                self._running[request.run_id] = task
+                self._running_requests[request.run_id] = request
 
         try:
             result = await asyncio.shield(task)
-        except BaseException:
+        except BaseException as exc:
             if task.done():
                 async with self._lock:
                     pending = self._inflight.get(request.idempotency_key)
                     if pending is not None and pending[1] is task:
                         self._inflight.pop(request.idempotency_key, None)
+                    if self._running.get(request.run_id) is task:
+                        self._running.pop(request.run_id, None)
+                    cancelled = self._cancelled.get(request.run_id)
+                if (
+                    isinstance(exc, asyncio.CancelledError)
+                    and task.cancelled()
+                    and cancelled is not None
+                ):
+                    # The inner role was cancelled through RuntimePort.cancel; the
+                    # caller itself was not cancelled, so return the cancel receipt.
+                    current = asyncio.current_task()
+                    if current is None or not current.cancelling():
+                        return cancelled
             raise
 
         async with self._lock:
@@ -2090,6 +2333,8 @@ class LocalRuntime:
             pending = self._inflight.get(request.idempotency_key)
             if pending is not None and pending[1] is task:
                 self._inflight.pop(request.idempotency_key, None)
+            if self._running.get(request.run_id) is task:
+                self._running.pop(request.run_id, None)
         return result
 
     async def _execute(self, spec: AgentSpec, request: TaskRequest) -> TaskResult:
@@ -2148,13 +2393,49 @@ class LocalRuntime:
             )
 
     async def status(self, run_id: str) -> TaskResult | None:
-        return self._results.get(run_id)
+        return self._cancelled.get(run_id) or self._results.get(run_id)
 
     async def cancel(self, run_id: str) -> TaskResult:
-        raise RfaError(
-            "not_implemented",
-            "P0 local runtime은 task 취소를 구현하지 않았습니다.",
-        )
+        """Cancel an in-flight local task. Already-finished effects are not undone."""
+        async with self._lock:
+            task = self._running.get(run_id)
+            if task is None or task.done():
+                if run_id in self._results or run_id in self._cancelled:
+                    raise RfaError("invalid_state_transition", "이미 종료된 실행입니다.")
+                raise ResourceNotFoundError("runtime task")
+            request = self._running_requests[run_id]
+            key = next(
+                (k for k, (_, t) in self._inflight.items() if t is task), None
+            )
+            receipt = TaskResult(
+                request_id=request.request_id,
+                trace_id=request.trace_id,
+                run_id=run_id,
+                agent_id=request.agent_id,
+                domain_id=request.domain_id,
+                status=ResultStatus.FAILED,
+                error=StructuredError(
+                    code="cancelled",
+                    message="실행이 취소되었습니다.",
+                    retryable=False,
+                    request_id=request.request_id,
+                    trace_id=request.trace_id,
+                    run_id=run_id,
+                ),
+                simulated=False,
+                adapter=self.adapter_name,
+            )
+            self._cancelled[run_id] = receipt
+            task.cancel()
+        try:
+            await asyncio.wait({task}, timeout=5)
+        finally:
+            async with self._lock:
+                if key is not None:
+                    pending = self._inflight.get(key)
+                    if pending is not None and pending[1] is task:
+                        self._inflight.pop(key, None)
+        return receipt
 
 
 class LocalJsonlTrace:
@@ -2279,3 +2560,95 @@ class LocalJsonlTrace:
                     os.fsync(handle.fileno())
         except (OSError, ValueError, TypeError, KeyError) as exc:
             raise RfaError("configuration_error", "안전한 관측 파일 저장에 실패했습니다.") from exc
+
+
+class LocalAnalysisTools:
+    """Allowlisted, side-effect-free READ computations over caller-supplied synthetic text.
+
+    Not an MCP server, network tool or experiment runner: it parses/compares numbers only.
+    """
+
+    adapter_name = "local-analysis-tools"
+    simulated = False
+    TOOLS = frozenset({"benchmark_log_parse", "metric_compare"})
+    _LATENCY = re.compile(r"(?:지연|latency)[^0-9]{0,20}(\d+(?:\.\d+)?)\s*ms", re.IGNORECASE)
+    _ANY_MS = re.compile(r"(\d+(?:\.\d+)?)\s*ms", re.IGNORECASE)
+    _ACCURACY = re.compile(r"(?:정확도|accuracy)[^0-9]{0,20}(\d+(?:\.\d+)?)\s*%", re.IGNORECASE)
+    _ENVIRONMENT = re.compile(r"(?:환경|environment|env)[\s:=]*([A-Za-z0-9_.-]{1,40})", re.IGNORECASE)
+
+    def __init__(self) -> None:
+        self._idempotency: dict[str, tuple[str, ToolResult]] = {}
+        self._lock = asyncio.Lock()
+
+    def _compute(self, request: ToolRequest) -> dict[str, Any]:
+        if request.tool_name == "benchmark_log_parse":
+            text = request.arguments.get("text")
+            if not isinstance(text, str) or len(text) > 20000:
+                raise ValueError("text required")
+            latency = self._LATENCY.search(text) or self._ANY_MS.search(text)
+            accuracy = self._ACCURACY.search(text)
+            environment = self._ENVIRONMENT.search(text)
+            return {
+                "latency_ms": float(latency.group(1)) if latency else None,
+                "accuracy_pct": float(accuracy.group(1)) if accuracy else None,
+                "environment": environment.group(1) if environment else None,
+            }
+        baseline, candidate = request.arguments.get("baseline"), request.arguments.get("candidate")
+        if not isinstance(baseline, dict) or not isinstance(candidate, dict):
+            raise ValueError("baseline/candidate required")
+        output: dict[str, Any] = {"latency_change_pct": None, "accuracy_delta_pp": None}
+        base_latency, new_latency = baseline.get("latency_ms"), candidate.get("latency_ms")
+        if isinstance(base_latency, (int, float)) and isinstance(new_latency, (int, float)) \
+                and base_latency > 0:
+            output["latency_change_pct"] = round((new_latency - base_latency) / base_latency * 100, 1)
+        base_acc, new_acc = baseline.get("accuracy_pct"), candidate.get("accuracy_pct")
+        if isinstance(base_acc, (int, float)) and isinstance(new_acc, (int, float)):
+            output["accuracy_delta_pp"] = round(new_acc - base_acc, 2)
+        output["same_environment"] = (
+            baseline.get("environment") is not None
+            and baseline.get("environment") == candidate.get("environment")
+        )
+        return output
+
+    async def execute(self, request: ToolRequest) -> ToolResult:
+        request = ToolRequest.model_validate_json(request.model_dump_json())
+        fingerprint = _canonical_fingerprint(request.model_dump(mode="json"))
+        async with self._lock:
+            cached = self._idempotency.get(request.idempotency_key)
+            if cached is not None:
+                if cached[0] != fingerprint:
+                    raise RfaError(
+                        "idempotency_conflict", "같은 idempotency key로 다른 요청입니다."
+                    )
+                return cached[1]
+            error_code = None
+            output: dict[str, Any] = {}
+            if request.effect != ToolEffect.READ or request.tool_name not in self.TOOLS:
+                status, error_code = ResultStatus.DENIED, "tool_not_allowed"
+            else:
+                try:
+                    output, status = self._compute(request), ResultStatus.SUCCEEDED
+                except (ValueError, TypeError):
+                    status, error_code = ResultStatus.FAILED, "invalid_tool_arguments"
+            result = ToolResult(
+                request_id=request.request_id,
+                trace_id=request.trace_id,
+                run_id=request.run_id,
+                agent_id=request.agent_id,
+                domain_id=request.domain_id,
+                idempotency_key=request.idempotency_key,
+                status=status,
+                output=output,
+                error=StructuredError(
+                    code=error_code,
+                    message="허용되지 않았거나 유효하지 않은 도구 요청입니다.",
+                    retryable=False,
+                    request_id=request.request_id,
+                    trace_id=request.trace_id,
+                    run_id=request.run_id,
+                ) if error_code else None,
+                simulated=False,
+                adapter=self.adapter_name,
+            )
+            self._idempotency[request.idempotency_key] = (fingerprint, result)
+            return result

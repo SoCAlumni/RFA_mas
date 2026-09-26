@@ -347,6 +347,7 @@ async def test_restart_cas_history_and_seed_do_not_restore_deleted_source(tmp_pa
                 (3,),
                 (4,),
                 (5,),
+                (6,),
             ]
             assert db.execute("SELECT count(*) FROM installation_seeds").fetchone()[0] == 1
     finally:

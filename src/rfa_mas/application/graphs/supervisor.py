@@ -37,6 +37,9 @@ class SupervisorDependencies:
     max_graph_steps: int
     max_tool_calls: int
     validate_resume: Callable[[DraftBundle, TrustedPrincipal], Awaitable[None]]
+    # P0-020 explicit team execution. None keeps the single-domain path only.
+    team_runner: Any = None
+    policy_version: Callable[[], str] | None = None
 
 
 @dataclass(frozen=True)
@@ -72,6 +75,10 @@ class SupervisorState(TypedDict, total=False):
     publication_status: PublicationStatus
     error: StructuredError
     steps: int
+    # Explicit team execution intent/binding: plain JSON, no principal or grants.
+    team_request: dict[str, Any] | None
+    task_id: str | None
+    team_result: dict[str, Any] | None
 
 
 def _route_domain(work: WorkRequest) -> DomainId | None:
@@ -210,7 +217,64 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
         return {"domain_id": domain_id, "steps": 1}
 
     def after_route(state: SupervisorState) -> str:
-        return "finish" if state.get("error") is not None else "delegate"
+        if state.get("error") is not None:
+            return "finish"
+        return "delegate_team" if state.get("team_request") else "delegate"
+
+    async def delegate_team(
+        state: SupervisorState, runtime: Runtime[InvocationContext]
+    ) -> dict[str, Any]:
+        from rfa_mas.application.workers import team_draft
+        from rfa_mas.contracts import TeamExecutionRequest
+
+        work = state["work"]
+        work = work.model_copy(update={"domain_id": state["domain_id"]})
+        steps = state["steps"] + 1
+        if deps.team_runner is None or deps.policy_version is None:
+            return {
+                "error": _error(work, "not_implemented", "팀 실행이 구성되지 않았습니다."),
+                "status": WorkStatus.FAILED,
+                "steps": steps,
+            }
+        principal = runtime.context.principal
+        request = TeamExecutionRequest.model_validate(state["team_request"])
+        try:
+            lifecycle = await deps.team_runner.ensure_and_bind(
+                work, request, principal, task_id=state.get("task_id")
+            )
+            result = await deps.team_runner.execute(
+                work,
+                request,
+                lifecycle,
+                principal,
+                _allowed_audiences(principal, work.target.audience),
+            )
+        except RfaError as exc:
+            return {"error": _error(work, exc.code, exc.safe_message), "status": WorkStatus.FAILED,
+                    "steps": steps}
+        update: dict[str, Any] = {
+            "steps": steps + result.usage.steps,
+            "team_result": {"status": result.status, "stop_reason": result.stop_reason,
+                            "task_id": result.task_id},
+        }
+        if result.status != "completed":
+            # Partial/failed/cancelled team work never starts review; the safe partial
+            # result stays in the team receipt store under the fixed stop reason.
+            code = result.stop_reason or "role_failed"
+            update.update(
+                error=_error(work, code, "팀 실행을 안전하게 중단했습니다."),
+                status=WorkStatus.CANCELLED if result.status == "cancelled" else WorkStatus.FAILED,
+            )
+            return update
+        draft = team_draft(work, result, policy_version=deps.policy_version())
+        if work.target.audience == Audience.PUBLIC and any(
+            item.audience != Audience.PUBLIC for item in draft.allowed_evidence
+        ):
+            update.update(error=_error(work, "draft_binding_mismatch", "공개 대상 근거가 아닙니다."),
+                          status=WorkStatus.FAILED)
+            return update
+        update["draft"] = draft
+        return update
 
     async def delegate(
         state: SupervisorState, runtime: Runtime[InvocationContext]
@@ -478,11 +542,19 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
     builder = StateGraph(SupervisorState, context_schema=InvocationContext)
     builder.add_node("route", route)
     builder.add_node("delegate", delegate)
+    builder.add_node("delegate_team", delegate_team)
     builder.add_node("review", review)
     builder.add_node("await_review", await_review)
     builder.add_edge(START, "route")
-    builder.add_conditional_edges("route", after_route, {"delegate": "delegate", "finish": END})
+    builder.add_conditional_edges(
+        "route",
+        after_route,
+        {"delegate": "delegate", "delegate_team": "delegate_team", "finish": END},
+    )
     builder.add_conditional_edges("delegate", after_delegate, {"review": "review", "finish": END})
+    builder.add_conditional_edges(
+        "delegate_team", after_delegate, {"review": "review", "finish": END}
+    )
     builder.add_conditional_edges("review", after_review, {"wait": "await_review", "finish": END})
     builder.add_conditional_edges(
         "await_review", after_review, {"wait": "await_review", "finish": END}

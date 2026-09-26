@@ -1,5 +1,13 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P0-020 팀 역할 실행 1.1 (통합·발행 대기)
+
+- additive 1.1: `TeamExecutionRequest`(명시적 팀 실행 의도, 권한 주장 없음), `RoleOutcome`(역할 receipt), `TeamBudgetUsage`, `TeamRunResult`(Supervisor 수집 결과). `DirectWorkRequest.team`(선택). frozen 1.0 WorkRequest/TaskRequest/TaskResult/ToolRequest/RunResult wire schema는 변경하지 않았다.
+- migration6: `run_team_bindings`(Run↔Task↔Team 원자 결합, 동일 결합 멱등·재결합 거절), `role_executions`(역할 receipt, 재시작 시 running→unknown이며 성공·재실행 허가가 아님), `team_run_results`.
+- LocalRuntime은 역할 실행 key별 status/cancel을 제공한다(1.0 ResultStatus 유지, 취소 receipt는 error code `cancelled`). 이미 발생한 효과를 되돌렸다고 주장하지 않는다.
+- 역할 도구는 서버 allowlist(`benchmark_log_parse`, `metric_compare`)의 로컬 READ 계산뿐이다. 실험 수치는 합성 로그 파싱이며 simulated로 표시한다. OS sandbox/OpenShell/실제 GPU 실험이 아니다.
+- 영향 consumer: P0-021, P1-004A, P1-005, P1-003, P1-008, P0-025, P0-026.
+
 ## 2026-09-26 — P1-001A 권한 선필터 reader·project 제한 1.1 (통합·발행 대기)
 
 - additive 1.1: `KnowledgeAcl.project_id`/`KnowledgeDocumentV11.project_id`(선택, 자원 제한이며 caller grant가 아님), `SourceMetadata`/`SourceRead`(권한 판정 후 metadata와 선택 본문). frozen 1.0 DTO·fixture·baseline은 변경하지 않았다.

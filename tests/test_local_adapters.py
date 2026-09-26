@@ -187,4 +187,8 @@ async def test_runtime_idempotency_rejects_changed_request_and_cancel_is_explici
 
     with pytest.raises(RfaError) as cancellation:
         await runtime.cancel(request.run_id)
-    assert cancellation.value.code == "not_implemented"
+    # P0-020: cancel is implemented for in-flight tasks; a finished task stays terminal.
+    assert cancellation.value.code == "invalid_state_transition"
+    with pytest.raises(RfaError) as unknown:
+        await runtime.cancel("never-started")
+    assert unknown.value.code == "not_found"

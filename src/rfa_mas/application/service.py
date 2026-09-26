@@ -229,6 +229,12 @@ class WorkService:
                     "domain_id": None,
                     "status": WorkStatus.RUNNING,
                     "publication_status": PublicationStatus.NOT_REQUESTED,
+                    # Explicit 1.1 team intent only; frozen 1.0 work stays unchanged.
+                    "team_request": request.team.model_dump(mode="json")
+                    if isinstance(request, DirectWorkRequest) and request.team is not None
+                    else None,
+                    "task_id": request.task_id if isinstance(request, DirectWorkRequest) else None,
+                    "team_result": None,
                 },
                 config=self._config(thread_id),
                 context=InvocationContext(principal),
@@ -374,6 +380,28 @@ class WorkService:
         if record.result is None:
             raise ResourceNotFoundError("run result")
         return await self.present_result(record.result, principal)
+
+    async def team_result(self, run_id: str, principal: TrustedPrincipal):
+        """Owner-authorized team receipt (roles, partial results, budget usage)."""
+        await self._repository.get_owned_run(run_id, principal)
+        result = await self._repository.get_team_result(run_id, principal)
+        if result is None:
+            raise ResourceNotFoundError("team result")
+        return result
+
+    async def cancel(self, run_id: str, principal: TrustedPrincipal) -> str:
+        """Owner-authorized cancel barrier: stops the current role and blocks later ones.
+
+        Returns 'cancelling' when an in-process team run was signalled. Effects that
+        already happened are not undone, and a terminal run cannot be cancelled.
+        """
+        record = await self._repository.get_owned_run(run_id, principal)
+        if record.status in {WorkStatus.COMPLETED, WorkStatus.FAILED, WorkStatus.CANCELLED}:
+            raise RfaError("invalid_state_transition", "이미 종료된 실행입니다.")
+        runner = getattr(self._dependencies, "team_runner", None)
+        if runner is not None and await runner.cancel(run_id):
+            return "cancelling"
+        raise RfaError("not_implemented", "이 실행 경로는 취소를 지원하지 않습니다.")
 
     def _failed_result(
         self, request: WorkRequest, created_at: datetime, error: RfaError

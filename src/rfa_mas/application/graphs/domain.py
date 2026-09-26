@@ -146,7 +146,13 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
                     agent_id=task.agent_id,
                     domain_id=task.domain_id,
                     query=work.query,
-                    allowed_audiences=state["policy_decision"].allowed_audiences,
+                    # Intersect the policy decision with the delegated agent's audience cap,
+                    # so the target's excluded audiences (e.g. private) are never read.
+                    allowed_audiences=tuple(
+                        audience
+                        for audience in state["policy_decision"].allowed_audiences
+                        if audience in state["spec"].allowed_audiences
+                    ),
                     principal=runtime.context.principal,
                     simulation_scenario=work.simulation_scenario,
                 )

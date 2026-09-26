@@ -54,6 +54,29 @@ SAFE_ERROR_CODES = frozenset(
         "session_mismatch",
         "storage_busy",
         "review_query_pending",
+        # P0-020 team execution stop reasons (fixed codes, never provider text).
+        "cancelled",
+        "budget_unavailable",
+        "team_not_ready",
+        "team_binding_conflict",
+        "team_selection_denied",
+        "team_conflict",
+        "runtime_unavailable",
+        "role_failed",
+        "role_timeout",
+        "tool_not_allowed",
+        "direct_message_denied",
+        "task_domain_mismatch",
+    }
+)
+TEAM_ROLES = frozenset(
+    {
+        "supervisor",
+        "paper_scout",
+        "experiment_runner",
+        "result_analyst",
+        "source_scout",
+        "evidence_reviewer",
     }
 )
 
@@ -172,7 +195,7 @@ class Observations:
         collected = {r.event.event for r in records if r.origin in {"service", "port"}}
         incomplete = {
             name
-            for name in BOUNDARIES
+            for name in (*BOUNDARIES, "tool")
             if sum(
                 r.origin == "port" and r.event.event == name and r.event.status == "started"
                 for r in records
@@ -224,6 +247,22 @@ class Observations:
         if active is not None:
             run_id, principal = active
             await self.repository.observation_alias(run_id, principal, "domain", domain.value)
+
+    async def team_actor(self, agent_id: str) -> str | None:
+        """Safe actor label only for a member of the team durably bound to this Run."""
+        active = _ACTIVE.get()
+        if active is None:
+            return None
+        run_id, principal = active
+        binding = await self.repository.run_team_binding(run_id, principal)
+        if binding is None:
+            return None
+        task_id, team_id = binding
+        lifecycle = await self.repository.get_team_lifecycle(task_id, principal)
+        for member in lifecycle.team.spec.members:
+            if member.spec.agent_id == agent_id and lifecycle.team.spec.team_id == team_id:
+                return f"team-member:{member.role}" if member.role in TEAM_ROLES else None
+        return None
 
 
 class ObservedPort:
@@ -290,7 +329,7 @@ class ObservedPort:
             }.get(getattr(result, "decision", None), "succeeded")
             if result is None:
                 outcome = "waiting"
-        elif self.boundary == "runtime":
+        elif self.boundary in {"runtime", "tool"}:
             runtime_status = getattr(result, "status", None)
             outcome = {
                 "succeeded": "succeeded",
@@ -337,12 +376,19 @@ class ObservedPort:
         checked = AgentSpec.model_validate(spec.model_dump())
         await self.observer.bind_domain(checked.domain_id)
         expected = f"domain-supervisor:{checked.domain_id.value}"
-        actor = expected if checked.agent_id == expected else "assistant-supervisor"
+        actor = (
+            expected
+            if checked.agent_id == expected
+            else await self.observer.team_actor(checked.agent_id) or "assistant-supervisor"
+        )
         token = _ACTOR.set(actor)
         try:
             return await self._call("run", spec, request)
         finally:
             _ACTOR.reset(token)
+
+    async def execute(self, request):
+        return await self._call("execute", request)
 
     async def status(self, run_id):
         return await self._call("status", run_id)

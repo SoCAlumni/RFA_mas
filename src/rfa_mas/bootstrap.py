@@ -17,7 +17,13 @@ from rfa_mas.adapters.http import (
     ToolHttpAdapter,
     require_loopback_reference_url,
 )
-from rfa_mas.adapters.local import LocalJsonlTrace, LocalPolicy, LocalRuntime, SqliteWorkRepository
+from rfa_mas.adapters.local import (
+    LocalAnalysisTools,
+    LocalJsonlTrace,
+    LocalPolicy,
+    LocalRuntime,
+    SqliteWorkRepository,
+)
 from rfa_mas.adapters.mock import MockJudge, MockModel, MockResponse, MockRetrieval, MockTool
 from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
 from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
@@ -32,6 +38,7 @@ from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.service import WorkService
 from rfa_mas.application.team_selector import APPROVED_PINS, TeamSelector, TemplateRegistry
 from rfa_mas.application.teams import RuntimeLifecycleSupport, TeamFactory
+from rfa_mas.application.workers import TEAM_ROLE_TASK, TeamRunner
 from rfa_mas.contracts import (
     AdapterInfo,
     DomainId,
@@ -159,6 +166,7 @@ class Container:
     checkpoints: SqliteCheckpoints
     team_factory: TeamFactory
     knowledge: KnowledgeService
+    team_runner: TeamRunner | None = None
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
@@ -350,6 +358,23 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
     )
 
     judge = MockJudge()
+    observed_runtime = ObservedPort(
+        runtime,
+        observer,
+        "runtime",
+        mode="local",
+        provider_kind="reference_http" if settings.runtime_backend == "http" else "builtin",
+    )
+    # P0-020: roles use only the allowlisted local READ computations; the configured
+    # external ToolPort (mock/HTTP) is not granted to team roles.
+    team_runner = TeamRunner(
+        repository=repository,
+        factory=team_factory,
+        runtime=observed_runtime,
+        retrieval=observed_retrieval,
+        tools=ObservedPort(LocalAnalysisTools(), observer, "tool", mode="local"),
+        policy_version=lambda: policy.policy_version,
+    )
 
     if isinstance(runtime, LocalRuntime):
         runtime.register(
@@ -360,6 +385,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
                 )
             ),
         )
+        runtime.register(TEAM_ROLE_TASK, team_runner.handler())
 
     adapters = tuple(
         AdapterInfo(port=port, adapter=adapter.adapter_name, simulated=adapter.simulated)
@@ -376,13 +402,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         repository=repository,
         trace=trace,
         supervisor_dependencies=SupervisorDependencies(
-            runtime=ObservedPort(
-                runtime,
-                observer,
-                "runtime",
-                mode="local",
-                provider_kind="reference_http" if settings.runtime_backend == "http" else "builtin",
-            ),
+            runtime=observed_runtime,
             response=ObservedPort(
                 response,
                 observer,
@@ -395,6 +415,8 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
             max_graph_steps=settings.max_graph_steps,
             max_tool_calls=settings.max_tool_calls,
             validate_resume=ResumePolicy(repository, observed_policy),
+            team_runner=team_runner,
+            policy_version=lambda: policy.policy_version,
         ),
         adapters=adapters,
         guard_thread=checkpoints.guard,
@@ -416,5 +438,6 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         adapters=adapters,
         checkpoints=checkpoints,
         team_factory=team_factory,
+        team_runner=team_runner,
         http_clients=clients,
     )

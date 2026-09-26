@@ -260,6 +260,7 @@ async def test_legacy_migration_is_versioned_idempotent_and_never_adopts_unknown
             (3,),
             (4,),
             (5,),
+            (6,),
         ]
 
 

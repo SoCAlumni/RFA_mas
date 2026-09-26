@@ -129,6 +129,7 @@ from rfa_mas.contracts.models import (
     PolicyDecisionV11,
     PublicationReceipt,
     ResumeRequest,
+    RoleOutcome,
     RunRecord,
     ScheduleSpec,
     SessionCreate,
@@ -139,9 +140,12 @@ from rfa_mas.contracts.models import (
     SourceMetadata,
     SourceRead,
     TeamBudget,
+    TeamBudgetUsage,
+    TeamExecutionRequest,
     TeamInstance,
     TeamLifecycle,
     TeamMember,
+    TeamRunResult,
     TeamSpec,
     TeamTemplate,
     ToolInvocation,
@@ -150,6 +154,10 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "TeamExecutionRequest",
+    "RoleOutcome",
+    "TeamBudgetUsage",
+    "TeamRunResult",
     "SourceMetadata",
     "SourceRead",
     "KnowledgeAcl",
