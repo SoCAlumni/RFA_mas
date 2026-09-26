@@ -29,7 +29,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | done / passed | contracts/control | 1 | P0-003, P0-010 |
 | [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | done / passed | execution | 1.5 | P0-014, P0-005, P0-008 |
 | [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | done / passed | execution | 1.5 | P0-015 |
-| [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | todo / not_run | contracts/control | 1 | P0-014, P0-016 |
+| [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | in_progress / not_run | contracts/control | 1 | P0-014, P0-016 |
 | [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | done / passed | agents | 0.5 | P0-014 |
 | [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | todo / not_run | agents | 2 | P0-018, P0-015, P0-016 |
 | [P0-020](tasks/P0-020/task.yaml) | 역할별 실행·Supervisor 수집·팀 예산·취소 | P0 | todo / not_run | agents | 1.5 | P0-019, P0-017, P1-001A, P1-006D |
@@ -80,8 +80,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
-- P0-017: planning ready; claim 가능
-- P0-019: planning ready; claim 가능
+- P0-019: planning ready; reserved:P0-017
+- P1-001: planning ready; reserved:P0-017
 
 ## 최종 gate
 

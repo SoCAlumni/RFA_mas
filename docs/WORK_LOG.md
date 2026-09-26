@@ -371,3 +371,25 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   않았다. 이전 환경의 Python 자체는 보존되지만 entrypoint shebang은 옛 위치이므로
   복구 시 원래 `.venv` 위치를 복원해야 한다. 자동/활성 worker 전환은 하지 않는다.
   전환 후 실제 버전과 전체 회귀 결과는 다음 기록에서 별도로 확인한다.
+
+## 패치 환경 실제 회귀·다음 구현 시작 — 2026-09-26
+
+- 새 root `.venv`는 exact lock의 168개 패키지를 설치했고 CPython3.12.13,
+  SQLite3.53.1, NAT langchain1.8.0의 실제 값/assertion을 확인했다.
+  고정 source main db49353에서 `.venv/bin/python -m pytest -q`를 실제 subprocess
+  timeout=300초로 실행한 결과 **475 passed, 46 warnings, 160.05초**였다.
+  수집된 테스트 skip/fail은 없었다. 경고는 기존 checkpoint 없는 child graph의
+  durability 경고이며 전체 제품 E2E/실제 외부 연동 통과를 뜻하지 않는다.
+- P0-017은 db49353의 별도 worktree/claim으로 구현을 시작했다. root/다른 worker의
+  환경을 변경하지 않으며 feature도 명시적인 패치 interpreter를 사용한다.
+- P1-001의 최신 계약을 provider로 수락하고 ready 명세를 정리했다. immutable
+  revision/CAS/행별 receipt, current/nondeleted projection, private DB file,
+  seed/legacy 보존과 기존 재개 보안 fixture의 정당한 revision 변경을 연결했다.
+  제품 구현·검증은 아직 not_run이다. shared DTO/composition 변경은 직렬 처리한다.
+- P0-028은 설치된 NAT1.8.0 평가 소스/registry/config 형식을 추가 조사했다.
+  CLI entrypoint는 load_dotenv를 자동 호출하므로 programmatic EvaluationRun을
+  사용하고 write_output=false와 output=null을 모두 적용한다. 첫 직접 Config
+  검증은 plugin discriminator 오류였고 공식 load_config의 discovery 순서로
+  바꾼 합성 schema probe가 통과했다. 제품 workflow 실행은 하지 않았다.
+  evaluator 예외 누락·미관측 token의 기본0·profiler 미설치 한계를 명세에 보존했다.
+  P1-006D 실제 관측 계약 수신 전 draft이며 로컬 대체 성공을 NAT 성공으로 세지 않는다.

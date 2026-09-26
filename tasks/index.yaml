@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 8fb0f8650460b3c29e5023a146bae62433215ccb86535b709baec483836819fa
+source_digest: eacc382ac401adf500e9380264d2568acd303a09b6afa4605c384a2b95d88bd8
 source_revisions:
   OPS-000: 6
   OPS-001: 13
@@ -21,7 +21,7 @@ source_revisions:
   P0-014: 33
   P0-015: 47
   P0-016: 34
-  P0-017: 10
+  P0-017: 11
   P0-018: 28
   P0-019: 7
   P0-020: 6
@@ -32,8 +32,8 @@ source_revisions:
   P0-025: 7
   P0-026: 8
   P0-027: 35
-  P0-028: 6
-  P1-001: 7
+  P0-028: 7
+  P1-001: 8
   P1-001A: 8
   P1-001B: 5
   P1-001C: 5
@@ -69,7 +69,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T09:12:10+00:00'
+generated_at: '2026-09-26T09:16:25+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록

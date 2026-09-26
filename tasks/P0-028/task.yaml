@@ -12,9 +12,7 @@ priority: P0
 status: todo
 spec_state: draft
 unresolved:
-- P0-014의 RFA-EXTENDED 1.1 schema/fixture baseline을 수신하고 실제 digest를 고정해야 한다.
-- P0-027이 선택할 NAT release·extra·입력 mapping 및 안전한 exporter 가능 범위를 수신해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- P1-006D의 실제 allowlist/Observation API와 통합 증거를 받은 후 그 계약 digest 및 관측 경계를 수락해야 한다.
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 1.5
@@ -23,14 +21,30 @@ execution_class: 이 저장소 구현
 product_mode: local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록
 scope:
   included:
-  - 기존 LangGraph/WorkService 밖의 adapter에서 비대화형 대표 경로를 실행하고 실제 NAT 설치 경로의 추적/동등성을 검증한다.
+  - 실제 설치/조사된 NAT1.8.0의 programmatic EvaluationRun(EvaluationRunConfig(config_file=load_config(...), write_output=False,
+    endpoint=None, reps=1)).run_and_evaluate()를 사용한다. wrapper-only 검사는 실제 평가 실행을 대신하지 않는다.
+  - nat_eval.py에서 optional import 및 명시적 local evaluator 등록 후 공식 load_config의 plugin discovery 순서를 사용한다.
+    직접 Config.model_validate만 호출하면 nested discriminator 등록이 누락됨을 실제 합성 probe에서 확인했다. 별도 pyproject entrypoint/패키지
+    변경은 현재 필요 없다.
+  - builtin langgraph_wrapper의 메시지형 외부 graph 노드 하나에서 WorkService.run을 한 번 호출한다. case_id만 NAT 입력에 넣고 요청/신원은
+    신뢰된 합성 harness에서 구성한다. container lifecycle·분리 DB/checkpoint·현재 승인 상태를 우회하지 않는다.
+  - NAT cli entrypoint는 import 시 load_dotenv를 호출하므로 사용하지 않는다. config에는 workflow.env=null, general.telemetry.logging/tracing={},
+    eval.general.output/profiler=null, max_concurrency=1, per_input_user_id=false, validate_llm_endpoints=false를
+    명시한다. output=null은 write_output=false여도 가능한 cleanup을 막는 별도 조건이다.
+  - NAT 최종 message에는 안전한 상태/관찰 참조만 넣고 원문 DRAFT·prompt·tool 인자를 반환하지 않는다. 원래 결과는 테스트 내부 native/NAT 비교에만
+    사용한다. 외부 telemetry 없이 P1-006D 실제 allowlist export만 저장한다.
+  - 설치 extra에는 profiler가 없고 framework wrapping이 no-op인 범위를 확인했다. 관찰된 outer/service 경계만 보고하며 내부 자동 node/tool은
+    uncollected, provider token 미제공은 null이다. upstream의 UsageStats 기본 0을 실측으로 보고하지 않는다.
+  - 결정적 local evaluator는 관찰 계약 회귀만 판정한다. evaluation_results에서 예상 evaluator/case 수, 오류, workflow_interrupted,
+    output 존재를 검사한다. evaluator 예외가 로그 후 누락될 수 있으므로 반환 성공만으로 passed를 만들지 않는다.
   excluded:
-  - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 .env 접근
-  - 새 framework/관측 서버/메모리 엔진·core graph 재작성
+  - 실제 NVIDIA/Judge·팀원 승인/게시·OpenShell·UI·streaming/HITL resume 검증, 외부 게시/배포, 실제 env 접근
+  - 새 framework/관측 서버/profiler 추가·core graph 재작성
   - 공통 DTO/설정/lock 임의 변경; coordinator 계약 변경 절차로 요청
   owned_paths:
   - src/rfa_mas/adapters/nat_eval.py
   - configs/nat/rfa_eval.yml
+  - configs/nat/rfa_eval_cases.json
   - tests/test_nat_adapter.py
   - tests/test_nat_smoke.py
   read_only_paths:
@@ -41,9 +55,11 @@ scope:
   - src/rfa_mas/application/graphs
   - src/rfa_mas/adapters/local.py
   - docs/EVALUATION_CONTEXT.md
+  - docs/NAT_COMPATIBILITY.md
   planned_paths:
   - src/rfa_mas/adapters/nat_eval.py
   - configs/nat/rfa_eval.yml
+  - configs/nat/rfa_eval_cases.json
   - tests/test_nat_adapter.py
   - tests/test_nat_smoke.py
   shared_resources: []
@@ -67,7 +83,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65
   role: consumer
 context:
   global_refs:
@@ -98,16 +114,24 @@ context:
 deliverables:
 - path: src/rfa_mas/adapters/nat_eval.py
   availability: planned
-  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+  description: Optional lazy registration + official programmatic evaluation; no CLI dotenv load, raw
+    export or secondary state owner.
 - path: configs/nat/rfa_eval.yml
   availability: planned
-  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+  description: Versioned NAT1.8.0 wrapper/dataset/evaluator configuration with remote telemetry/output
+    cleanup/profiler disabled.
+- path: configs/nat/rfa_eval_cases.json
+  availability: planned
+  description: Trusted synthetic case IDs and safe expected metadata; contains no real secrets or user-provided
+    identity grants.
 - path: tests/test_nat_adapter.py
   availability: planned
-  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+  description: Native equivalence, one service call, approval/checkpoint preservation, missing-extra and
+    safe output/error boundary checks.
 - path: tests/test_nat_smoke.py
   availability: planned
-  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+  description: Installed EvaluationRun.run_and_evaluate plus registered evaluator; counts/errors/interruption
+    and unintended raw file/log checks, not wrapper-only success.
 acceptance_criteria:
 - id: AC1
   given: 동일 합성 입력/seed·fake model/retrieval/tool, 분리된 DB의 native와 실제 NAT 진입점
@@ -197,8 +221,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 6
-spec_revision: 6
+revision: 7
+spec_revision: 7
 claim_generation: 0
 claim: null
 attempts:
@@ -219,6 +243,8 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:22:30+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T09:16:24+00:00'
+concise_result: 'Specification changed: Installed NAT1.8.0 source/registry/config probe verified programmatic
+  eval shape; avoid CLI dotenv and raw output, preserve true coverage/error gates. Actual product eval
+  remains not_run pending trace provider.'
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
