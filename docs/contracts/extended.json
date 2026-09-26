@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "8d0a3c54faf4f17c58c5ba70aafe28ee3fd8e6f757b8c7cad61c3d6e4c109b0c",
+  "digest": "d311c504fc80dbdfd49818438f653e1dee1b2c5e6a0bb00fc51636080375cf01",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -4044,6 +4044,127 @@
   },
   "json_schema": {
     "$defs": {
+      "AccumulatedItem": {
+        "additionalProperties": false,
+        "properties": {
+          "epistemic_state": {
+            "enum": [
+              "cited",
+              "inferred",
+              "simulated",
+              "tentative",
+              "conflicting"
+            ],
+            "title": "Epistemic State",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "summary",
+              "todo",
+              "issue",
+              "decision",
+              "link"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "parents": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/SourceRevisionRef"
+            },
+            "title": "Parents",
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Reason",
+            "type": "string"
+          },
+          "review_state": {
+            "enum": [
+              "accepted",
+              "rejected"
+            ],
+            "title": "Review State",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Id"
+          },
+          "source_revision": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Revision"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "review_state",
+          "epistemic_state",
+          "reason"
+        ],
+        "title": "AccumulatedItem",
+        "type": "object"
+      },
+      "AccumulationReport": {
+        "additionalProperties": false,
+        "description": "Supervisor review receipt for a batch of derived proposals.",
+        "properties": {
+          "items": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/AccumulatedItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "title": "AccumulationReport",
+        "type": "object"
+      },
       "AdapterInfo": {
         "additionalProperties": false,
         "properties": {
@@ -4471,6 +4592,7 @@
             "enum": [
               "cited",
               "inferred",
+              "simulated",
               "tentative",
               "conflicting"
             ],
@@ -4672,6 +4794,99 @@
           "endpoint_id"
         ],
         "title": "ContextRequest",
+        "type": "object"
+      },
+      "DerivedItemProposal": {
+        "additionalProperties": false,
+        "description": "Worker/extractor proposal. Not knowledge until the Supervisor gate accepts it.",
+        "properties": {
+          "conditions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "content": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "epistemic_state": {
+            "enum": [
+              "cited",
+              "inferred",
+              "simulated",
+              "tentative",
+              "conflicting"
+            ],
+            "title": "Epistemic State",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "summary",
+              "todo",
+              "issue",
+              "decision",
+              "link"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "origin_ref": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Origin Ref",
+            "type": "string"
+          },
+          "parents": {
+            "items": {
+              "$ref": "#/$defs/SourceRevisionRef"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Parents",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "uncertainty": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Uncertainty"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "content",
+          "epistemic_state",
+          "parents",
+          "origin_ref"
+        ],
+        "title": "DerivedItemProposal",
         "type": "object"
       },
       "DirectWorkRequest": {
@@ -7714,6 +7929,7 @@
             "enum": [
               "cited",
               "inferred",
+              "simulated",
               "tentative",
               "conflicting"
             ],
@@ -9174,6 +9390,9 @@
     }
   },
   "public_model_names": [
+    "DerivedItemProposal",
+    "AccumulatedItem",
+    "AccumulationReport",
     "TeamExecutionRequest",
     "RoleOutcome",
     "TeamBudgetUsage",
@@ -9233,9 +9452,9 @@
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
     "src/rfa_mas/api/app.py": "c501c81bb697b8a5b068014b38bfc3ea910add98c691d3e00c62c297a35cf94c",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "49a84647770a1c8f29caa71e7da28bcd344ebe406e022dd9a69b9b09b5180c26",
+    "src/rfa_mas/contracts/__init__.py": "a86ddd9a2c4840b5794fdff41ced45f6219f12f4f3e8869bbea80ac783a5be02",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "2c91b04ed266c6a5408a368128651461a142f1d84d01f7b8c36e425e967dd917",
+    "src/rfa_mas/contracts/models.py": "632629b2a1007b6ffd9b952827ae09d268708f8ce83b85380249cdf2e19cd685",
     "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
