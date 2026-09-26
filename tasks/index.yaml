@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: bf9dbab94fdff4bccc806b4499fe066c7c3f541df4342daa1c8566de3536ca2c
+source_digest: 184d34a1b9433cf48df489776a22d742e7a8fe356cace7f99b61bad034750592
 source_revisions:
   OPS-000: 6
   OPS-001: 13
@@ -18,7 +18,7 @@ source_revisions:
   P0-012: 1
   P0-013: 1
   P0-014: 15
-  P0-015: 4
+  P0-015: 9
   P0-016: 2
   P0-017: 4
   P0-018: 2
@@ -29,7 +29,7 @@ source_revisions:
   P0-023: 2
   P0-024: 3
   P0-025: 5
-  P0-026: 5
+  P0-026: 6
   P0-027: 17
   P0-028: 4
   P1-001: 3
@@ -54,11 +54,11 @@ source_revisions:
   P1-006E: 3
   P1-007: 2
   P1-007A: 1
-  P1-007B: 1
+  P1-007B: 2
   P1-008: 5
   P1-008A: 4
   P1-008B: 4
-  P1-009: 4
+  P1-009: 5
   P2-001: 2
   P2-002: 2
   P2-003: 3
@@ -68,7 +68,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T06:48:14+00:00'
+generated_at: '2026-09-26T06:55:58+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -286,6 +286,7 @@ tasks:
   - P1-008
   - P1-001B
   - P1-006E
+  - P1-005B
   path: tasks/P0-026/task.yaml
 - id: P0-027
   title: NAT/LangGraph 호환성 spike·선택 extra 고정

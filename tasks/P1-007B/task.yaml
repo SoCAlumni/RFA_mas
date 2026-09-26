@@ -1,145 +1,153 @@
-schema_version: "1.0"
-id: "P1-007B"
-title: "OpenShell 역할별 허용·차단 증거"
-objective: "prompt나 LocalPolicy가 아닌 실제 sandbox 경계가 역할 권한을 강제하는지 보여준다."
-kind: "task"
+schema_version: '1.0'
+id: P1-007B
+title: OpenShell 역할별 허용·차단 증거
+objective: prompt나 LocalPolicy가 아닌 실제 sandbox 경계가 역할 권한을 강제하는지 보여준다.
+kind: task
 source_tasks:
-  - "P1-007B"
+- P1-007B
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P1"
-status: "blocked"
-spec_state: "draft"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- RFA_E2E_Test_Scenarios_10_ko.md
+priority: P1
+status: blocked
+spec_state: draft
 unresolved:
-  - "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
-workstream: "integration/evaluation"
-execution_role: "worker"
+- 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.
+workstream: integration/evaluation
+execution_role: worker
 estimated_effort: 0.5
-product_owner: "다영(환경/강제), 민섭(계약/증거)"
-execution_class: "팀원 통합"
-product_mode: "real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음."
+product_owner: 다영(환경/강제), 민섭(계약/증거)
+execution_class: 팀원 통합
+product_mode: 'real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial
+  fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음.'
 scope:
   included:
-    - "runtime identity·policy version·역할별 파일/네트워크/tool 권한 matrix와 합성 allow/deny 실행 기록. RuntimePort 정규화 결과와 실제 강제 로그 ref 연결."
+  - runtime identity·policy version·역할별 파일/네트워크/tool 권한 matrix와 합성 allow/deny 실행 기록. RuntimePort 정규화 결과와
+    실제 강제 로그 ref 연결.
+  - E2E-05 real-integration gate. 팀원 runtime 서비스는 같은 PC의 로컬 프로세스일 수 있으며 원격 서버는 필수 아님. mock/runtime schema
+    통과를 실제 OS 강제 증거로 대체하지 않는다.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
   owned_paths:
-    - "docs/EDUCATION_MAPPING.md"
-    - "tests/integration/test_openshell_live.py"
-    - "docs/evidence/openshell.md"
+  - docs/EDUCATION_MAPPING.md
+  - tests/integration/test_openshell_live.py
+  - docs/evidence/openshell.md
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/contracts"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - RFA_E2E_Test_Scenarios_10_ko.md
   planned_paths:
-    - "tests/integration/test_openshell_live.py"
-    - "docs/evidence/openshell.md"
+  - tests/integration/test_openshell_live.py
+  - docs/evidence/openshell.md
   shared_resources: []
 depends_on:
-  -
-    id: "P1-008B"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P1-008B
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P1-007B — OpenShell 역할별 허용·차단 증거"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "docs/EDUCATION_MAPPING.md"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P1-007B/handoff.md"
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-007B — OpenShell 역할별 허용·차단 증거
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: docs/EDUCATION_MAPPING.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: RFA_E2E_Test_Scenarios_10_ko.md
+    section: 공통 조건·E2E-05
+    reason: 전체개발 완료 후 실제 OpenShell 격리와 메시지 경계를 구분 검증
+  handoff: tasks/P1-007B/handoff.md
   dependency_results:
-    - "tasks/P1-008B/handoff.md"
+  - tasks/P1-008B/handoff.md
 deliverables:
-  -
-    path: "docs/EDUCATION_MAPPING.md"
-    availability: "existing"
-    description: "runtime identity·policy version·역할별 파일/네트워크/tool 권한 matrix와 합성 allow/deny 실행 기록. RuntimePort 정규화 결과와 실제 강제 로그 ref 연결."
-  -
-    path: "tests/integration/test_openshell_live.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "docs/evidence/openshell.md"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: docs/EDUCATION_MAPPING.md
+  availability: existing
+  description: runtime identity·policy version·역할별 파일/네트워크/tool 권한 matrix와 합성 allow/deny 실행 기록. RuntimePort
+    정규화 결과와 실제 강제 로그 ref 연결.
+- path: tests/integration/test_openshell_live.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/evidence/openshell.md
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "허용 작업 1개와 금지 작업 1개를 실제 identity로 재현"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "파일/네트워크/tool 항목 중 검증된 범위와 미검증 범위를 구별"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "일반 오류를 정책 거절로 단정하지 않고 policy decision/관찰 증거를 결합."
-    required: true
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: '허용 작업 1개와 금지 작업 1개를 실제 identity로 재현. E2E-05: 존재 확인한 합성 sentinel과 별도 health 확인한 허용/비허용 로컬 endpoint를
+    대상으로 실제 역할별 파일/네트워크/승인 CPU tool allow/deny를 검증'
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: 파일/네트워크/tool 항목 중 검증된 범위와 미검증 범위를 구별. OpenShell OS 경계와 Supervisor 메시지 라우팅 경계는 별도 판정하며 worker→worker
+    거절 및 worker→Supervisor 정상 전달을 각각 기록
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: 일반 오류를 정책 거절로 단정하지 않고 policy decision/관찰 증거를 결합. sandbox/agent/policy ID, 감사 기록, cold 준비/warm
+    실행/거절 지연·시도 예산을 연결; 파일 부재/endpoint 다운을 정책 차단으로 집계하지 않고 판단 불가는 inconclusive
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "다영 환경에서 합성 자원으로 allow/deny·취소 후 상태를 관찰, credential 값은 기록하지 않음."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/integration/test_openshell_live.py"
-    timeout_seconds: 180
-    procedure: []
-    assertions:
-      - "허용 작업 1개와 금지 작업 1개를 실제 identity로 재현"
-      - "파일/네트워크/tool 항목 중 검증된 범위와 미검증 범위를 구별"
-      - "일반 오류를 정책 거절로 단정하지 않고 policy decision/관찰 증거를 결합."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P1-007B"
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 다영 환경에서 합성 자원으로 allow/deny·취소 후 상태를 관찰, credential 값은 기록하지 않음.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  - 존재하는 합성 sentinel과 실제 정상 응답하는 통제 endpoint 준비; 미지원 runtime/설치 미완료는 not_run/blocked, 일반 오류를 deny 성공으로
+    처리 금지.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/integration/test_openshell_live.py
+  timeout_seconds: 180
+  procedure: []
+  assertions:
+  - '허용 작업 1개와 금지 작업 1개를 실제 identity로 재현. E2E-05: 존재 확인한 합성 sentinel과 별도 health 확인한 허용/비허용 로컬 endpoint를
+    대상으로 실제 역할별 파일/네트워크/승인 CPU tool allow/deny를 검증'
+  - 파일/네트워크/tool 항목 중 검증된 범위와 미검증 범위를 구별. OpenShell OS 경계와 Supervisor 메시지 라우팅 경계는 별도 판정하며 worker→worker
+    거절 및 worker→Supervisor 정상 전달을 각각 기록
+  - 일반 오류를 정책 거절로 단정하지 않고 policy decision/관찰 증거를 결합. sandbox/agent/policy ID, 감사 기록, cold 준비/warm 실행/거절
+    지연·시도 예산을 연결; 파일 부재/endpoint 다운을 정책 차단으로 집계하지 않고 판단 불가는 inconclusive
+  runner: pytest
+evidence_dir: .agent/evidence/P1-007B
 latest_evidence_file: null
 verification_summary:
-  state: "not_run"
+  state: not_run
   spec_revision: null
   spec_digest: null
   contract_digest: null
   source_fingerprint: null
   evidence: null
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: pending
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 1
-spec_revision: 1
+revision: 2
+spec_revision: 2
 claim_generation: 0
 claim: null
 attempts:
@@ -148,21 +156,26 @@ attempts:
   no_progress_count: 0
   latest_attempt: null
   evidence_refs: []
+  approaches: []
 blocker:
-  cause: "real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음."
+  cause: 'real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial
+    fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음.'
   evidence:
-    - "docs/archive/TASKS_2026-09-26.md"
-  resolve_when: "준비 task 완료 + 사용자 제공 실제 설정/권한 + 지원 서비스 접근성 확인. 해당 real 검증만 막으며 P0/local 준비는 계속한다."
+  - docs/archive/TASKS_2026-09-26.md
+  resolve_when: 준비 task 완료 + 사용자 제공 실제 설정/권한 + 지원 서비스 접근성 확인. 해당 real 검증만 막으며 P0/local 준비는 계속한다.
   affects: []
 migration:
-  original_status: "blocked"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P1-007B"
-  prior_claim: "real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: blocked
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-007B
+  prior_claim: 'real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial
+    fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음.'
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T02:58:21.356Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T06:55:58+00:00'
+concise_result: 'Specification changed: E2E-05 실제 sandbox 증거를 기존 real gate에 연결; 같은 PC의 로컬 runtime 경계임을
+  명확히 하고 mock 대체 금지'
+next_action: 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.

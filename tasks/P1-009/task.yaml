@@ -9,6 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
+- RFA_E2E_Test_Scenarios_10_ko.md
 priority: P1
 status: todo
 spec_state: ready
@@ -26,6 +27,8 @@ scope:
     않음.
   - P0-028의 실제 NAT 경로 증거 또는 blocker를 조회하되 그 완료를 보고 작업의 선행으로 강제하지 않음. 기존 제출 gate 축소 금지. core24h+추가4.5h의
     병렬 용량 부족을 숨기지 않음.
+  - RFA_E2E_Test_Scenarios_10_ko.md 10개 전체 및 필수/선택 variant의 actual evidence/status를 최종 보고. API/UI, controlled/real-model/real-integration,
+    기능/보안/품질/성능 gate 분리; 미실행 실연동이 있으면 전체 제품 real E2E 완료 아님.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -39,6 +42,7 @@ scope:
   - src/rfa_mas/contracts
   - src/rfa_mas/ports/interfaces.py
   - docs/EVALUATION_CONTEXT.md
+  - RFA_E2E_Test_Scenarios_10_ko.md
   planned_paths:
   - docs/DEMO.md
   shared_resources:
@@ -72,6 +76,9 @@ context:
   - path: docs/EVALUATION_CONTEXT.md
     section: F/G / 설정과 일정 — gate·공수 보고
     reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  - path: RFA_E2E_Test_Scenarios_10_ko.md
+    section: 공통 실행 조건·3. 실행 순서/결과 보고
+    reason: 최종 검증 누락 없이 실제/모의·미측정 수치 구분
   handoff: tasks/P1-009/handoff.md
   dependency_results:
   - tasks/P0-026/handoff.md
@@ -102,7 +109,8 @@ acceptance_criteria:
 - id: AC3
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
   expect: 권한·승인 무효화·중복·복구·canary gate 실패를 성능 점수로 덮지 않음; local(P0-026)/NAT/real technology/teammate gate를
-    개별 표시하고 보고서 작성 완료를 제품 전체 통과로 표현하지 않음
+    개별 표시하고 보고서 작성 완료를 제품 전체 통과로 표현하지 않음 E2E-01~10 scenario/variant 표, 최소 반복/n·장비/버전·원시 지연·토큰 null·Judge
+    미실행·UI 미검증을 명시하며 실제 성능 기준을 사후 낮추지 않는다.
   required: true
 - id: AC4
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -153,8 +161,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 4
-spec_revision: 4
+revision: 5
+spec_revision: 5
 claim_generation: 0
 claim: null
 attempts:
@@ -176,6 +184,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T03:49:35+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T06:54:37+00:00'
+concise_result: 'Specification changed: 사용자 지정 E2E 원문 10개를 기존 final_acceptance에 연결; 3회 controlled·실제 kill/restart·100요청
+  부하·real/UI 개별 gate 유지. P0-026 검증 공수 1h→4h로 명시 확대'
 next_action: 변경된 adapter 대상 회귀 + 최종 합성 데모, 링크/교육-task-file 매핑 확인. 새 코드가 없으면 문서 검증만.

@@ -9,15 +9,14 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
+- RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
 status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: coordinator
-estimated_effort: 1.0
+estimated_effort: 4.0
 product_owner: 민섭
 execution_class: 이 저장소 구현
 product_mode: 기존 query→draft demo만 verified; 새 경로 missing/not_run. local 로직 + mock 결과(true). 외부 의존 없음;
@@ -28,6 +27,15 @@ scope:
     payload·버전 변경 이력·통합 smoke 절차. NVIDIA/Skill resource/readiness 준비 항목 포함, 실제 실행 주장은 별도.
   - 합성 입력→권한 context 선택→팀 선택/재사용→역할 근거→공격/비공개 처리→public DRAFT→정확한 승인→게시 결과의 safe UI용 report. 기존 복구/예약/canary
     gate 유지; NAT 없는 local 완주와 installed NAT/real peer는 별도 집계.
+  - E2E-01/02/03/04/06/07/08/09의 controlled API 통합과 E2E-10 실제 앱 subprocess 중단/재시작·100요청 부하를 기존 final_acceptance에서
+    검증한다. E2E-05 실제 OpenShell gate는 P1-007B, UI/real-peer는 P1-008A/B로 연결하고 mock 결과로 대체하지 않는다.
+  - R01~R10·R01-v2·R05-closed·R06-attack·M01, persona 4종, 20/1000문서 고정 seed·clock, golden 질문 20개와 허용 source
+    분모를 fixtures/e2e에 고정한다. 최소 3회 controlled 핵심 사례 반복; 도구/게시 sink와 실제 API 경로 사용. 테스트 파일·명령은 구현 전 planned.
+  - '초기 성능 기준을 실행 전에 acceptance_config.json에 고정: ACK/진행 2s, 검색 반영 30s, 1000문서 검색 5s, 실제 모델 응답 30s, 소형
+    팀 180s, schedule tick 지연 5s, restart health 후 조회 10s, 지원 tool cancel 5s, worker 상한 2. 소표본 median/max/n,
+    별도 정상부하 n=100 p50/p95. 실패 후 기준 하향 금지; 실제 provider 지연 포함.'
+  - 원문에 있는 선택 Debate/auto Task/rebuild만 미구현 시 variant not_run 허용. 기억 M01·권한·중복·취소·복구 등 필수 기능을 선택으로 바꾸지
+    않는다. real model/embedding/reranker/Judge 및 실제 runtime 검증은 별도 gate와 실제 버전/실행 증거로 판정한다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -39,15 +47,24 @@ scope:
   - fixtures/demo/materials.jsonl
   - tests/test_demo_e2e.py
   - docs/DEMO.md
+  - fixtures/e2e
+  - tests/e2e/test_rfa_scenarios.py
+  - tests/e2e/test_process_recovery.py
+  - tests/e2e/test_load.py
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/contracts
   - src/rfa_mas/ports/interfaces.py
   - docs/EVALUATION_CONTEXT.md
+  - RFA_E2E_Test_Scenarios_10_ko.md
   planned_paths:
   - fixtures/demo/materials.jsonl
   - tests/test_demo_e2e.py
   - docs/DEMO.md
+  - fixtures/e2e
+  - tests/e2e/test_rfa_scenarios.py
+  - tests/e2e/test_process_recovery.py
+  - tests/e2e/test_load.py
   shared_resources:
   - contract-docs
 depends_on:
@@ -72,6 +89,9 @@ depends_on:
 - id: P1-006E
   condition: integrated_done
   required_output: 4종 공격·정상 대조·outbound/write 관찰 verifier 통합
+- id: P1-005B
+  condition: integrated_done
+  required_output: E2E-09 M01의 사용자 확인·scope·revision·새 세션 적용 및 철회 경계
 contract_refs:
 - id: RFA-DTO
   version: '1.0'
@@ -79,7 +99,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
   role: consumer
 context:
   global_refs:
@@ -104,6 +124,9 @@ context:
   - path: docs/EVALUATION_CONTEXT.md
     section: F/G — 기존 최종 흐름 보강
     reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  - path: RFA_E2E_Test_Scenarios_10_ko.md
+    section: 공통 조건·E2E-01~10·실행 결과 보고
+    reason: 사용자가 전체 개발 후 반드시 검증하도록 지정한 원본 시나리오; API/UI/real 및 성능 gate 구분
   handoff: tasks/P0-026/handoff.md
   dependency_results:
   - tasks/P0-021/handoff.md
@@ -113,6 +136,7 @@ context:
   - tasks/P1-008/handoff.md
   - tasks/P1-001B/handoff.md
   - tasks/P1-006E/handoff.md
+  - tasks/P1-005B/handoff.md
 deliverables:
 - path: src/rfa_mas/cli.py
   availability: existing
@@ -137,26 +161,47 @@ deliverables:
 - path: docs/DEMO.md
   availability: planned
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: fixtures/e2e
+  availability: planned
+  description: 10개 자료·변형·4persona·golden20·1000문서 seed 및 실행 전 acceptance_config; 실제 값·비밀 제외
+- path: tests/e2e/test_rfa_scenarios.py
+  availability: planned
+  description: 원문 시나리오에 연결된 실제 API/process/load 검증; 현재 미구현/not_run
+- path: tests/e2e/test_process_recovery.py
+  availability: planned
+  description: 원문 시나리오에 연결된 실제 API/process/load 검증; 현재 미구현/not_run
+- path: tests/e2e/test_load.py
+  availability: planned
+  description: 원문 시나리오에 연결된 실제 API/process/load 검증; 현재 미구현/not_run
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: 합성 저장→권한/context 선택→Benchmark/Research 팀 선택·재사용→역할 근거·후보→공개 DRAFT→정확한 mock 승인/게시 결과를 키/GPU/Docker/NAT
-    없이 완주; 실험 measured/mock/not_run 표시
+  expect: '합성 저장→권한/context 선택→Benchmark/Research 팀 선택·재사용→역할 근거·후보→공개 DRAFT→정확한 mock 승인/게시 결과를 키/GPU/Docker/NAT
+    없이 완주; 실험 measured/mock/not_run 표시. E2E-01/02/03: 20개 ingest 부분 실패·upsert·출처, 10.0→8.2ms 지연 18% 감소/정확도
+    0.2%p 하락 assertion, checksum 미확인·6ms 가설 구분, golden20 Recall@5와 핵심 사실 정확도 목표90%/인용 precision, 팀 중복0·재사용·CPU
+    계산/미실측 구분.'
   required: true
 - id: AC2
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: 새 프로세스 승인 대기·일정 복구, 동일 이벤트 team/tool/draft 중복 없음
+  expect: '새 프로세스 승인 대기·일정 복구, 동일 이벤트 team/tool/draft 중복 없음 E2E-04/10: fixed-clock tick/replay·coalescing과
+    완료 issue 제외/설명 가능한 순위, 체크포인트 도달+진행 중 tool 확인 후 실제 subprocess kill/restart, 4세션/2팀/전체 worker≤2, 승인·팀·일정
+    보존, 실제 worker 취소·자원 회수 및 다른 세션 응답 확인.'
   required: true
 - id: AC3
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: DRAFT 수정/권한 회수 후 이전 승인 무효, 공개 DTO/알림/trace canary 없음; 동일 입력세트의 정상/공격 경계를 실제 replay하고 주입 도달/성공·차단·unknown·승인
-    위반·outbound/write를 분리, 차단 후 공개 근거로 작업 계속
+  expect: 'DRAFT 수정/권한 회수 후 이전 승인 무효, 공개 DTO/알림/trace canary 없음; 동일 입력세트의 정상/공격 경계를 실제 replay하고 주입 도달/성공·차단·unknown·승인
+    위반·outbound/write를 분리, 차단 후 공개 근거로 작업 계속 E2E-06/07/08/09: persona별 read/share/egress+cache/metadata
+    제한, 공격4종 도달/실제 sink+write/정상 보안설명 대조, 인증 callback·본문/대상/첨부/정책 변경·ACK유실 조회·중복/역순 callback, R01-v2 최신날짜/권한철회
+    즉시 차단/요약·cache무효화, M01새세션 반영과 보안정책 불변.'
   required: true
 - id: AC4
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
   expect: 제공 명령을 임시 데이터 경로에서 실행 후에만 README에 사용 가능 표시, 증거에 local/mock/real/not_run 기록. Run에 source/policy/approval/receipt가
     연결된 화면용 DTO/report를 제공(UI 구현 제외). 실제 latency·token 수집 범위/null, code/contract/model/prompt/template/fixture/policy
-    versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님
+    versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님 원문 E2E-01~10
+    scenario/variant별 기능·보안·품질·성능·실제연동 상태 및 증거 표 필수. API만 있으면 UI E2E not_run. 임계값/장비/버전은 실행 전 고정; controlled
+    core≥3회, real 대표≥3회, load n=100, 지연·CPU/RSS·context 문자/실측 token/null·queue 기록. 성능 미달/미실행을 기능 테스트 pass와
+    혼합하지 않는다.
   required: true
 verification:
 - id: V1
@@ -190,6 +235,93 @@ verification:
     연결된 화면용 DTO/report를 제공(UI 구현 제외). 실제 latency·token 수집 범위/null, code/contract/model/prompt/template/fixture/policy
     versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님
   runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 선행 제품 API/fixture와 해당 planned 테스트 파일 구현 후 임시 DB/포트/namespace에서 실행; 실제 .env와 운영 자료 사용 금지.
+  - 원문 E2E 합성 seed/clock/threshold 고정; 테스트 skip/error/미수집은 pass 아님. 실제 UI/서비스 gate는 별도.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/e2e/test_rfa_scenarios.py
+  timeout_seconds: 600
+  procedure: []
+  assertions:
+  - E2E-01/02/03/04/06/07/08/09를 실제 controlled API/graph/DB와 합성 transport에서 독립 fixture로 핵심 사례 각3회 재생한다.
+  - R01~R10·변형/M01, 숫자·권한·공개 근거·정확 승인·outcome_unknown·실제 sink/write·정상 대조 assertion 통과; 품질/성능은 실제 측정 별도.
+  - 20 golden의 허용 source 기준 Recall@5와 인용 precision, loading 단계·토큰 null/측정 단위를 보고하며 금지 전송/중복/승인 위반은 보안
+    gate 실패.
+  runner: pytest
+- id: V3
+  ac_ids:
+  - AC2
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 선행 제품 API/fixture와 해당 planned 테스트 파일 구현 후 임시 DB/포트/namespace에서 실행; 실제 .env와 운영 자료 사용 금지.
+  - 원문 E2E 합성 seed/clock/threshold 고정; 테스트 skip/error/미수집은 pass 아님. 실제 UI/서비스 gate는 별도.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/e2e/test_process_recovery.py
+  timeout_seconds: 600
+  procedure: []
+  assertions:
+  - E2E-10의 checkpoint/진행 중 tool 도달 증거 뒤 앱 subprocess를 실제 중단/재기동하고 상태/소유권·중복 방지·스케줄 coalescing을 확인한다.
+  - 취소는 실제 tool 종료/자원 회수로 검사; 미지원 runtime은 pending이며 신규 부작용 차단, queue와 다른 세션 응답 유지.
+  runner: pytest
+- id: V4
+  ac_ids:
+  - AC2
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 선행 제품 API/fixture와 해당 planned 테스트 파일 구현 후 임시 DB/포트/namespace에서 실행; 실제 .env와 운영 자료 사용 금지.
+  - 원문 E2E 합성 seed/clock/threshold 고정; 테스트 skip/error/미수집은 pass 아님. 실제 UI/서비스 gate는 별도.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/e2e/test_load.py
+  timeout_seconds: 600
+  procedure: []
+  assertions:
+  - 정상 controlled n=100 부하를 장애 구간과 별도로 실행하고 실제 p50/p95·성공/오류·queue·CPU/RSS·전체 worker≤2를 기록한다.
+  - 1000문서 warm 검색과 수락/팀/예약/restart/cancel의 사전 설정 목표를 실제 측정, provider 지연/unknown usage를 숨기지 않는다.
+  runner: pytest
+- id: V5
+  ac_ids:
+  - AC4
+  type: manual
+  availability: planned
+  prerequisites:
+  - V1~V4 실제 evidence와 원문10개 시나리오/variant matrix
+  cwd: .
+  argv: []
+  timeout_seconds: 600
+  procedure:
+  - 원문 각 시나리오/variant를 evidence와 대조하고 API/UI·controlled/real-model/real-integration 상태를 확인.
+  - E2E-05는 P1-007B 실제 sandbox allow/deny 또는 구체적 not_run blocker, 실제 모델은 P1-002A, UI/원본 승인 게시·runtime은
+    P1-008A/B를 연결. 보고서 완료를 전체 real E2E pass로 바꾸지 않음.
+  assertions:
+  - 10개 제목 등록만으로 완료되지 않으며 필수 실제 gate 미검증을 명시한다.
+  - 비밀 원문 없는 attempt/source/version/명령/시간/assertion·성능 원시 값·실패 재현/후속 task가 연결된다.
+  runner: manual
 evidence_dir: .agent/evidence/P0-026
 latest_evidence_file: null
 verification_summary:
@@ -208,8 +340,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 5
-spec_revision: 5
+revision: 6
+spec_revision: 6
 claim_generation: 0
 claim: null
 attempts:
@@ -231,7 +363,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T06:46:42+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T06:54:34+00:00'
+concise_result: 'Specification changed: 사용자 지정 E2E 원문 10개를 기존 final_acceptance에 연결; 3회 controlled·실제 kill/restart·100요청
+  부하·real/UI 개별 gate 유지. P0-026 검증 공수 1h→4h로 명시 확대'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.
