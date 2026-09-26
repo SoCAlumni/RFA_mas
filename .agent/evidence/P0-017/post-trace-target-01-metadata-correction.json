@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "kind": "immutable_evidence_metadata_correction",
+  "task_id": "P0-017",
+  "reviewer": "session_review (delegated rfa-coordinator)",
+  "recorded_at": "2026-09-26T10:51:11+00:00",
+  "corrects": ".agent/evidence/P0-017/post-trace-target-01/result.json",
+  "field": "report.environment.nat",
+  "original_label": "nvidia-nat1.8.0 installed (actual package metadata)",
+  "reason": "After genuine required pytest and contract checks passed, supplemental metadata probe used nonexistent distribution name nvidia-nat. It failed with PackageNotFoundError; recorder incorrectly retained shorthand installed version label. Original immutable report is preserved, and this correction explicitly supersedes that field only.",
+  "failed_probe": {
+    "distribution": "nvidia-nat",
+    "exit_code": 1,
+    "error": "importlib.metadata.PackageNotFoundError: No package metadata was found for nvidia-nat",
+    "effect": "No network/source/environment mutation; Python3.12.13 and SQLite3.53.1 did print before the metadata lookup failed."
+  },
+  "correction_probe": {
+    "argv": [
+      ".venv/bin/python",
+      "-c",
+      "import sys,sqlite3,importlib.util,importlib.metadata; print(\"python=\"+sys.version.split()[0]); print(\"sqlite=\"+sqlite3.sqlite_version); print(\"nat_module_installed=\"+str(importlib.util.find_spec(\"nat\") is not None)); print(\"nvidia-nat-langchain=\"+importlib.metadata.version(\"nvidia-nat-langchain\")); print(\"nvidia-nat-core=\"+importlib.metadata.version(\"nvidia-nat-core\"))"
+    ],
+    "cwd": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+    "environment": "env -i PATH=/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "exit_code": 0,
+    "actual_output": "python=3.12.13\nsqlite=3.53.1\nnat_module_installed=True\nnvidia-nat-langchain=1.8.0\nnvidia-nat-core=1.8.0\n"
+  },
+  "corrected_label": "NAT module installed; declared nvidia-nat-langchain1.8.0 and nvidia-nat-core1.8.0 confirmed by actual package metadata.",
+  "unchanged_evidence": "Declared target V1 genuinely passed56 in0.16s; worker passed56 in0.23s. Both frozen9-fixture and extended7-fixture checks passed. Product/source/spec fingerprints and test output unchanged. No product test retry required; no actual NAT production/provider claim.",
+  "root_coordination": "Root authorized a separate immutable correction note, not overwriting evidence or rerunning product tests. Main HEAD remains35f43400c57641dea9ab8397b018a98d7f5bea8b."
+}

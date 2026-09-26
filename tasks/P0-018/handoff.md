@@ -1,13 +1,19 @@
-# P0-018 — post-settings no-code revalidation
+# P0-018 post-trace historical revalidation
 
-Goal/AC1–3: revalidate the existing approved-template selector at frozen main715db79142da1456a2fb1aae208d107d35b53a76 after P0-017 supported settings/bootstrap changes. No source edits, new product feature or contract publication. Original selector commit6973cfe and prior selector/stable-main evidence and integration remain historical and preserved.
+## Goal and AC
 
-Inspection: task had no claim and historical integrated/stale reservation. Reviewed stable-main-target-01 result/source plus submission hashes and ancestor commit. No task implementation/test process found. Feature task/P0-018 was clean at4f808b0; advanced ff-only to715db79, then confirmed clean. Owned selector files and contracts/INTEGRATION are unchanged between these revisions. Root source/HEAD/WORK_LOG stay frozen; only task-control updates are authorized. Feature interpreter remains Python3.12.13/SQLite3.50.4; target uses patched SQLite3.53.1. No environment changes or actual .env reads.
+Revalidate existing selector AC1–AC3 against frozen main `35f43400c57641dea9ab8397b018a98d7f5bea8b` and published additive RFA-EXTENDED 1.1 digest `37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a`. No product change or new claim of functionality.
 
-Interfaces remain unchanged: server-pinned immutable TemplateRegistry; authenticated identity and server grants/runtime/budget intersection; deterministic Benchmark/Research, no Engineering/unapproved version selection. Returned approved template remains separate from execution_budget; P0-019 must enforce it and refresh current grants. Hashes/DTOs are not authorization proofs.
+## Current facts and decisions
 
-Worker post-settings-worker-01 actually passed 2026-09-26T09:38:40–09:38:43Z: V1 selector53 (0.07s); supplemental contracts64 (0.61s); frozen v1.0 schemas/OpenAPI and9 fixtures valid; extended7 fixtures valid. No skips/failures/errors, source clean. Evidence: .agent/evidence/P0-018/post-settings-worker-01/result.json. No source commit was needed because source is unchanged.
+- Historical implementation and post-settings worker/target evidence remain preserved. Previous target HEAD715db79 is ancestor of current main.
+- Source `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018`, branch `task/P0-018`, is ff-only advanced to35f4340 and clean. Locked default uv sync rebuilt only editable package.
+- Existing feature Python3.12.13/SQLite3.50.4 is retained for pure selector tests; canonical root uses patched SQLite3.53.1. No environment replacement, source edit, or commit is required.
+- Existing approved template artifact/pins and execution budget behavior remain unchanged. This does not implement TeamFactory/runtime sandbox, NAT, or live provider execution.
+- No active previous selector process, unintegrated changes, or pending side effects were found. Other task claims are not changed.
 
-Next first action: submit unchanged source, independently capture post-settings-target-01 and rerun exact V1 plus contract checks on canonical715db79; integrate/close only after target pass. Target revalidation is still not_run.
+## Verification and next action
 
-Limits: local pure selector and schema compatibility only. Not team provisioning, GPU/runtime execution, real NVIDIA/NAT/OpenShell, SQLite WAL concurrency or full RFA E2E. Historical failure/fix evidence is preserved; tests will not be replaced by old pass counts.
+Worker `post-trace-worker-01` actual results: V1 selector53 passed0.06s; supplementary contract64 passed0.60s; frozen9 and extended7 fixture shapes valid. Commands ran with `env -i PATH=/usr/bin:/bin`, normal pytest plugins, no keys/.env/network. Exact task assertions are attested in immutable result with actual output and source manifest. No errors or retries.
+
+Next first action: submit unchanged35f4340 feature with worker evidence, then capture fresh `post-trace-target-01` and independently rerun the same bounded checks in canonical root. Target is not yet run at this handoff. Preserve all historical evidence; no whole-suite repetition. After target pass, delegated coordinator integrates/closes and parent records final facts in Git work log.

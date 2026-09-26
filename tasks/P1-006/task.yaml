@@ -12,27 +12,58 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
 status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: worker
-estimated_effort: 1.0
+estimated_effort: 2.0
 product_owner: 민섭
 execution_class: 본인 LLMOps
-product_mode: evaluate_case·기존 fixture schema만 verified; 새 matrix/runner missing/not_run. 규칙 local(false),
-  MockJudge(true), actual-test-judge는 test double. 실제 Judge/Langfuse 없이 완료; P1-006A/B/C는 별도 공수.
+product_mode: 기존 evaluate_case/24 fixture 유지. 구현 예정인 native 합성 실행·관측 verifier는 local이며 MockJudge/test
+  sink는 simulated이다. 평가기 검증과 12개 제품 시나리오 verdict를 분리한다. 미수집/미구현 조건은 unknown/not_run이며 실제 Judge·NAT·승인/게시·OpenShell
+  검증이 아니다.
 scope:
   included:
-  - 기존 evaluate_case/JudgePort/24 fixture는 보존. 새 핵심 12사례 및 변형을 docs/EVALUATION_CONTEXT.md C에 맞춰 추가; source/outbound/write/approval
-    관찰 레코드 기반 verifier와 planned rfa evaluate 진입점.
-  - trace exporter는 P1-006D로 분리. 새 24사례 확장/actual 비교는 P1-006B에 유지; 설치/키/NAT/팀원 서비스 없이 이 task의 fixture
-    검증 실행.
+  - load_evaluation_cases/deterministic_rule_checks/evaluate_case와 기존24 ID를 호환 유지한다. EvaluationCaseV11/EvalResultV11/ObservationLedger/JudgePort를
+    재사용하고 공통 DTO를 복제하거나 변경하지 않는다. evaluation.py 안의 작은 내부 fixture/관찰/report 모델은 기존 DTO를 감싸며 공개 계약 원본을 만들지
+    않는다.
+  - persona_core_v1.jsonl에 C01~C12, dataset/seed, identity_fixture_id, 기존 case ID crosswalk, 시나리오·변형·필수
+    관찰을 정의한다. 같은 질의의 본인/프로젝트 동료/다른 조직/외부인을 신뢰된 fixture identity registry에 매핑한다. 외부인은 회사·membership 없는
+    인증 fixture이며 persona 문자열이나 material_scope.memberships를 인증 근거로 사용하지 않는다.
+  - 전용 임시 DB/checkpoint와 명시적 mock/local 설정에서 실제 WorkService.run/resume을 호출한다. service.observations.ledger(run_id,
+    principal)의 immutable observation_id/sequence/coverage를 소비한다. JSONL line 수는 at-least-once export이므로
+    호출/게시 횟수의 원본으로 사용하지 않는다. native request/result ID와 ledger alias가 다름을 존중하고 이미 권한 확인된 실행 handle로 연결한다.
+  - 허용 source·금지 도구·outbound·승인 binding은 실제 경계에 설치한 in-process spy가 수신한 보호된 합성 요청/결과로 판정한다. 조회 결과나 trace
+    문자열만으로 Model/Tool 전송 여부를 추정하지 않는다. raw 인자·본문·승인 payload는 검증 중 메모리에만 두고 보고서에는 판정·고정 사유·안전한 관찰 참조만 남긴다.
+  - 실제 합성 sink 수신 후 observations.scope 안에서 record_test_sink(received=True)를 호출한다. origin=test_sink/provider_kind=test와
+    보호된 receipt의 출처를 유지한다. 테스트 sink는 MockTool.write나 실제 Response publication을 활성화하지 않으며 승인 서비스/게시 엔진을
+    새로 구현하지 않는다. 변조·위조한 음성 기록은 evaluator_negative_fixture provenance로 구분하고 native 실행 증거로 집계하지 않는다.
+  - rule별 pass/fail/error/unknown/not_run 및 required 여부를 내부 report에 보존한다. 확인된 위반은 fail, 필수 증거 누락·coverage
+    uncollected/incomplete는 unknown/error이다. EvalResultV11.rule_checks에는 실제 확인된 boolean만 넣으며 unknown을
+    True로 대체하지 않는다. 필수 규칙 전체의 증거가 있어야 rule_status=pass이고 failure/unknown은 높은 Judge 점수로 상쇄하지 않는다.
+  - C01~C07은 실제 source/identity 관찰과 기대 업무 결과를 검사하고 정상 deny는 기대 결과로 성공 판정할 수 있다. C08~C12의 미승인·정확한 binding·변경·권한회수·중복·timeout
+    요구를 삭제하지 않는다. 현재 Tool/publish/internal_nodes는 uncollected이고 원본 approval/publication ID는 null이다. C06
+    충돌 처리, C10 첨부, C11 cache/과거 결과 무효화 등 미구현 제품 조건은 unknown/not_run 또는 실제 관찰된 기능 실패로 보고한다. fixture verifier
+    테스트 통과를 12개 제품 흐름 통과로 바꾸지 않는다.
+  - 기존 evaluate_case의1.0 결과 의미를 유지하며 새 관찰 평가 경로는 Judge disabled/no-result/skip을 not_run, enabled call
+    예외/invalid assessment를 error로 표현한다. EvalResultV11의 inherited 제약에 따라 judge_kind=not_run, executed=false,
+    score/dimensions/adapter=null은 완료된 assessment 없음이고, 내부 report의 judge_attempted는 실제 호출 유무를 별도로 기록한다.
+    규칙 결과는 보존한다. 기존 MockJudge의3개 차원만 실제 simulated score로 보고하고 표현/팀 선택 등 미지원 차원은 미검증이다.
+  - 실제 Judge adapter는 이 task에서 활성화하지 않는다. 허용된 합성/공개 fixture 및 endpoint egress 승인 없는 외부 Judge 호출은 시작하지
+    않는다. test double이 actual이라고 반환해도 보고서 provenance는 test_double이며 실제 LLM 또는 사용자 만족도 증거로 표시하지 않는다. 품질
+    gate는 mock 점수만으로 verified가 되지 않는다.
+  - planned CLI는 rfa evaluate --dataset persona-core-v1 --judge disabled|mock 이다. evaluation 분기는 일반 Settings()/dotenv
+    생성 전에 처리하고 trusted init-only settings와 private TemporaryDirectory를 사용한다. 이 경로의 --env-file/실제 provider
+    선택은 거절하며 기존 api/demo/doctor 명령 동작을 유지한다. stdout은 안전한 집계/report만 출력한다. 모든 required rule이 확인된 pass일
+    때만 local-rule exit0, 관찰된 위반은1, 실행 오류/필수 증거 누락은2이다. exit0도 final product/semantic quality pass가 아니다.
+  - report는 case/scenario/변형·identity fixture·dataset/seed·evaluator/rubric·code/policy/source 및 실제 사용한
+    model/prompt 버전·관찰 참조·실행 모드·gate를 연결한다. 존재하지 않는 버전은 null/not_run으로 보존한다. 재현성은 고정 fake/seed의 판정·행동
+    횟수·binding을 비교하며 random alias/실제 latency/timestamp 동일성을 요구하지 않는다.
   excluded:
-  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
-  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
-  - NAT adapter/레드팀 주입/KB loader/실제 Judge 구현; full graph 성공은 P0-026에서 별도
+  - 다른 제품 task의 기능 구현, 외부 게시/배포, 실제 .env·credential 접근
+  - 공통 DTO/ports/settings/lock/bootstrap/graph/관측 recorder 수정과 새 backend/framework
+  - 실제 Judge/NAT/레드팀 주입/KB loader 및 실제 승인·게시 원본 서비스 구현
+  - 기존24 사례 삭제·기존 P1-006B 확장/실측 비교 요구 또는 final_acceptance gate 축소
   owned_paths:
   - src/rfa_mas/application/evaluation.py
   - src/rfa_mas/cli.py
@@ -42,10 +73,17 @@ scope:
   read_only_paths:
   - src/rfa_mas/contracts
   - src/rfa_mas/ports/interfaces.py
+  - src/rfa_mas/application/observations.py
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/graphs
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/settings.py
   - src/rfa_mas/adapters/mock.py
   - src/rfa_mas/adapters/local.py
   - fixtures/eval/evaluation_cases.jsonl
+  - fixtures/eval/observation_cases.json
   - docs/EVALUATION_CONTEXT.md
+  - docs/INTEGRATION.md
   planned_paths:
   - tests/test_behavior_verifier.py
   - fixtures/eval/persona_core_v1.jsonl
@@ -64,31 +102,43 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: 37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a
   role: consumer
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
   - TASK_EXECUTION_RULES.md
   read:
-  - path: docs/archive/TASKS_2026-09-26.md
-    section: P1-006 — trace 버전 연결·24사례 규칙 runner·release gate
-    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
   - path: src/rfa_mas/application/evaluation.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: load_evaluation_cases/deterministic_rule_checks/evaluate_case
+    reason: 기존1.0 호환을 유지하며 draft-only 판정과 처리되지 않은 Judge 예외를 보강
   - path: src/rfa_mas/contracts/models.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: EvaluationCase/EvalResult/EvaluationCaseV11/EvalResultV11/ObservationLedger
+    reason: Judge error의 inherited validator와 관찰·평가 상태의 단일 DTO 원본
+  - path: src/rfa_mas/application/observations.py
+    section: Observations.ledger/scope/record_test_sink 및 coverage 집계
+    reason: trusted alias·실제 호출/intent·uncollected/incomplete·synthetic sink 경계
+  - path: src/rfa_mas/application/service.py
+    section: WorkService.run/resume/present_result
+    reason: 실제 native 경로를 재사용하고 checkpoint/승인 원본과 오류 투영을 우회하지 않음
+  - path: src/rfa_mas/cli.py
+    section: _parser/main의 Settings 초기화 이전 dispatch
+    reason: 합성 평가 명령은 실제 dotenv·사용자 DB·provider를 로드하지 않음
+  - path: src/rfa_mas/bootstrap.py
+    section: build_container 및 Container.startup/shutdown
+    reason: 격리된 기존 mock/local composition과 lifecycle만 사용
   - path: src/rfa_mas/adapters/mock.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: MockJudge/MockResponse/MockTool
+    reason: 구현된 품질3차원·simulation·write 거절을 보존
+  - path: fixtures/eval/evaluation_cases.jsonl
+    section: 기존24 ID·scope·Persona
+    reason: 기존 dataset을 변경하지 않고 새12사례 crosswalk를 작성
   - path: docs/EVALUATION_CONTEXT.md
     section: C — 작은 Persona 세트와 세 평가 축
-    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
-  - path: fixtures/eval/evaluation_cases.jsonl
-    section: 기존 ID/schema 및 Persona
-    reason: 기존 24 사례를 삭제하지 않고 새 핵심 dataset와 매핑
+    reason: C01~C12 제품 기대를 보존하며 미구현 gate는 unknown/not_run으로 보고
+  - path: docs/INTEGRATION.md
+    section: P1-006D 로컬 관측 소비 경계
+    reason: JSONL 중복·null stage ID·DB 원장·test sink 출처 제약
   handoff: tasks/P1-006/handoff.md
   dependency_results:
   - tasks/P0-014/handoff.md
@@ -96,39 +146,43 @@ context:
 deliverables:
 - path: src/rfa_mas/application/evaluation.py
   availability: existing
-  description: 독립 평가 runner/규칙·Judge error 처리 및 행위 관찰 테스트; 새 rfa evaluate 명령은 구현 검증 전 planned
+  description: 1.0 평가 API 보존, 1.1 관찰 평가·12사례 실행·행위 verifier·안전한 report 및 Judge 상태 분리
 - path: src/rfa_mas/cli.py
   availability: existing
-  description: 독립 평가 runner/규칙·Judge error 처리 및 행위 관찰 테스트; 새 rfa evaluate 명령은 구현 검증 전 planned
+  description: planned isolated rfa evaluate 분기; default Settings/실제 dotenv 이전 처리와 truthful exit code
 - path: tests/test_evaluation.py
   availability: existing
-  description: 독립 평가 runner/규칙·Judge error 처리 및 행위 관찰 테스트; 새 rfa evaluate 명령은 구현 검증 전 planned
+  description: 기존4평가 테스트 유지, Judge disabled/error/invalid/mock 및 실제 호출 여부·품질 미검증 회귀
 - path: tests/test_behavior_verifier.py
   availability: planned
-  description: 독립 평가 runner/규칙·Judge error 처리 및 행위 관찰 테스트; 새 rfa evaluate 명령은 구현 검증 전 planned
+  description: 실제 native flow/spy·합성 sink·위조 음성 기록/누락 증거/12case crosswalk/CLI privacy와 exit 검증
 - path: fixtures/eval/persona_core_v1.jsonl
   availability: planned
-  description: C01~C12 핵심 및 변형, 기존 ID와 crosswalk·dataset version·fixture identity·expected observation
+  description: C01~C12와 변경/timeout 변형, 명시된 identity/필수 관찰·dataset/seed·기존24 ID 대응
 acceptance_criteria:
 - id: AC1
-  given: 같은 질의를 본인/같은 팀/다른 조직/외부 fixture identity로 실행; C01~C12
-  expect: 허용 source/공유 범위가 다르고 persona의 팀장 주장은 권한을 바꾸지 않음. 기존 24 ID 보존, 새 12사례에 승인/갱신/충돌/중복/timeout 변형
-    포함
+  given: C01~C12·변형과 동일 질의의4 fixture identity, 기존24 ID
+  expect: 기존 ID/요구를 보존하며 identity registry가 허용 source/audience를 결정한다. persona 사칭은 권한을 바꾸지 않는다. 가능한 native
+    흐름을 실제 실행하고 미구현 조건은 unknown/not_run 또는 실제 실패로 남긴다. 승인/갱신/충돌/중복/timeout 요구를 삭제하거나 verifier 단위 성공을 전체12제품흐름
+    통과로 집계하지 않는다.
   required: true
 - id: AC2
-  given: 정답이 좋아 보이는 결과 또는 높은 Judge 점수와 의도적으로 잘못된 outbound/write ledger
-  expect: 허용 source/금지 tool/승인 전 write/중복 write/승인 payload 일치·egress를 결정적으로 검사; 위반 시 security gate 실패/runner
-    nonzero, 정상 deny는 성공 기대값으로 검사
+  given: 실제 ledger/port spy/synthetic sink 및 높은 Judge 점수, 위조·누락·중복·incomplete 관찰
+  expect: source/금지 tool/승인 전 write/정확한 payload·대상·policy binding/egress를 관찰된 경계에서만 판정한다. 위반은fail/exit1,
+    필수 증거 없음은unknown 또는error/exit2이며 정상 deny는 기대값으로 검사한다. test sink·negative fixture·native·real을 구분하고
+    uncollected Tool/publish를0회 또는승인완료로 만들지 않는다.
   required: true
 - id: AC3
-  given: Judge disabled/error/skip/근거 부족과 fake seed 고정
-  expect: rule 결과는 독립 보존, semantic gate not_run/error이고 가짜 passed/점수 없음. fake 관찰 재현, 실제 LLM 문장 동일성 요구
-    없음; quality는 근거성·유용성·요청 충족·표현·팀 선택 보조 평가
+  given: Judge disabled/no-result/skip/호출 오류/invalid assessment/MockJudge/test double 및 동일 fake/seed
+  expect: rule 결과를 보존하고 not_run/error에는 점수 없음; judge_attempted와 완료 assessment 여부를 구분한다. mock score는 simulated이고
+    actual 표기의 test double도 실제 LLM 근거가 아니다. 미지원 품질 차원과 semantic gate는미검증이다. 동일fixture/seed의규칙·행동·binding은재현되며
+    random IDs/latency/real LLM 문장 동일성은 요구하지 않는다.
   required: true
 - id: AC4
-  given: 실행 결과 report/trace export와 외부 Judge opt-in 조건
-  expect: case/scenario·evaluator/rubric·dataset/model/prompt/policy/source/code 버전과 실제 pass/fail/error/not_run·evidence
-    ref 기록. 원문·private·secret 미수집, actual/simulated 구분; synthetic QA를 사용자 만족도로 부르지 않음. 외부 Judge는 허가된 합성/공개만
+  given: CLI/report·canary·외부 Judge 설정 또는 무관한 실제 env가 있는 실행 환경
+  expect: 평가 분기는 default Settings/dotenv/실제provider 없이 격리 합성 설정으로 실행한다. report에 안전한case/version/provenance/evidence/status만
+    남고 raw본문·인자·키·임의error text는없다. 외부Judge opt-in/endpoint egress가 없으면호출하지 않고 기존CLI를보존한다. local-rule통과·제품final
+    gate·품질미검증을분리한다.
   required: true
 verification:
 - id: V1
@@ -140,8 +194,10 @@ verification:
   type: command
   availability: planned
   prerequisites:
-  - C01~C12 fixture·expected observation·verifier 구현, NAT/키/외부 service 없음
-  - 실제 .env 사용 없이 synthetic identity/seed 고정; forged write record와 Judge disabled/error double 포함
+  - planned persona_core_v1.jsonl과 tests/test_behavior_verifier.py 및 관찰 평가 runner 구현
+  - isolated temporary DB/checkpoint, init-only settings, fake provider와 synthetic identity; 실제 env/network
+    금지
+  - native spy/sink 관찰과 의도적 evaluator_negative_fixture 기록을 분리하며 미구현 제품 gate는 유지
   cwd: .
   argv:
   - .venv/bin/python
@@ -153,13 +209,35 @@ verification:
   timeout_seconds: 120
   procedure: []
   assertions:
-  - 허용 source/공유 범위가 다르고 persona의 팀장 주장은 권한을 바꾸지 않음. 기존 24 ID 보존, 새 12사례에 승인/갱신/충돌/중복/timeout 변형 포함
-  - 허용 source/금지 tool/승인 전 write/중복 write/승인 payload 일치·egress를 결정적으로 검사; 위반 시 security gate 실패/runner
-    nonzero, 정상 deny는 성공 기대값으로 검사
-  - rule 결과는 독립 보존, semantic gate not_run/error이고 가짜 passed/점수 없음. fake 관찰 재현, 실제 LLM 문장 동일성 요구 없음; quality는
-    근거성·유용성·요청 충족·표현·팀 선택 보조 평가
-  - case/scenario·evaluator/rubric·dataset/model/prompt/policy/source/code 버전과 실제 pass/fail/error/not_run·evidence
-    ref 기록. 원문·private·secret 미수집, actual/simulated 구분; synthetic QA를 사용자 만족도로 부르지 않음. 외부 Judge는 허가된 합성/공개만
+  - 기존24 ID와C01~C12요구/변형보존, fixture identity별 source/audience와사칭거절, 미구현제품gate 미통과
+  - 실제관찰에기반한규칙fail/pass, missing/incomplete unknown/error, sink/negative/native provenance와CLI exit검증
+  - Judge disabled/error/invalid/mock/test-double상태및호출수분리, score없는미검증과규칙독립성·fake재현성
+  - default Settings/dotenv/외부provider미사용, 보고서canary차단·버전/관찰참조·제품/품질gate분리
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: available
+  prerequisites:
+  - 기존관측·평가1.1계약은readonly이며 생성artifact를바꾸지않음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_trace_contract.py
+  - tests/test_trace_eval_contract.py
+  - tests/test_contract_baseline.py
+  - tests/test_api.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 기존trusted 관측/null-stage/coverage/재개/기밀경계와frozen1.0·extended schema/fixture·API회귀보존
   runner: pytest
 evidence_dir: .agent/evidence/P1-006
 latest_evidence_file: null
@@ -179,8 +257,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 9
-spec_revision: 9
+revision: 10
+spec_revision: 10
 claim_generation: 0
 claim: null
 attempts:
@@ -202,7 +280,9 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T10:24:58+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T10:40:38+00:00'
+concise_result: 'Specification changed: Accept implemented local observation API; preserve12product expectations
+  while distinguishing verifier tests, unavailable behavioral evidence and Judge quality. Isolate synthetic
+  CLI before dotenv/settings.'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

@@ -19,3 +19,13 @@ Next: capture worker source and rerun existing V1 plus API regression; unchanged
 
 Fresh worker result: V1 26 passed in1.45s (11 known durability warnings); API4 passed0.18s (2 same warnings), zero skips/failures/errors. Both bounded120sec. Evidence .agent/evidence/P0-015/post-settings-worker-01/result.json. Next target execution remains not_run at submission.
 
+
+## Post-trace35f4340 no-code revalidation
+P1-006D added durable observation migration2 and outward-only safe error projection; P0-014 now independently revalidated and closed. Feature P0-015 inspected clean and ff-only715db79→35f4340, exact default uv lock sync succeeded. No live old process, source changes or external effects. Prior post-settings results remain historical.
+
+Environment: worker Python3.12.13/SQLite3.50.4 retained; canonical target patchedSQLite3.53.1 with NAT1.8.0. Every pytest invocation now uses env -i with explicit PATH and normal plugin loading. No real .env/keys read. Current extended digest37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a; no new contract publication.
+
+Next: capture worker source, run declared V1 plus direct API regression, clean no-change submit, then separately capture/run canonical target and integrate/close. Root full-suite trace-cache isolation failure is a separate P0-019 follow-up, not erased or tested here. No final product E2E/live provider claim.
+
+Worker actual post-trace result: V1 sessions26 passed4.00s/11knownwarnings; direct API4 passed0.51s/2knownwarnings. Both zero skips/errors/failures with timeout120, env-i normal plugin autoload. Evidence .agent/evidence/P0-015/post-trace-worker-01/result.json. Source unchanged; no empty commit. Next target is not_run at submission.
+

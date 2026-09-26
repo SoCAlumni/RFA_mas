@@ -32,6 +32,16 @@ scope:
     재시도와 늦은 응답을 처리한다. cleanup 미확인·unknown·실패 슬롯은 새 팀으로 덮어쓰지 않는다.
   - RuntimePort prepare/cleanup의 LocalRuntime 구현과 부분 실패 fixture를 추가한다. HTTP 구현 전에는 명시적 unsupported이며 local로
     fallback하지 않는다. 역할 실행·예산 소진은 P0-020에 유지한다.
+  - bootstrap이 관찰 decorator 이전의 실제 configured RuntimePort와 신뢰된 lifecycle-support/expected-mode descriptor를
+    TeamFactory에 명시적으로 주입한다. Factory는 decorator의 prepare/cleanup 존재만으로 지원을 추정하거나 domain logic에서 .inner를
+    탐색하지 않는다. 지원 여부는 예약·재사용 전에 확인한다. 기존 graph run의 관측은 유지하고 Factory lifecycle trace는 명시적으로 미수집으로 둔다. 준비·정리
+    결과는 durable DB lifecycle 기록으로 검증하며 성공을 관측 실패/invalid_contract로 잘못 집계하지 않는다. observations.py나 trace
+    task 범위는 확장하지 않는다.
+  - 선행 P1-006D의 .agent/evidence/P1-006D/full-regression-01.json은 e634435 전체 회귀 532 passed/1 failed의 실제
+    기록이다. 합성 환경변수 변경 전에 LangSmith.utils.get_env_var 캐시에 이전 false가 남아 ambient tracing positive control이
+    실행되지 않은 독립적인 test-isolation 후속을 tests/test_trace_contract.py에서만 수정한다. 해당 합성-env 테스트 전후에 공개 env lookup
+    cache를 초기화하고 warm-cache/실행 순서 회귀에서도 원래 positive/negative assertion을 유지한다. 제품 guard·tracing_is_enabled·global
+    conftest는 변경하지 않는다. 이는 이전 immutable-draft 오류의 네 번째 retry가 아니며 기존 실패·증거를 보존한다.
   excluded:
   - 역할 graph 실행·실제 OpenShell 격리·UI·외부 게시·실제 env 접근
   - 승인 template/selector 소스 변경 및 frozen 1.0 계약 변경
@@ -46,6 +56,7 @@ scope:
   - tests/test_teams.py
   - tests/test_contracts.py
   - tests/test_sessions.py
+  - tests/test_trace_contract.py
   - docs/contracts/extended.json
   - docs/CONTRACT_CHANGELOG.md
   - docs/INTEGRATION.md
@@ -108,6 +119,12 @@ context:
   - path: src/rfa_mas/adapters/http.py
     section: RuntimeHttpAdapter
     reason: 준비 미지원 확인; 무음 local fallback 금지
+  - path: .agent/evidence/P1-006D/full-regression-01.json
+    section: counts/log_excerpt/next_action
+    reason: 실제 전체 회귀의 독립적인 LangSmith env cache test-isolation 실패; targeted 통과와 구분하고 기존 실패 보존
+  - path: tests/test_trace_contract.py
+    section: test_restart_resume_alias_sequence_and_native_ambient_guard와 해당 합성-env fixture
+    reason: 캐시 전후 초기화·warm/order 회귀만 한정 수정; positive/negative assertion 및 제품 guard 보존
   handoff: tasks/P0-019/handoff.md
   dependency_results:
   - tasks/P0-018/handoff.md
@@ -163,7 +180,8 @@ acceptance_criteria:
 - id: AC2
   given: 동일 owner의 같은 멱등 key 재전송 또는 다른 내용, 타인 Task/domain과 위조 선택·변형 예산·폐기된 승인 pin
   expect: 같은 내용은 기존 Task/team, 다른 내용은 conflict. 권한/승인 불일치는 runtime 호출 전에 거절하며 타인/없는 Task는 동일 안전한 오류이다.
-    caller decision을 권한으로 사용하지 않는다.
+    caller decision을 권한으로 사용하지 않는다. bootstrap이 주입한 실제 runtime 지원 descriptor로 lifecycle 지원 여부를 예약·재사용 전에
+    검사하며 decorator 메서드 존재를 지원 증거로 사용하지 않는다.
   required: true
 - id: AC3
   given: 같은 Task의 다른 session/run 및 DB 재시작 이후 요청
@@ -174,7 +192,10 @@ acceptance_criteria:
   given: 두 번째 member prepare 실패, timeout/unknown, cleanup 실패, 재전송과 늦은 응답, 잘못된 owner/spec/mode/budget/member를
     가진 schema-valid 또는 model_copy 변조 응답
   expect: 준비 성공/미실행/불명 및 cleanup 대상을 기록한다. 요청과 정확히 일치하지 않는 응답은 occupied/unknown으로 보존하며 타인 응답 ID로 cleanup하지
-    않는다. 부분 팀 실행·새 중복 팀을 금지하고 고정 key와 CAS로 상태를 보존한다. HTTP 미지원은 명시 오류이며 local fallback이 없다.
+    않는다. 부분 팀 실행·새 중복 팀을 금지하고 고정 key와 CAS로 상태를 보존한다. HTTP 미지원은 명시 오류이며 local fallback이 없다. Factory lifecycle은
+    durable DB 기록으로 확인하고 trace에는 명시적으로 미수집이며 기존 graph run 관측은 유지한다. 선행 전체 회귀에서 발견된 합성-env 테스트 캐시 격리는 테스트
+    전후 cache 초기화만으로 보수하고 warm/order 조건에서도 원래 tracer positive control과 native guard negative control이 모두
+    유지된다.
   required: true
 verification:
 - id: V1
@@ -204,6 +225,8 @@ verification:
   - member 부분 실패/unknown/cleanup 실패/늦은 응답을 기록하고 반쪽 실행·중복·silent fallback이 없다.
   - 같은 service 인스턴스에서 grant/pin 회수 후 재사용을 차단하고 schema-valid 타인 응답·mode/budget/member/model_copy 변조를 수용하거나
     타인 runtime을 cleanup하지 않는다.
+  - decorator의 lifecycle 메서드가 있어도 실제 configured runtime이 미지원이면 슬롯 예약·runtime IO 전에 거절한다. 지원되는 Factory는
+    주입된 원래 RuntimePort를 사용하며 준비·정리의 durable DB 결과와 trace 미수집을 구분한다. 기존 graph run 관측 경로는 보존한다.
   runner: pytest
 - id: V2
   ac_ids:
@@ -215,6 +238,9 @@ verification:
   availability: available
   prerequisites:
   - additive 1.1 schema export를 반영하고 frozen 1.0 baseline은 변경하지 않는다.
+  - tests/test_trace_contract.py의 합성-env fixture는 LangSmith.utils.get_env_var cache를 테스트 전후 초기화한다. 이전
+    false가 캐시된 warm/order 조건을 재현하되 tracing_is_enabled 대체·positive/negative assertion 완화·global conftest
+    변경은 하지 않는다.
   cwd: .
   argv:
   - .venv/bin/python
@@ -227,10 +253,13 @@ verification:
   - tests/test_team_selector.py
   - tests/test_sessions.py
   - tests/test_local_adapters.py
+  - tests/test_trace_contract.py
   timeout_seconds: 120
   procedure: []
   assertions:
   - 기존 selector/session/local adapter 회귀와 frozen/extended schema 및 fixture 검사가 통과한다.
+  - 앞선 테스트로 env lookup cache가 warm해진 실행 순서에서도 실제 fake tracer positive control이 실행되고 native run/resume에서는
+    생성되지 않는다. 테스트 종료 후 cache를 비워 다른 테스트에 상태를 남기지 않는다. 선행 full-regression-01 실패를 새 통과로 덮어쓰지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-019
 latest_evidence_file: null
@@ -250,8 +279,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 8
-spec_revision: 8
+revision: 9
+spec_revision: 9
 claim_generation: 0
 claim: null
 attempts:
@@ -273,9 +302,9 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T09:49:31+00:00'
-concise_result: 'Specification changed: Current TeamInstance validates shape only and selector snapshots
-  grants; require exact runtime result binding, no foreign cleanup, and invocation-time grants without
-  changing approved templates.'
+updated_at: '2026-09-26T10:34:29+00:00'
+concise_result: 'Specification changed: Use actual runtime lifecycle support before allocation; keep uncollected
+  lifecycle tracing honest. Bound post-trace full-suite failure to synthetic SDK env-cache isolation test,
+  preserving guard assertions.'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

@@ -535,3 +535,34 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   prepare/cleanup 메서드 존재만으로 내부 HTTP 지원을 추정하지 않는다. lifecycle DB
   기록과 아직 미수집인 lifecycle trace를 분리한다. KB는 그 다음 공유 migration 작업이다.
   실제 NVIDIA/Skill/NAT 제품 경로/OpenShell/NemoClaw 및 최종10개 시나리오는 미실행이다.
+
+## 추적 통합 후 기반 재검증·후속 구현 배정 — 2026-09-26
+
+- main35f4340을 고정한 worker/target 재검증: P0-014 각각14+50 tests 및 계약9+7,
+  P0-015 각각26+API4, P0-016 각각31+관련81, P0-017 각각56 및 계약9+7,
+  P0-018 각각53+계약64 및 fixture9+7, P0-027 각각 NAT설치8+실제미설치2 통과.
+  해당 `post-trace-worker-01`/`post-trace-target-01`의 source/result를 보존했다.
+  제품 소스 변경이나 선행 구현 재작성 없이 영향 범위만 다시 확인했다.
+- P0-014 첫 report는 선언 assertion 원문 대신 요약을 넣어 봉인 거절됐다.
+  뒤의 state 명령도 stale revision으로 거절되어 보호되었다. 실제 assertion과
+  최신 revision을 확인하고 제출했으며, capture 전에 실행한 target 검사는 공식
+  증거로 재사용하지 않고 capture 이후 다시 실행했다. 이 과정의 patch 형식 오류도
+  handoff/report에 보존한다. 테스트 실패를 은폐한 것이 아니라 운영 입력 오류다.
+- P0-017 target 테스트 후 `nvidia-nat`라는 잘못된 distribution 조회가 실패했다.
+  실제 선언 패키지 nvidia-nat-langchain/nvidia-nat-core 각각1.8.0을 확인했으며
+  원래 결과를 덮어쓰지 않고 `post-trace-target-01-metadata-correction.json`을 남겼다.
+  기본 worker와 NAT 설치 target의 차이를 실제 제품 NAT 검증과 혼동하지 않는다.
+- P0-019는 runtime 지원 descriptor/DB lifecycle 관측 경계를 명세에 확정했고,
+  앞선 전체 회귀의 합성-env cache 격리 수정만 tests/test_trace_contract.py에 추가
+  소유 범위로 연결했다. 제품 tracing guard나 공통 conftest를 변경하는 작업이 아니다.
+- P1-006 평가 명세는 실제 ledger API/spy와 합성 sink를 구분하고 필수 관측 누락을
+  unknown/error로 유지하도록 보강했다. 기존24 ID와 새12사례 요구는 보존한다.
+  Judge 미실행/오류·완료 assessment와 실제 호출 시도, 평가기 검증과 제품 gate를
+  분리하며 isolated CLI는 Settings/dotenv 이전 분기다. 구체화한 남은 추정은2시간;
+  제품 구현·12시나리오 성공이나 실제 Judge 통과는 아직 아니다.
+- 위 평가 patch를 agent 작성 완료 전에 조회한 한 번의 missing-file 진단은 이후
+  실제 작성·schema 검증된 파일로 교정했다. 존재하지 않던 산출물을 사용하지 않았다.
+- P0-028은 baseline35f4340, task/P0-028, worker-nat generation1로 실제 구현에
+  착수했다. 별도 source worktree와 patched Python/locked NAT extra를 사용한다.
+  다음은 최신 baseline의 P0-019 팀 Factory이며 두 task의 수정 파일은 겹치지 않는다.
+  전체 회귀의 추적 테스트 cache 문제와 최종10개 E2E/real gate는 여전히 미통과 상태다.
