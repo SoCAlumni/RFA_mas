@@ -39,7 +39,16 @@ def test_generated_schemas_fixtures_and_legacy_compatibility():
     }
     assert "load_context" in extended["ports"]["RetrievalPort"]
     assert "emit_event" in extended["ports"]["TracePort"]
-    assert "/v1/sessions" not in extended["implemented_http_routes"]["core"]["paths"]
+    # P0-015 implements the formerly planned routes. Preserve the frozen 1.0
+    # projection above and check the actual additive response contracts here.
+    paths = extended["implemented_http_routes"]["core"]["paths"]
+    for path, method, code, model in (
+        ("/v1/sessions", "post", "201", "SessionRecord"),
+        ("/v1/sessions/{session_id}", "get", "200", "SessionDetail"),
+        ("/v1/runs/{run_id}", "get", "200", "RunRecord"),
+    ):
+        response = paths[path][method]["responses"][code]["content"]["application/json"]
+        assert response["schema"]["$ref"] == f"#/components/schemas/{model}"
 
 
 @pytest.mark.parametrize(
