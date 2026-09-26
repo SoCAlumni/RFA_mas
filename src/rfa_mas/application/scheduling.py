@@ -202,6 +202,25 @@ class NoopScheduledEffectHook:
         return None
 
 
+class LedgerScheduledEffectHook:
+    """P0-024: ScheduledEffectHook over the P0-021 durable effect ledger.
+
+    Operation key = the stable scheduled run key; kind = `schedule:<job_type>`. An intent
+    left by a stopped runner becomes outcome_unknown at the next start and is never
+    re-executed from here; only the scheduled-run ledger decides whether a fire runs.
+    """
+
+    def __init__(self, repository) -> None:
+        self.repository = repository
+
+    async def record(self, *, operation_key: str, owner_id: str, kind: str, phase: str,
+                     result_ref: str | None = None) -> None:
+        await self.repository.record_scheduled_effect(
+            operation_key=operation_key, owner_id=owner_id, kind=kind, phase=phase,
+            result_ref=result_ref,
+        )
+
+
 class ScheduleExecutor:
     """Runner-side execution of one fire. Only existing internal services are called."""
 

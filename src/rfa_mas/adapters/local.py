@@ -1523,6 +1523,54 @@ class SqliteWorkRepository:
 
         return await asyncio.to_thread(operation)
 
+    # -- P0-024: scheduled job effects in the P0-021 ledger -------------------------------
+    _SCHEDULE_PHASES = {
+        "intent": "intent",
+        "succeeded": "completed",
+        "skipped": "completed",
+        "denied": "completed",
+        "failed": "completed",
+        "outcome_unknown": "outcome_unknown",
+    }
+
+    async def record_scheduled_effect(
+        self, *, operation_key: str, owner_id: str, kind: str, phase: str,
+        result_ref: str | None = None,
+    ) -> EffectRecord:
+        """Mirror one scheduled fire into the effect ledger (runner process only).
+
+        The owner is verified against the scheduled-run ledger row for this exact run key
+        and job type, never taken from the caller alone. The scheduled-run ledger stays
+        authoritative for fire idempotency; this row adds intent/outcome durability.
+        """
+        state = self._SCHEDULE_PHASES.get(phase)
+        if state is None or not kind.startswith("schedule:"):
+            raise RfaError("invalid_state_transition", "지원하지 않는 예약 작업 기록입니다.")
+
+        def operation() -> EffectRecord:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                run = connection.execute(
+                    "SELECT run_key FROM schedule_runs WHERE run_key = ? AND owner_id = ? "
+                    "AND job_type = ?",
+                    (operation_key, owner_id, kind.removeprefix("schedule:")),
+                ).fetchone()
+                if run is None:
+                    raise ResourceNotFoundError("schedule run")
+                fingerprint = _canonical_fingerprint({"schedule_run": operation_key, "kind": kind})
+                ref = result_ref or f"schedule_run:{operation_key}"
+                _, record = self._ledger_begin(
+                    connection, owner_id, operation_key=operation_key, kind=kind, run_id=None,
+                    fingerprint=fingerprint, result_ref=ref,
+                )
+                if state == "intent" or record.state == "completed":
+                    return record  # Replayed intent, or an outcome that is already final.
+                return self._ledger_advance(
+                    connection, owner_id, operation_key, state=state, outcome=phase
+                )
+
+        return await asyncio.to_thread(operation)
+
 
     # -- P1-005A immutable DRAFT versions and publication receipts ----------------------
     async def draft_versions(self, run_id: str, principal: TrustedPrincipal):

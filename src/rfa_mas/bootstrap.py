@@ -47,7 +47,11 @@ from rfa_mas.application.knowledge import KnowledgeService
 from rfa_mas.application.observations import Observations, ObservedPort
 from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.candidates import CandidateService
-from rfa_mas.application.scheduling import ScheduleExecutor, ScheduleService
+from rfa_mas.application.scheduling import (
+    LedgerScheduledEffectHook,
+    ScheduleExecutor,
+    ScheduleService,
+)
 from rfa_mas.application.service import WorkService
 from rfa_mas.application.team_selector import APPROVED_PINS, TeamSelector, TemplateRegistry
 from rfa_mas.application.teams import RuntimeLifecycleSupport, TeamFactory
@@ -630,6 +634,8 @@ def build_scheduler_runner(
         candidates=CandidateService(repository, accumulator, clock=now),
         accumulator=accumulator,
         clock=now,
+        # P0-024: every fire is mirrored into the P0-021 durable effect ledger.
+        effects=LedgerScheduledEffectHook(repository),
     )
     return SchedulerRunner(
         jobstore_path=settings.scheduler_jobstore_path,

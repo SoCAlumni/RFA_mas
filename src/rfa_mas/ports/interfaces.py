@@ -57,7 +57,9 @@ from rfa_mas.contracts import (
 # Internal records, not part of the published RFA-EXTENDED contract. Promoting them to
 # contracts/ is a coordinator contract change.
 EffectKind = Literal[
-    "team_prepare", "team_cleanup", "role_execution", "review_submission", "publication"
+    "team_prepare", "team_cleanup", "role_execution", "review_submission", "publication",
+    # P0-024: scheduled job fires, keyed by the scheduled run key (no product Run).
+    "schedule:kb_refresh", "schedule:candidate_scan", "schedule:briefing",
 ]
 EffectState = Literal["intent", "inflight", "completed", "outcome_unknown"]
 BarrierReason = Literal["cancelled", "permission_revoked"]

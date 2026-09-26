@@ -926,3 +926,69 @@ async def test_a_lost_candidate_cas_is_retried_once_and_other_errors_fail_closed
     failed = await executor.execute(brief.schedule_id, NINE_KST + timedelta(days=1))
     assert (failed.status, failed.reason, failed.summary) == ("failed", "policy_denied", {})
     assert set(executor.handlers) == {"kb_refresh", "candidate_scan", "briefing"}
+
+
+
+# -- P0-024: scheduled fires are mirrored into the P0-021 durable effect ledger --------------
+def ledger(container):
+    return rows(container, "SELECT operation_key, kind, run_id, state, outcome, result_ref, "
+                "next_action FROM effect_ledger WHERE kind LIKE 'schedule:%' ORDER BY created_at")
+
+
+async def test_scheduled_fire_records_intent_then_outcome_under_the_run_key(env):
+    from rfa_mas.application.scheduling import LedgerScheduledEffectHook
+
+    container, owner, schedules, clock = env
+    executor, _ = executor_for(container, owner, clock)
+    executor.effects = LedgerScheduledEffectHook(container.repository)
+    daily = await schedules.create(create("candidate_scan"), owner)
+    first = await executor.execute(daily.schedule_id, NINE_KST)
+    again = await executor.execute(daily.schedule_id, NINE_KST)
+    assert first == again and first.status == "succeeded"
+    assert ledger(container) == [(first.run_key, "schedule:candidate_scan", None, "completed",
+                                  "succeeded", f"schedule_run:{first.run_key}", "none")]
+    disabled = await schedules.create(create("briefing", cron="0 18 * * *"), owner)
+    await schedules.disable(disabled.schedule_id, owner)
+    skipped = await executor.execute(disabled.schedule_id, NINE_KST)
+    assert skipped.status == "skipped"
+    assert ledger(container)[-1][3:5] == ("completed", "skipped")
+    # Owner and job type are verified against the scheduled-run row, never the caller alone.
+    for wrong in ({"owner_id": "owner_other", "kind": "schedule:candidate_scan"},
+                  {"owner_id": owner.user_id, "kind": "schedule:briefing"}):
+        with pytest.raises(RfaError) as denied:
+            await container.repository.record_scheduled_effect(
+                operation_key=first.run_key, phase="intent", **wrong)
+        assert denied.value.code == "not_found"
+
+
+async def test_runner_stop_after_intent_leaves_outcome_unknown_and_no_replay(env):
+    from rfa_mas.application.scheduling import LedgerScheduledEffectHook
+
+    container, owner, schedules, clock = env
+    executor, candidates = executor_for(container, owner, clock)
+    executor.effects = LedgerScheduledEffectHook(container.repository)
+    daily = await schedules.create(create("candidate_scan"), owner)
+
+    class Stop(BaseException):
+        pass
+
+    async def stop(*args, **kwargs):
+        raise Stop()
+
+    executor.handlers["candidate_scan"] = stop
+    with pytest.raises(Stop):
+        await executor.execute(daily.schedule_id, NINE_KST)
+    assert ledger(container)[0][3] == "intent"
+    await container.repository.initialize()  # A fresh process start of the same store.
+    await container.repository.recover_interrupted_schedule_runs(clock())
+    assert ledger(container)[0][3:] == ("outcome_unknown", None, ledger(container)[0][5],
+                                        "query")
+    rerun = await executor.execute(daily.schedule_id, NINE_KST)
+    assert rerun.status == "outcome_unknown" and candidates.calls == 0  # never re-executed
+
+
+async def test_scheduler_runner_composition_injects_the_ledger_hook(runner_env):
+    from rfa_mas.application.scheduling import LedgerScheduledEffectHook
+
+    runner = runner_env.make()
+    assert isinstance(runner.executor.effects, LedgerScheduledEffectHook)
