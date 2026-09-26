@@ -144,3 +144,12 @@ OPS-003(2026-09-27): integration record-evidence는 이제 begin-evidence에서 
 result.head로 기록한다. 다른 세션이 검증 중 fingerprint 밖 파일을 commit해도 binding이 어긋나지 않는다.
 이전 도구가 기록한 과거 result.head는 manifest head의 후손이고 fingerprint·파일 hash·spec·contract가
 같을 때만 revalidation 근거로 인정한다(P1-001 post-retrieval-target: 3a1a5ee 캡처, caf7bd2 기록).
+
+OPS-004(2026-09-27): cProfile 측정에서 `taskctl ready` 한 번이 약 22초였고, 그중 약 20초가
+done task마다 같은 target worktree에 git 조회를 반복한 `complete()→valid_evidence()→source_manifest()`
+(git subprocess 1,551회)였다. 이제 `cli.main()`이 호출 단위 `git_memo()`를 열어 같은 (경로, argv)의
+읽기 전용 git 결과(성공 stdout 또는 거절)를 그 호출 안에서만 재사용한다. taskctl은 git을 변경하지 않으므로
+한 호출 안의 판정은 하나의 snapshot으로 더 일관된다. 호출이 끝나면 memo를 비운다. `execute()`를 직접 부르는
+in-process 호출과 테스트에는 memo가 없어서 호출 사이의 source 변경(tampered head, dirty tree)을 기존대로
+탐지한다. fingerprint 비교·파일 hash·fencing·scope 규칙은 바꾸지 않았다. 같은 control 상태에서 CPU 시간이
+약 11.5초에서 1.7초로 줄었다. lock 대기 시간은 이 수치에 포함되지 않는다.

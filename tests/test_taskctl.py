@@ -1693,3 +1693,102 @@ def test_legacy_advanced_result_head_is_tolerated_only_as_descendant(control, le
         with pytest.raises(ControlError):
             inspected_recover(control)
         assert control.task().model_dump(mode="json") == before
+
+
+# -- OPS-004: per-invocation read-only Git memo ------------------------------------------
+
+
+def _memo_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "memo-repo"
+    repo.mkdir()
+    git_call(repo, "init", "-q", "-b", "main")
+    git_call(repo, "config", "user.email", "fixture@example.invalid")
+    git_call(repo, "config", "user.name", "fixture")
+    (repo / "a.txt").write_text("one\n")
+    git_call(repo, "add", "a.txt")
+    git_call(repo, "commit", "-q", "-m", "one")
+    return repo
+
+
+def _counting_run(monkeypatch) -> list[list[str]]:
+    from scripts.tasklib import store as store_module
+
+    calls: list[list[str]] = []
+    real = store_module.subprocess.run
+
+    def counted(argv, *args, **kwargs):
+        calls.append(list(argv))
+        return real(argv, *args, **kwargs)
+
+    monkeypatch.setattr(store_module.subprocess, "run", counted)
+    return calls
+
+
+def test_git_memo_reuses_identical_queries_and_rejections_within_one_invocation(
+    tmp_path, monkeypatch
+):
+    from scripts.tasklib import store as store_module
+
+    repo = _memo_repo(tmp_path)
+    calls = _counting_run(monkeypatch)
+    with store_module.git_memo():
+        head = store_module.git(repo, "rev-parse", "HEAD")
+        assert store_module.git(repo, "rev-parse", "HEAD") == head
+        for _ in range(2):
+            with pytest.raises(ControlError, match="Git baseline unavailable"):
+                store_module.git(repo, "merge-base", "--is-ancestor", "0" * 40, head)
+        # A different argv is a different query, never a cache hit.
+        assert store_module.git(repo, "symbolic-ref", "--short", "HEAD") == "main"
+    assert len(calls) == 3
+    assert store_module._GIT_MEMO is None
+
+
+def test_git_memo_is_cleared_after_invocation_and_inactive_for_direct_calls(
+    tmp_path, monkeypatch
+):
+    from scripts.tasklib import store as store_module
+
+    repo = _memo_repo(tmp_path)
+    with store_module.git_memo():
+        first = store_module.git(repo, "rev-parse", "HEAD")
+    (repo / "a.txt").write_text("two\n")
+    git_call(repo, "commit", "-q", "-am", "two")
+    # The next invocation (and any direct call without a memo) observes the new state.
+    with store_module.git_memo():
+        assert store_module.git(repo, "rev-parse", "HEAD") != first
+    calls = _counting_run(monkeypatch)
+    second = store_module.git(repo, "rev-parse", "HEAD")
+    assert store_module.git(repo, "rev-parse", "HEAD") == second
+    assert len(calls) == 2
+    assert store_module.git(repo, "status", "--porcelain", "--untracked-files=all") == ""
+    (repo / "b.txt").write_text("dirty\n")
+    assert store_module.git(repo, "status", "--porcelain", "--untracked-files=all")
+
+
+def test_cli_main_enables_memo_only_for_its_own_execution(control, monkeypatch, capsys):
+    from scripts.tasklib import cli as cli_module
+    from scripts.tasklib import store as store_module
+
+    seen: list[bool] = []
+
+    def fake_execute(store, args):
+        seen.append(isinstance(store_module._GIT_MEMO, dict))
+        return {"ok": True}
+
+    monkeypatch.setattr(cli_module, "execute", fake_execute)
+    monkeypatch.setattr(sys, "argv", ["taskctl", "--control-root", str(control.root), "status"])
+    cli_module.main()
+    assert seen == [True]
+    assert store_module._GIT_MEMO is None
+    assert json.loads(capsys.readouterr().out) == {"ok": True}
+    # The real CLI process still answers with the unchanged JSON contract.
+    result = subprocess.run(
+        [sys.executable, str(TASKCTL), "status"],
+        cwd=control.second,
+        env={"PATH": os.environ.get("PATH", ""), "TASK_CONTROL_ROOT": str(control.root)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert isinstance(json.loads(result.stdout), dict)

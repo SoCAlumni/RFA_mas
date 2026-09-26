@@ -30,7 +30,32 @@ def dump(value) -> str:
     return yaml.safe_dump(value, allow_unicode=True, sort_keys=False, width=100)
 
 
+# OPS-004: per-CLI-invocation memo of read-only git queries. taskctl never mutates Git; one
+# invocation re-validates many done tasks against the same target worktree, so identical
+# (worktree, argv) queries are answered from one snapshot. Inactive (None) unless a caller
+# explicitly enters git_memo(); cli.main() does, in-process execute() callers do not.
+_GIT_MEMO: dict[tuple[str, tuple[str, ...]], tuple[bool, str]] | None = None
+
+
+@contextlib.contextmanager
+def git_memo():
+    global _GIT_MEMO
+    previous = _GIT_MEMO
+    _GIT_MEMO = {}
+    try:
+        yield _GIT_MEMO
+    finally:
+        _GIT_MEMO = previous
+
+
 def git(path: Path, *args: str) -> str:
+    key = (str(path), tuple(args))
+    memo = _GIT_MEMO
+    if memo is not None and key in memo:
+        ok, value = memo[key]
+        if not ok:
+            raise ControlError(value)
+        return value
     result = subprocess.run(
         ["git", "-C", str(path), *args],
         capture_output=True,
@@ -39,8 +64,14 @@ def git(path: Path, *args: str) -> str:
         env={"PATH": os.environ.get("PATH", ""), "LANG": "C", "GIT_CONFIG_NOSYSTEM": "1"},
     )
     if result.returncode:
-        raise ControlError("Git baseline unavailable; coordinator must establish it explicitly")
-    return result.stdout.strip()
+        message = "Git baseline unavailable; coordinator must establish it explicitly"
+        if memo is not None:
+            memo[key] = (False, message)
+        raise ControlError(message)
+    value = result.stdout.strip()
+    if memo is not None:
+        memo[key] = (True, value)
+    return value
 
 
 def atomic(path: Path, content: str) -> None:

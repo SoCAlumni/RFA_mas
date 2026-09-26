@@ -21,7 +21,7 @@ from .evidence import (
     valid_evidence,
 )
 from .schema import SPEC_FIELDS, Claim, ControlError, Task, VerificationSummary, parse_yaml
-from .store import Store, atomic, conflict, digest, dump, git, now, spec_digest
+from .store import Store, atomic, conflict, digest, dump, git, git_memo, now, spec_digest
 
 
 def bump(task: Task) -> None:
@@ -938,7 +938,9 @@ def main() -> None:
     try:
         if not args.control_root:
             raise ControlError("--control-root or TASK_CONTROL_ROOT is required; no local fallback")
-        result = execute(Store(args.control_root), args)
+        # OPS-004: one read-only Git snapshot per CLI invocation (cleared on exit).
+        with git_memo():
+            result = execute(Store(args.control_root), args)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ControlError, OSError, ValueError, KeyError) as exc:
         # Do not echo Pydantic input values, subprocess output or credentials.
