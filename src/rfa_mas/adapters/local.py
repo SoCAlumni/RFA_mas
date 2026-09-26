@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from rfa_mas.application.state_machine import ensure_effect_transition, ensure_transition
-from rfa_mas.adapters.retrieval import bm25_scores, lexical_terms
+from rfa_mas.adapters.retrieval import bm25_scores, lexical_terms, relevance_insufficient
 from rfa_mas.application.source_access import (
     LOCAL_ENDPOINTS, ProjectResolver, fresh_principal, no_projects, permitted, project_allowed,
 )
@@ -3638,11 +3638,20 @@ class SqliteWorkRepository:
                     "SELECT source_id, provider, namespace, external_id, length(t), "
                     + counts + " FROM bounded",
                     (*(m.reference.source_id for m in allowed), *arguments)).fetchall()
+                # P1-001E: withhold partial-term matches when the query's distinctive terms
+                # are absent from the caller's authorized documents (retrieval insufficient).
+                frequency = {term: sum(1 for r in rows if r[5 + i] > 0)
+                             for i, (term, _) in enumerate(terms)}
+                if relevance_insufficient(query, frequency):
+                    return []
                 scores = bm25_scores([(r[0], r[4], *r[5:]) for r in rows], len(terms))
                 keys = {r[0]: (r[1], r[2], r[3], r[0]) for r in rows}
                 by_id = {m.reference.source_id:m for m in allowed}
-                # Stable tie-break: provider, namespace, external_id (never a random id).
-                ranked = sorted(scores, key=lambda sid: (-scores[sid], *keys[sid]))
+                # Stable tie-break: provider, namespace, external_id (never a random id). A
+                # derived item ranks after all matches when its own parent source matched.
+                shadowed = {sid for sid in scores if any(
+                    p.source_id in scores for p in by_id[sid].parents)}
+                ranked = sorted(scores, key=lambda sid: (sid in shadowed, -scores[sid], *keys[sid]))
                 return [by_id[sid] for sid in ranked[:limit]]
         return await asyncio.to_thread(operation)
 

@@ -70,6 +70,72 @@ def lexical_terms(query: str) -> tuple[tuple[str, bool], ...]:
     return tuple(sorted(kept))
 
 
+# -- P1-001E: relevance gate after authorization ------------------------------------------
+# A query is answered "insufficient" instead of by a partial-term match when its distinctive
+# terms are not covered by the caller's AUTHORIZED documents (never by documents the caller
+# cannot read). Rules (RELEVANCE_RULES_VERSION):
+#   R1 none covered: the query has distinctive terms and not one of them is covered.
+#   R2 unknown qualifier: an uncovered Hangul word directly precedes a covered Latin entity
+#      token ("경쟁사 SDK", "방식의 GPU"): the query narrows a known named subject to something
+#      the KB never mentions. Uncovered Latin words are exempt (English synonyms such as
+#      "latency" for "지연"), and a following Korean word may be a verb-like noun ("공개").
+# Distinctive: Latin/digit tokens of 3+ characters; particle-stripped Hangul words of 2+
+# characters that are not request, relational or deictic words and do not end in a
+# predicate/connective ending. Covered: the word, or for a 3+ character Hangul word any of
+# its bigrams (the P1-001D matching rule), occurs in an authorized document.
+RELEVANCE_RULES_VERSION = "relevance-gate-v1"
+_GENERIC = frozenset({
+    # request/task words and relational modifiers: never the subject of a question
+    "요약", "답변", "초안", "작성", "정리", "설명", "조사", "비교", "검토", "관련", "대한", "관한",
+    "위한", "통한", "대해", "실제", "전체", "일반", "기타", "진행", "상황", "현황", "정보",
+    # deictic and question words: refer to the clock or the asker, not to a source
+    "오늘", "내일", "어제", "지금", "현재", "이번", "최근", "요즘", "며칠", "무슨", "어느", "어떤",
+    "언제", "누가", "뭐가",
+})
+_PREDICATE_ENDINGS = tuple("어아야요다니까지해돼줘고게면한된할될는은던인나냐래네죠며서혀도하")
+
+
+def query_words(query: str) -> tuple[tuple[str, bool, bool], ...]:
+    """(word, is_hangul, distinctive) per query token, in query order."""
+    words = []
+    for token in _TOKEN.findall(query.lower()):
+        if "가" <= token[0] <= "힣":
+            word = _strip_particle(token)
+            distinctive = (len(word) >= 2 and word not in _STOPWORDS and word not in _GENERIC
+                           and word not in _PARTICLE_SET
+                           and not word.endswith(_PREDICATE_ENDINGS))
+            words.append((word, True, distinctive))
+        else:
+            words.append((token, False, len(token) >= 3 and token not in _STOPWORDS))
+    return tuple(words)
+
+
+def relevance_insufficient(query: str, document_frequency: dict[str, int]) -> bool:
+    """True when R1 or R2 holds. document_frequency: authorized-document counts per term.
+
+    A term missing from the map (e.g. beyond MAX_QUERY_TERMS) counts as covered, so the gate
+    only ever withholds on positive evidence of absence.
+    """
+    def covered(word: str, hangul: bool) -> bool:
+        if word not in document_frequency:
+            return True
+        if document_frequency[word] > 0:
+            return True
+        return hangul and len(word) >= 3 and any(
+            document_frequency.get(word[i:i + 2], 1) > 0 for i in range(len(word) - 1))
+
+    words = query_words(query)
+    marks = [(word, hangul, distinctive and covered(word, hangul), distinctive)
+             for word, hangul, distinctive in words]
+    distinctive = [m for m in marks if m[3]]
+    if distinctive and not any(m[2] for m in distinctive):
+        return True  # R1
+    return any(  # R2
+        hangul and is_distinctive and not is_covered and not after[1] and after[2]
+        for (_, hangul, is_covered, is_distinctive), after in zip(marks, marks[1:], strict=False)
+    )
+
+
 def bm25_scores(rows, term_count: int) -> dict[str, float]:
     """rows: (source_id, doc_length, tf_1..tf_n) numbers only; returns positive scores."""
     if not rows:
