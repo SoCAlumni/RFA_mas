@@ -2,7 +2,7 @@ import hmac
 import ipaddress
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypedDict
 
 from fastapi import Depends, FastAPI, Header, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -47,6 +47,7 @@ from rfa_mas.contracts import (
     SessionRecord,
     SourceMetadata,
     StructuredError,
+    TeamRunResult,
     TodoCandidate,
     TrustedPrincipal,
     WorkRequest,
@@ -57,6 +58,12 @@ from rfa_mas.settings import Settings
 
 # Domain codes that are safe to echo in addition to the shared observation allowlist.
 SCHEDULE_ERROR_CODES = frozenset({"invalid_schedule"})
+
+
+class RunCancelState(TypedDict):
+    """Cancel is a barrier request, not a terminal state: effects already done stay done."""
+
+    state: Literal["cancelling"]
 
 
 async def resolve_principal(
@@ -276,6 +283,23 @@ def create_app(
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunResult:
         return await selected_container.service.resume(run_id, wakeup, trusted_principal)
+
+    @app.get("/v1/runs/{run_id}/team", response_model=TeamRunResult, tags=["work"])
+    async def get_team_result(
+        run_id: str,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> TeamRunResult:
+        # Owner-authorized; another owner's run and a run without a team are both 404.
+        return await selected_container.service.team_result(run_id, trusted_principal)
+
+    @app.post("/v1/runs/{run_id}/cancel", response_model=RunCancelState, tags=["work"])
+    async def cancel_run(
+        run_id: str,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> RunCancelState:
+        # Terminal run -> invalid_state_transition (409); unsupported path -> 501.
+        state = await selected_container.service.cancel(run_id, trusted_principal)
+        return {"state": state}
 
     @app.post(
         "/v1/knowledge/sources",
