@@ -427,8 +427,20 @@ async def test_langfuse_connection_failure_is_recorded_as_failed_never_success(
             lambda r: httpx.Response(
                 207, json={"successes": [], "errors": [{"id": "x", "status": 400}]}
             ),
-            ("failed", "invalid_response", 207),
+            ("failed", "rejected", 207),
         ),
+        (
+            # Shape of the Langfuse 4.46 acknowledgement (queued ingestion job); synthetic.
+            lambda r: httpx.Response(
+                200,
+                json={
+                    "name": "otel-ingestion-job",
+                    "data": {"payload": {"data": {"publicKey": TRACE_CANARY}}},
+                },
+            ),
+            ("exported", "ok", 200),
+        ),
+        (lambda r: httpx.Response(200, json=[]), ("failed", "invalid_response", 200)),
         (
             lambda r: httpx.Response(207, json={"partialSuccess": {"rejectedSpans": "1"}}),
             ("failed", "rejected", 207),

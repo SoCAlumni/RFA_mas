@@ -366,10 +366,15 @@ class LangfuseOtlpExporter:
             data = response.json()
         except ValueError:
             return receipt("failed", "invalid_response", code)
-        # OTLP ExportTraceServiceResponse only; any other shape (e.g. a legacy ingestion
-        # {successes, errors} body) is not an acknowledgement of this span.
-        if not isinstance(data, dict) or not set(data) <= {"partialSuccess"}:
+        # A 2xx JSON object is an acknowledgement unless it reports a rejection. Langfuse
+        # 4.46 answers with a queued ingestion-job object that echoes the project public
+        # key and auth scope; the body is never kept. Processing is asynchronous, so
+        # "exported" means acknowledged; queryability is proven only by read-back by ID.
+        if not isinstance(data, dict):
             return receipt("failed", "invalid_response", code)
+        if data.get("errors"):
+            # Legacy ingestion-style per-event errors (e.g. a 207 multi-status body).
+            return receipt("failed", "rejected", code)
         partial = data.get("partialSuccess")
         if partial is not None:
             if not isinstance(partial, dict):

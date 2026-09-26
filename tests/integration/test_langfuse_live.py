@@ -6,14 +6,16 @@ What it verifies (P1-006C AC1-AC3), with synthetic data only:
   every observation is written locally first and its export receipt is 'exported' only
   after the server acknowledged it;
 * each exported span is read back BY ID from the v2 observations API, carries only the
-  allowlisted metadata, and neither the canary, the query text, the draft body nor any key
-  appears in what Langfuse stored;
-* unreported tokens are not turned into measured usage;
-* the project retention setting reported by Langfuse equals the requested value;
+  allowlisted metadata (plus Langfuse's copies of our fixed resource/scope constants), and
+  neither the canary, the query text, the draft body nor any key is stored;
+* unreported tokens are not sent: usageDetails stays empty and metadata says
+  token_usage=not_reported (Langfuse's own aggregate columns render that as 0);
+* DELETE /api/public/traces/{id} removes the trace from the v2 query within a bound;
+* the project retention requested at init is reported back by Langfuse (fails on OSS: the
+  data-retention entitlement is Enterprise-only, so the value is dropped at init);
 * a closed loopback port is a failed export, never a success.
 
-Trace deletion and actual expiry are NOT asserted here (asynchronous, not verifiable in one
-session); see docs/evidence/llmops.md.
+Actual expiry is not asserted (nightly job, not verifiable in one session).
 
 Run explicitly (a skipped run is not evidence):
     RFA_LANGFUSE_LIVE=1 RFA_LANGFUSE_ENV_FILE=/abs/tmp/langfuse-live.env \
@@ -22,7 +24,7 @@ Run explicitly (a skipped run is not evidence):
 The env file lives OUTSIDE the repository and holds only LANGFUSE_BASE_URL (loopback),
 LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY and optionally RFA_LANGFUSE_EXPECTED_RETENTION_DAYS.
 Values are never printed. RFA_LANGFUSE_EVIDENCE_OUT optionally receives a value-free JSON
-summary (IDs are opaque aliases/hex span ids, no keys).
+summary (opaque aliases and hex span ids only, no keys).
 """
 
 from __future__ import annotations
@@ -56,7 +58,15 @@ ALLOWED_NAMES = {
     "LANGFUSE_SECRET_KEY",
     "RFA_LANGFUSE_EXPECTED_RETENTION_DAYS",
 }
+# Langfuse copies our own fixed OTel constants into observation metadata.
+LANGFUSE_BOOKKEEPING = {
+    "attributes.langfuse.trace.name",
+    "resourceAttributes.service.name",
+    "scope.name",
+    "scope.version",
+}
 READBACK_SECONDS = 120.0
+DELETE_SECONDS = 120.0
 
 pytestmark = pytest.mark.skipif(
     not LIVE_ENABLED or not ENV_FILE,
@@ -74,15 +84,14 @@ def _live_values() -> dict[str, str]:
         name, sep, value = line.strip().partition("=")
         if sep and name in ALLOWED_NAMES:
             values[name] = value
-    missing = sorted({"LANGFUSE_BASE_URL", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"} - {
-        name for name, value in values.items() if value
-    })
+    required = {"LANGFUSE_BASE_URL", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"}
+    missing = sorted(required - {name for name, value in values.items() if value})
     if missing:
         pytest.fail(f"live env file is missing: {missing}")
     return values
 
 
-def _settings_kwargs(tmp_path: Path, values: dict[str, str], **overrides: Any) -> dict[str, Any]:
+def _settings(tmp_path: Path, values: dict[str, str], **overrides: Any) -> Settings:
     kwargs: dict[str, Any] = {
         "_env_file": None,
         "database_url": f"sqlite:///{tmp_path / 'rfa.db'}",
@@ -94,11 +103,15 @@ def _settings_kwargs(tmp_path: Path, values: dict[str, str], **overrides: Any) -
         "langfuse_export_enabled": True,
     }
     kwargs.update(overrides)
-    return kwargs
+    return Settings(**kwargs)
 
 
-def _auth(values: dict[str, str]) -> httpx.BasicAuth:
-    return httpx.BasicAuth(values["LANGFUSE_PUBLIC_KEY"], values["LANGFUSE_SECRET_KEY"])
+def _client(values: dict[str, str]) -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        base_url=values["LANGFUSE_BASE_URL"],
+        auth=httpx.BasicAuth(values["LANGFUSE_PUBLIC_KEY"], values["LANGFUSE_SECRET_KEY"]),
+        timeout=10,
+    )
 
 
 def _record_evidence(section: str, payload: dict[str, Any]) -> None:
@@ -110,32 +123,32 @@ def _record_evidence(section: str, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(current, indent=2, sort_keys=True, ensure_ascii=False))
 
 
-async def _read_observation(
-    client: httpx.AsyncClient, span_id: str, start: datetime, end: datetime
-) -> dict[str, Any] | None:
+def _window() -> dict[str, str]:
+    now = datetime.now(UTC)
+    return {
+        "fromStartTime": (now - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "toStartTime": (now + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    }
+
+
+async def _observations(client: httpx.AsyncClient, column: str, value: str) -> list[dict]:
     response = await client.get(
         "/api/public/v2/observations",
         params={
             "filter": json.dumps(
-                [{"type": "string", "column": "id", "operator": "=", "value": span_id}]
+                [{"type": "string", "column": column, "operator": "=", "value": value}]
             ),
-            "fromStartTime": start.isoformat().replace("+00:00", "Z"),
-            "toStartTime": end.isoformat().replace("+00:00", "Z"),
             "fields": "core,basic,time,metadata,usage,io",
-            "limit": 10,
+            "limit": 100,
+            **_window(),
         },
     )
     response.raise_for_status()
-    rows = [row for row in response.json().get("data", []) if row.get("id") == span_id]
-    return rows[0] if rows else None
+    return [row for row in response.json().get("data", []) if row.get(column) == value]
 
 
-async def test_live_export_is_read_back_by_id_without_canary_or_secret(
-    tmp_path: Path, principal
-) -> None:
-    values = _live_values()
-    container = build_container(Settings(**_settings_kwargs(tmp_path, values)))
-    started = datetime.now(UTC) - timedelta(minutes=5)
+async def _export_canary_run(tmp_path: Path, values: dict[str, str], principal):
+    container = build_container(_settings(tmp_path, values))
     await container.startup()
     try:
         result = await container.service.run(
@@ -157,8 +170,32 @@ async def test_live_export_is_read_back_by_id_without_canary_or_secret(
     rows = ledger.observations
     assert rows and {r.observation_id for r in receipts} == {r.observation_id for r in rows}
     assert {(r.status, r.reason) for r in receipts} == {("exported", "ok")}
+    return result, rows, receipts
 
-    ended = datetime.now(UTC) + timedelta(minutes=5)
+
+async def _read_back(client, receipts) -> tuple[dict[str, dict[str, Any]], float]:
+    found: dict[str, dict[str, Any]] = {}
+    started = time.monotonic()
+    while time.monotonic() - started < READBACK_SECONDS and len(found) < len(receipts):
+        for receipt in receipts:
+            if receipt.otel_span_id not in found:
+                rows = await _observations(client, "id", receipt.otel_span_id)
+                if rows:
+                    found[receipt.otel_span_id] = rows[0]
+        if len(found) < len(receipts):
+            await asyncio.sleep(3)
+    return found, time.monotonic() - started
+
+
+async def test_live_export_is_read_back_by_id_without_canary_or_secret(
+    tmp_path: Path, principal
+) -> None:
+    values = _live_values()
+    result, rows, receipts = await _export_canary_run(tmp_path, values, principal)
+    async with _client(values) as client:
+        found, elapsed = await _read_back(client, receipts)
+    assert len(found) == len(receipts), f"read back {len(found)}/{len(receipts)} by id"
+
     forbidden = (
         CANARY,
         QUERY_TEXT,
@@ -168,27 +205,14 @@ async def test_live_export_is_read_back_by_id_without_canary_or_secret(
         values["LANGFUSE_PUBLIC_KEY"],
         values["LANGFUSE_SECRET_KEY"],
     )
-    found: dict[str, dict[str, Any]] = {}
-    deadline = time.monotonic() + READBACK_SECONDS
-    async with httpx.AsyncClient(
-        base_url=values["LANGFUSE_BASE_URL"], auth=_auth(values), timeout=10
-    ) as client:
-        while time.monotonic() < deadline and len(found) < len(receipts):
-            for receipt in receipts:
-                if receipt.otel_span_id in found:
-                    continue
-                row = await _read_observation(client, receipt.otel_span_id, started, ended)
-                if row is not None:
-                    found[receipt.otel_span_id] = row
-            if len(found) < len(receipts):
-                await asyncio.sleep(3)
-    elapsed = READBACK_SECONDS - max(0.0, deadline - time.monotonic())
-    assert len(found) == len(receipts), f"read back {len(found)}/{len(receipts)} by id"
-
     stored = json.dumps(list(found.values()), ensure_ascii=False)
     assert not [value for value in forbidden if value in stored]
+    allowed_metadata = {
+        key.removeprefix(METADATA_PREFIX)
+        for key in ALLOWED_ATTRIBUTE_KEYS
+        if key.startswith(METADATA_PREFIX)
+    }
     metadata_keys: set[str] = set()
-    usage_seen: set[str] = set()
     for receipt in receipts:
         row = found[receipt.otel_span_id]
         assert row["traceId"] == receipt.otel_trace_id
@@ -196,17 +220,12 @@ async def test_live_export_is_read_back_by_id_without_canary_or_secret(
         assert metadata.get("observation_id") == receipt.observation_id
         assert metadata.get("token_usage") == "not_reported"
         metadata_keys |= set(metadata)
-        usage = row.get("usageDetails") or {}
-        usage_seen |= {key for key, value in usage.items() if value}
+        # No usage was sent; Langfuse's derived columns show 0, usageDetails stays empty.
+        assert row.get("usageDetails") in ({}, None)
         assert row.get("input") in (None, "", {}) and row.get("output") in (None, "", {})
-    allowed_metadata = {
-        key.removeprefix(METADATA_PREFIX)
-        for key in ALLOWED_ATTRIBUTE_KEYS
-        if key.startswith(METADATA_PREFIX)
-    }
-    # Langfuse may add its own bookkeeping keys (resource/scope attributes); record them.
-    extra_metadata = sorted(metadata_keys - allowed_metadata)
-    assert not usage_seen, f"unreported tokens became measured usage: {sorted(usage_seen)}"
+    unexpected = sorted(metadata_keys - allowed_metadata - LANGFUSE_BOOKKEEPING)
+    assert not unexpected, f"unexpected stored metadata keys: {unexpected}"
+    sample = next(iter(found.values()))
     _record_evidence(
         "export_readback",
         {
@@ -217,38 +236,73 @@ async def test_live_export_is_read_back_by_id_without_canary_or_secret(
             "otel_trace_ids": sorted({r.otel_trace_id for r in receipts}),
             "sample_span_ids": sorted(found)[:3],
             "boundaries": sorted({row.get("name", "") for row in found.values()}),
-            "metadata_keys_outside_allowlist": extra_metadata,
+            "metadata_keys_outside_allowlist": sorted(metadata_keys - allowed_metadata),
             "canary_or_secret_found": False,
-            "usage_keys_with_values": sorted(usage_seen),
-            "sample_row_keys": sorted(next(iter(found.values())).keys()),
+            "langfuse_usage_columns_sample": {
+                key: sample.get(key)
+                for key in ("usageDetails", "inputUsage", "outputUsage", "totalUsage")
+            },
         },
     )
 
 
-async def test_live_project_retention_matches_requested_days(tmp_path: Path) -> None:
+async def test_live_delete_by_trace_id_removes_it_from_the_query(
+    tmp_path: Path, principal
+) -> None:
+    values = _live_values()
+    _, _, receipts = await _export_canary_run(tmp_path, values, principal)
+    (trace_id,) = {r.otel_trace_id for r in receipts}
+    async with _client(values) as client:
+        found, _ = await _read_back(client, receipts)
+        assert len(found) == len(receipts)
+        deleted = await client.delete(f"/api/public/traces/{trace_id}")
+        assert deleted.status_code == 200
+        started = time.monotonic()
+        remaining = len(found)
+        while remaining and time.monotonic() - started < DELETE_SECONDS:
+            await asyncio.sleep(5)
+            remaining = len(await _observations(client, "traceId", trace_id))
+        elapsed = time.monotonic() - started
+    assert remaining == 0, f"{remaining} observations still queryable after {elapsed:.0f}s"
+    _record_evidence(
+        "delete_by_id",
+        {
+            "otel_trace_id": trace_id,
+            "observations_before": len(found),
+            "delete_status": deleted.status_code,
+            "gone_from_v2_query_after_seconds": round(elapsed, 1),
+            "raw_blob_removal": "not_verified_by_test",
+        },
+    )
+
+
+async def test_live_project_retention_matches_requested_days() -> None:
     values = _live_values()
     expected = values.get("RFA_LANGFUSE_EXPECTED_RETENTION_DAYS")
     if not expected:
         pytest.fail("RFA_LANGFUSE_EXPECTED_RETENTION_DAYS is required for the retention check")
-    async with httpx.AsyncClient(
-        base_url=values["LANGFUSE_BASE_URL"], auth=_auth(values), timeout=10
-    ) as client:
+    async with _client(values) as client:
         response = await client.get("/api/public/projects")
     response.raise_for_status()
     projects = response.json().get("data", [])
     assert len(projects) == 1
     project = projects[0]
-    assert "retentionDays" in project, f"no retentionDays in {sorted(project)}"
-    assert project["retentionDays"] == int(expected)
     _record_evidence(
         "retention",
         {
             "requested_days": int(expected),
-            "reported_retention_days": project["retentionDays"],
             "project_keys": sorted(project),
+            "reported_retention_days": project.get("retentionDays"),
             "expiry_observed": "not_verified",
         },
     )
+    if project.get("retentionDays") != int(expected):
+        pytest.fail(
+            "Langfuse did not report the requested project retention "
+            f"(keys: {sorted(project)}). Langfuse 4.46 applies "
+            "LANGFUSE_INIT_PROJECT_RETENTION only with the Enterprise 'data-retention' "
+            "entitlement; without it retention is unset and traces are kept indefinitely."
+        )
 
 
 async def test_live_closed_loopback_port_is_a_failed_export(tmp_path: Path, principal) -> None:
@@ -257,11 +311,7 @@ async def test_live_closed_loopback_port_is_a_failed_export(tmp_path: Path, prin
         probe.bind(("127.0.0.1", 0))
         closed_port = probe.getsockname()[1]
     container = build_container(
-        Settings(
-            **_settings_kwargs(
-                tmp_path, values, langfuse_base_url=f"http://127.0.0.1:{closed_port}"
-            )
-        )
+        _settings(tmp_path, values, langfuse_base_url=f"http://127.0.0.1:{closed_port}")
     )
     await container.startup()
     try:
@@ -277,9 +327,8 @@ async def test_live_closed_loopback_port_is_a_failed_export(tmp_path: Path, prin
         await container.shutdown()
     assert result.status == WorkStatus.COMPLETED, result.errors
     receipts = container.trace.export_receipts()
-    assert receipts and {(r.status, r.reason) for r in receipts} == {
-        ("failed", "connection_error")
-    }
+    assert receipts
+    assert {(r.status, r.reason) for r in receipts} == {("failed", "connection_error")}
     _record_evidence(
         "closed_port",
         {"receipts": len(receipts), "statuses": ["failed:connection_error"]},
