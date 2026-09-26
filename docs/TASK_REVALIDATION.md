@@ -103,7 +103,13 @@ TASK_CONTROL_ROOT=/absolute/canonical/control .venv/bin/python -m pytest -q test
 .venv/bin/python -m pytest -q tests/test_taskctl.py
 ```
 
-감사는 원래 D1~D3 24h에 승인된 E2E 추가 3h를 더한 D3 11h를 확인한다.
-추가 기술 4.5h는 별도이며 직렬 핵심 추정은 31.5h이다(D4 통합 8h/본인 LLMOps 별도).
+초기 이력은 D1~D3 24h에 승인된 E2E 추가 3h(D3 11h), 추가 기술 4.5h를 더한
+직렬 31.5h이다. 이 수치를 현재 추정으로 고정하거나 과거 기록에서 삭제하지 않는다.
+2026-09-26 실제 사전 조사로 P0-017은 0.5→1h, P0-019는 1.5→2h,
+P1-006D는 0.5→2h로 승인 변경됐다. 따라서 현재 감사는 D1=8.5h, D2=8.5h,
+D3=11h와 추가 기술 6h, 직렬 합계 **34h**를 정확히 검사한다.
+D4 통합 8h와 본인 LLMOps 3.5h는 별도이며, 병렬 실행을 근거로 직렬 합계를 축소하지 않는다.
+이번 기대값 갱신은 실제 이관 테스트 두 곳의 옛 합계 불일치에 대한 보수다.
+원문 checksum·ID·완료 이력·NAT 독립성·mock/real 최종 gate는 그대로 검사한다.
 관리 회귀는 임시 Git/control fixture만 변경한다. 이 테스트의 성공은 RFA 제품/NAT/보안
 시나리오 성공이 아니다. 제품 task의 필수 검증은 해당 명세대로 별도로 실행한다.
