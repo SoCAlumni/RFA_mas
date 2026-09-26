@@ -1,0 +1,41 @@
+{
+  "attempt_id": "trace-target-01",
+  "contract_digest": "999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "exit_code": 1,
+        "id": "V1",
+        "log_excerpt": "Coordinator incorrectly injected PYTEST_DISABLE_PLUGIN_AUTOLOAD=1. Required pytest-asyncio plugin did not load; async fixture setup and async tests rejected. Output began EFEEEEEEEEEEEEEEEEEEF; no product AC verified. V1 elapsed1.6295s, actual finished10:25:23.412271UTC.",
+        "result": "failed"
+      },
+      {
+        "counts": {
+          "collected": 202,
+          "deselected": 0,
+          "errors": 41,
+          "failed": 29,
+          "passed": 132,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "exit_code": 1,
+        "id": "V2",
+        "log_excerpt": "29 failed,132 passed,41 errors,3 warnings in3.01s. Missing async plugin/unknown asyncio_mode from coordinator harness override, not product regression.",
+        "result": "failed"
+      }
+    ],
+    "correction": "Remove the injected plugin-disable setting; retain sanitized environment and repository-declared pytest plugin discovery. Re-run as separate immutable target attempt; no source/test/AC changes. This is target execution1 failure, not an additional worker implementation cycle.",
+    "finished_at": "2026-09-26T10:27:30+00:00",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-26T10:25:21.782797+00:00",
+    "time_note": "Finish is post-run review bound; subprocess execution completed before this review. Not a duration measurement."
+  },
+  "result": "failed",
+  "source_fingerprint": "42f16a1e6701c02e984fd87cc425dfd19b48262f59fa77b836e0b8855f59c4c2",
+  "source_manifest": ".agent/evidence/P1-006D/trace-target-01/source.json",
+  "spec_digest": "f5cd80c60368647a46c8cb104c7fc6d8bb8fa3596e862ec4a9ddb980f81371d3",
+  "spec_revision": 10,
+  "task_id": "P1-006D"
+}

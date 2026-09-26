@@ -9,7 +9,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -287,44 +287,70 @@ verification:
   - 기존 인증/재개/설정/세션·migration/보안 계약을 보존하며 frozen 1.0 및 additive extended fixture 검사가 통과한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-006D
-latest_evidence_file: .agent/evidence/P1-006D/trace-01/result.json
+latest_evidence_file: .agent/evidence/P1-006D/trace-target-02/result.json
 verification_summary:
-  state: failed
+  state: passed
   spec_revision: 10
   spec_digest: f5cd80c60368647a46c8cb104c7fc6d8bb8fa3596e862ec4a9ddb980f81371d3
-  contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
-  source_fingerprint: e2b605516169def68473c878c0099b91a0fdebeaf6a04a89736d2aae29eab34d
-  evidence: .agent/evidence/P1-006D/trace-01/result.json
+  contract_digest: 999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f
+  source_fingerprint: 42f16a1e6701c02e984fd87cc425dfd19b48262f59fa77b836e0b8855f59c4c2
+  evidence: .agent/evidence/P1-006D/trace-target-02/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 15
+  submission_generation: 1
+  submission:
+    head: 6073519dbb084e9c4310f924e530887023fcb7df
+    baseline_head: 56f289fc10ebf9b7adee0aa5b4b611bc41cdd14e
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006D
+    branch: task/P1-006D
+    evidence: .agent/evidence/P1-006D/trace-03/result.json
+    changed_files:
+      .env.example: df21943dcc0377ecc0c9b2cfe9dc249202935ba8e04ae904a67a7f94607420a1
+      docs/CONTRACT_CHANGELOG.md: 47cc63983d464c4739f9b7b406da84ea5372d6bf5865e7c027a7647d698fe28e
+      docs/INTEGRATION.md: 8967da350cdbbaadb40611749ff1c66ef8e691237a316a47efbb5855df117e30
+      docs/contracts/extended.json: 37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a
+      fixtures/eval/observation_cases.json: d5703299c74b80bb8dadc110800b2ec8b3e2cb7f50ba9f215d440c8c250efea1
+      pyproject.toml: b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d
+      src/rfa_mas/adapters/local.py: 95bc420592f652f0954f436265e856f4bc9513769d58b6b8cf0bb257ae04716b
+      src/rfa_mas/api/app.py: d62bb50ad4e152ae515610229a419114314e3106ab3a7c4042886312e86d7dee
+      src/rfa_mas/application/observations.py: 01a653451b5c30111715560a30db30ebc85f5446527679686ff9d0c134beec52
+      src/rfa_mas/application/service.py: 6742957a2ab639cb9e3a02e1fac6012aaa6ecd9f102d3e055a04dbe7142e1f3e
+      src/rfa_mas/bootstrap.py: b7f6a3766c2eca02a36ffa882bb92b3baa58084990b2bfc7d2e880f3de5aca23
+      src/rfa_mas/contracts/__init__.py: 61e4a42f7079980f6a6b65072eeb52a34fd6eedd6e560651c27f0cfd7d9bbab5
+      src/rfa_mas/contracts/models.py: 6a4b0ae66627925d079a31c4c0b0a25e327150182b345e609a873d7744b0b950
+      src/rfa_mas/ports/interfaces.py: 0076413ce66aea39ac486d6636652831b8cad3eec263e24e1e83aeea20e61331
+      src/rfa_mas/settings.py: a5554ffee25d5e712251366173696555ac179b1a26cc2dfe7e83e8d38e39d57a
+      tests/test_security.py: 806e6b9ca5e4aa91a7e42c54bd1f21b928d2a1c6ad5bde43079e64f88e188607
+      tests/test_sessions.py: 35b3d3297bbf5a8029afc301bed7b8f3220a111b5ed2b18ff7a90f74806f1ac5
+      tests/test_settings.py: 7f07230b65e790f5ae1ab1bfcde633f6b38d4ffbfaa8a6516c607051975253e0
+      tests/test_trace_contract.py: 5d292bcaf339cde0bf21aec525049414e5efdb044e3dd2c1658fdfb3bc1bdc0a
+      uv.lock: bf55dc7573e94477535c279e4056a3ff3c4e6603989fec92bf9ace1495456849
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 10
+      spec_digest: f5cd80c60368647a46c8cb104c7fc6d8bb8fa3596e862ec4a9ddb980f81371d3
+      contract_digest: 999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f
+      source_fingerprint: 42f16a1e6701c02e984fd87cc425dfd19b48262f59fa77b836e0b8855f59c4c2
+      evidence: .agent/evidence/P1-006D/trace-target-02/result.json
+    head: e634435b36a6e36a035a858fdf31fda78b72dcfc
+  evidence: .agent/evidence/P1-006D/trace-target-02/result.json
+revision: 29
 spec_revision: 10
 claim_generation: 1
-claim:
-  session_id: rfa-coordinator
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006D
-  branch: task/P1-006D
-  generation: 1
-  claimed_at: '2026-09-26T09:48:37+00:00'
-  heartbeat_at: '2026-09-26T09:58:44+00:00'
-  lease_expires_at: '2026-09-26T10:13:44+00:00'
-  baseline_head: 56f289fc10ebf9b7adee0aa5b4b611bc41cdd14e
-  recovery_required: false
-  context_digest: 2fd594afa0ab72a4d46a5485fb0bbed506230d3b4148cc939e1ed90ef230d84b
+claim: null
 attempts:
-  count: 1
-  cycles: 1
+  count: 5
+  cycles: 3
   no_progress_count: 0
-  latest_attempt: trace-01
+  latest_attempt: trace-target-02
   evidence_refs:
   - .agent/evidence/P1-006D/trace-01/result.json
+  - .agent/evidence/P1-006D/trace-02/result.json
+  - .agent/evidence/P1-006D/trace-03/result.json
   approaches: []
 blocker: null
 migration:
@@ -337,8 +363,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T10:08:16+00:00'
-concise_result: 'Specification changed: Installed LangChain constructor spy reproduced ambient tracing
-  activation; native run/resume need guarded local-only observation and direct already-locked LangSmith
-  dependency. Preserve failed diagnostic and actual bounded scope.'
-next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
+updated_at: '2026-09-26T10:28:10+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: Final trace-03 required verification after immutable storage/outward projection separation.

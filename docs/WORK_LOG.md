@@ -503,3 +503,35 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   적용하는 접근으로 수정한다. 저장 error 자유 텍스트 정화는 유지하며 immutable 검사나
   기존 회귀 기대를 낮추지 않는다. 허가된 원본 대화 메시지는 error export와 구분한다.
   세 번째도 실패하면 같은 접근의 네 번째 재시도를 하지 않고 근거·blocker를 남긴다.
+
+## P1-006D 통합·전체 회귀 차이 — 2026-09-26
+
+- 세 번째 worker `trace-03`은 V1 **21 passed(3.24초)**, V2 **202 passed(11.15초)**,
+  추가 graph/HTTP/policy 등 **75 passed(2.61초)**였다. 독립 검토 후 source6073519를
+  main e634435에 merge했다. 원래 두 실패와 수정 근거를 보존하고 AC를 낮추지 않았다.
+- frozen schema/OpenAPI9개·extended7개 fixture 실제 검사 후 additive1.1 digest
+  `37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a`를 발행했다.
+  최초 target begin은 미발행 digest 때문에 거절됐고 기존 publish-contract 절차로
+  해결했다. 상대 서비스 지원 합의나 실제 연결 성공을 의미하지 않는다.
+- root lock+NAT sync는169개 resolved, editable rfa-mas만 재설치했다. Python3.12.13,
+  SQLite3.53.1을 유지한다. `trace-target-01`은 coordinator가 플러그인 자동 로딩을
+  잘못 비활성화해 pytest-asyncio가 실행되지 않았다. V2는132 passed/29 failed/41 errors;
+  V1도 setup/async 실행 오류였다. 제품 검증 통과로 처리하지 않았다. 첫 report의
+  finish 시각 전사 오류는 원본을 덮어쓰지 않고 timestamp-erratum.json으로 정정했다.
+- 정상 저장소 pytest 설정으로 실행한 `trace-target-02`는 **21 passed(3.30초)**,
+  **202 passed(11.39초)**, skip/error0이다. Ruff 및 계약 검사도 통과했고 해당 한정
+  target AC를 integrate/close했다. 알려진 child graph durability 경고는 그대로 기록한다.
+- 별도 전체 suite는 **532 passed/1 failed(143.22초)**였다. 실패는 trace guard의
+  positive-control 테스트이며 단독 실행 때와 달리 fake tracer가 생성되지 않았다.
+  설치 LangSmith0.14.0 소스와 네트워크 없는 합성 probe에서 env lookup의 lru_cache가
+  이전 false를 보존함을 확인했다: cache clear 전0회, 후1회 fake constructor.
+  실제 guard 우회나 유출이 관찰된 것은 아니다. 전체 회귀/최종 제품 gate는 미통과다.
+  다음 P0-019의 최소 후속 범위에서 해당 합성 환경 테스트의 cache 격리를 고치고
+  양성/음성 assertion을 유지한 채 순서 회귀를 다시 검증한다. 기존 실패 evidence
+  `P1-006D/full-regression-01.json`은 보존한다. 같은 구현 오류의 네 번째 반복이 아니다.
+- 읽기 진단의 추정 경로 operations.py/nat_compat.py/test_nat_compat.py는 missing이었다.
+  실제 cli.py와 tests/spikes/test_nat_compatibility.py, 설치 패키지 소스로 교정했다.
+- 다음 팀 Factory는 bootstrap에서 실제 runtime 지원 descriptor를 받는다. 관찰 wrapper의
+  prepare/cleanup 메서드 존재만으로 내부 HTTP 지원을 추정하지 않는다. lifecycle DB
+  기록과 아직 미수집인 lifecycle trace를 분리한다. KB는 그 다음 공유 migration 작업이다.
+  실제 NVIDIA/Skill/NAT 제품 경로/OpenShell/NemoClaw 및 최종10개 시나리오는 미실행이다.

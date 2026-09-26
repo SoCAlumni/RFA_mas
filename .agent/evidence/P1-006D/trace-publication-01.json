@@ -1,0 +1,14 @@
+{
+  "task_id": "P1-006D",
+  "reviewer": "rfa-coordinator",
+  "source_commit": "6073519dbb084e9c4310f924e530887023fcb7df",
+  "target_head": "e634435b36a6e36a035a858fdf31fda78b72dcfc",
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a",
+  "checks": [
+    {"argv": [".venv/bin/python", "scripts/contract_baseline.py", "check"], "cwd": ".", "exit_code": 0, "observed": "Frozen schema/OpenAPI and 9 fixture shapes valid; baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0"},
+    {"argv": [".venv/bin/python", "scripts/contract_baseline.py", "check-extended"], "cwd": ".", "exit_code": 0, "observed": "Extended schema and 7 fixture shapes valid"}
+  ],
+  "limits": "Publishes additive repository-local observation schema, not teammate support, product integration verification, or external service evidence. Target V1/V2 follow publication."
+}

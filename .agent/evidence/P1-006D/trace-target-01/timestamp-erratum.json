@@ -1,0 +1,9 @@
+{
+  "corrects": ".agent/evidence/P1-006D/trace-target-01/result.json report.finished_at",
+  "reason": "Coordinator transcribed 10:27:30 instead of using the observed clock. That timestamp is invalid and must not be used as execution or review evidence.",
+  "observed_review_clock_utc": "2026-09-26T10:26:07+00:00",
+  "actual_v1_finished_at": "2026-09-26T10:25:23.412271+00:00",
+  "actual_v2_finished_at": null,
+  "v2_duration_from_pytest_seconds": 3.01,
+  "result_unchanged": "failed; missing pytest-asyncio due to coordinator plugin-disable override. Original record preserved. No successful AC or measured end-to-end duration is claimed."
+}

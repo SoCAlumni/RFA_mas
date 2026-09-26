@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -66,7 +66,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65
+  digest: 37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a
   role: consumer
 context:
   global_refs:
@@ -179,7 +179,7 @@ verification:
 evidence_dir: .agent/evidence/P0-017
 latest_evidence_file: .agent/evidence/P0-017/settings-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 10
   spec_digest: 823f1ce4d3116ac4a5108fa2d2a110713b99b05d43e5cdb3daad4b2c4596e20e
   contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
@@ -189,7 +189,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 9cd1c44b92d2d49dd9a85be28957fa0b407dcd03
@@ -213,8 +213,8 @@ integration:
       evidence: .agent/evidence/P0-017/settings-target-01/result.json
     head: 518a6632e626e937fadb3c91df525bf914421fd5
   evidence: .agent/evidence/P0-017/settings-target-01/result.json
-revision: 23
-spec_revision: 10
+revision: 26
+spec_revision: 12
 claim_generation: 1
 claim: null
 attempts:
@@ -237,6 +237,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T09:25:47+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: Capture settings-02 and rerun exact V1 plus related regression; preserve failed evidence.
+updated_at: '2026-09-26T10:32:50+00:00'
+concise_result: 'Specification changed: Accept published additive observation DTOs; existing configuration
+  scope and AC unchanged, revalidate affected sources'
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

@@ -1,0 +1,12 @@
+{
+  "task_id": "P1-006D", "reviewer": "rfa-coordinator",
+  "head": "e634435b36a6e36a035a858fdf31fda78b72dcfc",
+  "started_at": "2026-09-26T10:27:10.776845+00:00",
+  "finished_at": "2026-09-26T10:29:34.825604+00:00",
+  "argv": [".venv/bin/python", "-m", "pytest", "-q"], "cwd": ".", "timeout_seconds": 600,
+  "elapsed_seconds": 144.0571, "exit_code": 1,
+  "counts": {"collected": 533, "passed": 532, "failed": 1, "errors": 0, "skipped": 0},
+  "result": "failed",
+  "log_excerpt": "test_restart_resume_alias_sequence_and_native_ambient_guard: positive control CallbackManager.configure did not create fake tracer; len(created)==0 expected1. 1 failed,532 passed,58 known durability warnings in143.22s. Targeted V1/V2 had passed earlier on same source.",
+  "next_action": "Investigate full-suite order/cache interaction without lowering positive or negative control. No claim of full-regression success. No external tracing/provider calls authorized."
+}
