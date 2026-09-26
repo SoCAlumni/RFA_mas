@@ -20,21 +20,26 @@ execution_class: 이 저장소 구현
 product_mode: local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록
 scope:
   included:
-  - 기존 TracePort/LocalJsonlTrace를 확장하여 raw 본문 없이 실행·정책·근거·승인 참조와 실제 지연/호출을 연결한다.
-  - 1.1 typed observation ledger를 신뢰된 실행/테스트 boundary에서 생성하고 coverage/미수집을 구분한다. P1-006 verifier는 이 계약을
-    소비하며 모델의 성공 문구를 관찰로 신뢰하지 않는다.
-  - legacy emit 경로도 typed allowlist로 제한한다. 사용자 입력 ID/사유는 안전한 서버 발급 ID와 분리하고 API error/trace export canary를
-    검증한다. mock/local 원본과 평가용 test sink를 구분한다.
-  - 실제 포트 decorator/신뢰된 recorder를 composition root에서 주입하여 순서·지연·호출·실패·coverage를 관찰한다. core graph에 SDK나
-    URL을 넣지 않고 아직 연결되지 않은 ToolPort는 uncollected로 표시한다.
-  - API 오류의 caller X-Request-Id/Pydantic input 반사를 제거한다. trace 식별자는 신뢰된 서버 mapping으로 연결하고 caller 문자열/해시를
-    익명화로 취급하지 않는다. 원본 identity·인증 header·query/body·첨부는 trace에 저장하지 않는다.
-  - P0-017 planned TRACE_RETENTION_DAYS를 실제 LocalJsonlTrace 소비 설정으로 승격한다. 소유한 trace 파일만 제한적으로 관리하고 타 파일/symlink는
-    읽거나 삭제하지 않는다. 작업 관리 evidence/Git 로그는 제품 trace 보존 대상이 아니다. 외부 backend는 미구현 상태를 명시한다.
+  - 기존 TracePort/LocalJsonlTrace에 typed allowlist와 실제 port-boundary 관측을 연결한다. raw prompt/본문/인자/첨부/identity/인증
+    header를 기록하지 않고 사용자 ID나 hash를 익명화로 취급하지 않는다.
+  - 인증된 run 소유권 확인 후 기존 application SQLite에 서버 발급 alias와 원자적인 observation 순번을 저장하고 재개/재시작에서 재사용한다. 이 mapping은
+    권한 원본이 아니며 trace 파일 TTL과 별개인 run metadata이다.
+  - service의 실제 legacy emit도 안전한 recorder로 교체하고 자유 metadata 우회를 닫는다. ContextVar 관측 문맥은 항상 reset하며 composition의
+    Model/Retrieval/Policy/Runtime/Response decorator에서 시작/종료/실패·monotonic duration을 수집한다. graph에 SDK/URL을
+    넣지 않는다.
+  - 실제 port 호출과 테스트 sink의 실제 모의 write 수신은 별도 관측 출처다. 미연결 ToolPort/내부 노드는 uncollected, 현재 ModelResult에
+    없는 provider token은 null이다. mock ToolPort write 금지를 해제하지 않는다.
+  - 기존 1.0 Policy/Review에 없는 독립 decision/approval/receipt ID를 만들지 않는다. 로컬 observation ID는 해당 서비스 원본 ID가
+    아니며 아직 없거나 제공되지 않은 stage ref는 null이다. provider/버전/역할은 신뢰된 registry 또는 안전한 alias만 사용한다.
+  - API RfaError의 caller X-Request-Id 및 Pydantic input/ctx/msg 원문 반사를 제거한다. 실패 RunResult의 caller request/trace/agent
+    ID도 안전한 error projection으로 바꾸며 1.0 schema와 정상 owner 응답 correlation은 유지한다.
+  - P0-017 planned TRACE_RETENTION_DAYS를 실제 LocalJsonlTrace 소비 설정으로 승격한다. private file·symlink 거절·명시적인
+    소유 목록으로 제품 trace만 관리한다. 기존 legacy events.jsonl은 자동 export/삭제하지 않으며 .agent/evidence·source manifest·Git·타
+    파일은 보존 대상 밖이다. 외부 backend는 계속 명시 unavailable이다.
   excluded:
-  - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 .env 접근
-  - 새 framework/관측 서버/메모리 엔진·core graph 재작성
-  - 공통 DTO/설정/lock 임의 변경; coordinator 계약 변경 절차로 요청
+  - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 env 접근
+  - 새 framework/관측 서버/profiler/메모리 엔진·core graph 재작성
+  - frozen 1.0 계약 변경 또는 승인/권한 원본 중복 구현
   owned_paths:
   - src/rfa_mas/adapters/local.py
   - src/rfa_mas/bootstrap.py
@@ -56,6 +61,7 @@ scope:
   - src/rfa_mas/settings.py
   - .env.example
   - tests/test_settings.py
+  - tests/test_sessions.py
   read_only_paths:
   - docs/EVALUATION_CONTEXT.md
   - src/rfa_mas/contracts/common.py
@@ -191,22 +197,25 @@ deliverables:
   description: trace retention의 실제 소비·비밀 없는 설정·공통 readiness 회귀; planned와 active 원본 중복 없음
 acceptance_criteria:
 - id: AC1
-  given: 합성 Run의 생성/검토/게시 각 단계
-  expect: 생성된 session/task/team/run/agent/trace 및 policy/source/draft/approval/receipt 참조만 기록; 미래 단계 ID는
-    null이고 mode/provider/evidence 출처를 구분
+  given: 합성 Run과 승인 대기 재개/재시작, 일부 단계에는 1.0 원본 서비스 ID가 없음
+  expect: 서버 mapping/단조 순번으로 같은 run을 연결하고 실제 발생한 참조만 기록한다. 원본에 없는 decision/approval/receipt는 null이며 로컬
+    observation ID를 원본으로 표시하지 않는다. mode/provider/관측 출처를 구분한다.
   required: true
 - id: AC2
-  given: metadata·오류·export에 합성 prompt/본문/도구 인자/첨부·PII/key canary 삽입
-  expect: 명시된 안전한 typed allowlist만 저장; unknown field와 사용자 입력 ID/사유 코드로 canary가 우회하지 못함. hash를 익명화라고 표현하지
-    않음
+  given: metadata·API validation/domain 오류·실패 RunResult·export에 prompt/본문/인자/첨부/identity/PII/key canary
+    삽입
+  expect: 안전한 typed allowlist만 저장하고 caller ID/사유/input/ctx/msg 반사로 canary가 우회하지 못한다. 정상 owner correlation
+    및 frozen 1.0 wire schema는 유지하며 hash는 익명화가 아니다.
   required: true
 - id: AC3
-  given: fake provider가 token 사용량을 반환하지 않는 실행
-  expect: 관찰한 경계의 순서·duration 단위·호출/실패 원인을 run에 연결; token은 null/unknown. 실제 미수집 단계와 미실행을 0으로 채우지 않음
+  given: 결정적 provider 성공/오류, token 없음, 연결되지 않은 ToolPort 및 별도 test sink 기록
+  expect: 실제 관찰 경계의 순서/duration 단위/호출·실패를 run에 연결한다. 미수집·미실행은 0 성공이 아니며 provider token은 null이다. port 호출만으로
+    실제 write를 주장하지 않고 sink 관측을 구분한다.
   required: true
 - id: AC4
-  given: local exporter와 외부 trace 전송 옵션
-  expect: 기존 로컬 파일 유지·보존/redaction 연결, 외부 전송은 별도 opt-in+egress 허가; NAT용 서버 신설 없이 동일 안전한 event 계약 사용
+  given: 활성 local retention 설정과 legacy/외부 파일/symlink 및 오래된 승인 대기 run
+  expect: 소유한 private product trace만 TTL 관리하고 다른 파일·개발 evidence는 건드리지 않는다. alias/순번 metadata는 trace TTL로
+    지워지지 않는다. 외부 전송/새 backend는 활성화하지 않고 같은 안전한 export 계약을 후속 NAT가 소비한다.
   required: true
 verification:
 - id: V1
@@ -218,8 +227,9 @@ verification:
   type: command
   availability: planned
   prerequisites:
-  - 후속 task 구현 후 source worktree에서 실행. 임시 DB/합성 fixture, 실제 .env·외부 credential을 읽지 않음.
-  - P0-014 schema 및 fixtures/contracts/trace_eval_cases.json 통합
+  - tests/test_trace_contract.py에 실제 경계 관측/재개 alias/순번/token-null/coverage/canary/sink와 private retention
+    보호 검사를 추가한다.
+  - 임시 DB·합성 fixture·명시 설정만 사용한다. 원본 secret/env/network 없음.
   cwd: .
   argv:
   - .venv/bin/python
@@ -230,9 +240,40 @@ verification:
   timeout_seconds: 120
   procedure: []
   assertions:
-  - 정상 Run의 ID join/null·mode와 metadata schema round-trip
-  - export bytes에 모든 synthetic canary 없음; 임의 metadata/unsafe ID도 차단
-  - latency unit과 null token/coverage·보존 규칙 확인
+  - 재시작/재개에서 run alias와 단조 순번이 연결되고 없는 원본 stage ID는 null
+  - 실제 API/service/legacy exporter canary와 임의 field/ID/사유 우회 차단
+  - 실제 호출·실패·duration/sink 출처, 미관측 coverage/token-null을 독립 기록
+  - 제품 파일만 private/retention 처리하며 legacy·symlink·개발 evidence 및 run mapping은 보존
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: available
+  prerequisites:
+  - 기존 migration1과 데이터를 보존하며 새 alias migration을 등록하고 schema row 기대값을 실제 새 버전에 맞춘다.
+  - 활성 retention/example parity와 frozen/extended schema export 회귀를 포함한다.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_security.py
+  - tests/test_api.py
+  - tests/test_settings.py
+  - tests/test_sessions.py
+  - tests/test_resume.py
+  - tests/test_contracts.py
+  - tests/test_contract_baseline.py
+  - tests/test_trace_eval_contract.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 기존 인증/재개/설정/세션·migration/보안 계약을 보존하며 frozen 1.0 및 additive extended fixture 검사가 통과한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-006D
 latest_evidence_file: null
@@ -252,8 +293,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 8
-spec_revision: 8
+revision: 9
+spec_revision: 9
 claim_generation: 0
 claim: null
 attempts:
@@ -274,7 +315,8 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:39:37+00:00'
-concise_result: 'Specification changed: Finalize inspected effort/shared settings ownership before any
-  claim; current task behavior remains unimplemented and tests planned.'
+updated_at: '2026-09-26T09:27:56+00:00'
+concise_result: 'Specification changed: Inspected live legacy service/ports: persist observation aliases
+  and sequence, never invent absent 1.0 approval IDs; preserve error privacy, run metadata across TTL,
+  existing migration and protected write behavior.'
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.

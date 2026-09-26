@@ -393,3 +393,28 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   바꾼 합성 schema probe가 통과했다. 제품 workflow 실행은 하지 않았다.
   evaluator 예외 누락·미관측 token의 기본0·profiler 미설치 한계를 명세에 보존했다.
   P1-006D 실제 관측 계약 수신 전 draft이며 로컬 대체 성공을 NAT 성공으로 세지 않는다.
+
+## P0-017 설정/doctor 구현·실패 보수·통합 — 2026-09-26
+
+- feature 9cd1c44를 main 518a6632에 통합했다. settings/example·bootstrap 공통
+  preflight·doctor·검증 5파일만 수정했다. 실제 env, public DTO, API readyz,
+  dev_env credential 생성 로직, dependency/lock은 변경하지 않았다.
+- doctor는 configured/implementation과 lifecycle/provider probe not_run을 분리한다.
+  미지원 real provider/NAT/scheduler/egress 선택은 client 생성 전에 명시 오류다.
+  key/flag는 권한이 아니며 예제 secret 9개는 빈칸이다. planned 설정은 단일 catalog로
+  관리하고 아직 소비하지 않는 변수를 활성 설정으로 나열하지 않는다. SQLite 버전과
+  fixed/affected/unknown은 진단이지 integrity/실행 성공 증거가 아니다.
+- settings-01은 **1 failed, 54 passed(0.31초)**였다. httpx가 닫히지 않은 대괄호
+  URL을 hostname으로 받아 malformed 설정을 non-loopback 미지원으로 분류했다.
+  요청은 차단됐으나 오류 분류 AC가 실패했다. 원본 증거를 보존하고 stdlib URL
+  구조/port/hostname 검사를 추가했으며 동일 실패를 그대로 재시도하지 않았다.
+- settings-02는 설정 56 passed(0.27초), 관련 154 passed(3.83초), 계약 fixture
+  9+7개 및 Ruff/diff 검사를 통과했다. 별도 target은 56 passed(0.20초),
+  154 passed(3.90초), 32개 known durability warnings와 계약/Ruff 통과였다.
+  feature는 실제 NAT 미설치, target은 NAT1.8.0 설치 환경이며 둘 다 SQLite3.53.1.
+  제품 NAT/실제 공급자 통과와 혼동하지 않는다. 최대3회 이내 두 번째 수정 검증에 성공했다.
+- 변경된 설정의 영향을 받는 선행 source evidence는 필요한 범위만 재검증한다.
+  P1-006D의 durable safe alias/순번, 실제 포트와 sink 관측 구분, 없는 승인 원본 ID의
+  null 처리, 오류 projection, trace TTL과 run metadata 분리를 구현 명세에 확정했다.
+  이 trace 기능은 아직 not_run이며 다음 shared DTO/composition 작업으로 진행한다.
+- 앞선 후속 명세 변경 후 이관 회귀는 별도로 17 passed(14.36초)였다.
