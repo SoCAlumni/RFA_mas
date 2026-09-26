@@ -1,0 +1,1610 @@
+{
+  "cases": [
+    {
+      "approval": {
+        "approval_id": "approval-fixture",
+        "approver_id": "fixture-owner",
+        "authority": "reference_mock",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "decision": "approved",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "mode": "mock",
+        "schema_version": "1.1"
+      },
+      "category": "normal",
+      "draft": {
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed_evidence": [
+          {
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "schema_version": "1.0",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "attachments": [],
+        "audience": "public",
+        "content": "Public synthetic FAQ.",
+        "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+        "domain_id": "triv3",
+        "draft_id": "draft-fixture",
+        "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+        "policy_decision_id": "policy-fixture",
+        "policy_version": "policy-v1",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": true,
+        "sources": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-fixture",
+        "version": 1
+      },
+      "evaluation": {
+        "case_id": "contract-normal",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "none",
+      "id": "contract-normal",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": true,
+        "allowed_audiences": [],
+        "code": "allowed",
+        "decision": "allow",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": {
+        "approval_id": "approval-fixture",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "external_result_ref": "local-sink/record-1",
+        "idempotency_key": "publication-fixture-once",
+        "mode": "mock",
+        "next_action": "none",
+        "publication_id": "publication-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "status": "succeeded"
+      },
+      "trace": {
+        "approval_id": "approval-fixture",
+        "call_count": 0,
+        "draft_id": "draft-fixture",
+        "duration_ms": null,
+        "event": "publish",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": "publication-fixture",
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "succeeded",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    },
+    {
+      "approval": null,
+      "category": "policy_denied",
+      "draft": null,
+      "evaluation": {
+        "case_id": "contract-policy_denied",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "deny",
+      "id": "contract-policy_denied",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": false,
+        "allowed_audiences": [],
+        "code": "denied",
+        "decision": "deny",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": null,
+      "trace": {
+        "approval_id": null,
+        "call_count": 0,
+        "draft_id": null,
+        "duration_ms": null,
+        "event": "policy",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": null,
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "denied",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    },
+    {
+      "approval": null,
+      "category": "approval_missing",
+      "draft": {
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed_evidence": [
+          {
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "schema_version": "1.0",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "attachments": [],
+        "audience": "public",
+        "content": "Public synthetic FAQ.",
+        "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+        "domain_id": "triv3",
+        "draft_id": "draft-fixture",
+        "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+        "policy_decision_id": "policy-fixture",
+        "policy_version": "policy-v1",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": true,
+        "sources": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-fixture",
+        "version": 1
+      },
+      "evaluation": {
+        "case_id": "contract-approval_missing",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "review",
+      "id": "contract-approval_missing",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": true,
+        "allowed_audiences": [],
+        "code": "allowed",
+        "decision": "allow",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": null,
+      "trace": {
+        "approval_id": null,
+        "call_count": 0,
+        "draft_id": "draft-fixture",
+        "duration_ms": null,
+        "event": "policy",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": null,
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "waiting",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    },
+    {
+      "approval": {
+        "approval_id": "approval-fixture",
+        "approver_id": "fixture-owner",
+        "authority": "reference_mock",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "decision": "approved",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "mode": "mock",
+        "schema_version": "1.1"
+      },
+      "category": "draft_changed",
+      "draft": {
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed_evidence": [
+          {
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "schema_version": "1.0",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "attachments": [],
+        "audience": "public",
+        "content": "Revised public FAQ.",
+        "content_hash": "a1d5088c1af51878a6d460f8ed459a4ab3946decb3bf8021c0e493dfaa151220",
+        "domain_id": "triv3",
+        "draft_id": "draft-fixture",
+        "payload_hash": "ee3093bff3eeb1ebd936a75dcdf161b271c51cc7df65012295f3a1233869b2da",
+        "policy_decision_id": "policy-fixture",
+        "policy_version": "policy-v1",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": true,
+        "sources": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-fixture",
+        "version": 2
+      },
+      "evaluation": {
+        "case_id": "contract-draft_changed",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "review",
+      "id": "contract-draft_changed",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": true,
+        "allowed_audiences": [],
+        "code": "allowed",
+        "decision": "allow",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": null,
+      "trace": {
+        "approval_id": "approval-fixture",
+        "call_count": 0,
+        "draft_id": "draft-fixture",
+        "duration_ms": null,
+        "event": "policy",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": null,
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "waiting",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    },
+    {
+      "approval": {
+        "approval_id": "approval-fixture",
+        "approver_id": "fixture-owner",
+        "authority": "reference_mock",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "decision": "approved",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "mode": "mock",
+        "schema_version": "1.1"
+      },
+      "category": "acl_changed",
+      "draft": {
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed_evidence": [
+          {
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "schema_version": "1.0",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "attachments": [],
+        "audience": "public",
+        "content": "Public synthetic FAQ.",
+        "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+        "domain_id": "triv3",
+        "draft_id": "draft-fixture",
+        "payload_hash": "6fac2971c22832f1e24f2f0137a758106e1f235fb8bc4aa97566c661fb61d19d",
+        "policy_decision_id": "policy-fixture",
+        "policy_version": "policy-v1",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": true,
+        "sources": [
+          {
+            "acl_revision": "acl2",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-fixture",
+        "version": 1
+      },
+      "evaluation": {
+        "case_id": "contract-acl_changed",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "review",
+      "id": "contract-acl_changed",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": true,
+        "allowed_audiences": [],
+        "code": "allowed",
+        "decision": "allow",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": null,
+      "trace": {
+        "approval_id": "approval-fixture",
+        "call_count": 0,
+        "draft_id": "draft-fixture",
+        "duration_ms": null,
+        "event": "policy",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": null,
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "waiting",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    },
+    {
+      "approval": {
+        "approval_id": "approval-fixture",
+        "approver_id": "fixture-owner",
+        "authority": "reference_mock",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "decision": "approved",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "mode": "mock",
+        "schema_version": "1.1"
+      },
+      "category": "duplicate",
+      "draft": {
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed_evidence": [
+          {
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "schema_version": "1.0",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "attachments": [],
+        "audience": "public",
+        "content": "Public synthetic FAQ.",
+        "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+        "domain_id": "triv3",
+        "draft_id": "draft-fixture",
+        "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+        "policy_decision_id": "policy-fixture",
+        "policy_version": "policy-v1",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": true,
+        "sources": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-fixture",
+        "version": 1
+      },
+      "evaluation": {
+        "case_id": "contract-duplicate",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "none",
+      "id": "contract-duplicate",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": true,
+        "allowed_audiences": [],
+        "code": "allowed",
+        "decision": "allow",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": {
+        "approval_id": "approval-fixture",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "external_result_ref": "local-sink/record-1",
+        "idempotency_key": "publication-fixture-once",
+        "mode": "mock",
+        "next_action": "none",
+        "publication_id": "publication-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "status": "succeeded"
+      },
+      "trace": {
+        "approval_id": "approval-fixture",
+        "call_count": 0,
+        "draft_id": "draft-fixture",
+        "duration_ms": null,
+        "event": "publish",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": "publication-fixture",
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "succeeded",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    },
+    {
+      "approval": {
+        "approval_id": "approval-fixture",
+        "approver_id": "fixture-owner",
+        "authority": "reference_mock",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "decision": "approved",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "mode": "mock",
+        "schema_version": "1.1"
+      },
+      "category": "outcome_unknown",
+      "draft": {
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed_evidence": [
+          {
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "schema_version": "1.0",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "attachments": [],
+        "audience": "public",
+        "content": "Public synthetic FAQ.",
+        "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+        "domain_id": "triv3",
+        "draft_id": "draft-fixture",
+        "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+        "policy_decision_id": "policy-fixture",
+        "policy_version": "policy-v1",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": true,
+        "sources": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-fixture",
+        "version": 1
+      },
+      "evaluation": {
+        "case_id": "contract-outcome_unknown",
+        "evaluator": "rules",
+        "evidence_refs": [],
+        "executed": false,
+        "judge_adapter": null,
+        "judge_dimensions": null,
+        "judge_kind": "not_run",
+        "judge_reason": null,
+        "judge_score": null,
+        "judge_status": "not_run",
+        "mode": "mock",
+        "rule_checks": {},
+        "rule_status": "not_run",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "simulated": false,
+        "trace_id": "trace-fixture",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      },
+      "execution": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "request_id": "req-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "session_id": "session-fixture",
+        "task_id": "task-fixture",
+        "team_id": "team-fixture",
+        "trace_id": "trace-fixture"
+      },
+      "expected_action": "query",
+      "id": "contract-outcome_unknown",
+      "policy": {
+        "action": "share",
+        "adapter": "reference_mock",
+        "agent_id": "assistant-supervisor",
+        "allowed": true,
+        "allowed_audiences": [],
+        "code": "allowed",
+        "decision": "allow",
+        "decision_id": "policy-fixture",
+        "domain_id": "triv3",
+        "expires_at": "2026-09-26T01:00:00Z",
+        "issued_at": "2026-09-26T00:00:00Z",
+        "policy_version": "policy-v1",
+        "recipient": "public",
+        "request_id": "req-fixture",
+        "resource_id": "public-faq",
+        "run_id": "run-fixture",
+        "safe_reason": "synthetic policy",
+        "schema_version": "1.1",
+        "simulated": true,
+        "source_refs": [
+          {
+            "acl_revision": "acl1",
+            "audience": "public",
+            "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+            "location": {
+              "line_start": 1,
+              "page": null,
+              "schema_version": "1.0",
+              "section": null,
+              "uri": "fixture:public-faq"
+            },
+            "policy_version": "policy-v1",
+            "schema_version": "1.1",
+            "source_id": "public-faq",
+            "source_revision": "r1"
+          }
+        ],
+        "subject_id": "fixture-owner",
+        "trace_id": "trace-fixture"
+      },
+      "receipt": {
+        "approval_id": "approval-fixture",
+        "binding": {
+          "content_hash": "211d27528169066e85d90e065c0a89b515fc6644c755232cacdc440c2fc26b92",
+          "draft_id": "draft-fixture",
+          "payload_hash": "a1e16d666ac8d1ab37a6cba3f145ba5b035087dde7787b62940bdf91cf8c5311",
+          "policy_version": "policy-v1",
+          "schema_version": "1.1",
+          "sources": [
+            {
+              "acl_revision": "acl1",
+              "audience": "public",
+              "content_hash": "6868e54dec83e7da363b10e8f5fe71a99b7eaafb5171e662f08541dfe6efc1c2",
+              "location": {
+                "line_start": 1,
+                "page": null,
+                "schema_version": "1.0",
+                "section": null,
+                "uri": "fixture:public-faq"
+              },
+              "policy_version": "policy-v1",
+              "schema_version": "1.1",
+              "source_id": "public-faq",
+              "source_revision": "r1"
+            }
+          ],
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "version": 1
+        },
+        "external_result_ref": null,
+        "idempotency_key": "publication-fixture-once",
+        "mode": "mock",
+        "next_action": "query",
+        "publication_id": "publication-fixture",
+        "run_id": "run-fixture",
+        "schema_version": "1.1",
+        "status": "outcome_unknown"
+      },
+      "trace": {
+        "approval_id": "approval-fixture",
+        "call_count": 0,
+        "draft_id": "draft-fixture",
+        "duration_ms": null,
+        "event": "publish",
+        "evidence_ref": null,
+        "execution": {
+          "agent_id": "assistant-supervisor",
+          "domain_id": "triv3",
+          "request_id": "req-fixture",
+          "run_id": "run-fixture",
+          "schema_version": "1.1",
+          "session_id": "session-fixture",
+          "task_id": "task-fixture",
+          "team_id": "team-fixture",
+          "trace_id": "trace-fixture"
+        },
+        "input_tokens": null,
+        "mode": "mock",
+        "output_tokens": null,
+        "policy_decision_id": "policy-fixture",
+        "publication_id": "publication-fixture",
+        "reason_code": null,
+        "sandbox_id": null,
+        "schema_version": "1.1",
+        "status": "outcome_unknown",
+        "timestamp": "2026-09-26T00:00:00Z",
+        "versions": {
+          "code": "fixture-v1",
+          "contract": "1.1",
+          "dataset": "contract-v1",
+          "evaluator": "rules-v1",
+          "model": null,
+          "policy": "policy-v1",
+          "prompt": null,
+          "schema_version": "1.1",
+          "sources": [],
+          "template": null
+        }
+      }
+    }
+  ],
+  "schema_version": "1.1",
+  "status": "repository-local-provisional",
+  "synthetic": true
+}

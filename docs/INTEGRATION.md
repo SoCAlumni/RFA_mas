@@ -17,9 +17,27 @@
 
 새 API·설정·명령을 현재 사용 가능한 목록에 올리는 시점은 해당 task의 구현과 검증이 끝난 뒤다. 이 문서에서 과거 P0의 완료 범위는 기반 local/mock 계약에 한정된다.
 
-### 후속 추적·평가·context 계약(아직 planned)
+### 1.1 추적·평가·context reference 계약
 
-P0-014의 RFA-EXTENDED 1.1에 [Execution/Evidence/Policy/Draft/Eval 변경안](EVALUATION_CONTEXT.md#a--repository-local-계약-변경안)을 함께 반영한다. 기존 Pydantic DTO를 확장하고 typed trace allowlist·선택적 context 읽기·7종 정상/오류 fixture를 검증한 뒤에만 새 digest를 발행한다. 아직 없는 session/team/sandbox/approval/receipt ID를 채우지 않으며 trace ID는 인증이 아니다. 정책 결정은 trusted principal·자료 라벨에서만 도출한다.
+P0-014의 additive RFA-EXTENDED 1.1 DTO는 `contracts/models.py`에 있으며 기존 1.0 DTO를 상속하거나 새 entity만 추가한다. `schema_version` literal이 미지원 버전을 거절한다. 기존 1.0 payload/HTTP route는 그대로이며 1.1 DTO가 새 API 구현을 뜻하지 않는다. 생성 schema는 `docs/contracts/extended.json`, 7종 합성 fixture는 `fixtures/contracts/trace_eval_cases.json`이다. `scripts/contract_baseline.py write-extended`로 생성하고 `check-extended`로 대조한다. 생성 결과는 Pydantic 원본이 아니며 수동 수정하지 않는다.
+
+| 1.1 계약 | 의미 / 이후 구현 위치 |
+| --- | --- |
+| ExecutionContext / SessionRecord / PersistentTask | conversation은 session의 별칭. session→서버 발급 thread 1개, session↔제품 Task N:M. 단순 검색의 task/team은 null. task는 domain 1개, team은 task를 필요로 한다. 실제 owner 조회·영속화는 P0-015/016 |
+| TeamTemplate / TeamSpec / TeamInstance | 승인된 Benchmark 4역할·Research 3역할만 가능. 멤버 AgentSpec/도메인/개별 memory namespace binding. Task당 활성 팀 하나는 DB 제약으로 P0-019에서 보장(스키마 단독 보장 아님). local/mock은 sandbox_id를 주장할 수 없음 |
+| DirectWorkRequest / ChannelWorkRequest | 인증 principal은 ingress body에 받지 않는다. channel 요청은 assistant-supervisor만, public 요청은 public 대상만 허용. 실제 인증·라우팅은 API/adapter 책임 |
+| SourceRevisionRef / ContextRequest / ContextItem / ContextBundle | source/revision/인용/ACL·정책 버전, 모든 파생 부모, L0/L1/L2. L2는 명시 source 선택 필요. read/share/endpoint egress 결정은 별개. 실제 정책 선필터·현재 부모 검사·선택 읽기는 P1-001A/B. loaded_characters는 excerpt 길이 실측, tokens 미제공은 null |
+| PolicyDecisionV11 | 기존 allowed/code 유지. decision ID/allow-deny-review/action/subject/resource/recipient/유효 기간. review는 allow 아님. PolicyPort에서 인증·신뢰된 정책 경로를 검증해야 하며 LLM이 만든 동일 JSON은 권한이 아님. 최종 검수 서비스 소유 미확정 |
+| DraftBundleV11 / DraftBinding | 정확한 본문·첨부 digest·대상·policy decision/version·source revision/ACL을 canonical JSON payload_hash로 묶음. 본문 whitespace를 임의 제거하지 않는다. hash는 익명화/인증 아님 |
+| ApprovalReference / PublicationReceipt | 승희 서비스 소유 원본의 mirror. 승인자·시간·binding/목표와 receipt 연결. 본문/첨부/대상/정책/ACL/근거 변경 시 이전 승인은 불일치. outcome_unknown은 query, 자동 재게시 금지. callback 인증/원본 대사는 P1-008 |
+| ToolInvocation | 기존 ToolRequest + caller principal/capability/task/정책/승인 참조. 수신 서버 인증이 권한 원본이며 body capability는 요청 범위일 뿐 |
+| TraceEvent / VersionReferences | typed allowlist: 발급 ID, 단계/상태 enum, 버전, 지연/호출/실측 usage와 참조만. raw metadata/prompt/본문/인자/첨부/headers 금지. 신뢰된 코드가 ID를 발급/매핑해야 하며 정규식이나 hash가 익명화를 보장하지 않는다. 실제 exporter canary 검사는 P1-006D |
+| EvaluationCaseV11 / EvalResultV11 | 합성 fixture의 identity/seed/dataset/scenario/관찰. 규칙 gate와 Judge 상태를 분리하고 error/not_run/unknown을 pass로 바꾸지 않음. 기존 executed/simulated는 Judge 실행 의미를 유지; rules는 rule_status. 높은 Judge 점수도 실패한 규칙 gate를 변경하지 않음 |
+| ExperimentEvidence / ScheduleSpec | mock/not_run/measured 및 조건·측정 단위/증거 구분. 예약은 승인된 organize/candidate_scan/briefing만, 임의 shell/prompt 인자 없음. cron/timezone 실제 파싱은 P0-023의 고정 APScheduler에 위임 |
+
+기존 RuntimePort.run/status/cancel과 RetrievalPort.search, TracePort.emit을 유지하고 1.1 prepare/cleanup, load_context, emit_event를 추가했다. 기존 adapter는 새 메서드를 아직 구현하지 않는다. 1.1 consumer 조립 시 capability/version 검사를 하고 명시 unsupported 오류를 반환해야 하며 조용히 1.0/mock으로 fallback하지 않는다. 실제 HTTP version negotiation/timeout/callback/trace 전파는 P1-008의 후속 구현이다. source 권한과 승인 증명은 trace ID만으로 전달/획득되지 않는다.
+
+`docs/contracts/baseline.json`의 source hash는 최초 1.0의 **역사적 provenance**를 보존한다. `build_baseline()`은 현재 코드에서 1.0 모델·원래 메서드·OpenAPI·상태 전이를 다시 생성해 원본과 대조하되 역사적 source hash를 현재 코드 해시라고 주장하지 않는다. 현재 코드 해시와 전체 확장 메서드는 `extended.json`에 기록된다. 1.0 호환성 검사, 1.1 schema/fixture 검사, 실제 runtime/consumer 실행 증거는 서로 다르다.
 
 공통 trace 구현은 P1-006D, NAT wrapper는 P0-027/028, 평가와 레드팀은 P1-006/006E, KB 선택 loader는 P1-001B가 소비한다. NAT는 FastAPI/checkpointer/Task 상태 원본을 대체하지 않는다. 서비스 간 trace 전파·proof 검증·정책/ACL/본문/대상 변경 뒤 재검토·unknown 조회는 P1-008의 adapter 책임이다. 상대 승인/게시/runtime 원본과 OpenShell middleware/gateway는 우리 reference의 소유 범위가 아니다. 실제 팀원 gate P1-008A/B 및 OpenShell P1-007B는 별도로 남긴다.
 

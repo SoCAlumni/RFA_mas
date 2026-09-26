@@ -86,10 +86,17 @@ def offline_settings(directory: Path, **overrides: Any) -> OfflineSettings:
 
 
 def build_baseline() -> dict[str, Any]:
-    """Derive schemas, OpenAPI, signatures and transitions without starting a server."""
+    """Re-derive the frozen 1.0 surface using its historical source provenance.
+
+    Additive 1.1 implementation changes do not rewrite the immutable 1.0 artifact.
+    Schemas, routes and original method signatures are still compared exactly;
+    current source hashes and extended methods belong to build_extended().
+    """
+    recorded = json.loads(BASELINE.read_text(encoding="utf-8"))
     public_models = {
         name: value
         for name in contracts.__all__
+        if name not in contracts.EXTENDED_MODEL_NAMES
         if inspect.isclass(value := getattr(contracts, name)) and issubclass(value, ContractModel)
     }
     public_models.update(ReviewSubmission=ReviewSubmission, RuntimeSubmission=RuntimeSubmission)
@@ -105,7 +112,7 @@ def build_baseline() -> dict[str, Any]:
         name: {
             method_name: str(inspect.signature(method))
             for method_name, method in sorted(vars(port).items())
-            if not method_name.startswith("_") and inspect.isfunction(method)
+            if method_name in recorded["ports"].get(name, {}) and inspect.isfunction(method)
         }
         for name, port in sorted(vars(interfaces).items())
         if (
@@ -123,10 +130,7 @@ def build_baseline() -> dict[str, Any]:
         "status": "repository-local-provisional",
         "derived": True,
         "source_of_truth": "src/rfa_mas/contracts (Pydantic); API OpenAPI is generated",
-        "source_files": {
-            path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
-            for path in CONTRACT_SOURCES
-        },
+        "source_files": recorded["source_files"],
         "fixture_file": "fixtures/contracts/reference_cases.json",
         "fixture_digest": digest(json.loads(FIXTURES.read_text(encoding="utf-8"))),
         "public_model_names": sorted(public_models),
@@ -158,6 +162,373 @@ def build_baseline() -> dict[str, Any]:
         ],
     }
     return {**payload, "digest": digest(payload)}
+
+
+EXTENDED = ROOT / "docs/contracts/extended.json"
+EXTENDED_FIXTURES = ROOT / "fixtures/contracts/trace_eval_cases.json"
+
+
+class TraceEvalCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    category: Literal[
+        "normal",
+        "policy_denied",
+        "approval_missing",
+        "draft_changed",
+        "acl_changed",
+        "duplicate",
+        "outcome_unknown",
+    ]
+    execution: contracts.ExecutionContext
+    policy: contracts.PolicyDecisionV11
+    draft: contracts.DraftBundleV11 | None = None
+    approval: contracts.ApprovalReference | None = None
+    receipt: contracts.PublicationReceipt | None = None
+    trace: contracts.TraceEvent
+    evaluation: contracts.EvalResultV11
+    expected_action: Literal["none", "review", "query", "deny"]
+
+    @model_validator(mode="after")
+    def check_links(self) -> TraceEvalCase:
+        for key in ("request_id", "trace_id", "run_id", "agent_id", "domain_id"):
+            if getattr(self.execution, key) != getattr(self.policy, key):
+                raise ValueError("policy/run reference mismatch")
+        if self.trace.execution != self.execution:
+            raise ValueError("trace/run reference mismatch")
+        if self.evaluation.run_id != self.execution.run_id:
+            raise ValueError("evaluation/run reference mismatch")
+        if (
+            self.evaluation.trace_id != self.execution.trace_id
+            or self.evaluation.case_id != self.id
+        ):
+            raise ValueError("evaluation trace/case reference mismatch")
+        if self.trace.policy_decision_id != self.policy.decision_id:
+            raise ValueError("trace/policy decision reference mismatch")
+        if self.draft:
+            for key in ("request_id", "trace_id", "run_id", "agent_id", "domain_id"):
+                if getattr(self.draft, key) != getattr(self.execution, key):
+                    raise ValueError("draft/execution reference mismatch")
+            if self.draft.policy_decision_id != self.policy.decision_id:
+                raise ValueError("draft/policy decision reference mismatch")
+        if self.receipt and (
+            not self.approval
+            or not self.draft
+            or self.receipt.binding != self.approval.binding
+            or self.receipt.binding != self.draft.binding()
+            or self.receipt.run_id != self.execution.run_id
+            or self.receipt.approval_id != self.approval.approval_id
+        ):
+            raise ValueError("receipt/approval/draft binding mismatch")
+        if self.receipt and (
+            not self.policy.allowed or not self.approval.matches(self.draft, self.trace.timestamp)
+        ):
+            raise ValueError("receipt requires a currently matching approved draft")
+        if not self.policy.simulated or self.trace.mode != "mock" or self.evaluation.mode != "mock":
+            raise ValueError("reference fixture must not claim real execution")
+        if (
+            (self.draft and not self.draft.simulated)
+            or (self.approval and self.approval.mode != "mock")
+            or (self.receipt and self.receipt.mode != "mock")
+        ):
+            raise ValueError("reference fixture must preserve mock mode in every stage")
+        if self.trace.draft_id != (self.draft.draft_id if self.draft else None):
+            raise ValueError("trace references a missing or different draft")
+        if self.trace.approval_id != (self.approval.approval_id if self.approval else None):
+            raise ValueError("trace references a missing or different approval")
+        if self.trace.publication_id != (self.receipt.publication_id if self.receipt else None):
+            raise ValueError("trace references a missing or different receipt")
+        if self.category == "policy_denied" and (self.policy.allowed or self.draft):
+            raise ValueError("denied fixture must stop before draft")
+        if self.category == "approval_missing" and (self.approval or self.receipt):
+            raise ValueError("missing approval must not invent a receipt")
+        if self.category in {"draft_changed", "acl_changed"} and (
+            not self.approval
+            or not self.draft
+            or self.approval.matches(self.draft, self.trace.timestamp)
+        ):
+            raise ValueError("changed binding must invalidate approval")
+        expected = {
+            "normal": "none",
+            "policy_denied": "deny",
+            "approval_missing": "review",
+            "draft_changed": "review",
+            "acl_changed": "review",
+            "duplicate": "none",
+            "outcome_unknown": "query",
+        }[self.category]
+        if self.expected_action != expected:
+            raise ValueError("fixture expected action contradicts category")
+        if self.category in {"normal", "duplicate"} and (
+            not self.receipt
+            or self.receipt.status != "succeeded"
+            or self.receipt.next_action != "none"
+        ):
+            raise ValueError("normal/replay fixture requires the existing successful receipt")
+        if self.category == "outcome_unknown" and (
+            not self.receipt
+            or self.receipt.status != "outcome_unknown"
+            or self.receipt.next_action != "query"
+        ):
+            raise ValueError("unknown fixture requires uncertain receipt and query")
+        return self
+
+
+def load_extended_cases() -> list[TraceEvalCase]:
+    data = json.loads(EXTENDED_FIXTURES.read_text(encoding="utf-8"))
+    if data["schema_version"] != "1.1" or data["synthetic"] is not True:
+        raise ValueError("extended fixtures must be synthetic 1.1")
+    cases = [TraceEvalCase.model_validate(case) for case in data["cases"]]
+    if {case.category for case in cases} != {
+        "normal",
+        "policy_denied",
+        "approval_missing",
+        "draft_changed",
+        "acl_changed",
+        "duplicate",
+        "outcome_unknown",
+    }:
+        raise ValueError("extended fixtures must cover all seven cases")
+    if len({case.id for case in cases}) != len(cases):
+        raise ValueError("duplicate extended fixture ID")
+    return cases
+
+
+def build_extended() -> dict[str, Any]:
+    models = [getattr(contracts, name) for name in contracts.EXTENDED_MODEL_NAMES]
+    _, schemas = models_json_schema(
+        [(model, mode) for model in models for mode in ("validation", "serialization")],
+        title="RFA 1.1 additive repository-local reference contracts",
+    )
+    ports = {
+        name: {
+            method_name: str(inspect.signature(method))
+            for method_name, method in sorted(vars(port).items())
+            if not method_name.startswith("_") and inspect.isfunction(method)
+        }
+        for name, port in sorted(vars(interfaces).items())
+        if inspect.isclass(port)
+        and name.endswith("Port")
+        and port.__module__ == interfaces.__name__
+    }
+    payload = {
+        "baseline_id": "rfa-extended-v1.1",
+        "schema_version": "1.1",
+        "status": "repository-local-provisional",
+        "derived": True,
+        "source_of_truth": "src/rfa_mas/contracts (Pydantic)",
+        "legacy_baseline_digest": json.loads(BASELINE.read_text())["digest"],
+        "source_files": {
+            path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            for path in (*CONTRACT_SOURCES, "scripts/contract_baseline.py")
+        },
+        "public_model_names": list(contracts.EXTENDED_MODEL_NAMES),
+        "json_schema": schemas,
+        "ports": ports,
+        "fixture_file": "fixtures/contracts/trace_eval_cases.json",
+        "fixture_digest": digest(json.loads(EXTENDED_FIXTURES.read_text())),
+        "implemented_http_routes": build_baseline()["openapi"],
+        "limits": [
+            "No new HTTP route is implemented by a DTO/protocol declaration.",
+            "1.0 source hashes record historical provenance; 1.1 source hashes are current.",
+            "1.1 methods require explicit adapter capability/version support; no silent fallback.",
+            "IDs/hashes/body principal/capabilities are not authentication or authorization proof.",
+            "Approval/publication: Seunghee; runtime identity: Dayoung; policy owner unresolved.",
+            "Fixture validation is structural, not product or live integration execution.",
+        ],
+    }
+    return {**payload, "digest": digest(payload)}
+
+
+def export_extended_fixtures() -> dict[str, Any]:
+    from datetime import UTC, datetime, timedelta
+
+    c = contracts
+    at = datetime(2026, 9, 26, tzinfo=UTC)
+    ctx = c.ExecutionContext(
+        request_id="req-fixture",
+        trace_id="trace-fixture",
+        run_id="run-fixture",
+        agent_id="assistant-supervisor",
+        session_id="session-fixture",
+        domain_id="triv3",
+        task_id="task-fixture",
+        team_id="team-fixture",
+    )
+    versions = c.VersionReferences(
+        code="fixture-v1", policy="policy-v1", dataset="contract-v1", evaluator="rules-v1"
+    )
+    source = c.SourceRevisionRef(
+        source_id="public-faq",
+        source_revision="r1",
+        location=c.SourceLocation(uri="fixture:public-faq", line_start=1),
+        audience="public",
+        content_hash=c.sha256_text("public fact"),
+        acl_revision="acl1",
+        policy_version="policy-v1",
+    )
+    policy = c.PolicyDecisionV11(
+        **{
+            k: getattr(ctx, k)
+            for k in ("request_id", "trace_id", "run_id", "agent_id", "domain_id")
+        },
+        allowed=True,
+        code="allowed",
+        safe_reason="synthetic policy",
+        policy_version="policy-v1",
+        simulated=True,
+        adapter="reference_mock",
+        decision_id="policy-fixture",
+        decision="allow",
+        action="share",
+        subject_id="fixture-owner",
+        resource_id="public-faq",
+        recipient="public",
+        issued_at=at,
+        expires_at=at + timedelta(hours=1),
+        source_refs=(source,),
+    )
+
+    def draft_for(content="Public synthetic FAQ.", ref=source, version=1):
+        old = c.DraftBundle(
+            **{
+                k: getattr(ctx, k)
+                for k in ("request_id", "trace_id", "run_id", "agent_id", "domain_id")
+            },
+            draft_id="draft-fixture",
+            version=version,
+            content=content,
+            content_hash=c.sha256_text(content),
+            target=c.DraftTarget(audience="public"),
+            audience="public",
+            policy_version="policy-v1",
+            allowed_evidence=(
+                c.EvidenceRef(
+                    **ref.model_dump(exclude={"schema_version", "acl_revision", "policy_version"})
+                ),
+            ),
+            simulated=True,
+            adapter="reference_mock",
+        )
+        data = {
+            **old.model_dump(),
+            "target": old.target,
+            "schema_version": "1.1",
+            "attachments": (),
+            "sources": (ref,),
+            "policy_decision_id": policy.decision_id,
+        }
+        provisional = c.DraftBundleV11.model_construct(**data)
+        data["payload_hash"] = provisional.calculated_payload_hash()
+        return c.DraftBundleV11.model_validate(data)
+
+    original = draft_for()
+    approval = c.ApprovalReference(
+        approval_id="approval-fixture",
+        approver_id="fixture-owner",
+        binding=original.binding(),
+        decision="approved",
+        issued_at=at,
+        expires_at=at + timedelta(hours=1),
+        mode="mock",
+        authority="reference_mock",
+    )
+    receipt = c.PublicationReceipt(
+        publication_id="publication-fixture",
+        run_id=ctx.run_id,
+        idempotency_key="publication-fixture-once",
+        binding=original.binding(),
+        approval_id=approval.approval_id,
+        status="succeeded",
+        external_result_ref="local-sink/record-1",
+        mode="mock",
+        next_action="none",
+    )
+    cases = []
+    for category in (
+        "normal",
+        "policy_denied",
+        "approval_missing",
+        "draft_changed",
+        "acl_changed",
+        "duplicate",
+        "outcome_unknown",
+    ):
+        d, a, r, p, action = original, approval, receipt, policy, "none"
+        if category == "policy_denied":
+            p = policy.model_copy(update={"allowed": False, "decision": "deny", "code": "denied"})
+            d = a = r = None
+            action = "deny"
+        elif category == "approval_missing":
+            a = r = None
+            action = "review"
+        elif category in {"draft_changed", "acl_changed"}:
+            d = (
+                draft_for("Revised public FAQ.", version=2)
+                if category == "draft_changed"
+                else draft_for(ref=source.model_copy(update={"acl_revision": "acl2"}))
+            )
+            r, action = None, "review"
+        elif category == "outcome_unknown":
+            r = receipt.model_copy(
+                update={
+                    "status": c.PublicationStatus.OUTCOME_UNKNOWN,
+                    "external_result_ref": None,
+                    "next_action": "query",
+                }
+            )
+            action = "query"
+        trace = c.TraceEvent(
+            execution=ctx,
+            event="publish" if r else "policy",
+            status="outcome_unknown"
+            if action == "query"
+            else "denied"
+            if action == "deny"
+            else "waiting"
+            if action == "review"
+            else "succeeded",
+            mode="mock",
+            versions=versions,
+            timestamp=at,
+            policy_decision_id=p.decision_id,
+            draft_id=d.draft_id if d else None,
+            approval_id=a.approval_id if a else None,
+            publication_id=r.publication_id if r else None,
+        )
+        evaluation = c.EvalResultV11(
+            case_id=f"contract-{category}",
+            run_id=ctx.run_id,
+            trace_id=ctx.trace_id,
+            rule_checks={},
+            rule_status="not_run",
+            judge_status="not_run",
+            judge_kind="not_run",
+            executed=False,
+            simulated=False,
+            evaluator="rules",
+            versions=versions,
+            mode="mock",
+        )
+        case = TraceEvalCase(
+            id=f"contract-{category}",
+            category=category,
+            execution=ctx,
+            policy=p,
+            draft=d,
+            approval=a,
+            receipt=r,
+            trace=trace,
+            evaluation=evaluation,
+            expected_action=action,
+        )
+        cases.append(case.model_dump(mode="json"))
+    return {
+        "schema_version": "1.1",
+        "synthetic": True,
+        "status": "repository-local-provisional",
+        "cases": cases,
+    }
 
 
 class ReferenceCase(BaseModel):
@@ -381,9 +752,26 @@ async def export_fixture_cases() -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "action", choices=("check", "export", "fixtures"), nargs="?", default="check"
+        "action",
+        choices=("check", "export", "fixtures", "write-extended", "check-extended"),
+        nargs="?",
+        default="check",
     )
     args = parser.parse_args()
+    if args.action == "write-extended":
+        EXTENDED_FIXTURES.write_text(serialize(export_extended_fixtures()), encoding="utf-8")
+        load_extended_cases()
+        EXTENDED.write_text(serialize(build_extended()), encoding="utf-8")
+        print(
+            "Generated provisional 1.1 schemas and seven synthetic fixture shapes; "
+            "not execution evidence."
+        )
+        return
+    if args.action == "check-extended":
+        if json.loads(EXTENDED.read_text()) != build_extended():
+            raise SystemExit("Extended schema stale; review then write-extended.")
+        print(f"extended contract: {len(load_extended_cases())} fixture shapes valid")
+        return
     if args.action == "fixtures":
         print(serialize(asyncio.run(export_fixture_cases())), end="")
         return
