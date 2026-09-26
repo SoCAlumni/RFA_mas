@@ -455,22 +455,24 @@ async def test_application_db_and_live_sidecars_are_private(tmp_path):
 
 
 @pytest.mark.parametrize("suffix", ["", "-wal", "-shm"])
-def test_privacy_guard_handles_only_sidecar_unlink_between_open_and_stat(
+def test_privacy_guard_handles_only_sidecar_unlink_between_check_and_chmod(
     tmp_path, monkeypatch, suffix
 ):
+    # P0-005A: the guard no longer opens the files (closing a descriptor drops
+    # SQLite's fcntl locks); the remaining race window is lstat -> chmod-by-path.
     repo = SqliteWorkRepository(tmp_path / "race.db")
     repo.path.touch(mode=0o600)
     target = Path(str(repo.path) + suffix)
     target.touch(mode=0o600)
-    original_open = os.open
+    target.chmod(0o644)  # A lax mode makes the guard tighten it by path.
+    original_chmod = os.chmod
 
-    def unlink_after_open(path, flags, *args, **kwargs):
-        descriptor = original_open(path, flags, *args, **kwargs)
+    def unlink_before_chmod(path, mode, *args, **kwargs):
         if Path(path) == target:
             os.unlink(target)  # Deterministic last-SQLite-connection sidecar cleanup race.
-        return descriptor
+        return original_chmod(path, mode, *args, **kwargs)
 
-    monkeypatch.setattr(os, "open", unlink_after_open)
+    monkeypatch.setattr(os, "chmod", unlink_before_chmod)
     if not suffix:
         with pytest.raises(RfaError) as error:
             repo._private_files()

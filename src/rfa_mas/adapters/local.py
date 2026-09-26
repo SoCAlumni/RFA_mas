@@ -8,7 +8,7 @@ import re
 import sqlite3
 import stat
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -173,51 +173,122 @@ def _sqlite_setup_guard(
         os.close(descriptor)
 
 
+_SQLITE_FILE_SUFFIXES = ("", "-wal", "-shm")
+
+
+def _chmod_private_nofollow(path: Path, expected: os.stat_result) -> None:
+    """Tighten a checked regular file to 0600 by path, never through a descriptor.
+
+    Where the platform cannot chmod without following symlinks (Linux), the file
+    is re-checked afterwards; a swapped-in replacement fails closed. Same-user
+    hostile directory replacement is still not an OS sandbox boundary.
+    """
+    if os.chmod in os.supports_follow_symlinks:
+        os.chmod(path, 0o600, follow_symlinks=False)
+        return
+    os.chmod(path, 0o600)
+    after = os.lstat(path)
+    if not stat.S_ISREG(after.st_mode) or (after.st_dev, after.st_ino) != (
+        expected.st_dev,
+        expected.st_ino,
+    ):
+        raise OSError("sqlite file replaced during permission check")
+
+
+def _check_private_sqlite_files(
+    database: Path,
+    *,
+    create: bool,
+    harden: bool,
+    missing: Callable[[], Exception],
+    allow_missing: bool = False,
+) -> None:
+    """Private-file checks for a SQLite DB and its live sidecars, without opening them.
+
+    POSIX drops every fcntl lock a process holds on a file as soon as that process
+    closes *any* descriptor for it (SQLite, "How To Corrupt An SQLite Database File"
+    §2.2). Opening and closing the DB, -wal or -shm next to live connections released
+    SQLite's own locks, including the -shm dead-man-switch read lock, so a second
+    process (`rfa scheduler`, a reader) could treat itself as the only connection and
+    reset the WAL index while this process had it mapped (SIGBUS / disk I/O error).
+    Only lstat and chmod-by-path touch existing files here. A descriptor is opened
+    solely to create a missing DB with O_EXCL, which no connection can hold yet.
+    SQLite gives new -wal/-shm files the DB's permission bits.
+    """
+    for suffix in _SQLITE_FILE_SUFFIXES:
+        path = Path(str(database) + suffix)
+        primary = not suffix
+        try:
+            info = os.lstat(path)
+        except FileNotFoundError:
+            if not primary:
+                continue  # SQLite removes sidecars when its final connection closes.
+            if allow_missing and not create:
+                return
+            if not create:
+                raise missing() from None
+            try:
+                descriptor = os.open(
+                    path, os.O_CREAT | os.O_EXCL | os.O_RDWR | os.O_NOFOLLOW, 0o600
+                )
+            except FileExistsError:
+                info = os.lstat(path)  # Created concurrently: check it like any other.
+            except OSError:
+                raise missing() from None
+            else:
+                try:
+                    os.fchmod(descriptor, 0o600)
+                finally:
+                    os.close(descriptor)
+                continue
+        # The primary DB must never be a link, special file or gain another hardlink.
+        # SQLite unlinks sidecars when its final connection closes; lstat can resolve the
+        # path and then report that just-unlinked inode (st_nlink == 0).
+        allowed_links = {1} if primary else {0, 1}
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_uid != os.getuid()
+            or info.st_nlink not in allowed_links
+        ):
+            raise ValueError("unsafe sqlite file")
+        if harden and info.st_nlink and stat.S_IMODE(info.st_mode) != 0o600:
+            try:
+                _chmod_private_nofollow(path, info)
+            except FileNotFoundError:
+                if primary:
+                    raise missing() from None
+
+
 class SqliteWorkRepository:
     def __init__(self, path: Path, *, project_resolver: ProjectResolver = no_projects) -> None:
         self.path = path
         self.project_resolver = project_resolver
 
-    def _private_files(self, *, create: bool = False) -> None:
+    def _private_files(self, *, create: bool = False, allow_missing: bool = False) -> None:
         # Harden the application DB itself, not just the separate checkpointer.
         # Same-user hostile directory replacement is not an OS sandbox boundary.
-        for path in (self.path, Path(str(self.path) + "-wal"), Path(str(self.path) + "-shm")):
-            flags = os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK
-            if path == self.path and create:
-                flags |= os.O_CREAT
-            try:
-                fd = os.open(path, flags, 0o600)
-            except FileNotFoundError:
-                if path == self.path:
-                    raise RfaError(
-                        "configuration_error", "자료 저장소가 초기화되지 않았습니다."
-                    ) from None
-                continue
-            except OSError:
-                raise RfaError(
-                    "configuration_error", "안전한 자료 저장 파일이 필요합니다."
-                ) from None
-            try:
-                info = os.fstat(fd)
-                # SQLite removes sidecars when its final connection closes. An
-                # already opened descriptor may therefore have no directory link.
-                # The primary DB must never disappear or gain another hardlink.
-                allowed_links = {1} if path == self.path else {0, 1}
-                if (
-                    not stat.S_ISREG(info.st_mode)
-                    or info.st_uid != os.getuid()
-                    or info.st_nlink not in allowed_links
-                ):
-                    raise RfaError(
-                        "configuration_error", "자료 저장 파일 형식/소유권이 올바르지 않습니다."
-                    )
-                os.fchmod(fd, 0o600)
-            finally:
-                os.close(fd)
+        # P0-005A: never open/close the DB or its sidecars beside live connections.
+        try:
+            _check_private_sqlite_files(
+                self.path,
+                create=create,
+                harden=True,
+                allow_missing=allow_missing,
+                missing=lambda: RfaError(
+                    "configuration_error", "자료 저장소가 초기화되지 않았습니다."
+                ),
+            )
+        except ValueError:
+            raise RfaError(
+                "configuration_error", "자료 저장 파일 형식/소유권이 올바르지 않습니다."
+            ) from None
+        except OSError:
+            raise RfaError("configuration_error", "안전한 자료 저장 파일이 필요합니다.") from None
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
-        self._private_files(create=True)
+        # initialize() creates the DB under the setup guard; a missing DB is an error.
+        self._private_files()
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         try:
@@ -230,13 +301,16 @@ class SqliteWorkRepository:
 
     async def initialize(self) -> None:
         self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        # Validate before path.resolve() in the shared startup guard.
-        self._private_files(create=True)
+        # Validate before path.resolve() in the shared startup guard; a missing DB
+        # is created (O_EXCL) only under that guard.
+        self._private_files(allow_missing=True)
 
         def operation() -> None:
             # WAL persists in the DB. Switching it on every connection can
             # return SQLITE_BUSY immediately, despite SQLite's busy timeout.
             # Only setup is serialized; no caller transaction is ever replayed.
+            with _sqlite_setup_guard(self.path):
+                self._private_files(create=True)
             with _sqlite_setup_guard(self.path), self._connect() as connection:
                 mode = connection.execute("PRAGMA journal_mode=WAL").fetchone()[0]
                 if mode != "wal":

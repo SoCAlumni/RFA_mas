@@ -311,6 +311,20 @@ def verified_owner_dependency(
     return dependency
 
 
+def _chmod_private(path: Path, expected: os.stat_result) -> None:
+    """chmod 0600 by path without following symlinks where supported, else re-check."""
+    if os.chmod in os.supports_follow_symlinks:
+        os.chmod(path, 0o600, follow_symlinks=False)
+        return
+    os.chmod(path, 0o600)
+    after = os.lstat(path)
+    if not stat.S_ISREG(after.st_mode) or (after.st_dev, after.st_ino) != (
+        expected.st_dev,
+        expected.st_ino,
+    ):
+        raise OSError("sqlite file replaced during permission check")
+
+
 class PrivateSqlite:
     """One service-owned SQLite file with owner-only permissions.
 
@@ -329,31 +343,42 @@ class PrivateSqlite:
         ) | {"service_meta"}
 
     def _private_files(self, *, create: bool = False, harden: bool = True) -> None:
-        for path in (self.path, Path(f"{self.path}-wal"), Path(f"{self.path}-shm")):
-            flags = os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK
-            if path == self.path and create:
-                flags |= os.O_CREAT
-            try:
-                descriptor = os.open(path, flags, 0o600)
-            except FileNotFoundError:
-                if path == self.path:
-                    raise LocalServiceError("configuration_error", 503) from None
-                continue
-            except OSError:
-                raise LocalServiceError("configuration_error", 503) from None
-            try:
-                info = os.fstat(descriptor)
-                links = {1} if path == self.path else {0, 1}
+        # P0-005A: lstat and chmod-by-path only. Closing any descriptor for the DB,
+        # -wal or -shm drops every SQLite fcntl lock this process holds on it, so a
+        # second process could reset the WAL index under live connections. A
+        # descriptor is opened only to create a missing DB (O_EXCL).
+        try:
+            for suffix in ("", "-wal", "-shm"):
+                path = Path(f"{self.path}{suffix}")
+                try:
+                    info = os.lstat(path)
+                except FileNotFoundError:
+                    if suffix:
+                        continue  # SQLite removes sidecars with its final connection.
+                    if not create:
+                        raise LocalServiceError("configuration_error", 503) from None
+                    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR | os.O_NOFOLLOW
+                    try:
+                        os.close(os.open(path, flags, 0o600))
+                        continue
+                    except FileExistsError:
+                        info = os.lstat(path)
+                # A sidecar being unlinked by SQLite's final close can report st_nlink 0.
+                links = {1} if not suffix else {0, 1}
                 if (
                     not stat.S_ISREG(info.st_mode)
                     or info.st_uid != os.getuid()
                     or info.st_nlink not in links
                 ):
                     raise LocalServiceError("configuration_error", 503)
-                if harden:
-                    os.fchmod(descriptor, 0o600)
-            finally:
-                os.close(descriptor)
+                if harden and info.st_nlink and stat.S_IMODE(info.st_mode) != 0o600:
+                    try:
+                        _chmod_private(path, info)
+                    except FileNotFoundError:
+                        if not suffix:
+                            raise
+        except OSError:
+            raise LocalServiceError("configuration_error", 503) from None
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path, timeout=10, isolation_level=None)
