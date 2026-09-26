@@ -85,8 +85,9 @@ def test_task_schema_paths_dag_and_contract_references_are_valid():
 def test_schedule_effort_and_final_acceptance_are_separate():
     store, tasks = records()
     # Initial E2E-expanded plan: D1/D2=8h, D3=11h, plus technical 4.5h = 31.5h.
-    # Approved preflight raises P0-017/P0-019 by 0.5h each and P1-006D by 1.5h.
-    for day, expected in {"D1": 8.5, "D2": 8.5, "D3": 11, "D4": 8}.items():
+    # Previous reviewed total34h added P0-017/P0-019 +0.5h and P1-006D +1.5h.
+    # Current P1-006 1->2h and P0-020 1.5->3h add 2.5h; gates are unchanged.
+    for day, expected in {"D1": 8.5, "D2": 10, "D3": 12, "D4": 8}.items():
         assert sum(tasks[t].estimated_effort for t in store.project["milestones"][day]) == expected
     serial_days = ("D1", "D2", "D3", "TECH_D1", "TECH_D2", "TECH_D3")
     assert (
@@ -95,7 +96,7 @@ def test_schedule_effort_and_final_acceptance_are_separate():
             for day in serial_days
             for t in store.project["milestones"][day]
         )
-        == 34
+        == 36.5
     )
     assert tasks["P0-026"].estimated_effort == 4  # Approved E2E expansion: 1h + 3h.
     assert sum(tasks[t].estimated_effort for t in store.project["milestones"]["LLMOps"]) == 3.5
