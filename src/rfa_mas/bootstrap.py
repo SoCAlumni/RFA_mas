@@ -110,6 +110,28 @@ def _nvidia_config(settings: Settings):
         raise ValueError(",".join(names)) from None
 
 
+def _judge_config(settings: Settings):
+    """P1-006A: validated Judge chat config (JUDGE_MODEL over the NVIDIA endpoint/key)."""
+    from pydantic import ValidationError
+
+    from rfa_mas.adapters.nvidia import NvidiaChatConfig
+
+    try:
+        return NvidiaChatConfig(
+            base_url=settings.nvidia_base_url,
+            model=settings.judge_model or "",
+            api_key=settings.nvidia_api_key,
+            timeout_seconds=settings.http_timeout_seconds,
+        )
+    except ValidationError as exc:
+        locs = {str(error["loc"][0]) for error in exc.errors() if error.get("loc")}
+        names = sorted(
+            (_NVIDIA_SETTING_NAMES | {"model": "JUDGE_MODEL"}).get(loc, "JUDGE_MODEL")
+            for loc in locs
+        )
+        raise ValueError(",".join(names)) from None
+
+
 @dataclass(frozen=True)
 class ConfigurationInspection:
     missing: tuple[str, ...]
@@ -225,8 +247,17 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
     for port, selected, default in (
         ("judge", settings.judge_provider if settings.enable_judge else "mock", "mock"),
     ):
-        if selected != default:
+        if selected != default and selected != "nvidia":
             reserved.append(f"{port}:{selected}")
+    # P1-006A: an enabled nvidia Judge exists; a configured selection must also be valid.
+    if settings.enable_judge and settings.judge_provider == "nvidia" and not {
+        "JUDGE_MODEL",
+        "NVIDIA_API_KEY",
+    } & set(missing):
+        try:
+            _judge_config(settings)
+        except ValueError as exc:
+            invalid.extend(str(exc).split(","))
     # P1-002: the NVIDIA ModelPort adapter exists; a configured selection must also be valid.
     if settings.model_provider == "nvidia" and not {"NVIDIA_MODEL", "NVIDIA_API_KEY"} & set(
         missing
@@ -327,6 +358,9 @@ class Container:
         close_model = getattr(self.model, "aclose", None)
         if close_model is not None:
             await close_model()
+        close_judge = getattr(self.judge, "aclose", None)
+        if close_judge is not None:
+            await close_judge()
         self.ready = False
 
     async def readiness(self) -> ReadinessReport:
@@ -709,7 +743,24 @@ def build_container(
         provider_kind="reference_http" if settings.policy_backend == "http" else "builtin",
     )
 
-    judge = MockJudge()
+    if settings.enable_judge and settings.judge_provider == "nvidia":
+        # P1-006A: explicit opt-in only; no mock fallback. Each call still needs the
+        # synthetic/public Judge gate; ENABLE_JUDGE and the key are selection, not permission.
+        from rfa_mas.adapters.nvidia_judge import NvidiaJudge, SyntheticPublicJudgeGate
+
+        judge_config = _judge_config(settings)
+        judge = NvidiaJudge(
+            judge_config,
+            SyntheticPublicJudgeGate(
+                endpoint=judge_config.endpoint,
+                model=judge_config.model,
+                max_output_tokens=settings.nvidia_max_output_tokens,
+                budget_seconds=settings.tool_timeout_seconds,
+            ),
+            transport=model_transport,
+        )
+    else:
+        judge = MockJudge()
     observed_runtime = ObservedPort(
         runtime,
         observer,

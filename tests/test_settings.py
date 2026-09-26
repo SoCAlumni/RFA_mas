@@ -163,15 +163,6 @@ def test_external_bind_requires_authentication_key() -> None:
             # P1-006C implements loopback export only; a remote endpoint stays reserved.
             "endpoint:LANGFUSE_BASE_URL:non_loopback",
         ),
-        (
-            {
-                "enable_judge": True,
-                "judge_provider": "nvidia",
-                "judge_model": "reference-judge-id",
-                "nvidia_api_key": "known-fake-judge-key",
-            },
-            "judge:nvidia",
-        ),
     ],
 )
 def test_configured_reserved_backend_fails_instead_of_falling_back(
@@ -358,6 +349,16 @@ def test_doctor_reports_preflight_without_creating_files_or_probing(tmp_path, mo
                 "nvidia_api_key": "private-CANARY",
                 "nvidia_model": "reference-model-id",
                 "nvidia_base_url": "http://private-CANARY.invalid/v1",
+            },
+            ConfigurationError,
+        ),
+        (
+            {
+                "enable_judge": True,
+                "judge_provider": "nvidia",
+                "nvidia_api_key": "private-CANARY",
+                # P1-006A: the Judge adapter exists, so only an INVALID selection fails here.
+                "judge_model": "private CANARY judge",
             },
             ConfigurationError,
         ),
