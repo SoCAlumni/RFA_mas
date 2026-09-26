@@ -102,6 +102,7 @@ from rfa_mas.contracts.models import (
     AccumulatedItem,
     AccumulationReport,
     AttachmentRef,
+    CandidateDecision,
     ChannelWorkRequest,
     ContextBundle,
     ContextItem,
@@ -151,12 +152,15 @@ from rfa_mas.contracts.models import (
     TeamRunResult,
     TeamSpec,
     TeamTemplate,
+    TodoCandidate,
     ToolInvocation,
     TraceEvent,
     VersionReferences,
 )
 
 EXTENDED_MODEL_NAMES = (
+    "TodoCandidate",
+    "CandidateDecision",
     "DerivedItemProposal",
     "AccumulatedItem",
     "AccumulationReport",

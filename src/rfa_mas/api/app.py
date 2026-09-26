@@ -9,9 +9,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from rfa_mas.application.observations import safe_error_code
+from rfa_mas.application.candidates import CandidateService
 from rfa_mas.bootstrap import Container, build_container
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
+    AccumulationReport,
+    CandidateDecision,
     DirectWorkRequest,
     DomainId,
     KnowledgeDelete,
@@ -25,7 +28,9 @@ from rfa_mas.contracts import (
     SessionCreate,
     SessionDetail,
     SessionRecord,
+    SourceMetadata,
     StructuredError,
+    TodoCandidate,
     TrustedPrincipal,
     WorkRequest,
     new_id,
@@ -285,5 +290,54 @@ def create_app(
         principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> KnowledgeImportResult:
         return await selected_container.knowledge.import_export(body, principal)
+
+    # P1-004A/B: reviewed derived items and owner work candidates (no Task auto-creation).
+    candidates = CandidateService(
+        selected_container.repository, selected_container.knowledge.accumulator
+    )
+
+    @app.post("/v1/knowledge/derive", response_model=AccumulationReport, tags=["knowledge"])
+    async def derive_items(
+        domain_id: DomainId,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> AccumulationReport:
+        accumulator = selected_container.knowledge.accumulator
+        proposals = await accumulator.extract(domain_id, principal)
+        return await accumulator.accumulate(domain_id, proposals, principal)
+
+    @app.get("/v1/knowledge/derived", response_model=list[SourceMetadata], tags=["knowledge"])
+    async def list_derived(
+        domain_id: DomainId,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[SourceMetadata]:
+        return await selected_container.knowledge.accumulator.list_derived(domain_id, principal)
+
+    @app.post("/v1/candidates/discover", response_model=list[TodoCandidate], tags=["candidates"])
+    async def discover_candidates(
+        domain_id: DomainId,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[TodoCandidate]:
+        return await candidates.discover(domain_id, principal)
+
+    @app.get("/v1/candidates", response_model=list[TodoCandidate], tags=["candidates"])
+    async def list_candidates(
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        domain_id: DomainId | None = None,
+        include_hidden: bool = False,
+    ) -> list[TodoCandidate]:
+        return await candidates.list(domain_id, principal, include_hidden=include_hidden)
+
+    @app.post(
+        "/v1/candidates/{candidate_id}/decision",
+        response_model=TodoCandidate,
+        tags=["candidates"],
+    )
+    async def decide_candidate(
+        candidate_id: str,
+        body: CandidateDecision,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> TodoCandidate:
+        return await candidates.decide(candidate_id, body, principal)
+
 
     return app

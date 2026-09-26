@@ -1,5 +1,11 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P1-004B 작업 후보 1.1 (통합·발행 대기)
+
+- additive 1.1: `TodoCandidate`(owner/domain 범위, dedup fingerprint, 부모 revision, 명시된 마감만, proposed/accepted/deferred/rejected/superseded 이력), `CandidateDecision`. migration7 `todo_candidates`(owner·domain·fingerprint unique).
+- 발견은 Task/team을 만들지 않는다. 같은 변화·같은 issue 참조는 하나의 후보, 기각은 새 source revision과 재제안 허용이 있을 때만 재노출, closed/완료 또는 source 줄 삭제는 superseded. 수락은 결정 기록뿐이며 P0 자동 Task 생성은 비활성.
+- 새 route: `POST /v1/knowledge/derive`, `GET /v1/knowledge/derived`(P1-004A gate), `POST /v1/candidates/discover`, `GET /v1/candidates`, `POST /v1/candidates/{id}/decision`.
+
 ## 2026-09-27 — P1-004A 검토된 파생 지식 1.1 (통합·발행 대기)
 
 - additive 1.1: `DerivedItemProposal`(summary/todo/issue/decision/link, 부모 SourceRevisionRef 필수, 조건·불확실성), `AccumulatedItem`, `AccumulationReport`. epistemic 상태에 `simulated`를 추가했다(SourceMetadata/ContextItem 공통 `EpistemicState`). frozen 1.0 불변.

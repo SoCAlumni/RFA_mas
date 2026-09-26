@@ -51,6 +51,7 @@ from rfa_mas.contracts import (
     TeamLifecycle,
     TeamRunResult,
     TeamSpec,
+    TodoCandidate,
     ToolEffect,
     ToolRequest,
     ToolResult,
@@ -431,6 +432,19 @@ class SqliteWorkRepository:
                         connection.execute(statement)
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (6, ?)",
                                        (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=7"
+                ).fetchone():
+                    # P1-004B: owner-scoped work candidates with a dedup fingerprint.
+                    connection.execute(
+                        "CREATE TABLE todo_candidates (candidate_id TEXT PRIMARY KEY, "
+                        "owner_id TEXT NOT NULL, domain_id TEXT NOT NULL, "
+                        "fingerprint TEXT NOT NULL, state TEXT NOT NULL, "
+                        "candidate_json TEXT NOT NULL, updated_at TEXT NOT NULL, "
+                        "UNIQUE(owner_id, domain_id, fingerprint))"
+                    )
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (7, ?)",
+                                       (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
                 connection.execute(
@@ -659,6 +673,62 @@ class SqliteWorkRepository:
                 return task_id, team_id
 
         return await asyncio.to_thread(operation)
+
+    # -- P1-004B work candidates ------------------------------------------------------
+    async def upsert_candidate(self, candidate: TodoCandidate, principal: TrustedPrincipal,
+                               *, expected_state: str | None = None) -> TodoCandidate:
+        """Insert, or replace only when the stored state still equals expected_state."""
+        owner = self._authenticated(principal)
+        candidate = TodoCandidate.model_validate(candidate.model_dump())
+        if candidate.owner_id != owner:
+            raise ResourceNotFoundError("candidate")
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                row = connection.execute(
+                    "SELECT candidate_id, state FROM todo_candidates WHERE owner_id=? "
+                    "AND domain_id=? AND fingerprint=?",
+                    (owner, candidate.domain_id.value, candidate.fingerprint),
+                ).fetchone()
+                if row is None:
+                    connection.execute(
+                        "INSERT INTO todo_candidates VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (candidate.candidate_id, owner, candidate.domain_id.value,
+                         candidate.fingerprint, candidate.state, candidate.model_dump_json(),
+                         candidate.updated_at.isoformat()),
+                    )
+                    return candidate
+                if row["candidate_id"] != candidate.candidate_id or (
+                    expected_state is not None and row["state"] != expected_state
+                ):
+                    raise RfaError("idempotency_conflict", "후보 상태가 변경되었습니다.")
+                connection.execute(
+                    "UPDATE todo_candidates SET state=?, candidate_json=?, updated_at=? "
+                    "WHERE candidate_id=?",
+                    (candidate.state, candidate.model_dump_json(),
+                     candidate.updated_at.isoformat(), candidate.candidate_id),
+                )
+                return candidate
+
+        return await asyncio.to_thread(operation)
+
+    async def list_candidates(self, principal: TrustedPrincipal,
+                              domain_id: DomainId | None = None) -> list[TodoCandidate]:
+        owner = self._authenticated(principal)
+
+        def operation():
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT candidate_json FROM todo_candidates WHERE owner_id=? "
+                    "AND (? IS NULL OR domain_id=?) ORDER BY candidate_id",
+                    (owner, domain_id.value if domain_id else None,
+                     domain_id.value if domain_id else None),
+                ).fetchall()
+                return [TodoCandidate.model_validate_json(r[0]) for r in rows]
+
+        return await asyncio.to_thread(operation)
+
 
     async def run_team_binding(
         self, run_id: str, principal: TrustedPrincipal

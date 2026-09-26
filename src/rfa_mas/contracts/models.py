@@ -1006,6 +1006,34 @@ class AccumulationReport(ExtendedContractModel):
 
     items: tuple[AccumulatedItem, ...] = ()
 
+class TodoCandidate(ExtendedContractModel):
+    """Discovered work candidate (P1-004B). Discovery never creates a Task or team."""
+
+    candidate_id: OpaqueId
+    domain_id: DomainId
+    owner_id: OpaqueId
+    kind: Literal["todo", "issue", "follow_up"]
+    title: str = Field(min_length=1, max_length=300)
+    content: str = Field(min_length=1, max_length=5000)
+    fingerprint: Digest
+    parents: tuple[SourceRevisionRef, ...] = Field(min_length=1, max_length=32)
+    epistemic_state: EpistemicState
+    state: Literal["proposed", "accepted", "deferred", "rejected", "superseded"] = "proposed"
+    due_date: str | None = None  # Only when explicitly stated in a parent; never invented.
+    blocker: bool = False
+    resurface_on_new_evidence: bool = True
+    decided_reason: str | None = Field(default=None, max_length=500)
+    history: tuple[str, ...] = ()
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class CandidateDecision(ExtendedContractModel):
+    decision: Literal["accept", "defer", "reject"]
+    reason: str = Field(default="", max_length=500)
+    resurface_on_new_evidence: bool = True
+
+
 
 
 class ExperimentEvidence(ExtendedContractModel):
