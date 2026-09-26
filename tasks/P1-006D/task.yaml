@@ -287,14 +287,14 @@ verification:
   - 기존 인증/재개/설정/세션·migration/보안 계약을 보존하며 frozen 1.0 및 additive extended fixture 검사가 통과한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-006D
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-006D/trace-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: failed
+  spec_revision: 10
+  spec_digest: f5cd80c60368647a46c8cb104c7fc6d8bb8fa3596e862ec4a9ddb980f81371d3
+  contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
+  source_fingerprint: e2b605516169def68473c878c0099b91a0fdebeaf6a04a89736d2aae29eab34d
+  evidence: .agent/evidence/P1-006D/trace-01/result.json
 integration:
   state: pending
   target: canonical integration branch after OPS-000
@@ -304,7 +304,7 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 11
+revision: 15
 spec_revision: 10
 claim_generation: 1
 claim:
@@ -313,17 +313,18 @@ claim:
   branch: task/P1-006D
   generation: 1
   claimed_at: '2026-09-26T09:48:37+00:00'
-  heartbeat_at: '2026-09-26T09:48:37+00:00'
-  lease_expires_at: '2026-09-26T10:03:37+00:00'
+  heartbeat_at: '2026-09-26T09:58:44+00:00'
+  lease_expires_at: '2026-09-26T10:13:44+00:00'
   baseline_head: 56f289fc10ebf9b7adee0aa5b4b611bc41cdd14e
   recovery_required: false
   context_digest: 2fd594afa0ab72a4d46a5485fb0bbed506230d3b4148cc939e1ed90ef230d84b
 attempts:
-  count: 0
-  cycles: 0
+  count: 1
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: trace-01
+  evidence_refs:
+  - .agent/evidence/P1-006D/trace-01/result.json
   approaches: []
 blocker: null
 migration:
@@ -336,7 +337,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T09:48:37+00:00'
+updated_at: '2026-09-26T10:08:16+00:00'
 concise_result: 'Specification changed: Installed LangChain constructor spy reproduced ambient tracing
   activation; native run/resume need guarded local-only observation and direct already-locked LangSmith
   dependency. Preserve failed diagnostic and actual bounded scope.'

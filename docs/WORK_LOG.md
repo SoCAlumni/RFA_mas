@@ -487,3 +487,10 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   이는 제품 pytest 통과 숫자가 아니다. root의 추가 읽기에서 존재하지 않는
   tests/test_cli.py와 생성 전 evidence 경로 조회는 missing으로 종료했으며, 실제 파일
   목록/worker 단계 보고로 정정했다. 이러한 조회를 제품 검증으로 세지 않는다.
+- `trace-01`의 V1은 pytest 11개가 통과했어도 코드 검토에서 발견한 AC1/AC3
+  미충족 때문에 evidence 판정을 failed로 기록했다. 테스트 숫자와 AC 판정을 분리했다.
+  추가 독립 검토는 시작 event를 DB에 기록한 뒤 exporter가 실패할 경우 실제 provider
+  호출 전인데 호출 수가 증가하는 문제를 찾았다. exporter 실패+inner spy를 추가해
+  의도/미완료와 확인된 실제 호출을 구분하도록 같은 두 번째 cycle에 보수한다.
+- 위 로그 보강의 첫 apply_patch는 문맥 줄 불일치로 원본 수정 없이 거절됐다.
+  실제 마지막 줄을 확인해 두 번째 patch로 반영했으며 제품 검증 실패와 구분한다.
