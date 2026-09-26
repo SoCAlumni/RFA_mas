@@ -1,0 +1,244 @@
+{
+  "schema_version": "1.0",
+  "id": "OPS-002",
+  "title": "후속 통합 후 재검증 recovery·현재 일정 회귀 보수",
+  "objective": "완료 후 관련 소스가 정당하게 진화한 task를 새 baseline에서 재검증하되 기존 증거·fencing·범위 검사와 사용자 E2E 일정 변경을 보존한다.",
+  "kind": "task",
+  "source_tasks": [
+    "OPS-001"
+  ],
+  "requirement_refs": [
+    "TASK_EXECUTION_RULES.md",
+    "docs/WORK_LOG.md",
+    "RFA_E2E_Test_Scenarios_10_ko.md"
+  ],
+  "priority": "P0",
+  "status": "todo",
+  "spec_state": "ready",
+  "unresolved": [],
+  "workstream": "contracts/control",
+  "execution_role": "worker",
+  "estimated_effort": 0.5,
+  "product_owner": "민섭",
+  "execution_class": "이 저장소 구현",
+  "product_mode": "개발 control local; 임시 protocol fixture는 simulated이며 제품 AC 증거 아님",
+  "scope": {
+    "included": [
+      "이미 integrated였던 task가 후속 소스 변경으로 stale된 경우, coordinator inspection 후 clean 최신 feature baseline에서 재검증 recovery를 허용한다. 최초 제출의 baseline/commit/evidence는 approaches에 보존한다.",
+      "미통합/만료된 worker 회수는 기존 baseline을 유지하고 범위 밖 변경을 새 baseline으로 세탁하지 않는다. 수정된 현재 소스에 대해 새 worker 및 integration evidence/commit/close gate를 모두 요구한다.",
+      "E2E 공수 변경으로 D3 합계11h가 된 명세를 테스트에서 정직하게 검증하고 원래24h+기술4.5h+추가3h 기록을 보존. source worktree의 read-only migration 감사는 명시 TASK_CONTROL_ROOT를 사용하며 잘못된 root guard를 우회하지 않음."
+    ],
+    "excluded": [
+      "새 task 관리 framework/서버/DB·자동 merge·임의 done",
+      "기존 상태/evidence 삭제·제품 구현·실제 .env 접근"
+    ],
+    "owned_paths": [
+      "scripts/tasklib/cli.py",
+      "tests/test_taskctl.py",
+      "tests/test_task_migration.py",
+      "docs/TASK_REVALIDATION.md"
+    ],
+    "read_only_paths": [
+      "scripts/tasklib/schema.py",
+      "scripts/tasklib/store.py",
+      "scripts/tasklib/evidence.py",
+      "TASK_EXECUTION_RULES.md",
+      "docs/WORK_LOG.md"
+    ],
+    "planned_paths": [
+      "docs/TASK_REVALIDATION.md"
+    ],
+    "shared_resources": [
+      "task-control"
+    ]
+  },
+  "depends_on": [],
+  "contract_refs": [],
+  "context": {
+    "global_refs": [
+      "docs/PROJECT_CONTEXT.md",
+      "TASK_EXECUTION_RULES.md"
+    ],
+    "read": [
+      {
+        "path": "scripts/tasklib/cli.py",
+        "section": "recover/integrate/close/scope_check 호출",
+        "reason": "기존 fencing/source 제출 gate 보존"
+      },
+      {
+        "path": "scripts/tasklib/evidence.py",
+        "section": "scope_check/source_manifest",
+        "reason": "dirty source와 owned 범위 검증"
+      },
+      {
+        "path": "tests/test_taskctl.py",
+        "section": "stale/recover/integration tests",
+        "reason": "임시 fixture에서 재현"
+      },
+      {
+        "path": "tests/test_task_migration.py",
+        "section": "ROOT/records/effort test",
+        "reason": "확인된 D3 11.0 != 8.0 실패 수정"
+      },
+      {
+        "path": "docs/WORK_LOG.md",
+        "section": "P0-015 착수 / E2E 검증 연결",
+        "reason": "승인된 E2E 범위·실제 실패 근거"
+      }
+    ],
+    "handoff": "tasks/OPS-002/handoff.md",
+    "dependency_results": []
+  },
+  "deliverables": [
+    {
+      "path": "scripts/tasklib/cli.py",
+      "availability": "existing",
+      "description": "명시적으로 검사한 통합 후 revalidation recovery만 최신 clean baseline 사용; 원래 provenance 보존"
+    },
+    {
+      "path": "tests/test_taskctl.py",
+      "availability": "existing",
+      "description": "후속 변경→stale→검사→재검증→close, old claim/dirty/미통합 변경 거절 회귀"
+    },
+    {
+      "path": "tests/test_task_migration.py",
+      "availability": "existing",
+      "description": "canonical root 명시와 원문/일정/최종 gate 보존 검사"
+    },
+    {
+      "path": "docs/TASK_REVALIDATION.md",
+      "availability": "planned",
+      "description": "기존 명령을 이용한 안전한 재검증·출력/제한·실패 인계"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC1",
+      "given": "task A가 이미 통합·검증된 후 정당한 후속 commit이 A의 관련 소스 및 별도 파일을 변경",
+      "expect": "A가 stale/reserved로 유지되고 coordinator inspection + clean current feature baseline에서만 recovery/reverification 가능; 원래 submission/evidence 보존",
+      "required": true
+    },
+    {
+      "id": "AC2",
+      "given": "만료 미통합 worker, 오래된 branch, dirty tree 또는 옛 generation 요청",
+      "expect": "baseline reset으로 미통합/범위 밖 변경을 숨기지 못하며 stale token/revision·미검증 submit/close를 거절",
+      "required": true
+    },
+    {
+      "id": "AC3",
+      "given": "후속 source에 실제 새 검증 결과와 canonical integration evidence 존재",
+      "expect": "재검증한 A가 close되면 필요한 후속 dependency만 해제; 원래 검증을 새 source에 재사용하지 않음",
+      "required": true
+    },
+    {
+      "id": "AC4",
+      "given": "E2E 검증 1h→4h 변경과 명시 control root를 사용한 source worktree 감사",
+      "expect": "D1/D2/D4=8h, D3=11h 및 extra기술4.5h를 숨기지 않고 migration/원문체크/최종gate 보존을 검증; wrong/copied root는 계속 거절",
+      "required": true
+    }
+  ],
+  "verification": [
+    {
+      "id": "V1",
+      "ac_ids": [
+        "AC1",
+        "AC2",
+        "AC3"
+      ],
+      "type": "command",
+      "availability": "available",
+      "prerequisites": [
+        "임시 Git/control fixture만 변경; 실제 claim/evidence 오염 금지"
+      ],
+      "cwd": ".",
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_taskctl.py"
+      ],
+      "timeout_seconds": 120,
+      "procedure": [],
+      "assertions": [
+        "통합된 task의 현재 clean baseline 재검증과 최초 provenance 보존을 실제 temp Git 이력으로 확인",
+        "미통합/dirty/old branch·old claim·미검증 close 우회 불가"
+      ],
+      "runner": "pytest"
+    },
+    {
+      "id": "V2",
+      "ac_ids": [
+        "AC4"
+      ],
+      "type": "command",
+      "availability": "available",
+      "prerequisites": [
+        "TASK_CONTROL_ROOT를 실제 canonical root로 명시; 상태는 read-only, mutation tests는 tmp_path. 잘못된 root는 자동 fallback 금지."
+      ],
+      "cwd": ".",
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_task_migration.py"
+      ],
+      "timeout_seconds": 120,
+      "procedure": [],
+      "assertions": [
+        "canonical 원문/task/DAG/ID/생성 view와 현재 공수·final gate가 일치",
+        "source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지"
+      ],
+      "runner": "pytest"
+    }
+  ],
+  "evidence_dir": ".agent/evidence/OPS-002",
+  "latest_evidence_file": null,
+  "verification_summary": {
+    "state": "not_run",
+    "spec_revision": null,
+    "spec_digest": null,
+    "contract_digest": null,
+    "source_fingerprint": null,
+    "evidence": null
+  },
+  "integration": {
+    "state": "pending",
+    "target": "canonical main",
+    "reason": null,
+    "reservation": false,
+    "submission_generation": null,
+    "submission": null,
+    "result": null,
+    "evidence": null
+  },
+  "revision": 1,
+  "spec_revision": 1,
+  "claim_generation": 0,
+  "claim": null,
+  "attempts": {
+    "count": 0,
+    "cycles": 0,
+    "no_progress_count": 0,
+    "latest_attempt": null,
+    "evidence_refs": [],
+    "approaches": []
+  },
+  "blocker": null,
+  "migration": {
+    "original_status": "new",
+    "source_ref": "docs/WORK_LOG.md — 2026-09-26 개발 중 발견한 후속 통합/revalidation 및 일정 회귀",
+    "prior_claim": "OPS-001 기존 제어는 구현/검증되어 있음; 이번 후속 변경 복구 경계만 새 AC",
+    "implementation_facts": "기존 reconcile은 stale 예약을 만들고 recover는 이전 baseline 유지; 후속 task의 정당한 변경까지 scope diff에 포함될 수 있음. 일정 test의 11.0 !=8.0 실제 실패 재현.",
+    "previous_evidence": [],
+    "checks_this_migration": [
+      "원래 66 task/완료 이력 보존; 독립 보수 결과만 추가"
+    ],
+    "judgment": "독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님",
+    "initial_spec_revision": 1
+  },
+  "updated_at": "2026-09-26T07:01:00+00:00",
+  "concise_result": "신규 보수 명세; 구현/검증 not_run",
+  "next_action": "temp fixture로 후속 통합 revalidation 회수 재현 → 최소 recover 수정·strict 회귀 → 실제 command 증거/commit/submit"
+}
