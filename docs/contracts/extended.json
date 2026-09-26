@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "8cdb70c71066ec6028ccfb3658583f764511e2a531a561bf46c03630af6ed68a",
+  "digest": "337a364676972b559d3b94fed6c1ae1a77b6ef98ea6e73c33f20cad4152e5b20",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -338,6 +338,36 @@
             ],
             "title": "PublicationStatus",
             "type": "string"
+          },
+          "ResumeRequest": {
+            "additionalProperties": false,
+            "description": "Wake a waiting run to QUERY its review source; never grants approval.",
+            "properties": {
+              "action": {
+                "const": "refresh_review",
+                "default": "refresh_review",
+                "title": "Action",
+                "type": "string"
+              },
+              "event_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Event Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "event_id"
+            ],
+            "title": "ResumeRequest",
+            "type": "object"
           },
           "ReviewDecision": {
             "additionalProperties": false,
@@ -1212,6 +1242,74 @@
               }
             },
             "summary": "Get Run Status",
+            "tags": [
+              "work"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/resume": {
+          "post": {
+            "operationId": "resume_run_v1_runs__run_id__resume_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ResumeRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Resume Run",
             "tags": [
               "work"
             ]
@@ -4938,6 +5036,36 @@
         "title": "PublicationStatus",
         "type": "string"
       },
+      "ResumeRequest": {
+        "additionalProperties": false,
+        "description": "Wake a waiting run to QUERY its review source; never grants approval.",
+        "properties": {
+          "action": {
+            "const": "refresh_review",
+            "default": "refresh_review",
+            "title": "Action",
+            "type": "string"
+          },
+          "event_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id"
+        ],
+        "title": "ResumeRequest",
+        "type": "object"
+      },
       "ReviewDecision": {
         "additionalProperties": false,
         "properties": {
@@ -6651,6 +6779,7 @@
       "register_task_owner": "(self, task: 'PersistentTask') -> 'None'",
       "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
       "save_result": "(self, result: 'RunResult') -> 'None'",
+      "seed_documents_once": "(self, documents: 'list[KnowledgeDocument]') -> 'None'",
       "transition_run": "(self, run_id: 'str', status: 'WorkStatus') -> 'None'",
       "upsert_documents": "(self, documents: 'list[KnowledgeDocument]') -> 'None'"
     }
@@ -6673,6 +6802,7 @@
     "PolicyBindings",
     "PolicyDecisionV11",
     "PublicationReceipt",
+    "ResumeRequest",
     "RunRecord",
     "ScheduleSpec",
     "SessionCreate",
@@ -6692,12 +6822,12 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
-    "src/rfa_mas/api/app.py": "df6bf5a1c8aac7d9aac9aa26dfb802b1a7738fe6a86605b980903cb6293bfb62",
+    "src/rfa_mas/api/app.py": "082ebce1001728632d4249543800c02f2dfc1b944da73ea7f7744f1dacc13ee9",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "6931c77145aee5c2dde2f081435ddb946485ea3f95c4b2a968340498c923b497",
+    "src/rfa_mas/contracts/__init__.py": "a176557b4a69775d05924b6b657097dd1d42cc02760476cd36f5767282732f60",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "301ff0f77596d62011f78fc4ebf49dd90e300fceff9f46d69f66981f2e1aebfe",
-    "src/rfa_mas/ports/interfaces.py": "97a6c08ccecb92a9a92f382198d7e3d2d37305e21d01a085594c6a94f855e080",
+    "src/rfa_mas/contracts/models.py": "e6ce3f0271ab0890149e42841adb084cf7d6b2ee2f5700ff993398a0881053a9",
+    "src/rfa_mas/ports/interfaces.py": "c123e83a22933647374d441822e253ccb06ca0139472838d74674c5957edaad4",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",

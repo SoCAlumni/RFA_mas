@@ -69,8 +69,13 @@ class SqliteWorkRepository:
 
         def operation() -> None:
             with self._connect() as connection:
-                connection.executescript(
-                    """
+                connection.execute("BEGIN IMMEDIATE")
+                had_prior_schema = bool(
+                    connection.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'runs'"
+                    ).fetchone()
+                )
+                schema = """
                     CREATE TABLE IF NOT EXISTS runs (
                         run_id TEXT PRIMARY KEY,
                         request_id TEXT NOT NULL,
@@ -109,10 +114,31 @@ class SqliteWorkRepository:
                         PRIMARY KEY (source_id, source_revision)
                     );
                     """
-                )
+                # These are fixed DDL statements, not user SQL. executescript
+                # commits a transaction first, which would open a startup race.
+                for statement in schema.split(";"):
+                    if statement.strip():
+                        connection.execute(statement)
                 # Each additive migration and its version marker commit together.
                 # NULL ownership on old rows is intentional: never adopt legacy data.
-                connection.execute("BEGIN IMMEDIATE")
+                had_seed_registry = bool(
+                    connection.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                        "AND name = 'installation_seeds'"
+                    ).fetchone()
+                )
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS installation_seeds "
+                    "(seed_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+                )
+                if had_prior_schema and not had_seed_registry:
+                    # Pre-marker installations may intentionally have an empty KB.
+                    # Migration must never resurrect even an entirely deleted fixture set.
+                    connection.execute(
+                        "INSERT OR IGNORE INTO installation_seeds VALUES "
+                        "('synthetic-fixtures-v1', ?)",
+                        (datetime.now(UTC).isoformat(),),
+                    )
                 connection.execute(
                     "CREATE TABLE IF NOT EXISTS rfa_schema_migrations "
                     "(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
@@ -303,6 +329,20 @@ class SqliteWorkRepository:
                         (selected_session, new_id("thread"), owner, now, now),
                     )
                 self._session(connection, selected_session, owner)
+                owned_key = "owned:" + _canonical_fingerprint(
+                    {"owner": owner, "key": request.idempotency_key}
+                )
+                if connection.execute(
+                    "SELECT 1 FROM runs WHERE run_id = ? OR idempotency_key = ?",
+                    (request.run_id, owned_key),
+                ).fetchone():
+                    raise RfaError("idempotency_conflict", "중복 실행 요청입니다.")
+                if connection.execute(
+                    "SELECT 1 FROM runs WHERE session_id = ? AND status IN "
+                    "('created', 'running', 'waiting_approval', 'outcome_unknown')",
+                    (selected_session,),
+                ).fetchone():
+                    raise RfaError("thread_busy", "이 세션의 미완료 실행을 먼저 처리해야 합니다.")
                 if task_id is not None:
                     task = connection.execute(
                         "SELECT domain_id FROM product_task_owners "
@@ -325,8 +365,7 @@ class SqliteWorkRepository:
                         request.run_id,
                         request.request_id,
                         request.trace_id,
-                        "owned:"
-                        + _canonical_fingerprint({"owner": owner, "key": request.idempotency_key}),
+                        owned_key,
                         WorkStatus.CREATED.value,
                         request.model_dump_json(),
                         now,
@@ -538,6 +577,40 @@ class SqliteWorkRepository:
                         json.dumps(metadata, ensure_ascii=False, sort_keys=True),
                         datetime.now(UTC).isoformat(),
                     ),
+                )
+
+        await asyncio.to_thread(operation)
+
+    async def seed_documents_once(self, documents: list[KnowledgeDocument]) -> None:
+        def operation() -> None:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS installation_seeds "
+                    "(seed_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+                )
+                if connection.execute(
+                    "SELECT 1 FROM installation_seeds WHERE seed_id = 'synthetic-fixtures-v1'"
+                ).fetchone():
+                    return
+                now = datetime.now(UTC).isoformat()
+                # Existing nonempty stores are never backfilled from fixtures.
+                if not connection.execute("SELECT 1 FROM kb_documents LIMIT 1").fetchone():
+                    connection.executemany(
+                        "INSERT INTO kb_documents VALUES (?, ?, ?, ?, ?)",
+                        [
+                            (
+                                d.source_id,
+                                d.source_revision,
+                                d.domain_id.value,
+                                d.model_dump_json(),
+                                now,
+                            )
+                            for d in documents
+                        ],
+                    )
+                connection.execute(
+                    "INSERT INTO installation_seeds VALUES ('synthetic-fixtures-v1', ?)", (now,)
                 )
 
         await asyncio.to_thread(operation)

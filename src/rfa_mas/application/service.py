@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 from typing import Any
 
+from langgraph.types import Command
+
+from rfa_mas.application.graphs.domain import InvocationContext
 from rfa_mas.application.graphs.supervisor import build_supervisor_graph
 from rfa_mas.application.sessions import SessionService
 from rfa_mas.contracts import (
     AdapterInfo,
     DirectWorkRequest,
     PublicationStatus,
+    ResumeRequest,
     RunResult,
     StructuredError,
     TrustedPrincipal,
@@ -29,12 +35,26 @@ class WorkService:
         trace: TracePort,
         supervisor_dependencies: Any,
         adapters: tuple[AdapterInfo, ...],
+        guard_thread: Callable[[str], AbstractContextManager[None]],
     ) -> None:
         self._repository = repository
         self.sessions = SessionService(repository)
         self._trace = trace
-        self._graph = build_supervisor_graph(supervisor_dependencies)
+        self._dependencies = supervisor_dependencies
+        self._graph = None
+        self._guard_thread = guard_thread
         self._adapters = adapters
+
+    def start(self, checkpointer: Any) -> None:
+        self._graph = build_supervisor_graph(self._dependencies, checkpointer=checkpointer)
+
+    def stop(self) -> None:
+        self._graph = None
+
+    @staticmethod
+    def _config(thread_id: str) -> dict[str, Any]:
+        # Metadata/configurable scalar values can be persisted. No auth/context here.
+        return {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
 
     async def run(self, request: WorkRequest, principal: TrustedPrincipal) -> RunResult:
         created_at = datetime.now(UTC)
@@ -42,12 +62,30 @@ class WorkService:
             # Preserve the legacy policy-denied result, without creating durable
             # user state or performing any graph/tool action for anonymous input.
             return self._failed_result(request, created_at, PolicyDeniedError())
-        await self._repository.create_owned_run(
-            request,
-            principal,
-            session_id=request.session_id if isinstance(request, DirectWorkRequest) else None,
-            task_id=request.task_id if isinstance(request, DirectWorkRequest) else None,
+        if self._graph is None:
+            raise RfaError("configuration_error", "checkpoint lifecycle 초기화가 필요합니다.")
+        session_id = request.session_id if isinstance(request, DirectWorkRequest) else None
+        task_id = request.task_id if isinstance(request, DirectWorkRequest) else None
+        if session_id is not None:
+            session = await self.sessions.get(session_id, principal)
+            with self._guard_thread(session.thread_id):
+                await self._repository.create_owned_run(
+                    request, principal, session_id=session_id, task_id=task_id
+                )
+                return await self._execute(request, principal, session.thread_id, created_at)
+        session = await self._repository.create_owned_run(
+            request, principal, session_id=None, task_id=task_id
         )
+        with self._guard_thread(session.thread_id):
+            return await self._execute(request, principal, session.thread_id, created_at)
+
+    async def _execute(
+        self,
+        request: WorkRequest,
+        principal: TrustedPrincipal,
+        thread_id: str,
+        created_at: datetime,
+    ) -> RunResult:
         await self._repository.transition_run(request.run_id, WorkStatus.RUNNING)
         await self._trace.emit(
             event="work_started",
@@ -78,7 +116,19 @@ class WorkService:
                 }
             )
             state = await self._graph.ainvoke(
-                {"work": graph_request, "principal": principal, "steps": 0}
+                {
+                    "work": graph_request,
+                    "steps": 0,
+                    "draft": None,
+                    "review": None,
+                    "error": None,
+                    "domain_id": None,
+                    "status": WorkStatus.RUNNING,
+                    "publication_status": PublicationStatus.NOT_REQUESTED,
+                },
+                config=self._config(thread_id),
+                context=InvocationContext(principal),
+                durability="sync",
             )
             status = state.get("status", WorkStatus.FAILED)
             error = state.get("error")
@@ -148,6 +198,78 @@ class WorkService:
             },
         )
         return result
+
+    async def resume(
+        self, run_id: str, wakeup: ResumeRequest, principal: TrustedPrincipal
+    ) -> RunResult:
+        # Authorize before looking up ANY checkpoint. Never accept client thread IDs.
+        record = await self._repository.get_owned_run(run_id, principal)
+        if self._graph is None:
+            raise RfaError("configuration_error", "checkpoint lifecycle 초기화가 필요합니다.")
+        with self._guard_thread(record.thread_id):
+            record = await self._repository.get_owned_run(run_id, principal)
+            if record.status in {WorkStatus.COMPLETED, WorkStatus.FAILED, WorkStatus.CANCELLED}:
+                if record.result is None:
+                    raise RfaError("resume_unavailable", "재개 가능한 결과가 없습니다.")
+                return record.result
+            snapshot = await self._graph.aget_state(self._config(record.thread_id))
+            work = snapshot.values.get("work")
+            if (
+                not isinstance(work, WorkRequest)
+                or work.run_id != record.run_id
+                or snapshot.next != ("await_review",)
+                or not snapshot.interrupts
+                or record.status not in {WorkStatus.WAITING_APPROVAL, WorkStatus.RUNNING}
+            ):
+                raise RfaError("resume_unavailable", "이 실행은 승인 대기 재개 대상이 아닙니다.")
+            try:
+                # ID is already bound to this authorized run and its latest interrupt.
+                state = await self._graph.ainvoke(
+                    Command(resume={snapshot.interrupts[0].id: wakeup.model_dump(mode="json")}),
+                    config=self._config(record.thread_id),
+                    context=InvocationContext(principal),
+                    durability="sync",
+                )
+                error = state.get("error")
+                result = RunResult(
+                    request_id=work.request_id,
+                    trace_id=work.trace_id,
+                    run_id=work.run_id,
+                    agent_id=work.agent_id,
+                    domain_id=state.get("domain_id"),
+                    status=state["status"],
+                    draft=state.get("draft"),
+                    review=state.get("review"),
+                    publication_status=state.get(
+                        "publication_status", PublicationStatus.NOT_REQUESTED
+                    ),
+                    errors=(error,) if error else (),
+                    stop_reason=self._stop_reason(state["status"], error),
+                    simulated=any(item.simulated for item in self._adapters),
+                    adapters=self._adapters,
+                    created_at=record.created_at,
+                    updated_at=datetime.now(UTC),
+                )
+            except RfaError as exc:
+                result = self._failed_result(work, record.created_at, exc)
+            except Exception:
+                result = self._failed_result(
+                    work,
+                    record.created_at,
+                    RfaError("resume_error", "재개 중 오류가 발생하여 안전하게 중단했습니다."),
+                )
+            if result.status != record.status:
+                await self._repository.transition_run(run_id, result.status)
+            await self._repository.save_result(result)
+            await self._trace.emit(
+                event="work_resumed",
+                request_id=result.request_id,
+                trace_id=result.trace_id,
+                run_id=result.run_id,
+                status=result.status.value,
+                metadata={"simulated": result.simulated},
+            )
+            return result
 
     async def get(self, run_id: str, principal: TrustedPrincipal) -> RunResult:
         record = await self._repository.get_owned_run(run_id, principal)

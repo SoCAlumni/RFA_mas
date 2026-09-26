@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 
+from rfa_mas.adapters.checkpoints import SqliteCheckpoints
 from rfa_mas.adapters.http import (
     PolicyHttpAdapter,
     ReferenceHttpClient,
@@ -21,6 +22,7 @@ from rfa_mas.application.graphs import (
     SupervisorDependencies,
     build_domain_task_handler,
 )
+from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.service import WorkService
 from rfa_mas.contracts import AdapterInfo, KnowledgeDocument
 from rfa_mas.errors import BackendNotImplementedError
@@ -44,16 +46,27 @@ class Container:
     trace: object
     judge: object
     adapters: tuple[AdapterInfo, ...]
+    checkpoints: SqliteCheckpoints
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
     async def startup(self) -> None:
-        await self.repository.initialize()
-        documents = _load_documents(PROJECT_ROOT / "fixtures" / "documents")
-        await self.repository.upsert_documents(documents)
+        if self.ready:
+            return
+        try:
+            await self.repository.initialize()
+            documents = _load_documents(PROJECT_ROOT / "fixtures" / "documents")
+            await self.repository.seed_documents_once(documents)
+            self.service.start(await self.checkpoints.start())
+        except BaseException:
+            await self.shutdown()
+            raise
         self.ready = True
 
     async def shutdown(self) -> None:
+        self.ready = False
+        self.service.stop()
+        await self.checkpoints.close()
         for client in self.http_clients:
             await client.aclose()
         self.ready = False
@@ -103,6 +116,7 @@ def build_container(settings: Settings | None = None) -> Container:
     redactor = SecretRedactor(settings.secret_values())
     configure_logging(settings.log_level, redactor)
     repository = SqliteWorkRepository(settings.database_path)
+    checkpoints = SqliteCheckpoints(settings.resolved_checkpoint_path)
     clients: list[httpx.AsyncClient] = []
 
     if settings.model_provider != "mock":
@@ -201,8 +215,10 @@ def build_container(settings: Settings | None = None) -> Container:
             response=response,
             max_graph_steps=settings.max_graph_steps,
             max_tool_calls=settings.max_tool_calls,
+            validate_resume=ResumePolicy(repository, policy),
         ),
         adapters=adapters,
+        guard_thread=checkpoints.guard,
     )
     return Container(
         settings=settings,
@@ -217,5 +233,6 @@ def build_container(settings: Settings | None = None) -> Container:
         trace=trace,
         judge=judge,
         adapters=adapters,
+        checkpoints=checkpoints,
         http_clients=clients,
     )

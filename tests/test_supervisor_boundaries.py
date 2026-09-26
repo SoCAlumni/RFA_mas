@@ -5,9 +5,11 @@ from typing import Any
 
 import httpx
 import pytest
+from langgraph.checkpoint.memory import InMemorySaver
 
 from rfa_mas.adapters.http import ReferenceHttpClient, RuntimeHttpAdapter
 from rfa_mas.adapters.mock import MockResponse
+from rfa_mas.application.graphs.domain import InvocationContext
 from rfa_mas.application.graphs.supervisor import (
     SupervisorDependencies,
     build_supervisor_graph,
@@ -150,20 +152,26 @@ async def run_graph(
     principal: TrustedPrincipal | None = None,
     max_graph_steps: int = 12,
 ) -> dict[str, Any]:
+    async def unused_resume_validator(*args):
+        raise AssertionError("these boundary cases do not exercise review resume")
+
     graph = build_supervisor_graph(
         SupervisorDependencies(
             runtime=runtime,
             response=response,
             max_graph_steps=max_graph_steps,
             max_tool_calls=6,
-        )
+            validate_resume=unused_resume_validator,
+        ),
+        checkpointer=InMemorySaver(),
     )
     return await graph.ainvoke(
         {
             "work": work or make_work(),
-            "principal": principal or make_principal(),
             "steps": 0,
-        }
+        },
+        context=InvocationContext(principal or make_principal()),
+        config={"configurable": {"thread_id": "isolated-boundary-test"}},
     )
 
 

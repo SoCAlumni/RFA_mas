@@ -465,6 +465,13 @@ class SessionCreate(ExtendedContractModel):
     """Empty request: ownership and thread identifiers are allocated by the server."""
 
 
+class ResumeRequest(ExtendedContractModel):
+    """Wake a waiting run to QUERY its review source; never grants approval."""
+
+    event_id: OpaqueId
+    action: Literal["refresh_review"] = "refresh_review"
+
+
 class SessionMessage(ExtendedContractModel):
     message_id: OpaqueId
     session_id: OpaqueId
