@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "3fc935a736c3b4a3bb2d76f84791aaa7d658cfb9a6f959d4429d41695072ba53",
+  "digest": "514f8dfa6f00bc8e9bdba6f415592f308a024172be0e181c77defb3b3a67e1e8",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -456,6 +456,48 @@
             "title": "CandidateDecision",
             "type": "object"
           },
+          "ContextLevel": {
+            "enum": [
+              "L0",
+              "L1",
+              "L2"
+            ],
+            "title": "ContextLevel",
+            "type": "string"
+          },
+          "ContextStageOutcome": {
+            "additionalProperties": false,
+            "properties": {
+              "characters": {
+                "minimum": 0.0,
+                "title": "Characters",
+                "type": "integer"
+              },
+              "outcome": {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "title": "Outcome",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "stage": {
+                "$ref": "#/components/schemas/ContextLevel"
+              }
+            },
+            "required": [
+              "stage",
+              "outcome",
+              "characters"
+            ],
+            "title": "ContextStageOutcome",
+            "type": "object"
+          },
           "DirectWorkRequest": {
             "additionalProperties": false,
             "properties": {
@@ -907,6 +949,319 @@
               "audience"
             ],
             "title": "DraftTarget",
+            "type": "object"
+          },
+          "EventDraftRef": {
+            "additionalProperties": false,
+            "properties": {
+              "content_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "draft_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "policy_version": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "target_audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "version": {
+                "minimum": 1.0,
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "draft_id",
+              "version",
+              "content_hash",
+              "target_audience",
+              "policy_version"
+            ],
+            "title": "EventDraftRef",
+            "type": "object"
+          },
+          "EventPage": {
+            "additionalProperties": false,
+            "properties": {
+              "events": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/RunEvent"
+                },
+                "title": "Events",
+                "type": "array"
+              },
+              "has_more": {
+                "title": "Has More",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "pattern": "^ev1_[0-9]+$",
+                "title": "Next Cursor",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more"
+            ],
+            "title": "EventPage",
+            "type": "object"
+          },
+          "EventPolicyRef": {
+            "additionalProperties": false,
+            "properties": {
+              "observation_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Observation Id",
+                "type": "string"
+              },
+              "outcome": {
+                "enum": [
+                  "allowed",
+                  "denied",
+                  "error"
+                ],
+                "title": "Outcome",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "outcome",
+              "observation_id"
+            ],
+            "title": "EventPolicyRef",
+            "type": "object"
+          },
+          "EventReceiptRef": {
+            "additionalProperties": false,
+            "properties": {
+              "approval_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Approval Id",
+                "type": "string"
+              },
+              "content_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "draft_version": {
+                "minimum": 1.0,
+                "title": "Draft Version",
+                "type": "integer"
+              },
+              "mode": {
+                "$ref": "#/components/schemas/ExecutionMode"
+              },
+              "next_action": {
+                "enum": [
+                  "none",
+                  "query",
+                  "review"
+                ],
+                "title": "Next Action",
+                "type": "string"
+              },
+              "publication_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Publication Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/PublicationStatus"
+              }
+            },
+            "required": [
+              "publication_id",
+              "status",
+              "approval_id",
+              "draft_version",
+              "content_hash",
+              "mode",
+              "next_action"
+            ],
+            "title": "EventReceiptRef",
+            "type": "object"
+          },
+          "EventReviewRef": {
+            "additionalProperties": false,
+            "description": "Mirror of the review authority's decision for one exact draft version/hash.",
+            "properties": {
+              "content_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "decision": {
+                "$ref": "#/components/schemas/ReviewStatus"
+              },
+              "draft_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "draft_version": {
+                "minimum": 1.0,
+                "title": "Draft Version",
+                "type": "integer"
+              },
+              "review_ref": {
+                "pattern": "^review:[A-Za-z0-9_.:-]+@v[0-9]+:[0-9a-f]{64}$",
+                "title": "Review Ref",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "review_ref",
+              "draft_id",
+              "draft_version",
+              "content_hash",
+              "decision"
+            ],
+            "title": "EventReviewRef",
+            "type": "object"
+          },
+          "EventRoleRef": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "anyOf": [
+                  {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9_.:-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "role": {
+                "enum": [
+                  "supervisor",
+                  "paper_scout",
+                  "experiment_runner",
+                  "result_analyst",
+                  "source_scout",
+                  "evidence_reviewer"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "role",
+              "status"
+            ],
+            "title": "EventRoleRef",
+            "type": "object"
+          },
+          "EventSourceRef": {
+            "additionalProperties": false,
+            "description": "A source revision the requester may CURRENTLY read; never its title or content.",
+            "properties": {
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revision": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Source Revision",
+                "type": "string"
+              },
+              "stage": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ContextLevel"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "source_id",
+              "source_revision"
+            ],
+            "title": "EventSourceRef",
             "type": "object"
           },
           "EvidenceRef": {
@@ -2807,6 +3162,214 @@
             "title": "RunCancelState",
             "type": "object"
           },
+          "RunEvent": {
+            "additionalProperties": false,
+            "description": "Owner-scoped, Run-linked reference event. IDs, revisions, hashes and codes only.\n\n`occurred_at` is set only when the durable source has its own timestamp; `recorded_at`\nis when this feed first recorded the event. Source refs are re-authorized on every read.",
+            "properties": {
+              "cursor": {
+                "pattern": "^ev1_[0-9]+$",
+                "title": "Cursor",
+                "type": "string"
+              },
+              "draft": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventDraftRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "event_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Event Id",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "run",
+                  "context",
+                  "policy",
+                  "draft",
+                  "review",
+                  "publication",
+                  "team",
+                  "role",
+                  "notification"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "occurred_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Occurred At"
+              },
+              "policy": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventPolicyRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason_code": {
+                "anyOf": [
+                  {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9_.:-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Reason Code"
+              },
+              "receipt": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventReceiptRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "recorded_at": {
+                "format": "date-time",
+                "title": "Recorded At",
+                "type": "string"
+              },
+              "review": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventReviewRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "role": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventRoleRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "run_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Session Id"
+              },
+              "sources": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/EventSourceRef"
+                },
+                "title": "Sources",
+                "type": "array"
+              },
+              "stages": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/ContextStageOutcome"
+                },
+                "title": "Stages",
+                "type": "array"
+              },
+              "status": {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "title": "Status",
+                "type": "string"
+              },
+              "task_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Id"
+              },
+              "team_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Team Id"
+              },
+              "withheld_sources": {
+                "default": 0,
+                "minimum": 0.0,
+                "title": "Withheld Sources",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "cursor",
+              "event_id",
+              "kind",
+              "run_id",
+              "status",
+              "recorded_at"
+            ],
+            "title": "RunEvent",
+            "type": "object"
+          },
           "RunRecord": {
             "additionalProperties": false,
             "description": "Owner-authorized metadata, including runs without a final result yet.",
@@ -3018,6 +3581,152 @@
               "adapters"
             ],
             "title": "RunResult",
+            "type": "object"
+          },
+          "RunStatusView": {
+            "additionalProperties": false,
+            "description": "Owner polling view. Stages that did not happen are null, never invented.",
+            "properties": {
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "draft": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventDraftRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "draft_withheld": {
+                "default": false,
+                "title": "Draft Withheld",
+                "type": "boolean"
+              },
+              "error_codes": {
+                "default": [],
+                "items": {
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "pattern": "^[a-z0-9_.:-]+$",
+                  "type": "string"
+                },
+                "title": "Error Codes",
+                "type": "array"
+              },
+              "receipt": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventReceiptRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "review": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventReviewRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "run_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/WorkStatus"
+              },
+              "stop_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9_.:-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Stop Reason"
+              },
+              "task": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TaskStatusView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "team": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TeamStatusView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "workers": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/WorkerStatus"
+                },
+                "title": "Workers",
+                "type": "array"
+              }
+            },
+            "required": [
+              "run_id",
+              "session_id",
+              "status",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "RunStatusView",
             "type": "object"
           },
           "Schedule": {
@@ -3805,6 +4514,54 @@
             "title": "TaskCandidateRef",
             "type": "object"
           },
+          "TaskStatusView": {
+            "additionalProperties": false,
+            "properties": {
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "active",
+                  "paused",
+                  "completed",
+                  "cancelled"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "task_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Task Id",
+                "type": "string"
+              },
+              "team": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TeamStatusView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "task_id",
+              "domain_id",
+              "status"
+            ],
+            "title": "TaskStatusView",
+            "type": "object"
+          },
           "TeamBudget": {
             "additionalProperties": false,
             "properties": {
@@ -4057,6 +4814,89 @@
               "simulated"
             ],
             "title": "TeamRunResult",
+            "type": "object"
+          },
+          "TeamStatusView": {
+            "additionalProperties": false,
+            "properties": {
+              "lifecycle_phase": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "pending",
+                      "finished"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Lifecycle Phase"
+              },
+              "lifecycle_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9_.:-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Lifecycle Reason"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "completed",
+                      "partial",
+                      "failed",
+                      "cancelled"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Status"
+              },
+              "stop_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9_.:-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Stop Reason"
+              },
+              "team_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Team Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "team_id"
+            ],
+            "title": "TeamStatusView",
             "type": "object"
           },
           "TodoCandidate": {
@@ -4331,6 +5171,68 @@
             ],
             "title": "WorkStatus",
             "type": "string"
+          },
+          "WorkerStatus": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "anyOf": [
+                  {
+                    "maxLength": 80,
+                    "minLength": 1,
+                    "pattern": "^[a-z0-9_.:-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "role": {
+                "enum": [
+                  "supervisor",
+                  "paper_scout",
+                  "experiment_runner",
+                  "result_analyst",
+                  "source_scout",
+                  "evidence_reviewer"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "title": "Status",
+                "type": "string"
+              },
+              "steps": {
+                "minimum": 0.0,
+                "title": "Steps",
+                "type": "integer"
+              },
+              "tool_calls": {
+                "minimum": 0.0,
+                "title": "Tool Calls",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "role",
+              "status",
+              "steps",
+              "tool_calls"
+            ],
+            "title": "WorkerStatus",
+            "type": "object"
           }
         }
       },
@@ -4647,6 +5549,101 @@
             "summary": "Decide Candidate",
             "tags": [
               "candidates"
+            ]
+          }
+        },
+        "/v1/events": {
+          "get": {
+            "operationId": "list_events_v1_events_get",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "cursor",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "maxLength": 40,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Cursor"
+                }
+              },
+              {
+                "in": "query",
+                "name": "limit",
+                "required": false,
+                "schema": {
+                  "default": 50,
+                  "maximum": 200,
+                  "minimum": 1,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              {
+                "in": "query",
+                "name": "run_id",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "maxLength": 160,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Run Id"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventPage"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Events",
+            "tags": [
+              "status"
             ]
           }
         },
@@ -6247,6 +7244,64 @@
             ]
           }
         },
+        "/v1/runs/{run_id}/status": {
+          "get": {
+            "operationId": "get_run_status_view_v1_runs__run_id__status_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunStatusView"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Run Status View",
+            "tags": [
+              "status"
+            ]
+          }
+        },
         "/v1/runs/{run_id}/team": {
           "get": {
             "operationId": "get_team_result_v1_runs__run_id__team_get",
@@ -6949,6 +8004,64 @@
             "summary": "Continue Session",
             "tags": [
               "sessions"
+            ]
+          }
+        },
+        "/v1/tasks/{task_id}/status": {
+          "get": {
+            "operationId": "get_task_status_view_v1_tasks__task_id__status_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "task_id",
+                "required": true,
+                "schema": {
+                  "title": "Task Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/TaskStatusView"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Task Status View",
+            "tags": [
+              "status"
             ]
           }
         },
@@ -9467,6 +10580,39 @@
         "title": "ContextRequest",
         "type": "object"
       },
+      "ContextStageOutcome": {
+        "additionalProperties": false,
+        "properties": {
+          "characters": {
+            "minimum": 0,
+            "title": "Characters",
+            "type": "integer"
+          },
+          "outcome": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_.:-]+$",
+            "title": "Outcome",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/$defs/ContextLevel"
+          }
+        },
+        "required": [
+          "stage",
+          "outcome",
+          "characters"
+        ],
+        "title": "ContextStageOutcome",
+        "type": "object"
+      },
       "DerivedItemProposal": {
         "additionalProperties": false,
         "description": "Worker/extractor proposal. Not knowledge until the Supervisor gate accepts it.",
@@ -10463,6 +11609,321 @@
         ],
         "title": "EvaluationStatus",
         "type": "string"
+      },
+      "EventDraftRef": {
+        "additionalProperties": false,
+        "properties": {
+          "content_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "draft_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "policy_version": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "target_audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "draft_id",
+          "version",
+          "content_hash",
+          "target_audience",
+          "policy_version"
+        ],
+        "title": "EventDraftRef",
+        "type": "object"
+      },
+      "EventPage": {
+        "additionalProperties": false,
+        "properties": {
+          "events": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/RunEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "pattern": "^ev1_[0-9]+$",
+            "title": "Next Cursor",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "next_cursor",
+          "has_more"
+        ],
+        "title": "EventPage",
+        "type": "object"
+      },
+      "EventPolicyRef": {
+        "additionalProperties": false,
+        "properties": {
+          "observation_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Observation Id",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "allowed",
+              "denied",
+              "error"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "observation_id"
+        ],
+        "title": "EventPolicyRef",
+        "type": "object"
+      },
+      "EventReceiptRef": {
+        "additionalProperties": false,
+        "properties": {
+          "approval_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "content_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "draft_version": {
+            "minimum": 1,
+            "title": "Draft Version",
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/$defs/ExecutionMode"
+          },
+          "next_action": {
+            "enum": [
+              "none",
+              "query",
+              "review"
+            ],
+            "title": "Next Action",
+            "type": "string"
+          },
+          "publication_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Publication Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/PublicationStatus"
+          }
+        },
+        "required": [
+          "publication_id",
+          "status",
+          "approval_id",
+          "draft_version",
+          "content_hash",
+          "mode",
+          "next_action"
+        ],
+        "title": "EventReceiptRef",
+        "type": "object"
+      },
+      "EventReviewRef": {
+        "additionalProperties": false,
+        "description": "Mirror of the review authority's decision for one exact draft version/hash.",
+        "properties": {
+          "content_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "decision": {
+            "$ref": "#/$defs/ReviewStatus"
+          },
+          "draft_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "draft_version": {
+            "minimum": 1,
+            "title": "Draft Version",
+            "type": "integer"
+          },
+          "review_ref": {
+            "pattern": "^review:[A-Za-z0-9_.:-]+@v[0-9]+:[0-9a-f]{64}$",
+            "title": "Review Ref",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_ref",
+          "draft_id",
+          "draft_version",
+          "content_hash",
+          "decision"
+        ],
+        "title": "EventReviewRef",
+        "type": "object"
+      },
+      "EventRoleRef": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Code"
+          },
+          "role": {
+            "enum": [
+              "supervisor",
+              "paper_scout",
+              "experiment_runner",
+              "result_analyst",
+              "source_scout",
+              "evidence_reviewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_.:-]+$",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "status"
+        ],
+        "title": "EventRoleRef",
+        "type": "object"
+      },
+      "EventSourceRef": {
+        "additionalProperties": false,
+        "description": "A source revision the requester may CURRENTLY read; never its title or content.",
+        "properties": {
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_revision": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Source Revision",
+            "type": "string"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ContextLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "source_id",
+          "source_revision"
+        ],
+        "title": "EventSourceRef",
+        "type": "object"
       },
       "EvidenceRef": {
         "additionalProperties": false,
@@ -12902,6 +14363,125 @@
         "title": "RankedCandidate",
         "type": "object"
       },
+      "ReadinessCheck": {
+        "additionalProperties": false,
+        "description": "Names and codes only: configuration VALUES are never reported.",
+        "properties": {
+          "code": {
+            "enum": [
+              "ok",
+              "not_started",
+              "configuration_error",
+              "not_implemented",
+              "unavailable"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "component": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_.:-]+$",
+            "title": "Component",
+            "type": "string"
+          },
+          "invalid": {
+            "default": [],
+            "items": {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Z][A-Z0-9_/]*$",
+              "type": "string"
+            },
+            "title": "Invalid",
+            "type": "array"
+          },
+          "missing": {
+            "default": [],
+            "items": {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Z][A-Z0-9_/]*$",
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "reserved": {
+            "default": [],
+            "items": {
+              "maxLength": 120,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:/-]+$",
+              "type": "string"
+            },
+            "title": "Reserved",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "selected": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_.:-]+$",
+            "title": "Selected",
+            "type": "string"
+          }
+        },
+        "required": [
+          "component",
+          "selected",
+          "ready",
+          "code"
+        ],
+        "title": "ReadinessCheck",
+        "type": "object"
+      },
+      "ReadinessReport": {
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/$defs/ReadinessCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "ready",
+          "checks"
+        ],
+        "title": "ReadinessReport",
+        "type": "object"
+      },
       "ResumeRequest": {
         "additionalProperties": false,
         "description": "Wake a waiting run to QUERY its review source; never grants approval.",
@@ -13167,6 +14747,224 @@
         "title": "RoleOutcome",
         "type": "object"
       },
+      "RunEvent": {
+        "additionalProperties": false,
+        "description": "Owner-scoped, Run-linked reference event. IDs, revisions, hashes and codes only.\n\n`occurred_at` is set only when the durable source has its own timestamp; `recorded_at`\nis when this feed first recorded the event. Source refs are re-authorized on every read.",
+        "properties": {
+          "cursor": {
+            "pattern": "^ev1_[0-9]+$",
+            "title": "Cursor",
+            "type": "string"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventDraftRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "event_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "run",
+              "context",
+              "policy",
+              "draft",
+              "review",
+              "publication",
+              "team",
+              "role",
+              "notification"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventPolicyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "reason_code": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason Code"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventReceiptRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventReviewRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventRoleRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "run_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "sources": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/EventSourceRef"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "stages": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/ContextStageOutcome"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_.:-]+$",
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Id"
+          },
+          "withheld_sources": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Withheld Sources",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cursor",
+          "event_id",
+          "kind",
+          "run_id",
+          "status",
+          "recorded_at"
+        ],
+        "title": "RunEvent",
+        "type": "object"
+      },
       "RunRecord": {
         "additionalProperties": false,
         "description": "Owner-authorized metadata, including runs without a final result yet.",
@@ -13384,6 +15182,159 @@
           "adapters"
         ],
         "title": "RunResult",
+        "type": "object"
+      },
+      "RunStatusView": {
+        "additionalProperties": false,
+        "description": "Owner polling view. Stages that did not happen are null, never invented.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventDraftRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "draft_withheld": {
+            "default": false,
+            "title": "Draft Withheld",
+            "type": "boolean"
+          },
+          "error_codes": {
+            "default": [],
+            "items": {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[a-z0-9_.:-]+$",
+              "type": "string"
+            },
+            "title": "Error Codes",
+            "type": "array"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventReceiptRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventReviewRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "run_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/WorkStatus"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stop Reason"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TaskStatusView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TeamStatusView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workers": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/WorkerStatus"
+            },
+            "title": "Workers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "session_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RunStatusView",
         "type": "object"
       },
       "Schedule": {
@@ -14308,6 +16259,55 @@
         "title": "TaskCandidateRef",
         "type": "object"
       },
+      "TaskStatusView": {
+        "additionalProperties": false,
+        "properties": {
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "paused",
+              "completed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TeamStatusView"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "task_id",
+          "domain_id",
+          "status"
+        ],
+        "title": "TaskStatusView",
+        "type": "object"
+      },
       "TeamBudget": {
         "additionalProperties": false,
         "properties": {
@@ -14866,6 +16866,93 @@
           "members"
         ],
         "title": "TeamSpec",
+        "type": "object"
+      },
+      "TeamStatusView": {
+        "additionalProperties": false,
+        "properties": {
+          "lifecycle_phase": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pending",
+                  "finished"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lifecycle Phase"
+          },
+          "lifecycle_reason": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lifecycle Reason"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "completed",
+                  "partial",
+                  "failed",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stop Reason"
+          },
+          "team_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Team Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "TeamStatusView",
         "type": "object"
       },
       "TeamTemplate": {
@@ -15624,6 +17711,69 @@
         ],
         "title": "WorkStatus",
         "type": "string"
+      },
+      "WorkerStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[a-z0-9_.:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Code"
+          },
+          "role": {
+            "enum": [
+              "supervisor",
+              "paper_scout",
+              "experiment_runner",
+              "result_analyst",
+              "source_scout",
+              "evidence_reviewer"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_.:-]+$",
+            "title": "Status",
+            "type": "string"
+          },
+          "steps": {
+            "minimum": 0,
+            "title": "Steps",
+            "type": "integer"
+          },
+          "tool_calls": {
+            "minimum": 0,
+            "title": "Tool Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "role",
+          "status",
+          "steps",
+          "tool_calls"
+        ],
+        "title": "WorkerStatus",
+        "type": "object"
       }
     },
     "title": "RFA 1.1 additive repository-local reference contracts"
@@ -15730,6 +17880,21 @@
     "FeedbackRevoke",
     "FeedbackRecord",
     "FeedbackApplication",
+    "ContextStageOutcome",
+    "EventDraftRef",
+    "EventPage",
+    "EventPolicyRef",
+    "EventReceiptRef",
+    "EventReviewRef",
+    "EventRoleRef",
+    "EventSourceRef",
+    "ReadinessCheck",
+    "ReadinessReport",
+    "RunEvent",
+    "RunStatusView",
+    "TaskStatusView",
+    "TeamStatusView",
+    "WorkerStatus",
     "DraftEditRequest",
     "PublishRequest",
     "DraftState",
@@ -15808,11 +17973,11 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
-    "src/rfa_mas/api/app.py": "38ad023cf45b43493651dbe5b1391a11f049efb5013d2838621c86d12a414668",
+    "src/rfa_mas/api/app.py": "52c7d6c7119867a40cbb2e7aa1e4cc46c86ce668ce84a897f044e88821c04db1",
     "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
-    "src/rfa_mas/contracts/__init__.py": "269a01e4abe4f4f694f6bc7f2d57d1b6bc394cfa90137802f5c11e1d175a2f18",
+    "src/rfa_mas/contracts/__init__.py": "ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "555c606c7bf0ca8a02ccd34e8d383ce7ed8874765ee86791e98e7dcd09594d17",
+    "src/rfa_mas/contracts/models.py": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
     "src/rfa_mas/ports/interfaces.py": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
     "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a"
   },
