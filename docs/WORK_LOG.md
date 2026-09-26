@@ -114,3 +114,22 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   보장하지 않는다. 공통 local.py/DTO 수정은 병렬 금지, 검토/통합도 필요하다.
 - 이 항목은 명세 연결만 검증했다. E2E 10개 실행, UI, 실제 모델/팀원/격리
   완료 주장은 아직 하지 않는다. scripts/taskctl.py validate 결과: 66 task 유효.
+
+## 다음 구현의 공식 자료 조사 — 2026-09-26
+
+- P0-016: 설치 LangGraph 1.2.12/checkpoint 4.2.0에 대해 PyPI의
+  langgraph-checkpoint-sqlite 3.1.1은 checkpoint >=4.1,<5와 Python >=3.10을 요구한다.
+  아직 설치·resolver·실행 검증하지 않은 후보다. [배포 metadata](https://pypi.org/pypi/langgraph-checkpoint-sqlite/3.1.1/json),
+  [공식 persistence](https://docs.langchain.com/oss/python/langgraph/persistence),
+  [interrupt 재개](https://docs.langchain.com/oss/python/langgraph/interrupts)를 확인했다.
+  interrupt 이전 node 코드가 재실행될 수 있으므로 멱등 기록과 재인증을 분리 검증한다.
+- 탐색 중 존재하지 않는 graph/builder.py 읽기는 exit 1이었다. `rg --files`로 실제
+  application/graphs/supervisor.py·domain.py를 확인했다. reference 사이트 markdown
+  응답은 web 도구가 읽지 못해 공식 문서와 배포 metadata를 사용했다.
+- P1-003 후보는 공식 Skill의 nemo-retriever 26.8.1 CLI + 로컬 LanceDB + 명시적인
+  NVIDIA hosted embedding이다. 일반 PC에 GPU/전체 Blueprint를 요구하지 않는다.
+  기존 core/NAT와 urllib3/tokenizers pin이 달라 격리 CLI 환경에서 검증할 예정이다.
+  [고정 Skill 원본](https://github.com/NVIDIA/skills/blob/46293cb1dcc3b6984f1569cf8d819a387d5a9916/skills/nemo-retriever/SKILL.md),
+  [26.08.1 CLI](https://github.com/NVIDIA/NeMo-Retriever/blob/26.08.1/nemo_retriever/docs/cli/README.md).
+  CLI evidence에는 RFA revision/ACL이 없으므로 신뢰된 index manifest와 매핑해야 한다.
+  이 조사는 설치·Skill 실행·실제 embedding 성공 증거가 아니다.
