@@ -222,6 +222,20 @@ class KnowledgeAccumulator:
             ))
         return AccumulationReport(items=tuple(items))
 
+    async def refresh_changed(self, domain_id: DomainId, principal: TrustedPrincipal,
+                              source_ids: set[str], *,
+                              origin_ref: str = "kb_refresh") -> AccumulationReport:
+        """P0-024 kb_refresh: re-derive only items whose parents have new revisions.
+
+        Same Supervisor gate as accumulate(); unchanged sources are not reprocessed.
+        """
+        proposals = [
+            proposal
+            for proposal in await self.extract(domain_id, principal, origin_ref=origin_ref)
+            if any(parent.source_id in source_ids for parent in proposal.parents)
+        ]
+        return await self.accumulate(domain_id, proposals, principal)
+
     async def extract(self, domain_id: DomainId, principal: TrustedPrincipal,
                       *, origin_ref: str = "extract") -> list[DerivedItemProposal]:
         """Line rules over the principal's current, authorized, non-derived sources."""

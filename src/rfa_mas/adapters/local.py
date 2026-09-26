@@ -32,6 +32,7 @@ from rfa_mas.contracts import (
     KnowledgeRevision,
     KnowledgeWrite,
     MemberLifecycle,
+    Notification,
     ObservationRecord,
     PersistentTask,
     PolicyDecision,
@@ -531,6 +532,50 @@ class SqliteWorkRepository:
                     ):
                         connection.execute(statement)
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (10, ?)",
+                                       (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=11"
+                ).fetchone():
+                    # P0-024: source-revision outbox (ids only, written in the KB write
+                    # transaction), per-consumer processing records, owner-only notification
+                    # history and exactly-once candidate notices per evidence revision set.
+                    for statement in (
+                        "CREATE TABLE source_revision_events (event_id INTEGER PRIMARY KEY "
+                        "AUTOINCREMENT, owner_id TEXT, domain_id TEXT NOT NULL, "
+                        "source_id TEXT NOT NULL, source_revision TEXT NOT NULL, "
+                        "operation TEXT NOT NULL, derived INTEGER NOT NULL, "
+                        "created_at TEXT NOT NULL, UNIQUE(source_id, source_revision))",
+                        "CREATE INDEX source_events_owner ON "
+                        "source_revision_events(owner_id, domain_id, event_id)",
+                        "CREATE TABLE source_event_consumption (consumer_id TEXT NOT NULL, "
+                        "event_id INTEGER NOT NULL REFERENCES source_revision_events(event_id), "
+                        "run_key TEXT NOT NULL, PRIMARY KEY(consumer_id, event_id))",
+                        "CREATE TABLE notifications (notification_id TEXT PRIMARY KEY, "
+                        "owner_id TEXT NOT NULL, schedule_id TEXT NOT NULL REFERENCES "
+                        "schedules(schedule_id), run_key TEXT NOT NULL UNIQUE REFERENCES "
+                        "schedule_runs(run_key), delivery TEXT NOT NULL CHECK (delivery IN "
+                        "('active', 'held')), held_at TEXT, hold_reason TEXT, "
+                        "notification_json TEXT NOT NULL, created_at TEXT NOT NULL)",
+                        "CREATE INDEX notifications_owner ON notifications(owner_id, created_at)",
+                        "CREATE TABLE candidate_notices (owner_id TEXT NOT NULL, "
+                        "candidate_id TEXT NOT NULL, evidence_key TEXT NOT NULL, "
+                        "notification_id TEXT NOT NULL REFERENCES notifications(notification_id), "
+                        "PRIMARY KEY(owner_id, candidate_id, evidence_key))",
+                    ):
+                        connection.execute(statement)
+                    # Existing current revisions become unprocessed events once.
+                    connection.execute(
+                        "INSERT OR IGNORE INTO source_revision_events (owner_id, domain_id, "
+                        "source_id, source_revision, operation, derived, created_at) "
+                        "SELECT s.owner_id, s.domain_id, s.source_id, s.current_revision, "
+                        "'backfill', CASE WHEN c.parent_refs IS NOT NULL AND "
+                        "c.parent_refs != '[]' THEN 1 ELSE 0 END, ? FROM kb_sources s "
+                        "LEFT JOIN kb_revision_context c ON c.source_id = s.source_id "
+                        "AND c.source_revision = s.current_revision "
+                        "WHERE s.current_revision IS NOT NULL",
+                        (datetime.now(UTC).isoformat(),),
+                    )
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (11, ?)",
                                        (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
@@ -1045,6 +1090,130 @@ class SqliteWorkRepository:
                     (schedule_id, owner),
                 ).fetchall()
                 return [self._job_run(row) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    # -- P0-024 source-revision outbox and owner notification history -------------------
+    async def pending_source_events(self, principal: TrustedPrincipal, domain_id: DomainId,
+                                    consumer_id: str, *, limit: int = 500) -> list[dict]:
+        """Owner's original (non-derived) revisions not yet processed by this consumer."""
+        owner = self._authenticated(principal)
+
+        def operation() -> list[dict]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT e.event_id, e.source_id, e.source_revision, e.operation "
+                    "FROM source_revision_events e WHERE e.owner_id=? AND e.domain_id=? "
+                    "AND e.derived=0 AND NOT EXISTS (SELECT 1 FROM source_event_consumption x "
+                    "WHERE x.consumer_id=? AND x.event_id=e.event_id) "
+                    "ORDER BY e.event_id LIMIT ?",
+                    (owner, domain_id.value, consumer_id, limit),
+                ).fetchall()
+                return [dict(row) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    async def consume_source_events(self, consumer_id: str, event_ids: list[int],
+                                    run_key: str) -> int:
+        def operation() -> int:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                return sum(
+                    connection.execute(
+                        "INSERT OR IGNORE INTO source_event_consumption VALUES (?, ?, ?)",
+                        (consumer_id, event_id, run_key),
+                    ).rowcount
+                    for event_id in event_ids
+                )
+
+        return await asyncio.to_thread(operation)
+
+    @staticmethod
+    def _notification_row(row) -> Notification:
+        return Notification.model_validate(
+            json.loads(row["notification_json"])
+            | {"delivery": row["delivery"], "held_at": row["held_at"],
+               "hold_reason": row["hold_reason"]}
+        )
+
+    async def record_notification(self, notification: Notification, *,
+                                  evidence: dict[str, str] | None = None,
+                                  limit: int = 50) -> Notification | None:
+        """One notification per run key. With `evidence`, drop items already noticed for the
+        same candidate evidence (atomic with the notice rows); None when nothing is new."""
+        notification = Notification.model_validate(notification.model_dump())
+
+        def operation() -> Notification | None:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                row = connection.execute(
+                    "SELECT * FROM notifications WHERE run_key=?", (notification.run_key,)
+                ).fetchone()
+                if row is not None:
+                    return self._notification_row(row)
+                items = list(notification.items)
+                if evidence is not None:
+                    items = [
+                        item for item in items
+                        if connection.execute(
+                            "SELECT 1 FROM candidate_notices WHERE owner_id=? AND "
+                            "candidate_id=? AND evidence_key=?",
+                            (notification.owner_id, item.candidate_id,
+                             evidence[item.candidate_id]),
+                        ).fetchone() is None
+                    ]
+                    if not items:
+                        return None
+                items = [item.model_copy(update={"rank": number})
+                         for number, item in enumerate(items[:limit], 1)]
+                final = notification.model_copy(update={
+                    "items": tuple(items), "delivery": "active", "held_at": None,
+                    "hold_reason": None,
+                })
+                connection.execute(
+                    "INSERT INTO notifications VALUES (?, ?, ?, ?, 'active', NULL, NULL, ?, ?)",
+                    (final.notification_id, final.owner_id, final.schedule_id, final.run_key,
+                     final.model_dump_json(exclude={"delivery", "held_at", "hold_reason"}),
+                     final.created_at.isoformat(timespec="microseconds")),
+                )
+                if evidence is not None:
+                    connection.executemany(
+                        "INSERT INTO candidate_notices VALUES (?, ?, ?, ?)",
+                        [(final.owner_id, item.candidate_id, evidence[item.candidate_id],
+                          final.notification_id) for item in items],
+                    )
+                return final
+
+        return await asyncio.to_thread(operation)
+
+    async def hold_stale_notifications(self, owner_id: str, *, before: datetime,
+                                       at: datetime) -> int:
+        """Active notifications older than `before` move to history-only (held)."""
+
+        def operation() -> int:
+            with self._connect() as connection:
+                return connection.execute(
+                    "UPDATE notifications SET delivery='held', held_at=?, "
+                    "hold_reason='stale_24h' WHERE owner_id=? AND delivery='active' "
+                    "AND created_at < ?",
+                    (at.isoformat(), owner_id,
+                     before.astimezone(UTC).isoformat(timespec="microseconds")),
+                ).rowcount
+
+        return await asyncio.to_thread(operation)
+
+    async def list_notifications(self, principal: TrustedPrincipal, *,
+                                 include_held: bool = False) -> list[Notification]:
+        owner = self._authenticated(principal)
+
+        def operation() -> list[Notification]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT * FROM notifications WHERE owner_id=? AND (? OR delivery='active') "
+                    "ORDER BY created_at DESC, notification_id",
+                    (owner, int(include_held)),
+                ).fetchall()
+                return [self._notification_row(row) for row in rows]
 
         return await asyncio.to_thread(operation)
 
@@ -2465,6 +2634,18 @@ class SqliteWorkRepository:
             ),
         )
 
+    @staticmethod
+    def _record_source_event(connection, record, operation: str, *, derived: bool) -> None:
+        """P0-024 outbox row in the revision's own transaction: identifiers only."""
+        document = record.document
+        connection.execute(
+            "INSERT OR IGNORE INTO source_revision_events (owner_id, domain_id, source_id, "
+            "source_revision, operation, derived, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (getattr(document, "owner_id", None), document.domain_id.value,
+             document.source_id, document.source_revision, operation, int(derived),
+             record.created_at.isoformat()),
+        )
+
     async def write_knowledge(
         self,
         request: KnowledgeWrite,
@@ -2589,6 +2770,7 @@ class SqliteWorkRepository:
                     connection, record, operation="write", fingerprint=fingerprint
                 )
                 self._insert_context(connection, record.document, _parents, _epistemic_state)
+                self._record_source_event(connection, record, "write", derived=bool(_parents))
                 updated = connection.execute(
                     "UPDATE kb_sources SET current_revision=? "
                     "WHERE source_id=? AND current_revision IS ?",
@@ -2657,6 +2839,15 @@ class SqliteWorkRepository:
                     connection, record, operation="delete", fingerprint=fingerprint
                 )
                 self._insert_context(connection, record.document)
+                parent_refs = connection.execute(
+                    "SELECT parent_refs FROM kb_revision_context WHERE source_id=? "
+                    "AND source_revision=?",
+                    (source_id, old.document.source_revision),
+                ).fetchone()
+                self._record_source_event(
+                    connection, record, "delete",
+                    derived=bool(parent_refs and parent_refs[0] != "[]"),
+                )
                 updated = connection.execute(
                     "UPDATE kb_sources SET current_revision=? "
                     "WHERE source_id=? AND current_revision=?",

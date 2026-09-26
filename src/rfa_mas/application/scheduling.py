@@ -8,16 +8,20 @@ Task/team or calls an external channel, and it re-resolves the owner on every fi
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
+from rfa_mas.application.candidates import rank
 from rfa_mas.contracts import (
     JobRun,
+    Notification,
+    NotificationItem,
     Schedule,
     ScheduleCreate,
     TrustedPrincipal,
@@ -28,6 +32,8 @@ from rfa_mas.errors import RfaError
 
 DEFAULT_TIMEZONE = "Asia/Seoul"
 JOB_TYPES = ("kb_refresh", "candidate_scan", "briefing")
+# Active notifications older than this are held (history only) at the owner's next run.
+NOTIFICATION_HOLD_AFTER = timedelta(hours=24)
 PrincipalResolver = Callable[[str], Awaitable[TrustedPrincipal | None]]
 
 
@@ -86,6 +92,27 @@ def run_key(schedule_id: str, local_occurrence: str) -> str:
 
 def safe_reason(value: str) -> str:
     return value if re.fullmatch(r"[a-z][a-z0-9_]{0,63}", value) else "internal_error"
+
+
+def evidence_key(candidate) -> str:
+    """Identity of the evidence behind a candidate: its parent source revisions."""
+    return sha256_text(json.dumps(sorted([p.source_id, p.source_revision]
+                                         for p in candidate.parents)))
+
+
+def notification_items(ranked) -> tuple[NotificationItem, ...]:
+    """References, rank explanations and source revision IDs only; no source text."""
+    return tuple(
+        NotificationItem(
+            candidate_id=entry.candidate.candidate_id, rank=entry.rank,
+            title=entry.candidate.title[:300], due_date=entry.candidate.due_date,
+            blocker=entry.candidate.blocker,
+            reasons=tuple(reason.explanation for reason in entry.reasons)[:8],
+            source_refs=tuple(f"{p.source_id}:{p.source_revision}"
+                              for p in entry.candidate.parents)[:32],
+        )
+        for entry in ranked[:50]
+    )
 
 
 class ScheduleService:
@@ -151,6 +178,12 @@ class ScheduleService:
         _owner(principal)
         return await self.repository.list_schedule_runs(schedule_id, principal)
 
+    async def notifications(self, principal: TrustedPrincipal, *,
+                            include_held: bool = False) -> list[Notification]:
+        """Owner-only history. Held (stale) notifications appear only with include_held."""
+        _owner(principal)
+        return await self.repository.list_notifications(principal, include_held=include_held)
+
 
 class ScheduledEffectHook(Protocol):
     """Hook for P0-021's generic effect ledger (not integrated on this branch).
@@ -183,6 +216,9 @@ class ScheduleExecutor:
             "candidate_scan": self._candidate_scan,
             "briefing": self._briefing,
         }
+        # Jobs of one owner/domain share the candidate and derived-knowledge stores; the
+        # single runner serializes them (candidate upserts are compare-and-set).
+        self._locks: dict[tuple[str, str], asyncio.Lock] = {}
 
     def _run(self, schedule: Schedule, fire_time: datetime, status: str,
              reason: str | None = None) -> JobRun:
@@ -240,28 +276,89 @@ class ScheduleExecutor:
                 schedule.task_ref, schedule.domain_id, principal
             ):
                 return await self._finish(run, "denied", "task_not_owned")
-            summary = await self.handlers[schedule.job_type](schedule, principal, run)
+            lock = self._locks.setdefault((schedule.owner_id, schedule.domain_id.value),
+                                          asyncio.Lock())
+            async with lock:
+                summary = await self._handle(schedule, principal, run)
         except RfaError as exc:
             return await self._finish(run, "failed", safe_reason(exc.code))
         except Exception:
             return await self._finish(run, "failed", "internal_error")
         return await self._finish(run, "succeeded", None, summary)
 
+    async def _handle(self, schedule: Schedule, principal: TrustedPrincipal, run: JobRun):
+        """One bounded retry when a concurrent writer (e.g. an API discover) won a CAS.
+
+        Every handler is idempotent per run key: discovery re-reads current state, the
+        notification is unique per run key and event consumption is insert-or-ignore.
+        """
+        try:
+            return await self.handlers[schedule.job_type](schedule, principal, run)
+        except RfaError as exc:
+            if exc.code != "idempotency_conflict":
+                raise
+        summary = await self.handlers[schedule.job_type](schedule, principal, run)
+        return summary | {"retried": 1}
+
     # -- allowlisted job handlers: internal organizing, candidates and briefings only ------
     async def _kb_refresh(self, schedule: Schedule, principal: TrustedPrincipal, run: JobRun):
-        proposals = await self.accumulator.extract(schedule.domain_id, principal,
-                                                   origin_ref="schedule")
-        report = await self.accumulator.accumulate(schedule.domain_id, proposals, principal)
+        """Re-derive knowledge only for source revisions this schedule has not processed."""
+        events = await self.repository.pending_source_events(
+            principal, schedule.domain_id, schedule.schedule_id)
+        if not events:
+            return {"events": 0, "accepted": 0, "rejected": 0}
+        report = await self.accumulator.refresh_changed(
+            schedule.domain_id, principal, {event["source_id"] for event in events},
+            origin_ref="schedule")
+        await self.repository.consume_source_events(
+            schedule.schedule_id, [event["event_id"] for event in events], run.run_key)
         accepted = sum(item.review_state == "accepted" for item in report.items)
-        return {"proposals": len(proposals), "accepted": accepted,
+        return {"events": len(events), "accepted": accepted,
                 "rejected": len(report.items) - accepted}
+
+    async def _hold_stale(self, principal: TrustedPrincipal) -> int:
+        now = self.clock()
+        return await self.repository.hold_stale_notifications(
+            principal.user_id, before=now - NOTIFICATION_HOLD_AFTER, at=now)
+
+    def _notification(self, schedule: Schedule, run: JobRun, kind: str,
+                      ranked) -> Notification:
+        return Notification(
+            notification_id=new_id("notification"), owner_id=schedule.owner_id,
+            schedule_id=schedule.schedule_id, run_key=run.run_key, kind=kind,
+            items=notification_items(ranked), created_at=self.clock(),
+        )
 
     async def _candidate_scan(self, schedule: Schedule, principal: TrustedPrincipal,
                               run: JobRun):
+        """Propose only candidates backed by evidence the owner has not been notified of."""
+        held = await self._hold_stale(principal)
+        events = await self.repository.pending_source_events(
+            principal, schedule.domain_id, schedule.schedule_id)
+        if not events:
+            return {"events": 0, "candidates": 0, "held": held, "notified": 0}
         found = await self.candidates.discover(schedule.domain_id, principal)
-        return {"candidates": len(found),
-                "proposed": sum(c.state == "proposed" for c in found)}
+        # Rejected/superseded candidates are not listed by discover(); accepted/deferred are
+        # owner decisions, not new proposals.
+        fresh = rank([c for c in found if c.state == "proposed"], now=self.clock())
+        notified = 0
+        if fresh:
+            stored = await self.repository.record_notification(
+                self._notification(schedule, run, "candidates", fresh),
+                evidence={e.candidate.candidate_id: evidence_key(e.candidate) for e in fresh},
+                limit=schedule.args.max_items,
+            )
+            notified = 0 if stored is None else len(stored.items)
+        await self.repository.consume_source_events(
+            schedule.schedule_id, [event["event_id"] for event in events], run.run_key)
+        return {"events": len(events), "candidates": len(found), "held": held,
+                "notified": notified}
 
     async def _briefing(self, schedule: Schedule, principal: TrustedPrincipal, run: JobRun):
-        ranked = await self.candidates.ranked(schedule.domain_id, principal)
-        return {"ranked": len(ranked), "listed": min(len(ranked), schedule.args.max_items)}
+        """One owner-only briefing per fire from the latest allowed material."""
+        held = await self._hold_stale(principal)
+        found = await self.candidates.discover(schedule.domain_id, principal)
+        ranked = rank(found, now=self.clock())[: schedule.args.max_items]
+        stored = await self.repository.record_notification(
+            self._notification(schedule, run, "briefing", ranked))
+        return {"candidates": len(found), "items": len(stored.items), "held": held}

@@ -1,5 +1,19 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P0-023/P0-024 단일 runner·변경 이벤트·알림 1.1 (통합·발행 대기)
+
+- P0-023(설정·실행, 계약 DTO 변경 없음): `rfa scheduler`만 APScheduler 3.11.3 `AsyncIOScheduler` + `SQLAlchemyJobStore`(별도 0600 SQLite)를 소유한다. flock 소유 lock으로 두 번째 runner 거절, FastAPI lifespan/worker는 시작하지 않음. job store에는 `rfa_mas.adapters.scheduler:dispatch_scheduled`와 schedule_id만 직렬화. 설정 `SCHEDULER_BACKEND`/`SCHEDULER_JOBSTORE_URL`/`DEFAULT_TIMEZONE`/`SCHEDULER_MISFIRE_POLICY`(빈 값=기본), `SCHEDULER_ENABLED`는 runner CLI 허용 gate.
+- P0-024 miss 정책(`application/scheduling.py` `MISS_POLICIES`, 기본 `job_type_default`; `skip_missed`는 모든 type grace 60초):
+
+  | job_type | APScheduler 3.x add_job | 복귀/중복 처리 |
+  | --- | --- | --- |
+  | briefing | coalesce=True, misfire_grace_time=None, max_instances=1 | 놓친 fire는 최근 1회로 합쳐 최신 허용 자료로 실행. 24h 지난 active 알림은 held(이력에서만 조회) |
+  | candidate_scan | coalesce=True, grace=86400, max_instances=1 | 새 source revision이 있을 때만 발견. 같은 후보·같은 근거 revision은 알림 1회, 기각 후보는 재알림 없음 |
+  | kb_refresh | coalesce=True, grace=3600, max_instances=1 | grace 초과 fire는 skipped(misfire) ledger. 다음 실행에서 변경된 source의 파생 항목만 재계산 |
+
+- 같은 schedule의 같은 fire/로컬 occurrence(DST fall-back 반복 포함)는 run 1개, 같은 run key는 알림 1개. 재시작 시 persisted next_run 유지, 중단된 run은 outcome_unknown.
+- migration11: `source_revision_events`(KB write/delete와 같은 transaction의 id-only outbox, 기존 current revision backfill), `source_event_consumption`, `notifications`, `candidate_notices`. 새 route `GET /v1/notifications?include_held=`(owner 전용). 알림은 후보 ID·제목·순위 사유·source revision ID만 담고 원문은 복사하지 않는다. 예약 job은 승인·게시·Task/team 생성·외부 채널 호출을 하지 않는다.
+
 ## 2026-09-27 — P0-022 사용자별 예약 1.1 (통합·발행 대기)
 
 - additive 1.1: `ScheduleCreate`(job_type은 kb_refresh/candidate_scan/briefing allowlist, 5-field cron, IANA timezone, 제한된 `ScheduleArgs.max_items`만; command/callable/prompt 필드 없음), `Schedule`(owner·domain·task_ref·state active/disabled/cancelled·revision·UTC 시각·next_run 미리보기·history), `ScheduleHistoryEntry`, `JobRun`(예약 실행 ledger), `NotificationItem`/`Notification`(owner 전용). 새 port `SchedulerPort`(APScheduler 3.x CronTrigger 위임), `ScheduleRepositoryPort`. migration10 `schedules`/`schedule_history`/`schedule_runs`(UNIQUE(schedule_id, scheduled_fire_time), UNIQUE(schedule_id, occurrence)).

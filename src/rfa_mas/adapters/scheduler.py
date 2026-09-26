@@ -85,7 +85,9 @@ class ApschedulerTriggers:
             fire = trigger.get_next_fire_time(previous, current)
             if fire is None:
                 break
-            fires.append(fire)
+            # Compare in UTC: same-zone subtraction is wall-clock (DST fall-back repeats
+            # would look 0 minutes apart).
+            fires.append(fire.astimezone(UTC))
             previous = current = fire
         if not fires:
             raise _invalid()  # Never fires (e.g. 30 Feb).

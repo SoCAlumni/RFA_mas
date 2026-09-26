@@ -27,6 +27,7 @@ from rfa_mas.contracts import (
     KnowledgeImportResult,
     KnowledgeRevision,
     KnowledgeWrite,
+    Notification,
     PublicationReceipt,
     PublishRequest,
     ResumeRequest,
@@ -481,5 +482,13 @@ def create_app(
         principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> list[JobRun]:
         return await _schedules().runs(schedule_id, principal)
+
+    # P0-024: owner-only notification history (no push/external channel in P0).
+    @app.get("/v1/notifications", response_model=list[Notification], tags=["schedules"])
+    async def list_notifications(
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        include_held: bool = False,
+    ) -> list[Notification]:
+        return await _schedules().notifications(principal, include_held=include_held)
 
     return app

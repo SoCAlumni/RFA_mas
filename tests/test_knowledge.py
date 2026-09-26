@@ -344,8 +344,8 @@ async def test_restart_cas_history_and_seed_do_not_restore_deleted_source(tmp_pa
             versions = [row[0] for row in db.execute(
                 "SELECT version FROM rfa_schema_migrations ORDER BY rowid"
             )]
-            # Gap-free, applied in order; N >= 10 (P0-022 schedules).
-            assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 10
+            # Gap-free, applied in order; N >= 11 (P0-024 outbox/notifications).
+            assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 11
             assert db.execute("SELECT count(*) FROM installation_seeds").fetchone()[0] == 1
     finally:
         await second.shutdown()

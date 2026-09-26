@@ -44,7 +44,13 @@ from rfa_mas.application.scheduling import (
     run_key,
 )
 from rfa_mas.bootstrap import build_container, build_scheduler_runner
-from rfa_mas.contracts import KnowledgeWrite, ScheduleCreate
+from rfa_mas.contracts import (
+    CandidateDecision,
+    DomainId,
+    KnowledgeDelete,
+    KnowledgeWrite,
+    ScheduleCreate,
+)
 from rfa_mas.errors import RfaError
 from rfa_mas.settings import Settings
 
@@ -265,7 +271,8 @@ async def test_execution_rechecks_identity_task_ownership_and_state(env):
     executor, candidates = executor_for(container, owner, clock, resolver)
     scan = await schedules.create(create("candidate_scan"), owner)
     run = await executor.execute(scan.schedule_id, NINE_KST)
-    assert run.status == "succeeded" and run.summary == {"candidates": 1, "proposed": 1}
+    assert run.status == "succeeded"
+    assert run.summary == {"events": 1, "candidates": 1, "held": 0, "notified": 1}
     assert candidates.calls == 1
     # The identity is resolved again at fire time: a missing or different owner is denied.
     for index, principal in enumerate((None, owner.model_copy(update={"user_id": "owner_y"}),
@@ -294,6 +301,7 @@ async def test_execution_rechecks_identity_task_ownership_and_state(env):
 
 async def test_same_fire_and_dst_repeat_produce_one_ledger_run(env):
     container, owner, schedules, clock = env
+    await container.knowledge.write(note("i17", "issue #17: checksum 확인 필요"), owner)
     executor, candidates = executor_for(container, owner, clock)
     daily = await schedules.create(create("candidate_scan"), owner)
     first = await executor.execute(daily.schedule_id, NINE_KST)
@@ -558,8 +566,8 @@ async def test_restart_keeps_persisted_next_run_and_coalesces_missed_fires(runne
     env.clock.set(NINE_KST)
     await runner.tick()
     for schedule in made.values():
-        assert [(r.status, r.scheduled_fire_time) for r in await runs_of(env, schedule)] == [
-            ("succeeded", NINE_KST)]
+        assert [(r.status, r.reason, r.scheduled_fire_time)
+                for r in await runs_of(env, schedule)] == [("succeeded", None, NINE_KST)]
     await runner.stop()  # PC off/asleep for three days.
     env.clock.set(NINE_KST + timedelta(days=3, hours=2))  # 2026-10-04 11:00 KST
     restarted = env.make()
@@ -665,3 +673,256 @@ async def test_cancel_and_disable_reach_the_runner_without_running_jobs(runner_e
     assert (await runner.sync())["resumed"] == 1
     # Fires missed while disabled are not replayed; the next run is computed from now.
     assert runner.jobs()[0].next_run_time == NINE_KST + timedelta(days=3)
+
+
+# -- P0-024: change events, missed runs and safe owner notifications --------------------------
+def outbox(container):
+    return rows(container, "SELECT source_id, source_revision, operation, derived "
+                           "FROM source_revision_events ORDER BY event_id")
+
+
+def candidate_service(container, clock):
+    return CandidateService(container.repository, container.knowledge.accumulator, clock=clock)
+
+
+def trace_texts(settings) -> list[str]:
+    root = settings.trace_dir
+    return [p.read_text(errors="ignore") for p in root.rglob("*") if p.is_file()] if (
+        root.exists()) else []
+
+
+async def test_each_revision_writes_one_outbox_event_with_identifiers_only(env):
+    container, owner, _, _ = env
+    first = await container.knowledge.write(note("r05", f"#17 확인 필요 {CANARY}"), owner)
+    replay = await container.knowledge.write(note("r05", f"#17 확인 필요 {CANARY}"), owner)
+    assert replay.document.source_revision == first.document.source_revision
+    source = first.document.source_id
+    second = await container.knowledge.write(note(
+        "r05", "#17 확인 완료, closed", revision="r2", expected=first.document.source_revision),
+        owner)
+    removed = await container.knowledge.delete(source, KnowledgeDelete(
+        mutation_id="delete-1", expected_revision=second.document.source_revision), owner)
+    assert outbox(container) == [
+        (source, first.document.source_revision, "write", 0),
+        (source, second.document.source_revision, "write", 0),
+        (source, removed.document.source_revision, "delete", 0),
+    ]
+    derived_from = await container.knowledge.write(note("memo", "TODO: FAQ 확인 필요"), owner)
+    accumulator = container.knowledge.accumulator
+    await accumulator.accumulate(DomainId.TRIV3, await accumulator.extract(DomainId.TRIV3, owner),
+                                 owner)
+    derived = [row for row in outbox(container) if row[3] == 1]
+    assert derived and all(row[0] != derived_from.document.source_id for row in derived)
+    pending = await container.repository.pending_source_events(owner, DomainId.TRIV3, "probe")
+    assert {e["source_id"] for e in pending} == {source, derived_from.document.source_id}
+    assert CANARY not in str(rows(container, "SELECT * FROM source_revision_events"))
+    # Upgrade path: an installation without migration 11 backfills current revisions once.
+    with sqlite3.connect(container.repository.path) as db:
+        for table in ("candidate_notices", "notifications", "source_event_consumption",
+                      "source_revision_events"):
+            db.execute(f"DROP TABLE {table}")
+        db.execute("DELETE FROM rfa_schema_migrations WHERE version=11")
+    await container.repository.initialize()
+    await container.repository.initialize()
+    backfilled = outbox(container)
+    heads = rows(container, "SELECT source_id, current_revision FROM kb_sources "
+                            "WHERE current_revision IS NOT NULL")
+    assert sorted((sid, rev) for sid, rev, *_ in backfilled) == sorted(heads)  # Once each.
+    assert (derived_from.document.source_id, derived_from.document.source_revision,
+            "backfill", 0) in backfilled
+    assert (source, removed.document.source_revision, "backfill", 0) in backfilled  # Tombstone.
+
+
+async def test_kb_refresh_processes_each_revision_once_across_reopen(tmp_path):
+    settings = make_settings(tmp_path)
+    clock = Clock()
+    container = build_container(settings)
+    await container.startup()
+    owner = await container.repository.local_principal()
+    schedules = ScheduleService(container.repository, ApschedulerTriggers(), clock=clock)
+    try:
+        memo = await container.knowledge.write(note("memo", "TODO: 설치 가이드 확인 필요"), owner)
+        refresh = await schedules.create(create("kb_refresh"), owner)
+        executor, _ = executor_for(container, owner, clock)
+        first = await executor.execute(refresh.schedule_id, NINE_KST)
+        assert first.summary["events"] == 1 and first.summary["accepted"] >= 1
+        assert (await executor.execute(refresh.schedule_id, NINE_KST + timedelta(days=1))
+                ).summary == {"events": 0, "accepted": 0, "rejected": 0}
+        await container.knowledge.write(note("memo", "TODO: 설치 가이드 확인 필요"), owner)
+        assert (await executor.execute(refresh.schedule_id, NINE_KST + timedelta(days=2))
+                ).summary["events"] == 0  # A replayed revision is not a new event.
+        await container.knowledge.write(note("memo", "TODO: 설치 가이드 v2 확인 필요",
+                                             revision="r2",
+                                             expected=memo.document.source_revision), owner)
+    finally:
+        await container.shutdown()
+    reopened = build_container(settings)
+    await reopened.startup()
+    try:
+        executor, _ = executor_for(reopened, owner, clock)
+        fourth = await executor.execute(refresh.schedule_id, NINE_KST + timedelta(days=3))
+        assert fourth.summary["events"] == 1  # Pending across the restart, processed once.
+        assert (await executor.execute(refresh.schedule_id, NINE_KST + timedelta(days=4))
+                ).summary["events"] == 0
+        assert await executor.execute(refresh.schedule_id, NINE_KST + timedelta(days=3)) == fourth
+        assert rows(reopened, "SELECT count(*) FROM source_event_consumption") == [(2,)]
+        assert rows(reopened, "SELECT count(*) FROM schedule_runs") == [(5,)]
+    finally:
+        await reopened.shutdown()
+
+
+async def test_candidate_scan_notifies_new_evidence_once_and_never_rejected_again(env):
+    container, owner, schedules, clock = env
+    kb = container.knowledge
+    await kb.write(note("r05", "issue #17: checksum 확인 필요, 담당 본인, 10월 2일 마감, open"),
+                   owner)
+    idea = await kb.write(note("r06", "TODO: 다른 방법 6.0ms 재현 확인 필요 (검증 전 가설)"), owner)
+    scan = await schedules.create(create("candidate_scan"), owner)
+    executor, _ = executor_for(container, owner, clock)
+    clock.value = NINE_KST
+    first = await executor.execute(scan.schedule_id, NINE_KST)
+    assert first.summary["notified"] == 2
+    [notice] = await schedules.notifications(owner)
+    assert notice.kind == "candidates" and notice.audience == "owner"
+    assert [item.rank for item in notice.items] == [1, 2]
+    assert notice.items[0].blocker and notice.items[0].due_date == "2026-10-02"
+    clock.value = NINE_KST + timedelta(days=1, hours=1)  # First notice is now >24h old.
+    second = await executor.execute(scan.schedule_id, NINE_KST + timedelta(days=1))
+    assert second.summary == {"events": 0, "candidates": 0, "held": 1, "notified": 0}
+    assert await schedules.notifications(owner) == []
+    assert [n.hold_reason for n in await schedules.notifications(owner, include_held=True)] == [
+        "stale_24h"]
+    service = candidate_service(container, clock)
+    rejected = next(c for c in await service.list(DomainId.TRIV3, owner) if "6.0ms" in c.content)
+    await service.decide(rejected.candidate_id, CandidateDecision(
+        decision="reject", reason="범위 밖", resurface_on_new_evidence=False), owner)
+    # A new revision of the rejected item's source plus one genuinely new item.
+    await kb.write(note("r06", "TODO: 다른 방법 6.0ms 재현 확인 필요 (검증 전 가설)\n참고: 로그",
+                        revision="r2", expected=idea.document.source_revision), owner)
+    await kb.write(note("faq", "TODO: SDK 설치 FAQ 갱신 확인 필요"), owner)
+    third = await executor.execute(scan.schedule_id, NINE_KST + timedelta(days=2))
+    assert third.summary["events"] == 2 and third.summary["notified"] == 1
+    latest = (await schedules.notifications(owner))[0]
+    contents = {c.candidate_id: c.content
+                for c in await service.list(DomainId.TRIV3, owner, include_hidden=True)}
+    assert [contents[item.candidate_id] for item in latest.items] == [
+        "TODO: SDK 설치 FAQ 갱신 확인 필요"]
+    assert (await executor.execute(scan.schedule_id, NINE_KST + timedelta(days=3))
+            ).summary["notified"] == 0
+    assert len(await schedules.notifications(owner, include_held=True)) == 2
+    assert rows(container, "SELECT count(*) FROM candidate_notices") == [(3,)]
+
+
+async def test_briefing_recovers_once_with_latest_allowed_material_and_holds_stale(runner_env):
+    env = runner_env
+    owner, kb = env.owner, env.container.knowledge
+    r05 = await kb.write(note("r05", "issue #17: B 결과 환경 checksum 확인 필요, 담당 본인, "
+                                     "10월 2일 마감, open", title="GitHub issue 17"), owner)
+    await kb.write(note("r06", "TODO: 다른 방법 6.0ms 재현 확인 필요 (검증 전 가설)",
+                        title="연구 메모"), owner)
+    await kb.write(note("done", "issue #12: 설치 가이드 확인 필요 → 완료, closed",
+                        title="완료 작업"), owner)
+    await kb.write(note("dup", "회의 메모: #17 checksum 확인 필요 (중복 언급)", title="회의 메모"),
+                   owner)
+    await kb.write(note("r07", f"10월 1일 14시 1:1 전에 자료 확인 필요 {CANARY}",
+                        title="개인 일정"), owner)
+    brief = await env.schedules.create(create("briefing"), owner)
+    runner = env.make()
+    await runner.start()
+    env.clock.set(NINE_KST)
+    await runner.tick()
+    [first] = await env.schedules.notifications(owner)
+    service = candidate_service(env.container, env.clock.now)
+
+    async def texts(notification):
+        contents = {c.candidate_id: c.content
+                    for c in await service.list(DomainId.TRIV3, owner, include_hidden=True)}
+        return [contents[item.candidate_id] for item in notification.items]
+
+    ordered = await texts(first)
+    blocker = next(i for i, text in enumerate(ordered) if "#17" in text)
+    idea = next(i for i, text in enumerate(ordered) if "6.0ms" in text)
+    assert blocker < idea  # Imminent open blocker ranks above an undated idea.
+    assert sum("#17" in text for text in ordered) == 1  # Duplicate mentions: one item.
+    assert not any("#12" in text for text in ordered)  # Completed work is excluded.
+    assert first.items[blocker].reasons and first.items[blocker].source_refs
+    assert any(CANARY in text for text in ordered)  # The owner can open the 1:1 item...
+    assert CANARY not in first.model_dump_json()  # ...but the notification copies no text.
+    await runner.stop()  # PC off; meanwhile the issue is completed.
+    await kb.write(note("r05", "issue #17: B 결과 환경 checksum 확인 필요 → 완료, closed "
+                               "(마감 10월 2일)", revision="r2",
+                        expected=r05.document.source_revision, title="GitHub issue 17"), owner)
+    env.clock.set(NINE_KST + timedelta(days=3, hours=2))
+    restarted = env.make()
+    await restarted.start()
+    await restarted.tick()
+    await restarted.tick()  # Same instant again: no duplicate run or notification.
+    history = await runs_of(env, brief)
+    assert [(r.status, r.scheduled_fire_time) for r in history] == [
+        ("succeeded", NINE_KST), ("succeeded", NINE_KST + timedelta(days=3))]
+    active = await env.schedules.notifications(owner)
+    everything = await env.schedules.notifications(owner, include_held=True)
+    assert [n.run_key for n in active] == [history[1].run_key]
+    assert {(n.run_key, n.delivery, n.hold_reason) for n in everything} == {
+        (history[0].run_key, "held", "stale_24h"), (history[1].run_key, "active", None)}
+    assert not any("#17" in text for text in await texts(active[0]))  # Completed: gone.
+    # AC4: internal organizing/candidates/briefing only; nothing approved or published.
+    for table in ("publications", "drafts", "product_tasks", "team_slots", "runs"):
+        assert rows(env.container, f"SELECT count(*) FROM {table}") == [(0,)]
+    states = {c.state for c in await service.list(DomainId.TRIV3, owner, include_hidden=True)}
+    assert states <= {"proposed", "superseded"}
+    assert all(n.audience == "owner" for n in everything)
+    assert not any(CANARY in text for text in trace_texts(env.settings))
+    assert CANARY not in str(rows(env.container, "SELECT * FROM schedule_runs"))
+    app = create_app(container=env.container)
+    app.dependency_overrides[resolve_principal] = lambda: owner
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        listed = (await client.get("/v1/notifications")).json()
+        assert [n["run_key"] for n in listed] == [history[1].run_key]
+        assert len((await client.get("/v1/notifications",
+                                     params={"include_held": "true"})).json()) == 2
+        app.dependency_overrides[resolve_principal] = lambda: owner.model_copy(
+            update={"user_id": "owner_stranger"})
+        assert (await client.get("/v1/notifications")).json() == []
+
+
+async def test_runner_dst_fall_back_double_fire_produces_one_run(runner_env):
+    env = runner_env
+    env.clock.set(datetime(2026, 11, 1, 4, 0, tzinfo=UTC))  # 00:00 EDT
+    york = await env.schedules.create(create("candidate_scan", cron="30 1 * * *",
+                                             timezone="America/New_York"), env.owner)
+    runner = env.make()
+    await runner.start()
+    for hour in (5, 6):  # APScheduler 3.x fires at 01:30 EDT and again at 01:30 EST.
+        env.clock.set(datetime(2026, 11, 1, hour, 30, tzinfo=UTC))
+        await runner.tick()
+    [run] = await runs_of(env, york)
+    assert run.occurrence == "2026-11-01T01:30:00"
+    assert run.scheduled_fire_time == datetime(2026, 11, 1, 5, 30, tzinfo=UTC)
+    assert runner.jobs()[0].next_run_time == datetime(2026, 11, 2, 6, 30, tzinfo=UTC)
+
+
+async def test_a_lost_candidate_cas_is_retried_once_and_other_errors_fail_closed(env):
+    container, owner, schedules, clock = env
+    executor, _ = executor_for(container, owner, clock)
+    brief = await schedules.create(create("briefing"), owner)
+    calls = []
+
+    async def flaky(schedule, principal, run):
+        calls.append(run.run_key)
+        if len(calls) == 1:
+            raise RfaError("idempotency_conflict", "concurrent writer")
+        return {"items": 0}
+
+    executor.handlers["briefing"] = flaky
+    retried = await executor.execute(brief.schedule_id, NINE_KST)
+    assert (retried.status, retried.summary) == ("succeeded", {"items": 0, "retried": 1})
+
+    async def denied(schedule, principal, run):
+        raise RfaError("policy_denied", "no")
+
+    executor.handlers["briefing"] = denied
+    failed = await executor.execute(brief.schedule_id, NINE_KST + timedelta(days=1))
+    assert (failed.status, failed.reason, failed.summary) == ("failed", "policy_denied", {})
+    assert set(executor.handlers) == {"kb_refresh", "candidate_scan", "briefing"}
