@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -51,7 +51,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: b2e601b8303cdcc172de1cebdf262d1b521a8cd0cd866669457bbcc79ef349fe
+  digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
   role: consumer
 context:
   global_refs:
@@ -129,33 +129,51 @@ verification:
   - 의도적으로 잘못된 ledger를 주면 verifier가 실패
   runner: pytest
 evidence_dir: .agent/evidence/P1-006E
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-006E/target-0926175016/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 17
+  spec_digest: c0475e8871cb31437d7d0ca1733c449f258fffe87b8aadf6dd54b70ce866cc6b
+  contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
+  source_fingerprint: 4221e3df5b33680babe55cba6841cd09a16d84d988f0f3d7d6d6d170775d7641
+  evidence: .agent/evidence/P1-006E/target-0926175016/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 15
-spec_revision: 15
-claim_generation: 0
+  submission_generation: 1
+  submission:
+    head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
+    baseline_head: 6f01052da6045bae34c09c7fada871bb5b08d7a7
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006E-int-0926174953
+    branch: task/P1-006E-int-0926174953
+    evidence: .agent/evidence/P1-006E/worker-0926175004/result.json
+    changed_files:
+      fixtures/eval/redteam_v1.jsonl: 561e2ee737d71d6f84efce1355746dea8dfedcba5decf1d7d5c8a6eed1d91a20
+      tests/helpers/redteam.py: 5e851fbef5465af10d7defc09091e82709b3c05f88c759b5864315b0a6d0b8b3
+      tests/test_redteam_regression.py: 4c43c7b7b7a1a4d5a46fe06c3a78bf2ca9b0dd9758bfb2203e1de17104864b08
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 17
+      spec_digest: c0475e8871cb31437d7d0ca1733c449f258fffe87b8aadf6dd54b70ce866cc6b
+      contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
+      source_fingerprint: 4221e3df5b33680babe55cba6841cd09a16d84d988f0f3d7d6d6d170775d7641
+      evidence: .agent/evidence/P1-006E/target-0926175016/result.json
+    head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
+  evidence: .agent/evidence/P1-006E/target-0926175016/result.json
+revision: 25
+spec_revision: 17
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926175016
+  evidence_refs:
+  - .agent/evidence/P1-006E/worker-0926175004/result.json
   approaches: []
 blocker: null
 migration:
@@ -168,7 +186,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:20:47+00:00'
-concise_result: 'Specification changed: Accept RFA-EXTENDED 1.1 current digest; red-team harness consumes
-  existing DTOs only'
+updated_at: '2026-09-26T17:50:28+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.

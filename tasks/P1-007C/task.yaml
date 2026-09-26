@@ -1,0 +1,184 @@
+schema_version: '1.0'
+id: P1-007C
+title: 로컬 OpenShell 실제 역할별 허용·차단 증거(E2E-05, stand-in runtime)
+objective: 사용자 승인 로컬 대체 범위에서 공식 OpenShell을 실제로 실행해 역할별 파일/네트워크/실행 허용·차단과 Supervisor 메시지 경계를 각각 증거로 남긴다.
+kind: task
+source_tasks:
+- P1-007B
+requirement_refs:
+- RFA_E2E_Test_Scenarios_10_ko.md
+- docs/LOCAL_MODULES.md
+- docs/EDUCATION_MAPPING.md
+priority: P1
+status: todo
+spec_state: draft
+unresolved:
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+workstream: integration/evaluation
+execution_role: worker
+estimated_effort: 2.0
+product_owner: 민섭(사용자 승인 로컬 대체); OpenShell runtime 최종 소유는 다영
+execution_class: 본인 실제 기술 검증(로컬 standalone OpenShell)
+product_mode: real OpenShell(local standalone VM driver) + stand-in role spec; teammate runtime/identity(P1-008B)·NemoClaw(P1-007A)는
+  별도 gate
+scope:
+  included:
+  - OpenShell 정책 파일(합성), 역할별 sandbox 실행 스크립트, 사전 health 확인된 허용/비허용 합성 endpoint와 sentinel
+  - opt-in live 테스트(tests/integration/test_openshell_live.py)와 증거 문서(docs/evidence/openshell.md)
+  - SupervisorBus 메시지 경계 결정은 기존 앱 코드로 별도 측정
+  excluded:
+  - NemoClaw 설치/온보딩
+  - 실제 운영 자원·비밀·키 사용
+  - core graph/DTO/bootstrap 변경
+  - P1-007B/P1-008B 완료 주장
+  owned_paths:
+  - deploy/openshell
+  - scripts/openshell_e2e05.py
+  - tests/integration/test_openshell_live.py
+  - docs/evidence/openshell.md
+  read_only_paths:
+  - src/rfa_mas/application/workers.py
+  - src/rfa_mas/reference/local_runtime.py
+  planned_paths:
+  - deploy/openshell
+  - scripts/openshell_e2e05.py
+  - tests/integration/test_openshell_live.py
+  - docs/evidence/openshell.md
+  shared_resources: []
+depends_on:
+- id: P1-008D
+  condition: integrated_done
+  required_output: stand-in runtime role spec
+- id: P0-020
+  condition: integrated_done
+  required_output: SupervisorBus 메시지 경계
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: b2e601b8303cdcc172de1cebdf262d1b521a8cd0cd866669457bbcc79ef349fe
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: RFA_E2E_Test_Scenarios_10_ko.md
+    section: E2E-05
+    reason: 합격 기준
+  - path: docs/EDUCATION_MAPPING.md
+    section: OpenShell 행
+    reason: 교육 항목 연결
+  handoff: tasks/P1-007C/handoff.md
+  dependency_results:
+  - tasks/P1-008D/handoff.md
+  - tasks/P0-020/handoff.md
+deliverables:
+- path: deploy/openshell
+  availability: planned
+  description: OpenShell E2E-05 로컬 실제 증거 산출물
+- path: scripts/openshell_e2e05.py
+  availability: planned
+  description: OpenShell E2E-05 로컬 실제 증거 산출물
+- path: tests/integration/test_openshell_live.py
+  availability: planned
+  description: OpenShell E2E-05 로컬 실제 증거 산출물
+- path: docs/evidence/openshell.md
+  availability: planned
+  description: OpenShell E2E-05 로컬 실제 증거 산출물
+acceptance_criteria:
+- id: AC1
+  given: 이 Mac에서 공식 지원 OpenShell(v0.1.1, VM driver)과 합성 정책·sentinel·허용/비허용 endpoint(각각 사전 health 확인)
+  expect: 조사 worker 역할 sandbox에서 허용 endpoint 읽기는 성공하고, 비허용 endpoint·호스트 sentinel 경로 접근은 OpenShell 정책 로그/감사
+    기록과 함께 거절된다. 파일 부재·endpoint 다운은 정책 거절로 집계하지 않고 inconclusive로 둔다.
+  required: true
+- id: AC2
+  given: 실행 worker 역할 sandbox와 승인된 CPU 계산 스크립트
+  expect: 승인 작업 디렉터리의 계산은 성공하고 범위 밖 쓰기/실행 시도는 실제 실행 계층에서 거절되며, 증거에 sandbox/policy 식별자·명령·결과·지연(cold 준비/warm
+    실행/거절)이 연결된다.
+  required: true
+- id: AC3
+  given: worker→다른 팀 worker 직접 메시지와 worker→Supervisor 메시지(DebateLease 없음)
+  expect: 애플리케이션 SupervisorBus 결정(직접 메시지 거절, Supervisor 전달 허용)을 OpenShell 결과와 별도 판정으로 기록한다. 한쪽 결과로 다른
+    쪽 통제를 증명하지 않는다.
+  required: true
+- id: AC4
+  given: 키·비밀·실제 운영 자원 없이 opt-in live 실행
+  expect: 기본 테스트 실행에서는 live 경로가 명시적 not_run(skip 사유)이며 skip을 통과로 세지 않는다. 실제 실행 결과는 docs/evidence/openshell.md에
+    real/local-standalone으로 기록하고 teammate runtime(다영) 연동·NemoClaw 증거로 표현하지 않는다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: manual
+  availability: planned
+  prerequisites:
+  - openshell v0.1.1 VM driver 설치, 합성 fixture만, 비밀 없음
+  cwd: .
+  argv: []
+  timeout_seconds: 1800
+  procedure:
+  - scripts/openshell_e2e05.py로 역할별 sandbox 실행
+  - OpenShell 정책 로그/감사 기록 수집
+  - SupervisorBus 결정 측정
+  - 결과를 docs/evidence/openshell.md에 기록
+  assertions:
+  - 조사 worker 역할 sandbox에서 허용 endpoint 읽기는 성공하고, 비허용 endpoint·호스트 sentinel 경로 접근은 OpenShell 정책 로그/감사 기록과
+    함께 거절된다. 파일 부재·endpoint 다운은 정책 거절로 집계하지 않고 inconclusive로 둔다.
+  - 승인 작업 디렉터리의 계산은 성공하고 범위 밖 쓰기/실행 시도는 실제 실행 계층에서 거절되며, 증거에 sandbox/policy 식별자·명령·결과·지연(cold 준비/warm
+    실행/거절)이 연결된다.
+  - 애플리케이션 SupervisorBus 결정(직접 메시지 거절, Supervisor 전달 허용)을 OpenShell 결과와 별도 판정으로 기록한다. 한쪽 결과로 다른 쪽 통제를
+    증명하지 않는다.
+  - 기본 테스트 실행에서는 live 경로가 명시적 not_run(skip 사유)이며 skip을 통과로 세지 않는다. 실제 실행 결과는 docs/evidence/openshell.md에
+    real/local-standalone으로 기록하고 teammate runtime(다영) 연동·NemoClaw 증거로 표현하지 않는다.
+  runner: manual
+evidence_dir: .agent/evidence/P1-007C
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 2
+spec_revision: 2
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: '2026-09-27 nemoclaw_research: OpenShell v0.1.1 VM driver 실행·거절 로그 확인; 사용자 로컬 대체 승인'
+  prior_claim: 없음
+  implementation_facts: 등록 시 not_run
+  previous_evidence: []
+  checks_this_migration:
+  - P1-007B는 P1-008B(teammate identity) 대기로 blocked 유지 확인
+  judgment: P1-007B 실제 teammate gate를 대체하지 않는 별도 로컬 실제 OpenShell 증거 task.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T17:45:17+00:00'
+concise_result: 등록; not_run.
+next_action: worktree에서 스크립트·정책 작성 후 실제 실행.

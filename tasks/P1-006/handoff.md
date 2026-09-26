@@ -61,3 +61,7 @@ Next first action: submit unchanged artifact and capture/repeat target exact V1/
 - 변경: bootstrap이 staged-context load를 `container.context`(StagedContextBoundary)로 노출하고 domain graph가 호출 시점에 조회한다. BoundarySpy가 그 경계를 retrieval로 관측한다.
 - 개발 검증: test_evaluation + test_behavior_verifier + test_staged_context_boundary 61 passed. late lookup을 early binding으로 바꾸면 경계 테스트 2건이 실패함을 확인했다.
 
+## 재검증 pre-P1-006E (2026-09-26T17:48Z)
+
+- 사유: Direct/transitive dependencies of P1-006E before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 6f01052에서 계획된 검증을 worker/target 단계로 재실행한다.

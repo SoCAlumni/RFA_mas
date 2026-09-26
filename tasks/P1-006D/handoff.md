@@ -44,3 +44,8 @@ Next first action: submit unchanged source then fresh target source capture and 
 
 - 사유: Direct/transitive dependencies of P1-004 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD cf05f47에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-006E (2026-09-26T17:47Z)
+
+- 사유: Direct/transitive dependencies of P1-006E before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 6f01052에서 계획된 검증을 worker/target 단계로 재실행한다.

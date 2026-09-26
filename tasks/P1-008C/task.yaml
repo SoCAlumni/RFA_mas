@@ -179,8 +179,8 @@ integration:
       evidence: .agent/evidence/P1-008C/post-ops005-target-0926163312/result.json
     head: d28731adafe16b2f597504f389865a125a894087
   evidence: .agent/evidence/P1-008C/post-ops005-target-0926163312/result.json
-revision: 25
-spec_revision: 7
+revision: 26
+spec_revision: 8
 claim_generation: 2
 claim: null
 attempts:
@@ -247,7 +247,7 @@ migration:
   - 기존 DTO/port/reference app/API와 파일 소유권 확인
   judgment: 기존 ID/완료 근거/실제 연동 gate 보존. 새 사용자 승인 범위의 독립 2h task 추가.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:20:12+00:00'
+updated_at: '2026-09-26T17:45:17+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

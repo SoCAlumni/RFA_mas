@@ -9,9 +9,10 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: done
-spec_state: ready
-unresolved: []
+status: verifying
+spec_state: draft
+unresolved:
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
 workstream: agents
 execution_role: worker
 estimated_effort: 0.5
@@ -123,7 +124,7 @@ verification:
 evidence_dir: .agent/evidence/P0-018
 latest_evidence_file: .agent/evidence/P0-018/pre-P1-005C-target-0926172955/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 24
   spec_digest: 50c80ac96ead72b10e4ca46c647bfc0f28348e4058afac6639d09f542b1ded89
   contract_digest: b5550e40561901231dc585f516d649ac14208b877c4c7c18656600a8762e1030
@@ -133,7 +134,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 13
   submission:
     head: cf05f4798b84716b3c237c7c4245f4f80c05ccc5
@@ -155,8 +156,8 @@ integration:
       evidence: .agent/evidence/P0-018/pre-P1-005C-target-0926172955/result.json
     head: cf05f4798b84716b3c237c7c4245f4f80c05ccc5
   evidence: .agent/evidence/P0-018/pre-P1-005C-target-0926172955/result.json
-revision: 145
-spec_revision: 24
+revision: 147
+spec_revision: 25
 claim_generation: 13
 claim: null
 attempts:
@@ -703,7 +704,7 @@ migration:
   judgment: ID/AC 유지. 순수 selector를 신규 team_selector.py로 격리해 P1-004 의존 제거; graph 연결은 P0-020, 공통 DTO는 P0-014가
     소유. 공유 파일 동시 수정 금지.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:30:05+00:00'
+updated_at: '2026-09-26T17:45:17+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

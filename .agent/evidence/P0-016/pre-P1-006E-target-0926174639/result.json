@@ -1,0 +1,58 @@
+{
+  "attempt_id": "pre-P1-006E-target-0926174639",
+  "contract_digest": "934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8",
+  "mode": "두 graph의 checkpointer 미주입 확인; 확장 missing/not_run. persistence local(false), model/review mock(true). 외부 의존 없음(설치 후 offline).",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py"
+        ],
+        "assertions": [
+          "memory saver/최종 metadata를 resume 근거로 사용하지 않음",
+          "대기 interrupt와 재개 상태를 영속화하고 새 container/process에서 동일 run 이어가기",
+          "checkpoint lookup 전 owner 검사, 현재 서버 principal과 최신 ACL/policy로 재검사(과거 checkpoint의 권한 snapshot을 재사용하지 않음)",
+          "같은 thread 동시 invoke 거절/직렬화, checkpoint에 credential·authorization header 저장 없음."
+        ],
+        "counts": {
+          "collected": 31,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 31,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 9.29,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T17:46:50.711800+00:00",
+        "id": "V1",
+        "log_excerpt": "31 passed, 17 warnings in 8.63s",
+        "result": "passed",
+        "started_at": "2026-09-26T17:46:41.425911+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "6f01052da6045bae34c09c7fada871bb5b08d7a7",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-26T17:46:50.711873+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T17:46:41.425529+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "f500898aafe2049ea409b9f3753c7f6c6c4e5feb10bf69e923bf9fe85ae15b03",
+  "source_manifest": ".agent/evidence/P0-016/pre-P1-006E-target-0926174639/source.json",
+  "spec_digest": "e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31",
+  "spec_revision": 5,
+  "task_id": "P0-016"
+}

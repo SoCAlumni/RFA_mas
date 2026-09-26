@@ -1,13 +1,13 @@
 generated: true
 schema_version: '1.0'
-source_digest: df6da6e7f16ea07248395e336717fbfb60c2943ed9d5aea52b7993ce5f66c79e
+source_digest: 7fe85c556b30f34350b67ac428208964d127230e9845baf6b5349286fb8d26a9
 source_revisions:
   OPS-000: 6
   OPS-001: 13
   OPS-002: 92
-  OPS-003: 18
-  OPS-004: 14
-  OPS-005: 16
+  OPS-003: 19
+  OPS-004: 15
+  OPS-005: 17
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -21,51 +21,52 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 132
-  P0-015: 150
-  P0-016: 143
-  P0-017: 132
-  P0-018: 145
+  P0-014: 141
+  P0-015: 159
+  P0-016: 160
+  P0-017: 142
+  P0-018: 147
   P0-019: 93
   P0-020: 58
-  P0-021: 14
-  P0-022: 14
-  P0-023: 13
-  P0-024: 14
-  P0-025: 16
-  P0-025A: 16
-  P0-026: 17
+  P0-021: 15
+  P0-022: 15
+  P0-023: 14
+  P0-024: 15
+  P0-025: 17
+  P0-025A: 17
+  P0-026: 18
   P0-027: 92
-  P0-028: 65
-  P1-001: 88
-  P1-001A: 75
-  P1-001B: 35
-  P1-001C: 14
+  P0-028: 66
+  P1-001: 97
+  P1-001A: 84
+  P1-001B: 36
+  P1-001C: 15
   P1-002: 3
   P1-002A: 21
   P1-003: 2
   P1-003A: 14
-  P1-004: 11
+  P1-004: 19
   P1-004A: 40
   P1-004B: 20
-  P1-005: 27
+  P1-005: 28
   P1-005A: 20
-  P1-005B: 14
-  P1-005C: 5
-  P1-006: 111
+  P1-005B: 15
+  P1-005C: 6
+  P1-006: 122
   P1-006A: 4
   P1-006B: 3
   P1-006C: 3
-  P1-006D: 111
-  P1-006E: 15
+  P1-006D: 119
+  P1-006E: 25
   P1-007: 2
   P1-007A: 1
   P1-007B: 2
-  P1-008: 16
+  P1-007C: 2
+  P1-008: 17
   P1-008A: 4
   P1-008B: 4
-  P1-008C: 25
-  P1-008D: 16
+  P1-008C: 26
+  P1-008D: 17
   P1-009: 5
   P2-001: 2
   P2-002: 2
@@ -76,7 +77,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T17:40:35+00:00'
+generated_at: '2026-09-26T17:50:28+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -511,6 +512,13 @@ tasks:
   depends_on:
   - P1-008B
   path: tasks/P1-007B/task.yaml
+- id: P1-007C
+  title: 로컬 OpenShell 실제 역할별 허용·차단 증거(E2E-05, stand-in runtime)
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008D
+  - P0-020
+  path: tasks/P1-007C/task.yaml
 - id: P1-008
   title: Response/Tool/Runtime/Policy reference 계약 완성
   workstream: integration/evaluation
