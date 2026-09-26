@@ -74,6 +74,31 @@ from rfa_mas.settings import Settings
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+_NVIDIA_SETTING_NAMES = {
+    "base_url": "NVIDIA_BASE_URL",
+    "model": "NVIDIA_MODEL",
+    "api_key": "NVIDIA_API_KEY",
+}
+
+
+def _nvidia_config(settings: Settings):
+    """P1-002: validated NVIDIA chat config, or ValueError naming the invalid setting."""
+    from pydantic import ValidationError
+
+    from rfa_mas.adapters.nvidia import NvidiaChatConfig
+
+    try:
+        return NvidiaChatConfig(
+            base_url=settings.nvidia_base_url,
+            model=settings.nvidia_model or "",
+            api_key=settings.nvidia_api_key,
+            timeout_seconds=settings.http_timeout_seconds,
+        )
+    except ValidationError as exc:
+        locs = {str(error["loc"][0]) for error in exc.errors() if error.get("loc")}
+        names = sorted(_NVIDIA_SETTING_NAMES.get(loc, "NVIDIA_MODEL") for loc in locs)
+        raise ValueError(",".join(names)) from None
+
 
 @dataclass(frozen=True)
 class ConfigurationInspection:
@@ -182,12 +207,19 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
         except BackendNotImplementedError:
             reserved.append(f"endpoint:{name}:non_loopback")
     for port, selected, default in (
-        ("model", settings.model_provider, "mock"),
         ("trace", settings.trace_backend, "local"),
         ("judge", settings.judge_provider if settings.enable_judge else "mock", "mock"),
     ):
         if selected != default:
             reserved.append(f"{port}:{selected}")
+    # P1-002: the NVIDIA ModelPort adapter exists; a configured selection must also be valid.
+    if settings.model_provider == "nvidia" and not {"NVIDIA_MODEL", "NVIDIA_API_KEY"} & set(
+        missing
+    ):
+        try:
+            _nvidia_config(settings)
+        except ValueError as exc:
+            invalid.extend(str(exc).split(","))
     if settings.retriever_backend not in {"local", "mock"}:
         reserved.append(f"retriever:{settings.retriever_backend}")
     # Installed metadata is not an import/compatibility check or product NAT integration.
@@ -269,6 +301,9 @@ class Container:
         await self.checkpoints.close()
         for client in self.http_clients:
             await client.aclose()
+        close_model = getattr(self.model, "aclose", None)
+        if close_model is not None:
+            await close_model()
         self.ready = False
 
     async def readiness(self) -> ReadinessReport:
@@ -430,6 +465,7 @@ def build_container(
     *,
     project_resolver: ProjectResolver = no_projects,
     http_transport: httpx.AsyncBaseTransport | None = None,
+    model_transport: httpx.AsyncBaseTransport | None = None,
 ) -> Container:
     settings = settings or Settings()
     inspect_configuration(settings).require_available()
@@ -440,7 +476,25 @@ def build_container(
     clients: list[httpx.AsyncClient] = []
     probes: dict[str, ReferenceHttpClient] = {}
 
-    model = MockModel()
+    if settings.model_provider == "mock":
+        model = MockModel()
+    else:
+        # P1-002: explicit selection only (inspect_configuration already required key and
+        # model). No mock fallback. Egress needs the trusted public-only gate per call.
+        from rfa_mas.adapters.nvidia import NvidiaChatModel, PublicOnlyEgressGate
+
+        nvidia = _nvidia_config(settings)
+        model = NvidiaChatModel(
+            nvidia,
+            PublicOnlyEgressGate(
+                endpoint=nvidia.endpoint,
+                model=nvidia.model,
+                max_output_tokens=settings.nvidia_max_output_tokens,
+                # Bounded by the domain task's own timeout (LocalRuntime wait_for).
+                budget_seconds=settings.tool_timeout_seconds,
+            ),
+            transport=model_transport,
+        )
 
     if settings.policy_backend == "local":
         policy = LocalPolicy()
@@ -552,7 +606,8 @@ def build_container(
         resolve_team_selector,
         lambda: runtime_support,
     )
-    observed_model = ObservedPort(model, observer, "model", mode="mock")
+    observed_model = ObservedPort(model, observer, "model",
+                                  mode="mock" if model.simulated else "real")
     observed_retrieval = ObservedPort(retrieval, observer, "retrieval",
                                      mode="mock" if retrieval.simulated else "local")
     observed_policy = ObservedPort(

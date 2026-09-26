@@ -96,6 +96,8 @@ class Settings(BaseSettings):
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     nvidia_model: str | None = None
     nvidia_api_key: SecretStr | None = None
+    # P1-002: output-token cap per model call (provisional until the Run budget contract).
+    nvidia_max_output_tokens: int = Field(default=1024, ge=1, le=16384)
 
     retriever_backend: Literal["local", "mock", "nemo_cli", "nemo_service"] = "local"
     retriever_index_dir: Path = Path("./.local/retriever")

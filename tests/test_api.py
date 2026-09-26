@@ -434,22 +434,38 @@ async def test_readiness_separates_liveness_from_selected_backends(tmp_path, con
     assert results["up"][1].status_code == 200 and results["up"][1].json()["ready"] is True
     # A selected real backend that cannot be built: alive, not ready, exact names only.
     missing = create_app(settings("nvidia-missing", model_provider="nvidia"))
-    reserved = create_app(settings("nvidia-reserved", model_provider="nvidia",
-                                   nvidia_model="synthetic-model",
-                                   nvidia_api_key=SecretStr(SECRET)))
+    invalid = create_app(settings("nvidia-invalid", model_provider="nvidia",
+                                  nvidia_model="synthetic-model",
+                                  nvidia_base_url="http://example.invalid/v1",
+                                  nvidia_api_key=SecretStr(SECRET)))
     async with _client(missing) as api:
         alive, not_ready, work = (await api.get("/healthz"), await api.get("/readyz"),
                                   await api.post("/v1/work", json={"query": "x"}))
-    async with _client(reserved) as api:
-        reserved_ready = await api.get("/readyz")
+    async with _client(invalid) as api:
+        invalid_ready = await api.get("/readyz")
     configuration = {c["component"]: c for c in not_ready.json()["checks"]}["configuration"]
     assert alive.status_code == 200 and not_ready.status_code == 503
     assert configuration["code"] == "configuration_error"
     assert configuration["missing"] == ["NVIDIA_API_KEY", "NVIDIA_MODEL"]
     assert work.status_code == 503 and work.json()["code"] == "configuration_error"
-    reserved_check = {c["component"]: c for c in reserved_ready.json()["checks"]}["configuration"]
-    assert reserved_ready.status_code == 503 and reserved_check["code"] == "not_implemented"
-    assert "model:nvidia" in reserved_check["reserved"] and SECRET not in reserved_ready.text
+    invalid_check = {c["component"]: c for c in invalid_ready.json()["checks"]}["configuration"]
+    assert invalid_ready.status_code == 503 and invalid_check["code"] == "configuration_error"
+    assert invalid_check["invalid"] == ["NVIDIA_BASE_URL"] and SECRET not in invalid_ready.text
+    # P1-002: a complete NVIDIA selection is implemented (no longer reserved) and ready.
+    # Hosted reachability is not probed by /readyz (no credential is ever sent there).
+    configured = build_container(settings("nvidia-configured", model_provider="nvidia",
+                                          nvidia_model="synthetic-model",
+                                          nvidia_api_key=SecretStr(SECRET)))
+    await configured.startup()
+    try:
+        async with _client(create_app(container=configured)) as api:
+            configured_ready = await api.get("/readyz")
+    finally:
+        await configured.shutdown()
+    checks = {c["component"]: c for c in configured_ready.json()["checks"]}
+    assert configured_ready.status_code == 200 and configured_ready.json()["ready"] is True
+    assert checks["configuration"]["code"] == "ok" and checks["configuration"]["reserved"] == []
+    assert SECRET not in configured_ready.text
 
 
 def test_registry_lists_only_capabilities_the_default_service_provides(container):

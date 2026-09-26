@@ -140,14 +140,6 @@ def test_external_bind_requires_authentication_key() -> None:
     [
         (
             {
-                "model_provider": "nvidia",
-                "nvidia_model": "reference-model-id",
-                "nvidia_api_key": "known-fake-nvidia-key",
-            },
-            "model:nvidia",
-        ),
-        (
-            {
                 "retriever_backend": "nemo_service",
                 "retriever_service_url": "https://reference.invalid",
                 "nemo_retriever_api_token": "known-fake-retriever-token",
@@ -347,9 +339,19 @@ def test_doctor_reports_preflight_without_creating_files_or_probing(tmp_path, mo
             {
                 "model_provider": "nvidia",
                 "nvidia_api_key": "private-CANARY",
-                "nvidia_model": "private-CANARY-model",
+                # P1-002: the adapter exists, so only an INVALID selection fails here.
+                "nvidia_model": "private CANARY model",
             },
-            BackendNotImplementedError,
+            ConfigurationError,
+        ),
+        (
+            {
+                "model_provider": "nvidia",
+                "nvidia_api_key": "private-CANARY",
+                "nvidia_model": "reference-model-id",
+                "nvidia_base_url": "http://private-CANARY.invalid/v1",
+            },
+            ConfigurationError,
         ),
     ],
 )

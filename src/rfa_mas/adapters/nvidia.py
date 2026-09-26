@@ -34,7 +34,7 @@ from urllib.parse import urlsplit
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, field_validator
 
-from rfa_mas.contracts import ModelRequest, ModelResult
+from rfa_mas.contracts import Audience, ModelRequest, ModelResult
 from rfa_mas.errors import RfaError
 
 MAX_ATTEMPTS = 3
@@ -128,6 +128,56 @@ class ModelEgressGate(Protocol):
     async def authorize(
         self, request: ModelRequest, *, endpoint: str, model: str
     ) -> ModelEgressGrant | None: ...
+
+
+class PublicOnlyEgressGate:
+    """Trusted composition gate for a cloud model (provisional P1-005 egress/budget seam).
+
+    Deterministic backstop behind the domain graph's share/content/egress screen: the grant
+    covers only the configured endpoint/model, and only a request whose evidence is all
+    public and whose query and excerpts carry no private marker. The graph screen already
+    withholds non-public items for a cloud endpoint; if anything else ever reaches this
+    boundary, nothing is sent. The budget is the domain-task timeout until the Run budget
+    contract (P0-020 -> P1-005) is published.
+    """
+
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        model: str,
+        max_output_tokens: int,
+        budget_seconds: float,
+        max_attempts: int = MAX_ATTEMPTS,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        from rfa_mas.application.graphs.domain import SENSITIVE_MARKERS
+
+        self._endpoint, self._model = endpoint, model
+        self._max_output_tokens, self._budget = max_output_tokens, budget_seconds
+        self._attempts, self._clock = max_attempts, clock
+        self._markers = SENSITIVE_MARKERS
+
+    def _private(self, text: str) -> bool:
+        return any(pattern.search(text) for pattern in self._markers)
+
+    async def authorize(
+        self, request: ModelRequest, *, endpoint: str, model: str
+    ) -> ModelEgressGrant | None:
+        if (endpoint, model) != (self._endpoint, self._model):
+            return None
+        items = request.evidence.items
+        if any(item.audience != Audience.PUBLIC for item in items):
+            return None
+        if self._private(request.query) or any(self._private(i.excerpt) for i in items):
+            return None
+        return ModelEgressGrant(
+            endpoint=endpoint,
+            model=model,
+            max_output_tokens=self._max_output_tokens,
+            deadline=self._clock() + self._budget,
+            max_attempts=self._attempts,
+        )
 
 
 class _Answer(BaseModel):
@@ -307,4 +357,5 @@ __all__ = [
     "ModelEgressGrant",
     "NvidiaChatConfig",
     "NvidiaChatModel",
+    "PublicOnlyEgressGate",
 ]
