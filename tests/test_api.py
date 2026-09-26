@@ -201,3 +201,23 @@ async def test_cancel_route_signals_running_team_and_rejects_terminal_or_foreign
     finally:
         release.set()
         await container.shutdown()
+
+
+async def test_cancel_route_ends_a_run_waiting_for_approval(tmp_path):
+    from rfa_mas.contracts import SimulationScenario
+
+    container, owner = await make(tmp_path)
+    try:
+        waiting = await container.service.run(
+            request(team=False, simulation_scenario=SimulationScenario.REVISION_REQUESTED),
+            owner)
+        assert waiting.status.value == "waiting_approval"
+        async with _client(container) as client:
+            ended = await client.post(f"/v1/runs/{waiting.run_id}/cancel")
+            assert ended.status_code == 200 and ended.json() == {"state": "cancelled"}
+            again = await client.post(f"/v1/runs/{waiting.run_id}/cancel")
+            assert again.status_code == 409
+        record = await container.repository.get_owned_run(waiting.run_id, owner)
+        assert record.status.value == "cancelled"
+    finally:
+        await container.shutdown()

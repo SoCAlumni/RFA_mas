@@ -61,9 +61,14 @@ SCHEDULE_ERROR_CODES = frozenset({"invalid_schedule"})
 
 
 class RunCancelState(TypedDict):
-    """Cancel is a barrier request, not a terminal state: effects already done stay done."""
+    """Cancel sets a durable barrier; effects already done stay done.
 
-    state: Literal["cancelling"]
+    "cancelling": a live invocation was signalled and stops at its next effect boundary.
+    "cancelled": no invocation was running (e.g. waiting for approval), so the run ended here
+    (P0-021 durable cancel).
+    """
+
+    state: Literal["cancelling", "cancelled"]
 
 
 async def resolve_principal(
