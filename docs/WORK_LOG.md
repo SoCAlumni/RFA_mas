@@ -784,3 +784,43 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 키는 Settings(_env_file) SecretStr 안에서만 사용했고 로그·evidence·control 파일에 없음을 값 출력 없이
   검사했다. integrate/close 완료. 다음: P1-002 제품 adapter가 이 관측(지연 편차, reasoning token 비용,
   thinking off+json_object)을 반영한다.
+
+## P1-001A 완료·계약 발행·재검증 cascade — 2026-09-26 14:00~14:45 UTC (coordinator: claude-opus-5-5)
+
+- P1-001A 구현(권한 선필터 local lexical 검색, current-source outward projection, C11 KB 회수)을 이어받아
+  첫 전체 실행 34 failed/683 passed의 원인을 로그로 분류해 수정했다(1회 cycle): 테스트 fixture 형식 오류,
+  mock 전용 시나리오의 local 기본값 실행, raw SQL 본문 변조의 정상 fail-closed 탐지, outward policy 재판정
+  관측으로 깨진 trace 테스트 가정, extended 계약 재생성. 제품 606 passed, 평가 CLI C01–C05 pass/C06–C12
+  unknown(미구현 gate)/C11 acl·past_result pass, exit 2.
+- spec16에서 scope에 scripts/contract_baseline.py·tests/test_trace_contract.py·tests/test_nat_smoke.py를
+  추가(AC/검증 축소 없음) → worker/target V1 84·V2 348 passed → commit 66b2d49 통합, RFA-EXTENDED 1.1
+  f711bab8 발행, close(62422a2).
+- 발행/공유 소스 변경으로 done 11개가 verifying/stale이 되었다. `.agent/input/tc.py`(taskctl 래퍼: 최신
+  revision/generation 자동, 검토된 pytest 계획만 env -i로 실행해 report 작성)와 revalidate 루프로
+  P0-014/015/016/017/018/019/027/P1-006D를 새 worker/target evidence로 재검증·close했다.
+  OPS-002 첫 재검증은 격리 env에 TASK_CONTROL_ROOT가 없어 task_migration 9건이 실패(제품 결함 아님) →
+  env 보완 후 재시도 중.
+- 같은 저장소에서 사용자가 연 다른 세션이 NVIDIA 실제 증거(P1-002A 완료, P1-003A 진행)를 담당하고 있음을
+  commit/claim으로 확인했다. 충돌을 피하기 위해 이 세션은 P0 기능·재검증·E2E를 맡고 NVIDIA 실제 연동
+  task(P1-002/002A/003/003A/006A)는 건드리지 않는다. 다른 세션이 claim 1개를 쓰므로 project max_workers를
+  규칙상 상한인 3으로 올렸다.
+- 사용자 승인(teammate stand-in)에 따라 P1-008C/P1-008D/P0-025A를 등록했다(docs/LOCAL_MODULES.md).
+  P1-001B·P1-006E와 P1-008C→D→P0-025A는 새 파일만 소유하므로 보조 worker가 wip branch에서 구현하고
+  coordinator가 claim/evidence/통합을 맡는다.
+- P0-020(역할 실행·Supervisor 수집·팀 예산·취소)을 구현 중: workers.py(TeamRunner, 역할 handler, 공유 예산,
+  SupervisorBus), migration6(run_team_bindings/role_executions/team_run_results), LocalRuntime 역할 key별
+  status/cancel, allowlist 로컬 READ 분석 도구, supervisor graph 팀 분기, owner-target domain 검색의
+  audience cap 교집합 버그 수정. 신규 test_team_execution 9개와 제품 615개 통과(claim 전 개발 확인).
+  P1-001 예약 해제(재검증) 후 claim → 공식 evidence 예정.
+
+## P1-003A NVIDIA 공식 Skill(NeMo Retriever) live 증거 — 2026-09-26 15:30 UTC
+
+- 사용자가 공식 Skill 증거를 다음 우선순위로 지정했다. P1-003A spec r2로 P1-003 의존을 제거하고
+  build.nvidia.com Skills 카탈로그의 nemo-retriever Skill(26.8.1) direct smoke로 한정했다. 제품 코드와
+  pyproject/uv.lock은 바꾸지 않았고 retriever는 저장소 밖 pinned tool venv에 설치했다.
+- 합성 한국어 PDF 2개(5쪽)를 retriever ingest(--method pdfium)/query --format evidence로 실제 실행했다.
+  CPU 호스트라 hosted embedding(llama-nemotron-embed-vl-1b-v2)을 사용했고 키 없는 query는 실패했다.
+  3질문 top-1 source/page가 정답이었고, 검색 근거만 넣은 Nemotron 답변의 사실·인용을 검증했다.
+- worker v1-live-a1 7 passed 51.7s, target(main caf7bd2) v1-live-target-a1 7 passed 58.5s. 개발 실행에서
+  Research 답변 1회 ReadTimeout 후 재시도 성공. integrate/close 완료.
+- 제품 Research worker→EvidenceBundle(audience/policy/source_revision) 경로는 not_run이며 P1-003 범위다.

@@ -1,0 +1,125 @@
+{
+  "branch": "main",
+  "captured_at": "2026-09-26T14:43:12+00:00",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    "AGENTS.md": {
+      "index_blob": null,
+      "sha256": "cf27246f1382f1db8b62e468535c8c342e0812ce11038522863c576b78b32b0f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/EDUCATION_MAPPING.md": {
+      "index_blob": null,
+      "sha256": "32af81d3a93f2d10aa148b21e172d2d09f2a8cb0dce07c1ba11e8ab1f4c65466",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/INTEGRATION.md": {
+      "index_blob": null,
+      "sha256": "528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/evidence/nvidia-skill.md": {
+      "index_blob": null,
+      "sha256": "ff1900ada0c43a9ef7f6df2d2c3d360bbde07841c6d7ed19d12a808f8bd3f5a5",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "bc24bd0a354d27151f91b8eceefc51ee65755d5da8df68201de8cd1725ce8dde",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "88a74db5ed3823096963c3ca7b1124d4031dba924331c92249471dbe8b469d13",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/integration/fixtures/retriever/make_fixtures.py": {
+      "index_blob": null,
+      "sha256": "3c9fa529c7a54bcc22fa2bad673e7e40c03055cfcc0907a239a147c9211929a8",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/integration/fixtures/retriever/synthetic_alpha_minutes.pdf": {
+      "index_blob": null,
+      "sha256": "5323d8dd4f3bc670c13bb1ddeba72600926e5f801a2a27663bfbdc771f43d099",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/integration/fixtures/retriever/synthetic_security_policy.pdf": {
+      "index_blob": null,
+      "sha256": "469aba1b3ab180336f369ac31de2de5248c3dd30887663b0002a4c6e88388666",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/integration/test_retriever_live.py": {
+      "index_blob": null,
+      "sha256": "403b9354f7671b4a3a742f15a96e90864a07ebbfbe6897db19da529fc0a143e9",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "bf55dc7573e94477535c279e4056a3ff3c4e6603989fec92bf9ace1495456849",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e",
+  "head": "caf7bd2f11b4c93f76ea28ab353e21d914fff930",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+  "spec_digest": "3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664",
+  "spec_revision": 2
+}

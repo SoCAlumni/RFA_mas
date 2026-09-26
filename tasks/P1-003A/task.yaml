@@ -1,168 +1,211 @@
-schema_version: "1.0"
-id: "P1-003A"
-title: "공식 Skill 실제 retrieval 증거"
-objective: "Research worker가 실제 Skill 도구를 사용한 결과를 보여준다."
-kind: "task"
+schema_version: '1.0'
+id: P1-003A
+title: 공식 Skill 실제 retrieval 증거
+objective: Research worker가 실제 Skill 도구를 사용한 결과를 보여준다.
+kind: task
 source_tasks:
-  - "P1-003A"
+- P1-003A
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P1"
-status: "blocked"
-spec_state: "draft"
-unresolved:
-  - "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
-workstream: "integration/evaluation"
-execution_role: "worker"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P1
+status: done
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: worker
 estimated_effort: 0.5
-product_owner: "민섭"
-execution_class: "이 저장소 구현"
-product_mode: "real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요."
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: opt-in direct official Skill smoke. build.nvidia.com Skills 카탈로그에 등재된 NVIDIA nemo-retriever
+  Skill(SKILL.md 26.8.1)의 local LanceDB workflow를 pinned nemo-retriever==26.8.1 CLI로 실제 실행한다. CPU 호스트이므로
+  embedding은 hosted integrate.api.nvidia.com(nvidia/llama-nemotron-embed-vl-1b-v2)을 사용한다. 합성 한국어 PDF만
+  ingest/query하고, 인용된 source/page 근거만으로 hosted Nemotron 답변을 만든다. 제품 Research worker→ToolPort→EvidenceBundle
+  경로와 audience/policy 매핑은 P1-003 범위이며 not_run이다.
 scope:
   included:
-    - "선택한 CLI/service 버전·index/source·안전한 실행 명령·worker→tool→EvidenceBundle trace. 서비스 인증값 기록 없음; public 계약 변경 없음."
+  - 'tests/integration/test_retriever_live.py: RFA_RETRIEVER_LIVE=1, 명시 RFA_NVIDIA_ENV_FILE, pinned RFA_RETRIEVER_BIN이
+    모두 있을 때만 실행. 미설정은 skip이며 성공이 아니다.'
+  - 공식 SKILL.md 절차대로 retriever ingest(--method pdfium, 임시 LanceDB)와 retriever query --format evidence를
+    실행한다. 버전 26.8.1을 확인하고, 키 없는 query가 hosted embedding 필요 오류로 실패하는 대조군으로 simulated=false를 보인다.
+  - 합성 한국어 골든 질문 3개의 top-1 citation(source/page)·verbatim 사실을 검사하고, 검색된 근거만 넣은 hosted Nemotron json_object
+    답변의 사실·인용이 검색 결과 citation 집합 안에 있는지 Pydantic과 결정적 검사로 확인한다.
+  - 키는 Settings(_env_file=명시 경로)에서 읽어 하위 프로세스 NVIDIA_API_KEY와 Bearer header로만 전달한다. 출력·evidence에 키가 없음을
+    쓰기 전에 검사하고 proxy 환경변수는 전달하지 않는다.
+  - 'tests/integration/fixtures/retriever/: 가상 내용의 합성 PDF 2개와 생성 스크립트. docs/evidence/nvidia-skill.md와
+    docs/EDUCATION_MAPPING.md에 실제 범위·관측·한계를 기록한다.'
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - src/ 제품 코드, bootstrap/settings/ports/contracts, pyproject/uv.lock 변경(retriever는 저장소 밖 pinned tool
+    venv)
+  - 제품 사용자 데이터 ingest/전송, Retriever service 배포, GPU local 모델, 재순위화/agentic 모드
+  - EvidenceBundle audience/policy/source_revision 매핑과 Research worker 연결(P1-003)
+  - 실제 .env/.env.dev 내용 조회·복사·출력. 테스트 프로세스의 Settings 로드만 허용
   owned_paths:
-    - "docs/EDUCATION_MAPPING.md"
-    - "tests/integration/test_retriever_live.py"
-    - "docs/evidence/nvidia-skill.md"
+  - docs/EDUCATION_MAPPING.md
+  - tests/integration/test_retriever_live.py
+  - tests/integration/fixtures/retriever
+  - docs/evidence/nvidia-skill.md
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/contracts"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
   planned_paths:
-    - "tests/integration/test_retriever_live.py"
-    - "docs/evidence/nvidia-skill.md"
+  - tests/integration/test_retriever_live.py
+  - tests/integration/fixtures/retriever
+  - docs/evidence/nvidia-skill.md
   shared_resources: []
 depends_on:
-  -
-    id: "P1-003"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-017
+  condition: integrated_done
+  required_output: 기존 NVIDIA_* 설정 이름·SecretStr·명시 env-file 로드 경계
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P1-003A — 공식 Skill 실제 retrieval 증거"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "docs/EDUCATION_MAPPING.md"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P1-003A/handoff.md"
+  - path: docs/PRODUCT_REQUIREMENTS.md
+    section: 공식 NVIDIA nemo-retriever SKILL.md 확인 기록
+    reason: 26.8.1 CLI·source/page 보존 지침을 재확인한다.
+  - path: docs/evidence/nvidia-model.md
+    section: hosted 호출 제한과 지연 관측
+    reason: hosted Nemotron 답변 단계에 같은 전송 제한·timeout 방식을 재사용한다.
+  - path: docs/EDUCATION_MAPPING.md
+    section: 공식 NeMo Retriever Skill 행
+    reason: 실제 검증 범위만 갱신하고 제품 worker 경로를 과장하지 않는다.
+  handoff: tasks/P1-003A/handoff.md
   dependency_results:
-    - "tasks/P1-003/handoff.md"
+  - tasks/P0-017/handoff.md
 deliverables:
-  -
-    path: "docs/EDUCATION_MAPPING.md"
-    availability: "existing"
-    description: "선택한 CLI/service 버전·index/source·안전한 실행 명령·worker→tool→EvidenceBundle trace. 서비스 인증값 기록 없음; public 계약 변경 없음."
-  -
-    path: "tests/integration/test_retriever_live.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "docs/evidence/nvidia-skill.md"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: tests/integration/test_retriever_live.py
+  availability: planned
+  description: opt-in 공식 Skill CLI ingest/query·키 없는 대조군·근거 기반 답변 live smoke와 비밀 없는 evidence JSON
+- path: tests/integration/fixtures/retriever
+  availability: planned
+  description: 가상 내용의 합성 한국어 PDF 2개(5쪽)와 재생성 스크립트
+- path: docs/evidence/nvidia-skill.md
+  availability: planned
+  description: Skill 출처·카탈로그 등재·버전·명령·관측 결과·한계·제품 경로 not_run
+- path: docs/EDUCATION_MAPPING.md
+  availability: existing
+  description: 공식 NeMo Retriever Skill 행을 direct Skill CLI live verified / 제품 worker not_run으로 구분
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "합성 자료의 ingest/query 또는 준비된 index query 실제 수행"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "source/page 근거로 Research 결과 생성"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "NVIDIA 추론/Skill API 요구와의 관계를 공식 안내로 확인하고 단순 파일 설치·다른 기술 성공으로 대체하지 않음."
-    required: true
+- id: AC1
+  given: 합성 한국어 PDF와 사용자가 제공한 NVIDIA_API_KEY 명시 로드
+  expect: 공식 Skill 절차의 retriever ingest와 query --format evidence가 hosted embedding으로 실제 수행되고, 키 없는 대조군은
+    실패한다
+  required: true
+- id: AC2
+  given: 골든 질문 3개와 검색된 evidence
+  expect: top-1 citation이 정답 source/page이고 verbatim 사실을 포함하며, 검색된 근거만 사용한 Research 답변이 정확한 사실과 검색 결과 안의
+    source/page 인용을 갖는다
+  required: true
+- id: AC3
+  given: build.nvidia.com Skills 카탈로그와 NVIDIA/skills 원본
+  expect: Skill 등재·버전·Skill과 hosted 추론 API의 역할 차이를 공식 출처로 기록하고, 설치만이나 다른 기술 성공으로 대체하지 않는다
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "opt-in 실제 도구 호출·source locator 대조·simulated=false provider 결과 확인."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/integration/test_retriever_live.py"
-    timeout_seconds: 180
-    procedure: []
-    assertions:
-      - "합성 자료의 ingest/query 또는 준비된 index query 실제 수행"
-      - "source/page 근거로 Research 결과 생성"
-      - "NVIDIA 추론/Skill API 요구와의 관계를 공식 안내로 확인하고 단순 파일 설치·다른 기술 성공으로 대체하지 않음."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P1-003A"
-latest_evidence_file: null
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - source worktree에서 실행. RFA_NVIDIA_ENV_FILE은 canonical root의 사용자 소유 .env.dev 절대 경로이며 내용을 열람하지 않는다.
+  - RFA_RETRIEVER_BIN은 uv pip install nemo-retriever==26.8.1로 만든 저장소 밖 tool venv의 retriever다.
+  - skip/미수집은 성공이 아니다. 실제 hosted embedding/추론 quota를 사용한다.
+  cwd: .
+  argv:
+  - env
+  - RFA_RETRIEVER_LIVE=1
+  - RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev
+  - RFA_RETRIEVER_BIN=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/.tools/nemo-retriever-26.8.1/.venv/bin/retriever
+  - RFA_RETRIEVER_EVIDENCE_OUT=/tmp/rfa-retriever-live-evidence.json
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - -p
+  - no:cacheprovider
+  - tests/integration/test_retriever_live.py
+  timeout_seconds: 480
+  procedure: []
+  assertions:
+  - retriever 26.8.1 ingest 5행·query evidence 실제 수행, 키 없는 query는 hosted embedding 필요로 실패
+  - 골든 질문 3개 top-1 source/page·verbatim 사실 일치
+  - 근거 기반 Research 답변의 사실과 인용이 검색 결과 citation 안에 있음
+  - 출력·evidence에 key/Authorization 없음, Skill 출처·카탈로그 등재 기록
+  runner: pytest
+evidence_dir: .agent/evidence/P1-003A
+latest_evidence_file: .agent/evidence/P1-003A/v1-live-target-a1/result.json
 verification_summary:
-  state: "not_run"
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 2
+  spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e
+  evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: integrated
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 1
-spec_revision: 1
-claim_generation: 0
+  submission_generation: 1
+  submission:
+    head: f4aa90ff7170e7fd0fecb9a6c60414e69f805cf6
+    baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A
+    branch: task/P1-003A
+    evidence: .agent/evidence/P1-003A/v1-live-a1/result.json
+    changed_files:
+      docs/EDUCATION_MAPPING.md: 32af81d3a93f2d10aa148b21e172d2d09f2a8cb0dce07c1ba11e8ab1f4c65466
+      docs/evidence/nvidia-skill.md: ff1900ada0c43a9ef7f6df2d2c3d360bbde07841c6d7ed19d12a808f8bd3f5a5
+      tests/integration/fixtures/retriever/make_fixtures.py: 3c9fa529c7a54bcc22fa2bad673e7e40c03055cfcc0907a239a147c9211929a8
+      tests/integration/fixtures/retriever/synthetic_alpha_minutes.pdf: 5323d8dd4f3bc670c13bb1ddeba72600926e5f801a2a27663bfbdc771f43d099
+      tests/integration/fixtures/retriever/synthetic_security_policy.pdf: 469aba1b3ab180336f369ac31de2de5248c3dd30887663b0002a4c6e88388666
+      tests/integration/test_retriever_live.py: 403b9354f7671b4a3a742f15a96e90864a07ebbfbe6897db19da529fc0a143e9
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 2
+      spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e
+      evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+    head: caf7bd2f11b4c93f76ea28ab353e21d914fff930
+  evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+revision: 13
+spec_revision: 2
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
-blocker:
-  cause: "real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요."
-  evidence:
-    - "docs/archive/TASKS_2026-09-26.md"
-  resolve_when: "준비 task 완료 + 사용자 제공 실제 설정/권한 + 지원 서비스 접근성 확인. 해당 real 검증만 막으며 P0/local 준비는 계속한다."
-  affects: []
+  latest_attempt: v1-live-target-a1
+  evidence_refs:
+  - .agent/evidence/P1-003A/v1-live-a1/result.json
+  approaches: []
+blocker: null
 migration:
-  original_status: "blocked"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P1-003A"
-  prior_claim: "real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: blocked
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-003A
+  prior_claim: 'real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인.
+    mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요.'
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T02:58:21.356Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T14:45:12+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.

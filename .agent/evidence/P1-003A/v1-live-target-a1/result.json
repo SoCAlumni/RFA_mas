@@ -1,0 +1,57 @@
+{
+  "attempt_id": "v1-live-target-a1",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "opt-in direct official Skill smoke. build.nvidia.com Skills 카탈로그에 등재된 NVIDIA nemo-retriever Skill(SKILL.md 26.8.1)의 local LanceDB workflow를 pinned nemo-retriever==26.8.1 CLI로 실제 실행한다. CPU 호스트이므로 embedding은 hosted integrate.api.nvidia.com(nvidia/llama-nemotron-embed-vl-1b-v2)을 사용한다. 합성 한국어 PDF만 ingest/query하고, 인용된 source/page 근거만으로 hosted Nemotron 답변을 만든다. 제품 Research worker→ToolPort→EvidenceBundle 경로와 audience/policy 매핑은 P1-003 범위이며 not_run이다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          "env",
+          "RFA_RETRIEVER_LIVE=1",
+          "RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev",
+          "RFA_RETRIEVER_BIN=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/.tools/nemo-retriever-26.8.1/.venv/bin/retriever",
+          "RFA_RETRIEVER_EVIDENCE_OUT=/tmp/rfa-retriever-live-evidence.json",
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_retriever_live.py"
+        ],
+        "assertions": [
+          "retriever 26.8.1 ingest 5행·query evidence 실제 수행, 키 없는 query는 hosted embedding 필요로 실패",
+          "골든 질문 3개 top-1 source/page·verbatim 사실 일치",
+          "근거 기반 Research 답변의 사실과 인용이 검색 결과 citation 안에 있음",
+          "출력·evidence에 key/Authorization 없음, Skill 출처·카탈로그 등재 기록"
+        ],
+        "counts": {
+          "collected": 7,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 7,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "Target main caf7bd2 (cherry-pick of f4aa90f, identical files). 7 passed in 58.49s, simulated=false. retriever 26.8.1; ingest exit0 5 rows 5.2s; keyless query exit1 mentions NVIDIA_API_KEY; top-1 alpha p.2/alpha p.3/policy p.2 verbatim facts ok; research 200/stop 37.9s Pydantic valid, facts and citations within retrieved; 0 retries. Credential absent from log/evidence. Live JSON sha256 c4eee36ad63f2126ea217d2f0bffd49a0e7c3962144531c32f27a8bd163efa0c.",
+        "observed": "Direct official Skill CLI smoke with hosted embedding; product Research worker/EvidenceBundle path not_run (P1-003).",
+        "procedure_performed": true,
+        "result": "passed",
+        "timeout_seconds": 480
+      }
+    ],
+    "finished_at": "2026-09-26T14:44:39.433Z",
+    "reviewer": "rfa-coordinator (Codex agent self-run on integration target; not independent review)",
+    "started_at": "2026-09-26T14:43:40.058Z"
+  },
+  "result": "passed",
+  "source_fingerprint": "b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e",
+  "source_manifest": ".agent/evidence/P1-003A/v1-live-target-a1/source.json",
+  "spec_digest": "3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664",
+  "spec_revision": 2,
+  "task_id": "P1-003A"
+}
