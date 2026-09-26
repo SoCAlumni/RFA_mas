@@ -1,0 +1,95 @@
+{
+  "attempt_id": "post-retrieval-worker",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "개발 control local; 임시 protocol fixture는 simulated이며 제품 AC 증거 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_taskctl.py"
+        ],
+        "assertions": [
+          "통합된 task의 현재 clean baseline 재검증과 최초 provenance 보존을 실제 temp Git 이력으로 확인",
+          "미통합/dirty/old branch·old claim·미검증 close 우회 불가",
+          "역사적 통합 증거/commit 결합이 유효하고 활성 claim이 없는 stale consumer에 한해 coordinator의 계약 발행·명시 baseline 수락을 허용한다. 기존 reservation/증거와 재검증 요구는 보존하고 active claim/미통합 제출/변조 evidence는 거절한다."
+        ],
+        "counts": {
+          "collected": 94,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 94,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 127.45,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T14:12:21.737658+00:00",
+        "id": "V1",
+        "log_excerpt": "94 passed in 126.56s (0:02:06)",
+        "result": "passed",
+        "started_at": "2026-09-26T14:10:14.247896+00:00",
+        "timeout_seconds": 180
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_task_migration.py"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 9,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.34,
+        "exit_code": 1,
+        "failures": [
+          "FAILED tests/test_task_migration.py::test_all_legacy_ids_states_and_verbatim_archive_are_preserved",
+          "FAILED tests/test_task_migration.py::test_each_original_execution_ac_goal_and_contract_impact_preserved",
+          "FAILED tests/test_task_migration.py::test_task_schema_paths_dag_and_contract_references_are_valid",
+          "FAILED tests/test_task_migration.py::test_schedule_effort_and_final_acceptance_are_separate",
+          "FAILED tests/test_task_migration.py::test_extended_contract_consumers_cannot_claim_and_selector_is_independent",
+          "FAILED tests/test_task_migration.py::test_generated_views_are_consistent_and_no_monolithic_state_original",
+          "FAILED tests/test_task_migration.py::test_initial_resume_handoffs_are_factual_and_other_tasks_use_template",
+          "FAILED tests/test_task_migration.py::test_technical_specs_keep_nat_independent_and_parallel_scopes_disjoint",
+          "FAILED tests/test_task_migration.py::test_technical_scope_budget_gates_and_unrun_evidence_are_explicit"
+        ],
+        "finished_at": "2026-09-26T14:12:24.076487+00:00",
+        "id": "V2",
+        "log_excerpt": "9 failed, 8 passed in 1.64s",
+        "result": "failed",
+        "started_at": "2026-09-26T14:12:21.738224+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "62422a2d7014d4795d44988e562d6cbef43ddb23",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T14:12:24.076520+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T14:10:14.246815+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "babae4028e00d2e765b359e66907ba84e283d5dc1cf5f50c482ad61870cee254",
+  "source_manifest": ".agent/evidence/OPS-002/post-retrieval-worker/source.json",
+  "spec_digest": "e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3",
+  "spec_revision": 4,
+  "task_id": "OPS-002"
+}

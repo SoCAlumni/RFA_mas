@@ -12,7 +12,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | --- | --- | --- | --- | --- | --- | --- |
 | [OPS-000](tasks/OPS-000/task.yaml) | 사용자 변경을 보존한 Git/worktree baseline 등록 | P0 | verifying / stale | contracts/control | 0.5 | — |
 | [OPS-001](tasks/OPS-001/task.yaml) | 작업 이관·공통 CLI·병렬 제어 검증 | P0 | verifying / stale | contracts/control | 0.5 | — |
-| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | verifying / stale | contracts/control | 0.5 | — |
+| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | in_progress / failed | contracts/control | 0.5 | — |
 | [P0-001](tasks/P0-001/task.yaml) | 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정 | P0 | done / passed | contracts/control | 0 | — |
 | [P0-002](tasks/P0-002/task.yaml) | typed settings, `.env.example`, `.gitignore`, secret-safe doctor와 named dev credential 초기화 | P0 | done / passed | contracts/control | 0 | P0-001 |
 | [P0-003](tasks/P0-003/task.yaml) | 공통 Pydantic DTO, async ports, 오류 모델, state transition | P0 | done / passed | contracts/control | 0 | P0-001 |
@@ -32,23 +32,24 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | verifying / stale | contracts/control | 1 | P0-014, P0-016 |
 | [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | verifying / stale | agents | 0.5 | P0-014 |
 | [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | verifying / stale | agents | 2 | P0-018, P0-015, P0-016 |
-| [P0-020](tasks/P0-020/task.yaml) | 역할별 실행·Supervisor 수집·팀 예산·취소 | P0 | todo / not_run | agents | 3 | P0-019, P0-017, P1-001A, P1-006D |
+| [P0-020](tasks/P0-020/task.yaml) | 역할별 실행·Supervisor 수집·팀 예산·취소 | P0 | done / passed | agents | 3 | P0-019, P0-017, P1-001A, P1-006D |
 | [P0-021](tasks/P0-021/task.yaml) | durable 실행 기록·재개 멱등성·결과 대사 | P0 | todo / not_run | execution | 1.5 | P0-016, P0-020, P1-005A |
 | [P0-022](tasks/P0-022/task.yaml) | 안전한 예약 DTO·사용자별 일정 관리 | P0 | todo / not_run | execution | 0.5 | P0-014, P0-017, P1-004, P0-021 |
 | [P0-023](tasks/P0-023/task.yaml) | APScheduler 3.x 영속 job store·단일 runner | P0 | todo / not_run | execution | 1.5 | P0-022 |
 | [P0-024](tasks/P0-024/task.yaml) | 변경 이벤트·누락 실행·안전한 알림 | P0 | todo / not_run | execution | 1 | P0-023, P1-004B, P2-003, P1-005 |
 | [P0-025](tasks/P0-025/task.yaml) | UI polling 상태·안전한 이벤트·readiness·registry | P0 | todo / not_run | integration/evaluation | 0.5 | P0-015, P0-020, P0-024, P1-008 |
+| [P0-025A](tasks/P0-025A/task.yaml) | 동일 출처 세션·노트·질의·검토 기본 UI | P0 | todo / not_run | integration/evaluation | 2 | P0-015, P1-001A, P1-008C |
 | [P0-026](tasks/P0-026/task.yaml) | 합성 end-to-end 데모·D3 전달 패키지 | P0 | todo / not_run | integration/evaluation | 4 | P0-021, P0-024, P0-025, P1-006, P1-008, P1-001B, P1-006E, P1-005B |
 | [P0-027](tasks/P0-027/task.yaml) | NAT/LangGraph 호환성 spike·선택 extra 고정 | P0 | verifying / stale | integration/evaluation | 0.5 | P0-001, P0-007 |
 | [P0-028](tasks/P0-028/task.yaml) | NAT 평가 adapter·installed smoke와 native 동등성 | P0 | verifying / stale | integration/evaluation | 1.5 | P0-014, P0-027, P1-006D, P0-016 |
 | [P1-001](tasks/P1-001/task.yaml) | 노트·export 입력과 revision 저장 | P0 | verifying / stale | knowledge | 1 | P0-014, P0-015, P0-016 |
-| [P1-001A](tasks/P1-001A/task.yaml) | 권한 선필터·최신 lexical 검색·무효화 | P0 | done / passed | knowledge | 1.5 | P1-001, P0-016, P1-006 |
+| [P1-001A](tasks/P1-001A/task.yaml) | 권한 선필터·최신 lexical 검색·무효화 | P0 | verifying / stale | knowledge | 1.5 | P1-001, P0-016, P1-006 |
 | [P1-001B](tasks/P1-001B/task.yaml) | KB L0/L1/L2 선택적 context loader | P0 | todo / not_run | knowledge | 1 | P0-014, P1-001A |
 | [P1-001C](tasks/P1-001C/task.yaml) | 계층 요약 최적화·context 로딩 비교(후속) | P1 | deferred / not_run | knowledge | 1 | P1-001B, P1-004A |
 | [P1-002](tasks/P1-002/task.yaml) | NVIDIA ModelPort adapter 준비 | P1 | todo / not_run | integration/evaluation | 1.5 | P0-014, P0-017, P1-005 |
-| [P1-002A](tasks/P1-002A/task.yaml) | NVIDIA 실제 합성 호출 증거 | P1 | in_progress / not_run | integration/evaluation | 0.5 | P0-017 |
+| [P1-002A](tasks/P1-002A/task.yaml) | NVIDIA 실제 합성 호출 증거 | P1 | in_progress / passed | integration/evaluation | 0.5 | P0-017 |
 | [P1-003](tasks/P1-003/task.yaml) | 공식 NeMo Retriever Skill을 Research 도구에 연결 | P1 | todo / not_run | integration/evaluation | 1 | P0-020, P1-001A, P1-005 |
-| [P1-003A](tasks/P1-003A/task.yaml) | 공식 Skill 실제 retrieval 증거 | P1 | blocked / not_run | integration/evaluation | 0.5 | P1-003 |
+| [P1-003A](tasks/P1-003A/task.yaml) | 공식 Skill 실제 retrieval 증거 | P1 | verifying / stale | integration/evaluation | 0.5 | P0-017 |
 | [P1-004](tasks/P1-004/task.yaml) | 비서 intent 라우팅과 얇은 실행 경계 | P0 | todo / not_run | agents | 1 | P0-016, P1-001A |
 | [P1-004A](tasks/P1-004A/task.yaml) | 검토된 지식 축적·provenance | P0 | todo / not_run | knowledge | 0.5 | P0-020, P1-001A |
 | [P1-004B](tasks/P1-004B/task.yaml) | TodoCandidate 수락·보류·기각·중복 제거 | P0 | todo / not_run | knowledge | 1 | P1-004A, P0-019 |
@@ -67,6 +68,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-008](tasks/P1-008/task.yaml) | Response/Tool/Runtime/Policy reference 계약 완성 | P0 | todo / not_run | integration/evaluation | 1 | P0-014, P0-020, P0-021, P1-005A, P1-006D |
 | [P1-008A](tasks/P1-008A/task.yaml) | 승희 Response/Tool 실제 교체 | P1 | blocked / not_run | integration/evaluation | 1 | P1-008, P0-026 |
 | [P1-008B](tasks/P1-008B/task.yaml) | 다영 Runtime·UI 실제 교체 | P1 | blocked / not_run | integration/evaluation | 1 | P1-008, P0-025, P0-026 |
+| [P1-008C](tasks/P1-008C/task.yaml) | 수동 승인·모의 게시·READ tool 로컬 대체 모듈 | P0 | todo / not_run | integration/evaluation | 2 | P0-014 |
+| [P1-008D](tasks/P1-008D/task.yaml) | 합성 handler와 영속 lifecycle 로컬 runtime 대체 모듈 | P0 | todo / not_run | integration/evaluation | 2 | P0-014, P1-008C |
 | [P1-009](tasks/P1-009/task.yaml) | D4 회귀·교육/심사 증거·최종 상태 확정 | P1 | todo / not_run | integration/evaluation | 1 | P0-026 |
 | [P2-001](tasks/P2-001/task.yaml) | clustering 기반 Task 후보 제안 | P2 | deferred / not_run | knowledge | 1.5 | P1-004B, P2-003 |
 | [P2-002](tasks/P2-002/task.yaml) | 제한된 DebateLease | P2 | deferred / not_run | agents | 2 | P2-003, P1-006B, P0-020 |

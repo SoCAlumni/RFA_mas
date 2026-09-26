@@ -15,3 +15,8 @@ Current corrected verification is cycle2 relative to the preserved full-suite fa
 Actual corrected worker verification PASSED: V1 94 passed112.50s (timeout180), V2 17 passed6.23s (timeout120), no skips/errors/failures/xfails. Immutable .agent/evidence/OPS-002/current-effort-worker-02/{source,result}.json records unchanged-source capture and exact assertions/commands/output. Root full-regression-01 remains the first failure; this correction passed without a further retry.
 
 Next first action: scoped feature commit, then submit verifying. Parent coordinates main merge after the existing product revalidation window; no worker merge, publication or done before independent target evidence. These are task-management tests, not product E2E/live technology/security certification.
+
+## 재검증 post-retrieval (2026-09-26T14:10Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 62422a2에서 계획된 검증을 worker/target 단계로 재실행한다.

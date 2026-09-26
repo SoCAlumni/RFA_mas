@@ -9,3 +9,8 @@ Preserved scope: owned safe typed observations, alias/sequence after auth, null 
 Worker post-knowledge-worker-01 actual12:35:49.227313Z–12:36:08.889093Z: V1 trace22 passed4.17s (14 existing durability warnings); V2 security/API/settings/sessions/resume/contracts203 passed14.09s (34 same warnings). No skip/failure/error/retry. Source capture completed first, normal plugins/env-i PATH and each120s enforced.
 
 Next first action: submit unchanged source then fresh target source capture and exact V1/V2 repeat before integrate/close. Current task.yaml owns later state. Passing these tests does not fill uncollected boundaries or real-service gate.
+
+## 재검증 post-retrieval (2026-09-26T14:28Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

@@ -1,7 +1,7 @@
 schema_version: '1.0'
 repository_id: rfa-mas-2026-local
 control_root: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
-updated_at: '2026-09-26T14:07:09+00:00'
+updated_at: '2026-09-26T14:49:46+00:00'
 global_context:
 - AGENTS.md
 - docs/PROJECT_CONTEXT.md
@@ -17,7 +17,7 @@ coordinator_sessions:
 administrative_tasks:
 - OPS-000
 - OPS-001
-max_workers: 2
+max_workers: 3
 max_workers_ceiling: 3
 lease_seconds: 900
 heartbeat_seconds: 60
@@ -84,7 +84,7 @@ contracts:
   RFA-EXTENDED:
     version: '1.1'
     path: docs/contracts/extended.json
-    digest: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
+    digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
     state: ready
     owner_task: P0-014
     provisional: true
@@ -475,4 +475,38 @@ contract_changes:
   - P2-003
   version: '1.1'
   digest: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
+  notice: Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- id: RFA-EXTENDED
+  at: '2026-09-26T14:49:46+00:00'
+  reason: P0-020 additive team execution DTOs and DirectWorkRequest.team
+  compatibility: Additive optional field/models only; frozen 1.0 unchanged
+  migration: migration6 creates run_team_bindings/role_executions/team_run_results; no existing rows rewritten
+  evidence: .agent/evidence/P0-020/team-publication-01.json
+  affected:
+  - P0-017
+  - P0-018
+  - P0-021
+  - P0-022
+  - P0-023
+  - P0-024
+  - P0-025
+  - P0-025A
+  - P0-026
+  - P0-028
+  - P1-001B
+  - P1-001C
+  - P1-004
+  - P1-004A
+  - P1-004B
+  - P1-005
+  - P1-005A
+  - P1-005B
+  - P1-006
+  - P1-006E
+  - P1-008
+  - P1-008C
+  - P1-008D
+  - P2-003
+  version: '1.1'
+  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
   notice: Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest

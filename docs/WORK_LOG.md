@@ -812,6 +812,12 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   status/cancel, allowlist 로컬 READ 분석 도구, supervisor graph 팀 분기, owner-target domain 검색의
   audience cap 교집합 버그 수정. 신규 test_team_execution 9개와 제품 615개 통과(claim 전 개발 확인).
   P1-001 예약 해제(재검증) 후 claim → 공식 evidence 예정.
+- P1-001 재검증 close 후 P0-020을 claim(gen1)했다. commit 86d770f, worker/target V1 68·V2 125 passed,
+  RFA-EXTENDED 1.1 888c3d6d 발행, integrate/close. 오류 수정 이력: 첫 개발 실행에서 EvidenceItem.title
+  부재, Supervisor 자기 전달 거부, research 출력 이름, 동시 ensure provisioning 대기, owner target private
+  audience 교집합 누락을 로그 기반으로 수정했다(claim 전, 제품 테스트로 확인).
+- OPS-002 재검증: 두 번째 시도는 동시 실행 부하로 test_task_migration이 120초 timeout(exit -9). 제품 결함이
+  아닌 환경 부하이며 cycle 한도(3) 안에서 단독 실행으로 재시도한다.
 
 ## P1-003A NVIDIA 공식 Skill(NeMo Retriever) live 증거 — 2026-09-26 15:30 UTC
 

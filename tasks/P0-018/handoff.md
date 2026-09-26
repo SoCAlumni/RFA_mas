@@ -7,3 +7,8 @@ Feature task/P0-018 clean ff-only76b2186, old integration binding/ancestry revie
 Worker post-knowledge-worker-01 window12:29:21.021246Z–12:29:24.100157Z: exact V1 selector53 passed0.04s; supplemental contracts78 passed1.77s (4 existing durability warnings). No fail/skip/retry. Source capture completed before commands; env-i normal plugins, timeout120 enforced. Predicate/approved pin/runtime/strict budget and auth negatives correspond to AC1–3, no product flow expansion.
 
 Next first action: submit unchanged source and capture fresh post-knowledge-target-01; repeat exact V1/supplemental contract checks before integrate/close. Current task.yaml is authoritative, not a stale handoff step.
+
+## 재검증 post-retrieval (2026-09-26T14:20Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

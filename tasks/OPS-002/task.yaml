@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: verifying
+status: in_progress
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -166,54 +166,50 @@ verification:
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
-latest_evidence_file: .agent/evidence/OPS-002/current-effort-target-02/result.json
+latest_evidence_file: .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
 verification_summary:
-  state: stale
+  state: failed
   spec_revision: 4
   spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-  source_fingerprint: 7e21d747a418869a955241f57e66b410b4d21a0585ba8480133a7eab85d5d438
-  evidence: .agent/evidence/OPS-002/current-effort-target-02/result.json
+  source_fingerprint: 79ce47df77bd52ab768392e14f414ee823498cf18fd60433f195d20261928527
+  evidence: .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
 integration:
-  state: integrated
+  state: pending
   target: canonical main
   reason: null
-  reservation: true
-  submission_generation: 8
-  submission:
-    head: 6a352abe4684efa022e7230414aef6fc75db90c7
-    baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
-    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
-    branch: task/OPS-002-r2
-    evidence: .agent/evidence/OPS-002/current-effort-worker-02/result.json
-    changed_files:
-      docs/TASK_REVALIDATION.md: 7ff2a35ddc56f20bb8f2458c5cd25f2ef0a4156505287cf2ec0d65ce331ca312
-      tests/test_task_migration.py: c31f88c8876c57d9040d7418ec6158587657c1dc44aa0b9f97efb1338ea8b7c1
-  result:
-    verification_summary:
-      state: passed
-      spec_revision: 4
-      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
-      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-      source_fingerprint: 7e21d747a418869a955241f57e66b410b4d21a0585ba8480133a7eab85d5d438
-      evidence: .agent/evidence/OPS-002/current-effort-target-02/result.json
-    head: 1c04a2b01c97546f7d2dde0aaeb4f3eab0784e2b
-  evidence: .agent/evidence/OPS-002/current-effort-target-02/result.json
-revision: 57
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 65
 spec_revision: 4
-claim_generation: 8
-claim: null
+claim_generation: 10
+claim:
+  session_id: rfa-coordinator
+  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+  branch: task/OPS-002-r2
+  generation: 10
+  claimed_at: '2026-09-26T14:37:18+00:00'
+  heartbeat_at: '2026-09-26T14:43:49+00:00'
+  lease_expires_at: '2026-09-26T14:58:49+00:00'
+  baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+  recovery_required: false
+  context_digest: f31729badfee720e37c869d548d67eca627f59279a4debd7260e8d8b7a6a2353
 attempts:
-  count: 10
+  count: 12
   cycles: 1
   no_progress_count: 0
-  latest_attempt: current-effort-target-02
+  latest_attempt: post-retrieval-r3-worker
   evidence_refs:
   - .agent/evidence/OPS-002/recovery-01/result.json
   - .agent/evidence/OPS-002/contract-recovery-01/result.json
   - .agent/evidence/OPS-002/contract-recovery-02/result.json
   - .agent/evidence/OPS-002/schedule-worker-01/result.json
   - .agent/evidence/OPS-002/current-effort-worker-02/result.json
+  - .agent/evidence/OPS-002/post-retrieval-worker/result.json
+  - .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -380,6 +376,84 @@ attempts:
       source_fingerprint: a1037ed89a5b090ecf4400cf03fd4fa470a6ef94c588373e514df9d005aa8f2d
       evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
     latest_evidence_file: .agent/evidence/OPS-002/schedule-target-01/result.json
+  - kind: integrated_revalidation
+    generation: 9
+    baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+    reason: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published
+      RFA-EXTENDED 1.1 f711bab8
+    at: '2026-09-26T14:10:07+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical main
+      reason: null
+      reservation: true
+      submission_generation: 8
+      submission:
+        head: 6a352abe4684efa022e7230414aef6fc75db90c7
+        baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+        branch: task/OPS-002-r2
+        evidence: .agent/evidence/OPS-002/current-effort-worker-02/result.json
+        changed_files:
+          docs/TASK_REVALIDATION.md: 7ff2a35ddc56f20bb8f2458c5cd25f2ef0a4156505287cf2ec0d65ce331ca312
+          tests/test_task_migration.py: c31f88c8876c57d9040d7418ec6158587657c1dc44aa0b9f97efb1338ea8b7c1
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 4
+          spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+          contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+          source_fingerprint: 7e21d747a418869a955241f57e66b410b4d21a0585ba8480133a7eab85d5d438
+          evidence: .agent/evidence/OPS-002/current-effort-target-02/result.json
+        head: 1c04a2b01c97546f7d2dde0aaeb4f3eab0784e2b
+      evidence: .agent/evidence/OPS-002/current-effort-target-02/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 7e21d747a418869a955241f57e66b410b4d21a0585ba8480133a7eab85d5d438
+      evidence: .agent/evidence/OPS-002/current-effort-target-02/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/current-effort-target-02/result.json
+  - kind: recovery
+    generation: 10
+    baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+    reason: Expired lease after an env-only verification failure (TASK_CONTROL_ROOT missing in isolated
+      env); resume same revalidation
+    at: '2026-09-26T14:37:18+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+      branch: task/OPS-002-r2
+      generation: 9
+      claimed_at: '2026-09-26T14:10:07+00:00'
+      heartbeat_at: '2026-09-26T14:10:07+00:00'
+      lease_expires_at: '2026-09-26T14:25:07+00:00'
+      baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+      recovery_required: false
+      context_digest: f31729badfee720e37c869d548d67eca627f59279a4debd7260e8d8b7a6a2353
+    integration:
+      state: pending
+      target: canonical main
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: failed
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: babae4028e00d2e765b359e66907ba84e283d5dc1cf5f50c482ad61870cee254
+      evidence: .agent/evidence/OPS-002/post-retrieval-worker/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/post-retrieval-worker/result.json
 blocker: null
 migration:
   original_status: new
@@ -392,7 +466,8 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T11:57:53+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T14:44:27+00:00'
+concise_result: 'Recovery inspected: Expired lease after an env-only verification failure (TASK_CONTROL_ROOT
+  missing in isolated env); resume same revalidation'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

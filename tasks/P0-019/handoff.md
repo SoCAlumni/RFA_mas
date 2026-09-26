@@ -7,3 +7,8 @@ Inspected clean task/P0-019 at0f2cc17; fast-forwarded only to frozen main76b2186
 Direct prerequisites newly closed on this target:018 gen6/rev70,015 gen10/rev85,016 gen8/rev70. Nat worker explicitly waits017 because bootstrap/composition overlaps. Next capture post-knowledge-worker-01, exact V1 teams and V2 seven-file regression under120s/minimal childenv, no-change submit; independent main target capture/rerun before integrate/close. Current task.yaml owns final target facts, not this pre-execution note.
 
 Worker actual: V1 teams38 passed (wall1.361s), exact V2 seven-file regression182 passed (wall11.457s), zero skips/errors/failures. Only known no-checkpointer durability warnings. Source remains clean76b2186, no new commit. Evidence .agent/evidence/P0-019/post-knowledge-worker-01/result.json. Target execution remains next; latest authoritative integration state/evidence lives in task.yaml.
+
+## 재검증 post-retrieval (2026-09-26T14:22Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

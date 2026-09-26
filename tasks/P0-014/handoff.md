@@ -7,3 +7,8 @@ Inspection: clean task/P0-014 fast-forwarded from85d747e to exact current target
 Next: capture post-knowledge-worker-01 and run exact V1/V2 in minimal explicit environment with120s subprocess timeout. Then submit no-change artifact, independently rerun on frozen target with new target capture, integrate/close. Latest task.yaml owns target status; this handoff is not evidence of tests not yet executed.
 
 Worker actual: post-knowledge-worker-01 V1=15 passed (wall0.883s), V2=50 passed (wall1.155s), zero skips/errors. Source remains clean76b2186. Evidence .agent/evidence/P0-014/post-knowledge-worker-01/result.json. Next actual target capture/rerun; task.yaml later integration evidence is authoritative.
+
+## 재검증 post-retrieval (2026-09-26T14:13Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

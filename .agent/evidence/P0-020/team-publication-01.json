@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "86d770fd928d7feb4f4ebcdce2ac4c6175e1c158",
+  "started_at": "2026-09-26T14:49:44.097057+00:00",
+  "finished_at": "2026-09-26T14:49:45.495684+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T14:49:44.097167+00:00",
+      "finished_at": "2026-09-26T14:49:44.786569+00:00",
+      "elapsed_seconds": 0.6894292500801384,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T14:49:44.786603+00:00",
+      "finished_at": "2026-09-26T14:49:45.485666+00:00",
+      "elapsed_seconds": 0.6990761668421328,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P0-020 additive 1.1: TeamExecutionRequest, RoleOutcome, TeamBudgetUsage, TeamRunResult, DirectWorkRequest.team; migration6 team bindings/role receipts. frozen1.0 baseline and 9+7 fixtures checked after merge. No teammate API agreement, real runtime or live provider claim."
+}

@@ -138,8 +138,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 9
-spec_revision: 9
+revision: 10
+spec_revision: 10
 claim_generation: 0
 claim: null
 attempts:
@@ -160,6 +160,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:07:09+00:00'
+updated_at: '2026-09-26T14:49:46+00:00'
 concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
 next_action: 4일 핵심·real gate 이후 별도 용량을 승인한 뒤 P1-001B 결과로 비교 질문/데이터셋을 고정한다.

@@ -277,8 +277,8 @@ integration:
       evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
     head: 76b2186eb09035a46d10b1d652acd61b712b6b01
   evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
-revision: 39
-spec_revision: 15
+revision: 40
+spec_revision: 16
 claim_generation: 2
 claim: null
 attempts:
@@ -347,7 +347,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T14:07:09+00:00'
+updated_at: '2026-09-26T14:49:46+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

@@ -91,7 +91,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 70f3416bd5113bbc1516104314971404ff84d9aa61b569542f5d503164a54a21
+  digest: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
   role: consumer
 context:
   global_refs:
@@ -277,8 +277,8 @@ integration:
       evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
     head: 76b2186eb09035a46d10b1d652acd61b712b6b01
   evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
-revision: 49
-spec_revision: 16
+revision: 51
+spec_revision: 18
 claim_generation: 3
 claim: null
 attempts:
@@ -392,7 +392,8 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:07:09+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T14:49:46+00:00'
+concise_result: 'Specification changed: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract
+  sources and published RFA-EXTENDED 1.1 f711bab8'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

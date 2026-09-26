@@ -163,26 +163,26 @@ verification:
   - NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음
   runner: pytest
 evidence_dir: .agent/evidence/P0-027
-latest_evidence_file: .agent/evidence/P0-027/post-knowledge-target-01/result.json
+latest_evidence_file: .agent/evidence/P0-027/post-retrieval-target/result.json
 verification_summary:
   state: stale
   spec_revision: 2
   spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: ed1b935ea48e195d2b30a1cb455e365ca6c324fc842dfb1494b9c8875a808908
-  evidence: .agent/evidence/P0-027/post-knowledge-target-01/result.json
+  source_fingerprint: 45fcca0f5b72413a44ef666b186bb2a3da68aaaed2904a27331d0df750b02cbb
+  evidence: .agent/evidence/P0-027/post-retrieval-target/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: true
-  submission_generation: 7
+  submission_generation: 8
   submission:
-    head: 76b2186eb09035a46d10b1d652acd61b712b6b01
-    baseline_head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+    head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+    baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027
     branch: task/P0-027
-    evidence: .agent/evidence/P0-027/post-knowledge-worker-01/result.json
+    evidence: .agent/evidence/P0-027/post-retrieval-worker/result.json
     changed_files:
       docs/NAT_COMPATIBILITY.md: 136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897
       pyproject.toml: b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d
@@ -194,19 +194,19 @@ integration:
       spec_revision: 2
       spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: ed1b935ea48e195d2b30a1cb455e365ca6c324fc842dfb1494b9c8875a808908
-      evidence: .agent/evidence/P0-027/post-knowledge-target-01/result.json
-    head: 76b2186eb09035a46d10b1d652acd61b712b6b01
-  evidence: .agent/evidence/P0-027/post-knowledge-target-01/result.json
-revision: 72
+      source_fingerprint: 45fcca0f5b72413a44ef666b186bb2a3da68aaaed2904a27331d0df750b02cbb
+      evidence: .agent/evidence/P0-027/post-retrieval-target/result.json
+    head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+  evidence: .agent/evidence/P0-027/post-retrieval-target/result.json
+revision: 81
 spec_revision: 2
-claim_generation: 7
+claim_generation: 8
 claim: null
 attempts:
-  count: 15
+  count: 17
   cycles: 1
   no_progress_count: 0
-  latest_attempt: post-knowledge-target-01
+  latest_attempt: post-retrieval-target
   evidence_refs:
   - .agent/evidence/P0-027/nat-spike-01/result.json
   - .agent/evidence/P0-027/post-sessions-01/result.json
@@ -215,6 +215,7 @@ attempts:
   - .agent/evidence/P0-027/post-trace-worker-01/result.json
   - .agent/evidence/P0-027/post-teams-worker-01/result.json
   - .agent/evidence/P0-027/post-knowledge-worker-01/result.json
+  - .agent/evidence/P0-027/post-retrieval-worker/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -479,6 +480,50 @@ attempts:
       source_fingerprint: 70c2eee1bf0c8dac18885131bf697c0b542ad1a87bbabe13831f572690ff0798
       evidence: .agent/evidence/P0-027/post-teams-target-01/result.json
     latest_evidence_file: .agent/evidence/P0-027/post-teams-target-01/result.json
+  - kind: integrated_revalidation
+    generation: 8
+    baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+    reason: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published
+      RFA-EXTENDED 1.1 f711bab8
+    at: '2026-09-26T14:25:33+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 7
+      submission:
+        head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+        baseline_head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027
+        branch: task/P0-027
+        evidence: .agent/evidence/P0-027/post-knowledge-worker-01/result.json
+        changed_files:
+          docs/NAT_COMPATIBILITY.md: 136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897
+          pyproject.toml: b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d
+          tests/spikes/test_nat_compatibility.py: baee7649f3aa5ef6021824719f42af1a4e0487db93249d2cf347c93e4f4ca41a
+          uv.lock: bf55dc7573e94477535c279e4056a3ff3c4e6603989fec92bf9ace1495456849
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 2
+          spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
+          contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+          source_fingerprint: ed1b935ea48e195d2b30a1cb455e365ca6c324fc842dfb1494b9c8875a808908
+          evidence: .agent/evidence/P0-027/post-knowledge-target-01/result.json
+        head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+      evidence: .agent/evidence/P0-027/post-knowledge-target-01/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 2
+      spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: ed1b935ea48e195d2b30a1cb455e365ca6c324fc842dfb1494b9c8875a808908
+      evidence: .agent/evidence/P0-027/post-knowledge-target-01/result.json
+    latest_evidence_file: .agent/evidence/P0-027/post-knowledge-target-01/result.json
 blocker: null
 migration:
   original_status: new
@@ -490,7 +535,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:06:55+00:00'
+updated_at: '2026-09-26T14:49:36+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

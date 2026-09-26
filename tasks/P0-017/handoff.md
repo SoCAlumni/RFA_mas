@@ -7,3 +7,8 @@ Clean feature task/P0-017 ff-only76b2186 and offline exact default/dev sync reso
 Worker post-knowledge-worker-01 actual12:33:58.769600Z–12:33:59.765115Z: exact settings V1 56 passed0.22s, no skip/error/failure/retry. Valid source capture finished before command; env-i PATH, normal plugins and timeout120. Assertions cover typed/example parity, secret blanks, reserved/backend errors, readiness distinctions and SQLite version diagnostics.
 
 Next first action: submit unchanged source and capture fresh target evidence, rerun exact V1 before integrate/close. Key presence/doctor readiness are not provider execution or authorization. No scheduler/NVIDIA/runtime/full E2E claim. Current task.yaml owns actual later status.
+
+## 재검증 post-retrieval (2026-09-26T14:17Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

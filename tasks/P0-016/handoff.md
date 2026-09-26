@@ -7,3 +7,8 @@ Inspected clean task/P0-016-r2 at85 and fast-forwarded to frozen76b2186eb09035a4
 Next: capture post-knowledge-worker-01, execute exact tests/test_resume.py plus API/contract/baseline/trace DTO regressions, timeout120 and explicit minimal environment. Then clean no-change submit, actual target capture/rerun/integrate/close. task.yaml owns final integration facts; worker submission does not imply target success.
 
 Worker actual: resume31 passed (wall7.421s), API/contract regression82 passed (wall2.719s); no skipped/error/failure, known no-checkpointer warnings only. Source clean76b2186/no commit. Evidence .agent/evidence/P0-016/post-knowledge-worker-01/result.json. Target must execute separately; current task.yaml is authoritative for later integrated/done status.
+
+## 재검증 post-retrieval (2026-09-26T14:15Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

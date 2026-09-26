@@ -28,3 +28,8 @@ Scope amendment preserved dirty source without reset/stash/delete, archived gene
 ## Exact next action
 
 Coordinator: review/merge09bdb65, capture new integration evidence on stable target and run task V1/V2 (including test_teams) plus test_api/test_graph/test_trace_contract. Only then integrate/close. Contract publication is coordinator-controlled after current evaluation consumers finish; no new digest published by this worker. Consumers P1-001A/B, P0-020, P1-005 must accept the new additive artifact and handle current source/ACL policy separately. Final user RFA_E2E_Test_Scenarios_10_ko.md validation is still a later gate, not claimed here.
+
+## 재검증 post-retrieval (2026-09-26T14:37Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

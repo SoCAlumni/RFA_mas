@@ -7,3 +7,8 @@ Actual offline `uv sync --locked --offline --group dev --extra nat`: resolved169
 Current selected scope remains optional wrapper installed8 plus actual no-NAT2, no live model, no source rewrite; WorkService/auth/checkpoint remain authoritative. Official v1.8.0 guide/source references and installed wrapper checked; factory empty config/message conversion/thread forwarding limitations remain. Streaming/HITL/internal tool coverage/token usage not proven. No raw env/config.env/network.
 
 Next first action: fresh source capture, manual installed metadata/lock/source check and exact V2 installed8 plus default-only current-source2; fresh target capture/repeat then integrate/close only after valid evidence. No existing result reuse. Canonical .gitignore is unrelated user change and untouched.
+
+## 재검증 post-retrieval (2026-09-26T14:25Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.

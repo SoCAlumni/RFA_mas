@@ -8,3 +8,8 @@
 - 실패/blocker/side effect: 외부 부작용 없음(읽기 전용 추론 호출). API quota 소량 사용.
 - integration 예약: submit 후 integration pending. 대상 파일은 P1-001A 예약과 겹치지 않는다.
 - 다음 첫 행동: coordinator가 task/P1-002A(a3055c9)를 main에 반영하고 target에서 동일 V1 argv로 integration evidence를 새 attempt로 기록한 뒤 integrate/close. 제품 경로 live 확인은 P1-002 완료 후 docs/evidence/nvidia-model.md의 P1-002 구획에 추가.
+
+## 재검증 reval1 (2026-09-26)
+
+- 사유: P1-003A 통합이 공동 소유 파일 docs/EDUCATION_MAPPING.md를 변경해 P1-002A 증거가 stale이 되었다.
+- 소스 변경 없이 main a92912c에서 같은 live V1을 worker/target 단계로 재실행한다.

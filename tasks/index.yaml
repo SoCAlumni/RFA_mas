@@ -1,10 +1,10 @@
 generated: true
 schema_version: '1.0'
-source_digest: 9a8ffbb07ed1a1231aa27f42d9e89db6aa82b5114f9bac7ccab95b309cdd50f3
+source_digest: 46a4b3491650e67b047af8267d62d9bdd3f98ba10ecaf3dbd4446abf10910ffc
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 57
+  OPS-002: 65
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -18,58 +18,61 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 70
-  P0-015: 86
-  P0-016: 71
-  P0-017: 58
-  P0-018: 72
-  P0-019: 30
-  P0-020: 9
-  P0-021: 9
-  P0-022: 9
-  P0-023: 8
-  P0-024: 9
-  P0-025: 11
-  P0-026: 12
-  P0-027: 72
-  P0-028: 49
-  P1-001: 23
-  P1-001A: 29
-  P1-001B: 9
-  P1-001C: 9
+  P0-014: 79
+  P0-015: 95
+  P0-016: 80
+  P0-017: 69
+  P0-018: 83
+  P0-019: 39
+  P0-020: 21
+  P0-021: 10
+  P0-022: 10
+  P0-023: 9
+  P0-024: 10
+  P0-025: 12
+  P0-025A: 2
+  P0-026: 13
+  P0-027: 81
+  P0-028: 51
+  P1-001: 34
+  P1-001A: 30
+  P1-001B: 10
+  P1-001C: 10
   P1-002: 3
-  P1-002A: 8
+  P1-002A: 18
   P1-003: 2
-  P1-003A: 1
-  P1-004: 9
-  P1-004A: 11
-  P1-004B: 9
-  P1-005: 11
-  P1-005A: 9
-  P1-005B: 9
-  P1-006: 39
+  P1-003A: 14
+  P1-004: 10
+  P1-004A: 12
+  P1-004B: 10
+  P1-005: 12
+  P1-005A: 10
+  P1-005B: 10
+  P1-006: 40
   P1-006A: 4
   P1-006B: 3
   P1-006C: 3
-  P1-006D: 48
-  P1-006E: 9
+  P1-006D: 57
+  P1-006E: 10
   P1-007: 2
   P1-007A: 1
   P1-007B: 2
-  P1-008: 11
+  P1-008: 12
   P1-008A: 4
   P1-008B: 4
+  P1-008C: 2
+  P1-008D: 2
   P1-009: 5
   P2-001: 2
   P2-002: 2
-  P2-003: 9
+  P2-003: 10
   P2-004: 2
   P2-005: 2
   P2-006: 2
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T14:08:27+00:00'
+generated_at: '2026-09-26T14:51:32+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -282,6 +285,14 @@ tasks:
   - P0-024
   - P1-008
   path: tasks/P0-025/task.yaml
+- id: P0-025A
+  title: 동일 출처 세션·노트·질의·검토 기본 UI
+  workstream: integration/evaluation
+  depends_on:
+  - P0-015
+  - P1-001A
+  - P1-008C
+  path: tasks/P0-025A/task.yaml
 - id: P0-026
   title: 합성 end-to-end 데모·D3 전달 패키지
   workstream: integration/evaluation
@@ -367,7 +378,7 @@ tasks:
   title: 공식 Skill 실제 retrieval 증거
   workstream: integration/evaluation
   depends_on:
-  - P1-003
+  - P0-017
   path: tasks/P1-003A/task.yaml
 - id: P1-004
   title: 비서 intent 라우팅과 얇은 실행 경계
@@ -497,6 +508,19 @@ tasks:
   - P0-025
   - P0-026
   path: tasks/P1-008B/task.yaml
+- id: P1-008C
+  title: 수동 승인·모의 게시·READ tool 로컬 대체 모듈
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  path: tasks/P1-008C/task.yaml
+- id: P1-008D
+  title: 합성 handler와 영속 lifecycle 로컬 runtime 대체 모듈
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  - P1-008C
+  path: tasks/P1-008D/task.yaml
 - id: P1-009
   title: D4 회귀·교육/심사 증거·최종 상태 확정
   workstream: integration/evaluation

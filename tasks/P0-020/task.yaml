@@ -10,13 +10,9 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
-- P0-019 발행 및 P1-001/P1-001A 저장·최신 ACL 계약 통합 후 현재 TeamLifecycle/RunRecord/RepositoryPort와 최종 RFA-EXTENDED
-  digest를 다시 읽고 이 provider 변경의 입력 baseline으로 고정한다. 이 patch의 null은 ready가 아니다.
+status: done
+spec_state: ready
+unresolved: []
 workstream: agents
 execution_role: coordinator
 estimated_effort: 3.0
@@ -56,10 +52,11 @@ scope:
     domain-supervisor 이외 actor를 assistant-supervisor로 축소하므로 저장된 팀 멤버 검증을 통과한 actor만 안전한 alias로 매핑한다. Run/Task/Team/domain
     결합은 DB 원본에서 읽고 초기 request 단계에 아직 없는 task/team은 null을 유지한다. 뒤의 결합 때문에 이미 저장된 관측을 재작성하지 않는다. 역할별 순서·지연·실패·실제
     tool read는 관측하고 실제 없는 policy decision/approval/sandbox ID는 만들지 않는다.
-  - ObservedPort.execute를 기존 ToolPort decorator로 연결하고 ledger의 tool collected/incomplete/calls를 실제 port
-    receipt 기준으로 계산한다. 시작 intent만 남으면 calls=null이며 test_sink receipt와 구분한다. source/policy 참조는 신뢰된 현재 저장
-    상태에 결합하고 token 미제공은 null이다. raw prompt/문서/도구 인자/사용자 지정 ID/secret은 trace에 남기지 않는다. native trace guard·alias
-    재시작 안정성·JSONL at-least-once export 의미·file TTL/DB ledger 보존 경계는 유지한다.
+  - ObservedPort에 ToolPort.execute 관측 메서드를 추가하고(main 2c880f2까지 execute가 없고 MockTool은 Container에만 노출되어
+    graph/handler에 미연결) bootstrap에서 ToolPort를 이 decorator로 감싸 역할 handler에만 주입하고 ledger의 tool collected/incomplete/calls를
+    실제 port receipt 기준으로 계산한다. 시작 intent만 남으면 calls=null이며 test_sink receipt와 구분한다. source/policy 참조는
+    신뢰된 현재 저장 상태에 결합하고 token 미제공은 null이다. raw prompt/문서/도구 인자/사용자 지정 ID/secret은 trace에 남기지 않는다. native
+    trace guard·alias 재시작 안정성·JSONL at-least-once export 의미·file TTL/DB ledger 보존 경계는 유지한다.
   - 팀 전체의 step/tool/time/concurrency 예산을 역할 사이 공유하고 다음 작업 직전에 남은 예산·취소 상태를 검사한다. 역할마다 전체 예산을 새로 지급하지 않는다.
     토큰 상한이 필요한 호출은 provider의 강제 가능한 상한과 신뢰할 수 있는 사용량 계약이 없으면 시작/후속 호출 전에 budget_unavailable로 안전 중단한다.
     usage unknown을 0으로 차감하거나 임의 추정값을 실측으로 기록하지 않는다. 결정적 fake provider의 bounded usage fixture는 simulated로
@@ -99,6 +96,8 @@ scope:
   - tests/test_resume.py
   - tests/test_trace_contract.py
   - tests/test_contracts.py
+  - tests/test_knowledge.py
+  - tests/test_local_adapters.py
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/application/teams.py
@@ -114,6 +113,8 @@ scope:
   - tests/test_contract_baseline.py
   - tests/test_graph.py
   - tests/test_api.py
+  - src/rfa_mas/application/source_access.py
+  - src/rfa_mas/adapters/retrieval.py
   planned_paths:
   - src/rfa_mas/application/workers.py
   - tests/test_team_execution.py
@@ -141,7 +142,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
   role: provider
 context:
   global_refs:
@@ -187,6 +188,12 @@ context:
   - path: docs/EVALUATION_CONTEXT.md
     section: A / F/G — 실행 관측 생산자와 UI 안전 참조
     reason: 평가용 합성 기록과 실제 core 관측을 구분하는 consumer 계약
+  - path: src/rfa_mas/application/source_access.py
+    section: P1-001A 통합 후 현재 source ACL/부모 재판정 API
+    reason: 역할별 허용 source를 현재 ACL 조회와 신뢰된 역할 정책의 교집합으로만 부여
+  - path: src/rfa_mas/adapters/retrieval.py
+    section: P1-001A 통합 후 권한 선필터 lexical 검색 adapter
+    reason: 역할별 허용 source를 현재 ACL 조회와 신뢰된 역할 정책의 교집합으로만 부여
   handoff: tasks/P0-020/handoff.md
   dependency_results:
   - tasks/P0-019/handoff.md
@@ -350,33 +357,64 @@ verification:
   - legacy1.0 schema/API/approval binding이 유지되고 additive1.1 입력/결과·usage는 유효성 검사를 통과함
   runner: pytest
 evidence_dir: .agent/evidence/P0-020
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-020/team-target-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 11
+  spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+  source_fingerprint: 19ea05de05a9e0969cfa4d72b48d2f9dd7363ee2f684ec34f45f44bd372f9b79
+  evidence: .agent/evidence/P0-020/team-target-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 9
-spec_revision: 9
-claim_generation: 0
+  submission_generation: 1
+  submission:
+    head: 86d770fd928d7feb4f4ebcdce2ac4c6175e1c158
+    baseline_head: a92912ca03ba3b5ac5cb1258b9c7ac1323e306ca
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020
+    branch: task/P0-020
+    evidence: .agent/evidence/P0-020/team-worker-01/result.json
+    changed_files:
+      docs/CONTRACT_CHANGELOG.md: 6ec51f7b1d5b8ea3e0b878bc5b7fef900a92ed64517ba5679cf6170c1f398889
+      docs/contracts/extended.json: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
+      src/rfa_mas/adapters/local.py: ab1d06382844acec0fba26f1177417ca93880f6b8013b17b3a494a4385cdaaeb
+      src/rfa_mas/application/graphs/domain.py: ea28b21ccc9e74a05854cfe4290c25292326423c2c3347624c8e841654657d82
+      src/rfa_mas/application/graphs/supervisor.py: 03c21da3a2c0e86222de3fb478c236ed521da198914a081159fcd60128c973ae
+      src/rfa_mas/application/observations.py: f36cdc897c8dad5f2b4a15e37618ba08785316c029a5b134463344e89284ec3c
+      src/rfa_mas/application/service.py: 07c0b226eb45bcab7374b2b5c0929c946e503da57d5afc844ee6ddc682698d27
+      src/rfa_mas/application/workers.py: cfd904d5ec8a60065f226d2e67362c33b406638467ca717ea8421cc778d8874c
+      src/rfa_mas/bootstrap.py: 72f7c7d5094d59287304bf03ac507af6181a3406977ab1e8dd24758f5fb20592
+      src/rfa_mas/contracts/__init__.py: 49a84647770a1c8f29caa71e7da28bcd344ebe406e022dd9a69b9b09b5180c26
+      src/rfa_mas/contracts/models.py: 2c91b04ed266c6a5408a368128651461a142f1d84d01f7b8c36e425e967dd917
+      tests/test_knowledge.py: db223f0dbfbcc4b87ed40b59291c87ebc000c8541db0a26057dbd4b672ff97ae
+      tests/test_local_adapters.py: 9678816b459b56b30c1dd3e6f27652a08b663d5e0bfde5384a4c615e0631e124
+      tests/test_sessions.py: ca9619e73e33e26a5d9d0b35512eec822607a9af628abbe7bd04ff28cf5a13e3
+      tests/test_team_execution.py: d2baeacf26f3ba0886d1536c2f75338416ff840acb276484fb5f8a1d89c26d72
+      tests/test_teams.py: 9929c94b0432907f09cd015bba41d0b492b303676f463097fc2909655127a289
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 11
+      spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: 19ea05de05a9e0969cfa4d72b48d2f9dd7363ee2f684ec34f45f44bd372f9b79
+      evidence: .agent/evidence/P0-020/team-target-01/result.json
+    head: 86d770fd928d7feb4f4ebcdce2ac4c6175e1c158
+  evidence: .agent/evidence/P0-020/team-target-01/result.json
+revision: 21
+spec_revision: 11
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: team-target-01
+  evidence_refs:
+  - .agent/evidence/P0-020/team-worker-01/result.json
   approaches: []
 blocker: null
 migration:
@@ -390,9 +428,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T11:19:08+00:00'
-concise_result: 'Specification changed: Source preflight found Run created before graph and task projection
-  loss; include durable binding/role observations/cancel within existing AC, retain KB prerequisites and
-  draft state. Estimate1.5 to3h is explicit additional work, not implementation.'
+updated_at: '2026-09-26T14:50:39+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

@@ -7,3 +7,8 @@ Inspected clean feature task/P0-015 at85, fast-forwarded to76b2186; locked offli
 Next: capture post-knowledge-worker-01 then exact V1 sessions plus prerequisite API regression with explicit childenv and120s timeout; no-change submit; fresh target capture/actual rerun/integrate/close. This handoff records worker facts, while task.yaml owns later target state. No prior result reused.
 
 Worker actual: V1 sessions26 passed (wall5.970s), API4 passed (wall1.151s), zero skip/error. Source clean76b2186, no commit. Evidence .agent/evidence/P0-015/post-knowledge-worker-01/result.json. Next: separate target capture/rerun/integration; task.yaml reflects the actual later target facts.
+
+## 재검증 post-retrieval (2026-09-26T14:13Z)
+
+- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
+- 소스 변경 없이 현재 통합 HEAD 3a1a5ee에서 계획된 검증을 worker/target 단계로 재실행한다.
