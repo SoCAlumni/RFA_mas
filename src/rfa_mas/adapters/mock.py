@@ -270,6 +270,10 @@ class MockPublisher:
         self._fail = set(fail)
         self._lock = asyncio.Lock()
 
+    async def authorize(self, binding: DraftBinding) -> None:
+        """P1-008E: the core review is this mock authority's approval; nothing to prove."""
+        return None
+
     async def publish(
         self,
         binding: DraftBinding,

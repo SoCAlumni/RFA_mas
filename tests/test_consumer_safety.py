@@ -71,6 +71,13 @@ async def _discard(message):
     return None
 
 
+async def _refuse(send, status_code: int) -> None:
+    """A definite 4xx answer to a dispatched POST (the stand-in never sees the request)."""
+    await send({"type": "http.response.start", "status": status_code,
+                "headers": [(b"content-type", b"application/json")]})
+    await send({"type": "http.response.body", "body": b'{"code":"publication_rejected"}'})
+
+
 class Router:
     """One loopback 'Response service': 1.0 review fixture + P1-008C publication stand-in."""
 
@@ -90,6 +97,9 @@ class Router:
                 if mode == "lost_ack":
                     await self.stand_in(scope, receive, _discard)
                     raise httpx.ReadTimeout("synthetic timeout after delivery")
+                if mode == "reject":
+                    await _refuse(send, 409)
+                    return
             await self.stand_in(scope, receive, send)
             return
         await self.reference(scope, receive, send)
@@ -263,6 +273,7 @@ async def test_missing_core_approval_never_publishes(stack):
         await publish(stack, result.run_id, "pub-unapproved", owner)
     assert denied.value.code == "approval_required"
     assert stack.protected_actions() == 0 and stack.publisher_calls() == 0
+    assert await stack.container.repository.get_publication(result.run_id, owner) is None
 
 
 @pytest.mark.parametrize("change", ["content", "source_acl", "policy"])
@@ -377,11 +388,87 @@ async def test_missing_forged_or_expired_proof_means_zero_protected_actions(http
             return datetime.now(UTC) + timedelta(days=1)
 
         stack.container.drafts._publisher = forged_publisher(stack, clock=later)
-    receipt = await publish(stack, result.run_id, f"pub-{proof}", owner)
-    # A definite refusal: nothing was published and the slot is not silently reused.
-    assert receipt.status == PublicationStatus.FAILED and receipt.external_result_ref is None
+    with pytest.raises(RfaError) as refused:
+        await publish(stack, result.run_id, f"pub-{proof}", owner)
+    # P1-008E: refused before dispatch. Nothing was published, and no durable receipt is
+    # left that would block this run once a valid proof exists.
+    identity = proof in {"identity_missing", "identity_forged"}
+    assert refused.value.code == ("upstream_http_error" if identity else "approval_required")
+    assert await stack.container.repository.get_publication(result.run_id, owner) is None
+    assert not await publication_effects(stack, result.run_id, owner)
     assert stack.router.publication_posts == 0
     assert stack.protected_actions() == 0
+
+
+async def publication_effects(stack, run_id, owner):
+    effects = await stack.container.service.effects(run_id, owner)
+    return [effect for effect in effects if effect.kind == "publication"]
+
+
+# -- P1-008E: a premature publish must not poison the run -----------------------------------
+
+
+async def test_premature_publish_leaves_no_receipt_and_publishes_once_after_approval(
+    http_stack,
+):
+    stack = http_stack
+    owner = await stack.owner()
+    result = await stack.container.service.run(work(), owner)
+    assert result.status == WorkStatus.COMPLETED
+    # Before the publication authority (the stand-in) approved: same meaning as the mock
+    # path, approval_required with no receipt and no ledger intent.
+    with pytest.raises(RfaError) as early:
+        await publish(stack, result.run_id, "pub-before-approval", owner)
+    assert early.value.code == "approval_required"
+    assert await stack.container.repository.get_publication(result.run_id, owner) is None
+    assert not await publication_effects(stack, result.run_id, owner)
+    state = await stack.container.drafts.state(result.run_id, owner)
+    assert state.publication_status == PublicationStatus.NOT_REQUESTED
+    assert stack.router.publication_posts == 0 and stack.protected_actions() == 0
+
+    await stack.approve_at_publication_authority(result.run_id)
+    receipt = await publish(stack, result.run_id, "pub-before-approval", owner)  # same key
+    replay = await publish(stack, result.run_id, "pub-before-approval", owner)
+    assert receipt.status == PublicationStatus.SUCCEEDED and receipt.mode == ExecutionMode.MOCK
+    assert replay == receipt
+    assert stack.router.publication_posts == 1 and stack.protected_actions() == 1
+    [effect] = await publication_effects(stack, result.run_id, owner)
+    assert (effect.state, effect.outcome) == ("completed", "succeeded")
+
+
+async def test_refusal_between_authorize_and_dispatch_withdraws_the_intent(http_stack):
+    stack = http_stack
+    owner, result = await completed_run(stack)
+    now = datetime.now(UTC)
+    # authorize() sees a valid approval; the time-of-use re-check just before the POST
+    # sees it expired. Nothing was dispatched, so the PENDING intent is withdrawn.
+    ticks = iter([now, now + timedelta(days=1)])
+    stack.container.drafts._publisher = forged_publisher(stack, clock=lambda: next(ticks))
+    with pytest.raises(RfaError) as refused:
+        await publish(stack, result.run_id, "pub-expired-at-use", owner)
+    assert refused.value.code == "approval_required"
+    assert await stack.container.repository.get_publication(result.run_id, owner) is None
+    assert not await publication_effects(stack, result.run_id, owner)
+    assert stack.router.publication_posts == 0
+    stack.container.drafts._publisher = forged_publisher(stack)
+    receipt = await publish(stack, result.run_id, "pub-expired-at-use", owner)
+    assert receipt.status == PublicationStatus.SUCCEEDED
+    assert stack.router.publication_posts == 1 and stack.protected_actions() == 1
+
+
+async def test_definite_rejection_of_an_attempted_publish_is_failed(stack):
+    owner, result = await completed_run(stack)
+    if stack.transport == "mock":
+        owned = DraftLifecycle._owned_key(owner, result.run_id, "pub-rejected")
+        stack.container.drafts._publisher = MockPublisher(fail=frozenset({owned}))
+    else:
+        stack.router.fail_next_publication = "reject"
+    receipt = await publish(stack, result.run_id, "pub-rejected", owner)
+    # Dispatched and definitively refused: FAILED on both transports, zero effects.
+    assert receipt.status == PublicationStatus.FAILED and receipt.external_result_ref is None
+    assert stack.publisher_calls() == 1 and stack.protected_actions() == 0
+    [effect] = await publication_effects(stack, result.run_id, owner)
+    assert (effect.state, effect.outcome) == ("completed", "failed")
 
 
 async def test_unauthenticated_principal_reaches_no_publication(http_stack):

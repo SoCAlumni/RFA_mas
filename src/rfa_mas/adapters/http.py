@@ -39,7 +39,12 @@ from rfa_mas.contracts import (
     ToolResult,
     sha256_text,
 )
-from rfa_mas.errors import BackendNotImplementedError, OutcomeUnknownError, RfaError
+from rfa_mas.errors import (
+    BackendNotImplementedError,
+    OutcomeUnknownError,
+    PublicationNotAttemptedError,
+    RfaError,
+)
 
 # Contract versions this consumer understands. Anything else is an explicit error,
 # never a best-effort parse or a silent 1.0 fallback.
@@ -506,6 +511,11 @@ class PublicationHttpAdapter:
     attachments). A timeout, transport failure or 5xx after dispatch is outcome_unknown.
     The stand-in has no lookup by idempotency key, so a result is reconciled only from a
     receipt reference seen by this process; otherwise it stays unknown (never re-POSTed).
+
+    P1-008E: `authorize` runs that proof before DraftLifecycle writes any durable intent;
+    "no valid approval" is approval_required, as on the in-process mock path. Anything that
+    stops `publish` before the POST is PublicationNotAttemptedError (nothing was sent); only
+    a definite 4xx refusal of the dispatched POST is publication_rejected (failed).
     """
 
     adapter_name = "reference-http-publisher"
@@ -576,6 +586,22 @@ class PublicationHttpAdapter:
             raise RfaError("approval_binding_mismatch", "승인된 초안과 게시 내용이 다릅니다.")
         return approval
 
+    async def _proof(self, binding: DraftBinding) -> ApprovalReference:
+        """The stand-in's approval proof; any 'no valid approval' is approval_required."""
+        try:
+            return await self._approval(binding)
+        except RfaError as exc:
+            if exc.code in {"approval_expired", "approval_binding_mismatch"}:
+                raise RfaError(
+                    "approval_required",
+                    f"게시 서비스에 현재 초안의 유효한 승인이 없습니다({exc.code}).",
+                ) from None
+            raise
+
+    async def authorize(self, binding: DraftBinding) -> None:
+        """P1-008E: prove the stand-in approval before any durable intent; sends nothing."""
+        await self._proof(binding)
+
     def _core(
         self, remote: PublicationReceipt, approval_binding: DraftBinding, context: dict[str, Any]
     ) -> PublicationReceipt:
@@ -602,7 +628,11 @@ class PublicationHttpAdapter:
         approval_id: str,
         idempotency_key: str,
     ) -> PublicationReceipt:
-        approval = await self._approval(binding)
+        try:
+            # Re-checked at time of use; authorize() may have run moments earlier.
+            approval = await self._proof(binding)
+        except RfaError as exc:
+            raise PublicationNotAttemptedError(exc) from None  # No POST was dispatched.
         context = {
             "publication_id": publication_id,
             "run_id": run_id,

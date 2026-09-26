@@ -8,6 +8,11 @@ version and the current source/ACL revisions (via the same ResumePolicy used on 
 Publication state is separate from the Run lifecycle. A durable PENDING receipt is written
 before the publisher is called; an unknown outcome is reconciled only by querying the
 publisher with the same owned idempotency key, never by publishing again.
+
+P1-008E: the publication authority's own approval proof (Publisher.authorize) runs before
+that durable intent, so a premature publish is approval_required and leaves no receipt. A
+publisher refusal that provably dispatched nothing withdraws the untouched intent; only a
+definite rejection of an attempted publish is FAILED.
 """
 
 from __future__ import annotations
@@ -36,7 +41,12 @@ from rfa_mas.contracts import (
     new_id,
     sha256_text,
 )
-from rfa_mas.errors import OutcomeUnknownError, ResourceNotFoundError, RfaError
+from rfa_mas.errors import (
+    OutcomeUnknownError,
+    PublicationNotAttemptedError,
+    ResourceNotFoundError,
+    RfaError,
+)
 
 # Current-policy/source failures withhold the stored draft from outward views.
 _WITHHOLD = {"resume_review_required", "policy_denied"}
@@ -47,6 +57,14 @@ class Publisher(Protocol):
     adapter_name: str
     simulated: bool
     mode: ExecutionMode
+
+    async def authorize(self, binding: DraftBinding) -> None:
+        """Prove the publication authority's own approval for exactly this binding.
+
+        Runs before any durable intent and dispatches nothing. Raises approval_required
+        when that authority holds no valid approval, or another RfaError (e.g. timeout).
+        """
+        ...
 
     async def publish(
         self,
@@ -288,6 +306,9 @@ class DraftLifecycle:
                 f"현재 초안 버전에 유효한 승인이 없습니다({reason}).",
             )
         binding = draft_binding(draft, attachments)
+        # P1-008E: the publication authority's proof precedes the durable intent, so a
+        # premature publish cannot leave a receipt that blocks this run after approval.
+        await self._publisher.authorize(binding)
         approval_id = "review:" + sha256_text(
             json.dumps([review.draft_id, review.draft_version, review.content_hash, review.adapter])
         )[:32]
@@ -320,6 +341,11 @@ class DraftLifecycle:
                 "mode": outcome.mode,
                 "next_action": "none",
             }
+        except PublicationNotAttemptedError:
+            # Refused before dispatch (e.g. the approval expired since authorize): nothing
+            # was sent, so the untouched intent is withdrawn instead of becoming FAILED.
+            await self._repository.withdraw_unsent_publication(pending, principal)
+            raise
         except (OutcomeUnknownError, TimeoutError):
             update = {"status": PublicationStatus.OUTCOME_UNKNOWN, "next_action": "query"}
         except RfaError:

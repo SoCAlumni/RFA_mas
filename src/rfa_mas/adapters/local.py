@@ -1866,6 +1866,46 @@ class SqliteWorkRepository:
 
         return await asyncio.to_thread(operation)
 
+    async def withdraw_unsent_publication(
+        self, receipt: PublicationReceipt, principal: TrustedPrincipal
+    ) -> bool:
+        """P1-008E: drop a PENDING receipt whose publisher provably dispatched nothing.
+
+        One transaction removes the receipt and its ledger INTENT, only while both are still
+        untouched (this publication_id, status pending, ledger state intent). Anything that
+        already advanced them, such as startup recovery to outcome_unknown or a concurrent
+        reconciliation, is kept: an unknown outcome is never rewritten as "not sent".
+        """
+        owner = self._authenticated(principal)
+        operation_key = "publication:" + receipt.idempotency_key
+
+        def operation() -> bool:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                ledger = self._ledger_row(connection, owner, operation_key)
+                if ledger is not None and (
+                    ledger["state"] != "intent"
+                    or ledger["result_ref"] != "publication:" + receipt.publication_id
+                ):
+                    return False
+                removed = connection.execute(
+                    "DELETE FROM publications WHERE publication_id = ? AND run_id = ? "
+                    "AND owner_id = ? AND status = ?",
+                    (receipt.publication_id, receipt.run_id, owner,
+                     PublicationStatus.PENDING.value),
+                ).rowcount
+                if removed != 1:
+                    return False
+                if ledger is not None:
+                    connection.execute(
+                        "DELETE FROM effect_ledger WHERE owner_id = ? AND operation_key = ? "
+                        "AND state = 'intent'",
+                        (owner, operation_key),
+                    )
+                return True
+
+        return await asyncio.to_thread(operation)
+
     # -- P0-025 owner-scoped run event feed (polling cursor, append-only) ------------------
     async def record_run_events(
         self, principal: TrustedPrincipal, events: list[dict[str, Any]]

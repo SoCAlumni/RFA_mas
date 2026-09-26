@@ -57,3 +57,15 @@ class OutcomeUnknownError(RfaError):
             f"timeout으로 결과를 확정할 수 없습니다: {operation}",
             retryable=False,
         )
+
+
+class PublicationNotAttemptedError(RfaError):
+    """A publisher refused BEFORE dispatching anything, so no effect can exist (P1-008E).
+
+    Keeps the cause's code (e.g. approval_required) and safe message. Only a publisher that
+    has provably sent nothing may raise it; after dispatch a definite refusal is an ordinary
+    RfaError (failed) and an unknown result is OutcomeUnknownError.
+    """
+
+    def __init__(self, cause: RfaError) -> None:
+        super().__init__(cause.code, cause.safe_message, retryable=cause.retryable)

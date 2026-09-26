@@ -249,6 +249,8 @@ class FilePublisher:
     mode = ExecutionMode.MOCK
     def __init__(self, sink, crash=None):
         self.sink, self.crash, self.calls = Path(sink), crash, 0
+    async def authorize(self, binding):  # P1-008E: no separate publication authority.
+        return None
     async def publish(self, binding, *, run_id, publication_id, approval_id, idempotency_key):
         self.calls += 1
         if self.crash == "after_intent":
