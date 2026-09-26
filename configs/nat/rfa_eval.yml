@@ -1,0 +1,26 @@
+# Programmatic synthetic evaluation only; not a supported `nat eval` CLI entrypoint.
+general:
+  telemetry:
+    logging: {}
+    tracing: {}
+workflow:
+  _type: langgraph_wrapper
+  graph: src/rfa_mas/adapters/nat_eval.py:build_eval_graph
+  env: null
+eval:
+  general:
+    max_concurrency: 1
+    per_input_user_id: false
+    validate_llm_endpoints: false
+    output: null
+    profiler: null
+    dataset:
+      _type: json
+      file_path: configs/nat/rfa_eval_cases.json
+      id_key: id
+      structure:
+        question_key: question
+        answer_key: answer
+  evaluators:
+    rfa_contract:
+      _type: rfa_contract_check
