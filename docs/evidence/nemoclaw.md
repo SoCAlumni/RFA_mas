@@ -211,7 +211,7 @@ NemoClaw quickstart가 성공하더라도 P1-007A에는 §3~§5의 RFA non-loopb
 | Preset | `rfa-api-minimal`(§5 설계와 동일한 4 route, `deploy/nemoclaw/rfa-api-minimal.yaml`). `policy add --from-file --trusted-private-host 192.168.123.191 --dry-run` 검토 후 `--yes` 적용. `policy explain` verification=verified |
 | Credential 전달 | APP_API_KEY를 sandbox에 0600 헤더 파일로 올려 `curl -H @file`로만 사용(argv 미노출). OpenShell credential binding은 사용하지 않음(미검증 항목 유지) |
 
-온보딩에서 실제로 겪은 문제 세 가지를 기록한다. 첫째, 첫 gateway 기동은 다른 세션이 같은 시각 `colima stop`을 실행해 실패했고 Colima 재기동 후 `onboard --resume`으로 이어갔다. 둘째, provider 검증이 기본 probe 예산에서 시간 초과해 문서화된 `NEMOCLAW_ONBOARD_VALIDATION_TIMEOUT_SECONDS=240`을 사용했다. 셋째, 이 시간대에 `nvidia/nemotron-3.5-lightning-30b-a3b`는 integrate.api.nvidia.com에서 약 122초 뒤 HTTP 404를 반환했고(P1-002A 당시와 다름) super-120b는 0.9초에 200을 반환해 super-120b로 진행했다. sandbox 이미지 빌드는 181초였다.
+온보딩에서 실제로 겪은 문제 세 가지를 기록한다. 첫째, 첫 gateway 기동은 다른 세션이 같은 시각 `colima stop`을 실행해 실패했고 Colima 재기동 후 `onboard --resume`으로 이어갔다. 둘째, provider 검증이 기본 probe 예산에서 시간 초과해 문서화된 `NEMOCLAW_ONBOARD_VALIDATION_TIMEOUT_SECONDS=240`을 사용했다. 셋째, 이 시간대에 `nvidia/nemotron-3.5-lightning-30b-a3b`는 integrate.api.nvidia.com에서 약 122초 뒤 본문 없는 HTTP 404를 반환했고 super-120b는 0.9초에 200을 반환해 super-120b로 진행했다. 약 40분 뒤 lightning은 세 요청 형태 모두 0.5초 내 200으로 정상이었고 `/v1/models` 목록에도 계속 있었으므로 hosted 인스턴스의 일시 장애로 판단한다(없는 모델은 즉시 `404 page not found` 본문을 돌려준다). 제품 어댑터는 이 본문 없는 404를 재시도 가능한 `model_unavailable`로 분류하도록 고쳤다(P1-002 후속 커밋). sandbox 이미지 빌드는 181초였다.
 
 ### 결과 (AC1: 제한 API 합성 호출, AC2: 배치 관찰, AC3: 독립 증거)
 
