@@ -9,7 +9,7 @@ requirement_refs:
 - TASK_EXECUTION_RULES.md
 - docs/TASK_REVALIDATION.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -132,33 +132,52 @@ verification:
   - 기존 이관·명세·view 정합성 회귀가 유지된다.
   runner: pytest
 evidence_dir: .agent/evidence/OPS-003
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/OPS-003/fix-target-02/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 1
+  spec_digest: aee7b7e5ed53d3b8a37b5a6ccea0728f2aed164c2ef49aacd66d69bc02a46130
+  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+  source_fingerprint: 31214393ad2fdfbb0484dadcc50ae1d30bfc04e188408449707b02480c119fde
+  evidence: .agent/evidence/OPS-003/fix-target-02/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 1
+  submission_generation: 1
+  submission:
+    head: 951c9cbb4ae4f98569b2b4802384548b7ac3f084
+    baseline_head: 6c3de74712a82ef42a51fd67afffe61353b2180a
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-003
+    branch: task/OPS-003
+    evidence: .agent/evidence/OPS-003/fix-worker-02/result.json
+    changed_files:
+      docs/TASK_REVALIDATION.md: c5ec61f6fafac73295cb3f27b9de4b7ed28f7677a3903fc2c8332e9c56aa6481
+      scripts/tasklib/cli.py: 3395fc7ea707cee7b9c487b42a2cf70d2452adcc6916ecd9d24a45f590776891
+      tests/test_taskctl.py: 45b9fd2b5eca69b26ac952094612f33ae05a733ed57551c489ecf45b59ba7700
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: aee7b7e5ed53d3b8a37b5a6ccea0728f2aed164c2ef49aacd66d69bc02a46130
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: 31214393ad2fdfbb0484dadcc50ae1d30bfc04e188408449707b02480c119fde
+      evidence: .agent/evidence/OPS-003/fix-target-02/result.json
+    head: 951c9cbb4ae4f98569b2b4802384548b7ac3f084
+  evidence: .agent/evidence/OPS-003/fix-target-02/result.json
+revision: 12
 spec_revision: 1
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 3
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: fix-target-02
+  evidence_refs:
+  - .agent/evidence/OPS-003/fix-worker-01/result.json
+  - .agent/evidence/OPS-003/fix-worker-02/result.json
   approaches: []
 blocker: null
 migration:
@@ -171,6 +190,6 @@ migration:
   - P1-001 integration.result.head(caf7bd2)≠manifest head(3a1a5ee), fingerprint 동일 확인
   judgment: 동시 세션 commit에 의한 도구 race. 규칙 완화 없이 기록 head를 캡처 head로 고정한다.
   initial_spec_revision: 1
-updated_at: '2026-09-26T15:12:14+00:00'
-concise_result: 등록; 구현/검증 not_run.
+updated_at: '2026-09-26T15:25:23+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: claim 후 cli.py 보정과 회귀 추가.
