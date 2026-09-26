@@ -80,6 +80,19 @@ SAFE_ERROR_CODES = frozenset(
         # P1-005B feedback memory (fixed codes).
         "feedback_unclassified",
         "feedback_invalid",
+        # P1-002 NVIDIA ModelPort (fixed codes from adapters/nvidia.py, never provider text).
+        "egress_not_permitted",
+        "model_timeout",
+        "model_unavailable",
+        "model_rate_limited",
+        "model_auth_failed",
+        "model_request_rejected",
+        "model_pending",
+        "model_response_too_large",
+        "model_invalid_response",
+        "model_empty_response",
+        "model_truncated",
+        "model_unexpected_tool_call",
     }
 )
 TEAM_ROLES = frozenset(

@@ -572,3 +572,40 @@ async def test_private_marker_in_the_query_sends_nothing(tmp_path):
         assert sent == []  # denied by the trusted gate before any transport call
     finally:
         await container.shutdown()
+
+
+def test_every_fixed_adapter_code_survives_the_safe_error_projection():
+    from rfa_mas.adapters.nvidia import _MESSAGES
+    from rfa_mas.application.observations import SAFE_ERROR_CODES, safe_error_code
+
+    assert set(_MESSAGES) <= SAFE_ERROR_CODES
+    assert {safe_error_code(code) for code in _MESSAGES} == set(_MESSAGES)
+    assert safe_error_code("provider says: context length exceeded") == "internal_error"
+
+
+async def test_truncated_answer_surfaces_model_truncated_on_the_run_not_internal_error(tmp_path):
+    sent = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(request)
+        # HTTP 200 whose provider text is cut off by the output-token limit.
+        partial = json.dumps({"answer": f"공식 출시일은 {RESPONSE_CANARY}"}, ensure_ascii=False)
+        return completion(partial[:-3], finish="length")
+
+    container, owner = await _nvidia_container(tmp_path, handler)
+    try:
+        result = await container.service.run(DirectWorkRequest(
+            query="TRIV3 SDK 출시일 알려줘", domain_id=DomainId.TRIV3,
+            target=DraftTarget(audience=Audience.OWNER)), owner)
+        assert len(sent) == 1  # a truncated answer is not retried
+        assert result.status != WorkStatus.COMPLETED and result.draft is None
+        assert [error.code for error in result.errors] == ["model_truncated"]
+        # The message is the product's fixed text: never the provider's partial answer.
+        assert "공식 출시일" not in result.errors[0].message
+        dumped = result.model_dump_json()
+        ledger = await container.service.observations.ledger(result.run_id, owner)
+        for text in (dumped, ledger.model_dump_json()):
+            assert RESPONSE_CANARY not in text and KEY not in text
+        assert "internal_error" not in dumped
+    finally:
+        await container.shutdown()
