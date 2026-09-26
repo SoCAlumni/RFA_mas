@@ -1,0 +1,22 @@
+preset:
+  name: rfa-api-minimal
+  description: "RFA MAS minimal API (synthetic demo, P1-007A)"
+network_policies:
+  rfa_api:
+    name: rfa_api
+    endpoints:
+      - host: 192.168.123.191
+        port: 8010
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: "/healthz" }
+          - allow: { method: POST, path: "/v1/sessions" }
+          - allow: { method: POST, path: "/v1/sessions/*/work" }
+          - allow: { method: GET, path: "/v1/runs/*" }
+    binaries:
+      - { path: /usr/bin/curl }
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/node }
+      - { path: /usr/bin/node }
+      - { path: /usr/bin/python3 }

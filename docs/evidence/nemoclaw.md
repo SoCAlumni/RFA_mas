@@ -9,10 +9,10 @@
 | 항목 | 판정 | 근거 종류 |
 | --- | --- | --- |
 | NemoClaw가 임의 LangGraph/FastAPI 앱을 agent runtime으로 수용 | 아니다. 지원 agent는 OpenClaw, Hermes, LangChain Deep Agents Code뿐이며 목록 외 harness는 Unsupported | 공식 문서 |
-| RFA 서비스 배치 | sandbox 밖 host 프로세스. sandbox 안 agent가 제한된 기존 REST route를 호출하는 구조로 설계 | 설계(미실행) |
+| RFA 서비스 배치 | sandbox 밖 host 프로세스. sandbox 안 agent가 제한된 기존 REST route를 호출하는 구조로 설계하고 §8A에서 실행 | 설계 + 로컬 실행(§8A) |
 | 이 Mac에서 OpenShell 단독 실행 | 가능. OpenShell 0.1.1 MicroVM driver로 sandbox 생성, 기본 정책의 network 거부를 정책 로그로 확인 | 로컬 관측 |
-| 이 Mac에서 NemoClaw quickstart | 실행하지 않음. inference provider credential 또는 대형 로컬 모델, 8 GiB 이상 container runtime이 필요 | 공식 문서 + 판단 |
-| P1-007A (NemoClaw 운영 경로 실시연) | blocked 유지. 위 NemoClaw blocker와 선행 P1-008B blocked | task 원본 + 본 문서 |
+| 이 Mac에서 NemoClaw quickstart | 실행함(2026-09-27). NemoClaw v0.0.124 + OpenShell 0.0.116(Docker/Colima) + OpenClaw 2026.7.1, NVIDIA Endpoints super-120b | 로컬 실행(§8A) |
+| P1-007A (NemoClaw 운영 경로 실시연) | 실행함(n=1). `rfa-api-minimal` preset으로 허용 4 route 성공, 그 외 7 probe는 OpenShell 정책 거부, OCSF 기록 일치, OpenClaw agent 턴이 RFA healthz를 보고. task 상태 전환은 coordinator 몫 | 로컬 실행(§8A) |
 | P1-007B (RFA 역할별 OpenShell allow/deny) | blocked 유지. OpenShell primitive는 이 Mac에서 재현 가능하지만 RFA runtime identity/역할 경로(P1-008B)가 없음 | 로컬 관측 + task 원본 |
 
 ## 2. 공식 지원 runtime·platform·version
@@ -195,12 +195,77 @@ NemoClaw quickstart가 성공하더라도 P1-007A에는 §3~§5의 RFA non-loopb
 
 남은 host 변경: Homebrew 7.0.6 자동 update(되돌리지 않음), 설치된 `openshell`(nvidia/openshell 로컬 tap, service 중지)과 `e2fsprogs`, `~/.config/openshell/`(위 설정과 CLI gateway 등록), `~/.local/state/openshell`(약 217 MB image·TLS 상태). 제거할 때는 공식 문서 순서대로 `brew services stop nvidia/openshell/openshell`, `brew uninstall nvidia/openshell/openshell`, `rm -rf "$(brew --prefix)/var/openshell"`를 실행한다. 필요하면 `brew uninstall e2fsprogs`와 위 두 디렉터리 삭제를 이어서 한다. 이후 NemoClaw onboarding은 자체 pinned OpenShell formula를 검증·복구하므로 단독 0.1.1 설치와 충돌할 수 있다.
 
+## 8A. NemoClaw 운영 경로 실시연 (P1-007A, 2026-09-27 KST)
+
+§7 계획을 이 Mac에서 실제로 실행했다. 실행자는 별도 Codex 세션이며 결과 JSON(키 없음)은 `.agent/input/P1-007A-nemoclaw-live-evidence.json`에 있다. n=1 시연이며 RFA 쪽 모델은 mock이다.
+
+### 환경과 절차
+
+| 항목 | 값 |
+| --- | --- |
+| NemoClaw | v0.0.124 (installer ref 6f3cced), `curl -fsSL https://www.nvidia.com/nemoclaw.sh \| bash` 비대화형 |
+| OpenShell | 0.0.116 (NemoClaw pinned formula; §8의 단독 0.1.1을 /opt/homebrew/bin/openshell에서 대체함), Docker driver, Landlock ABI V2 best_effort |
+| Container runtime | Colima 4 vCPU / 8 GiB, DOCKER_HOST=Colima socket(설치기·gateway.env 모두 이 값 사용) |
+| Agent / model | OpenClaw 2026.7.1 / `nvidia/nemotron-3-super-120b-a12b` (NVIDIA Endpoints, gateway의 `inference.local` route) |
+| RFA | host 프로세스(uvicorn), `192.168.123.191:8010`, `rfa init-env`로 만든 격리 profile `.env.p1007a`(새 APP_API_KEY, mock provider, /private/tmp DB·trace) |
+| Preset | `rfa-api-minimal`(§5 설계와 동일한 4 route, `deploy/nemoclaw/rfa-api-minimal.yaml`). `policy add --from-file --trusted-private-host 192.168.123.191 --dry-run` 검토 후 `--yes` 적용. `policy explain` verification=verified |
+| Credential 전달 | APP_API_KEY를 sandbox에 0600 헤더 파일로 올려 `curl -H @file`로만 사용(argv 미노출). OpenShell credential binding은 사용하지 않음(미검증 항목 유지) |
+
+온보딩에서 실제로 겪은 문제 세 가지를 기록한다. 첫째, 첫 gateway 기동은 다른 세션이 같은 시각 `colima stop`을 실행해 실패했고 Colima 재기동 후 `onboard --resume`으로 이어갔다. 둘째, provider 검증이 기본 probe 예산에서 시간 초과해 문서화된 `NEMOCLAW_ONBOARD_VALIDATION_TIMEOUT_SECONDS=240`을 사용했다. 셋째, 이 시간대에 `nvidia/nemotron-3.5-lightning-30b-a3b`는 integrate.api.nvidia.com에서 약 122초 뒤 HTTP 404를 반환했고(P1-002A 당시와 다름) super-120b는 0.9초에 200을 반환해 super-120b로 진행했다. sandbox 이미지 빌드는 181초였다.
+
+### 결과 (AC1: 제한 API 합성 호출, AC2: 배치 관찰, AC3: 독립 증거)
+
+정책 적용 전 대조군: sandbox에서 `GET /healthz`는 403(OpenShell 프록시 거부), `https://example.com`은 연결 차단(curl exit 56).
+
+정책 적용 후 sandbox 안 `curl` probe 12건:
+
+| probe | 기대 | 결과 | OCSF |
+| --- | --- | --- | --- |
+| GET /healthz | allow | 200 | ALLOWED (l7, opa) |
+| POST /v1/sessions | allow | 201, session_id 발급 | ALLOWED |
+| POST /v1/sessions/{id}/work (owner) | allow | 201, run completed, simulated=true | ALLOWED |
+| POST /v1/sessions/{id}/work (public) | allow | 201, completed, 응답에 private canary 0건 | ALLOWED |
+| GET /v1/runs/{id} | allow | 200 | ALLOWED |
+| POST /v1/knowledge/sources | deny | 403 `policy_denied` | DENIED FORWARD_L7 |
+| GET /v1/sessions | deny | 403 `policy_denied` | DENIED FORWARD_L7 |
+| DELETE /v1/knowledge/sources/{id} | deny | 403 `policy_denied` | DENIED FORWARD_L7 |
+| POST /v1/candidates/{id}/decision | deny | 403 `policy_denied` | DENIED FORWARD_L7 |
+| GET /v1/knowledge/derived | deny | 403 `policy_denied` | DENIED FORWARD_L7 |
+| https://example.com | deny | 연결 차단(exit 56) | NET:OPEN DENIED "not allowed by any policy" |
+| http://192.168.123.191:8000/healthz(다른 포트) | deny | 403 | DENIED "endpoint not allowed by any policy" |
+
+gateway 활동 요약: `denied_action_count=7 network_activity_count=12`. 거부는 §7의 기준대로 RFA 401/404가 아니라 OpenShell `policy_denied` 응답과 OCSF DENIED 기록이 함께 있는 경우만 집계했다. RFA access log에는 허용 route만 도착했다.
+
+OpenClaw agent 턴(`nemoclaw rfa-demo agent --thinking off --json -m …`): Nemotron Super 120B가 `exec` 도구를 2회 호출해 `{"status":"ok","service":"rfa-mas","schema_version":"1.0"}`를 그대로 보고했고, `GET /v1/sessions`는 403을 받았다(OCSF DENIED). 모델은 이 403을 "allowed"라고 잘못 표현했는데 판정은 OCSF 기록이 우선한다. executionTrace: provider inference, model super-120b, fallback 없음, toolSummary calls 2 / failures 0, stopReason stop. NemoClaw CLI는 `replayInvalid=true`로 exit 1을 반환했으며 이는 재생 검증 부기이고 턴 완료와 별개다.
+
+### 이 시연이 증명하지 않는 것
+
+- RFA backend는 sandbox 밖 host 프로세스다(§6). backend의 outbound와 파일 접근은 OpenShell 정책 밖이다.
+- agent는 설치 owner로 인증되므로 허용 route 안에서는 owner 권한이다. RFA 역할별 identity·허용/차단(P1-007B)은 별개다.
+- managed MCP, Supervisor middleware, credential binding, Kubernetes 경로는 실행하지 않았다.
+- RFA 쪽 응답은 mock 모델·합성 fixture다. NVIDIA 모델 호출은 sandbox 안 OpenClaw agent 쪽(inference.local)에서만 실제였다.
+
+### 재현
+
+```sh
+# host: RFA를 격리 profile로 non-loopback에 띄운다
+uv run rfa init-env --output .env.p1007a   # APP_HOST=<host LAN IP>, APP_PORT=8010, DB/TRACE는 /private/tmp 아래로
+uv run rfa --env-file .env.p1007a api
+# NemoClaw
+NEMOCLAW_PROVIDER=build NEMOCLAW_MODEL=nvidia/nemotron-3-super-120b-a12b NVIDIA_INFERENCE_API_KEY=... \
+  NEMOCLAW_ONBOARD_VALIDATION_TIMEOUT_SECONDS=240 nemoclaw onboard --name rfa-demo --non-interactive --yes-i-accept-third-party-software
+nemoclaw rfa-demo policy add --from-file deploy/nemoclaw/rfa-api-minimal.yaml --trusted-private-host <host LAN IP> --dry-run
+nemoclaw rfa-demo policy add --from-file deploy/nemoclaw/rfa-api-minimal.yaml --trusted-private-host <host LAN IP> --yes
+# opt-in replay
+RFA_NEMOCLAW_LIVE=1 RFA_NEMOCLAW_SANDBOX=rfa-demo RFA_P1007A_ENV_FILE=/abs/.env.p1007a \
+  .venv/bin/python -m pytest -q tests/integration/test_nemoclaw_live.py
+```
+
+
 ## 9. not_run
 
-- NemoClaw 설치·onboarding·OpenClaw sandbox 실행과 이 서비스 호출(P1-007A AC1~3)
-- RFA API를 non-loopback에 띄우고 OpenShell/NemoClaw preset·credential binding으로 호출하는 경로
+- NemoClaw managed MCP·Supervisor middleware·credential binding·Kubernetes 경로 (§8A 시연은 Docker/Colima driver의 REST preset 경로만 실행)
 - RFA 역할별 identity와 파일·network·tool allow/deny matrix(P1-007B AC1~3), RuntimePort 정규화 결과와 강제 로그 연결
-- Supervisor middleware 적용, Docker/Colima driver 경로, Kubernetes 경로
 - OpenShell filesystem policy(Landlock) 거부를 정책 로그로 입증하는 probe. 이번 `/etc` 실패는 판정 불가였다.
 - learn.nvidia.com 과정 페이지 본문 직접 확인
 
