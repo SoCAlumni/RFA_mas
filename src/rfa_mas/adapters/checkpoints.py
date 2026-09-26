@@ -4,6 +4,7 @@ This protects local invocation coordination, not sandboxing or tool exactly-once
 The SQLite saver serializes DB calls; the separate flock spans an invocation.
 """
 
+import asyncio
 from contextlib import AsyncExitStack, contextmanager
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ import aiosqlite
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
+from rfa_mas.adapters.local import _sqlite_setup_guard
 from rfa_mas.contracts import (
     Audience,
     DomainId,
@@ -32,6 +34,8 @@ from rfa_mas.errors import RfaError
 
 
 class SqliteCheckpoints:
+    _setup_timeout_seconds = 5.0
+
     def __init__(self, path: Path) -> None:
         self.path = path
         self._stack: AsyncExitStack | None = None
@@ -54,29 +58,55 @@ class SqliteCheckpoints:
         self.path.chmod(0o600)
         stack = AsyncExitStack()
         try:
-            connection = await stack.enter_async_context(aiosqlite.connect(str(self.path)))
-            serde = JsonPlusSerializer(
-                pickle_fallback=False,
-                allowed_msgpack_modules=[
-                    WorkRequest,
-                    DraftBundle,
-                    DraftTarget,
-                    EvidenceRef,
-                    SourceLocation,
-                    ReviewDecision,
-                    StructuredError,
-                    DomainId,
-                    Audience,
-                    WorkStatus,
-                    PublicationStatus,
-                    ReviewStatus,
-                    SimulationScenario,
-                ],
-            )
-            saver = AsyncSqliteSaver(connection, serde=serde)
-            # Official saver lazily initializes its own tables on first use.
-            await saver.aget_tuple({"configurable": {"thread_id": "schema-initialization"}})
-            self.path.chmod(0o600)
+            async with AsyncExitStack() as setup:
+                deadline = asyncio.get_running_loop().time() + self._setup_timeout_seconds
+                while True:
+                    try:
+                        setup.enter_context(_sqlite_setup_guard(self.path, blocking=False))
+                    except BlockingIOError:
+                        remaining = deadline - asyncio.get_running_loop().time()
+                        if remaining <= 0:
+                            raise RfaError(
+                                "storage_busy", "checkpoint 초기화가 진행 중입니다."
+                            ) from None
+                        await asyncio.sleep(min(0.01, remaining))
+                    else:
+                        break
+                try:
+                    connection = await stack.enter_async_context(aiosqlite.connect(str(self.path)))
+                    serde = JsonPlusSerializer(
+                        pickle_fallback=False,
+                        allowed_msgpack_modules=[
+                            WorkRequest,
+                            DraftBundle,
+                            DraftTarget,
+                            EvidenceRef,
+                            SourceLocation,
+                            ReviewDecision,
+                            StructuredError,
+                            DomainId,
+                            Audience,
+                            WorkStatus,
+                            PublicationStatus,
+                            ReviewStatus,
+                            SimulationScenario,
+                        ],
+                    )
+                    saver = AsyncSqliteSaver(connection, serde=serde)
+                    # Its instance lock cannot serialize a second container/process.
+                    await saver.aget_tuple({"configurable": {"thread_id": "schema-initialization"}})
+                    async with connection.execute("PRAGMA journal_mode") as cursor:
+                        mode = await cursor.fetchone()
+                    if not mode or mode[0] != "wal":
+                        raise RfaError(
+                            "configuration_error", "checkpoint WAL 초기화에 실패했습니다."
+                        )
+                    self.path.chmod(0o600)
+                except BaseException:
+                    # Drain/close the SQLite worker before releasing the setup lock,
+                    # including cancellation while its queued SQL is still running.
+                    await stack.aclose()
+                    raise
         except BaseException:
             await stack.aclose()
             raise
