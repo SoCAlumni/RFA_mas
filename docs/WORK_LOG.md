@@ -184,7 +184,7 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 다음: P0-016 공식 async SQLite checkpointer/인증된 재조회 resume와 P0-018
   순수 팀 selector를 별도 worktree에 배정. 선택적 NAT/관측 경로를 필수화하지 않는다.
 
-## P0-018 통합 / P0-016 범위 인계 — 2026-09-26T07:50Z
+## P0-018 통합 / P0-016 범위 인계 — 2026-09-26
 
 - P0-018 `6973cfe`의 순수 TeamSelector·승인 template 2개·테스트를 main에 통합했다.
   worker V1 53 passed, 통합 V1 53 passed(0.05초), 기존 계약 회귀 64 passed(0.57초),
@@ -201,7 +201,7 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 새 resume 환경의 `uv sync --locked`는 성공했다. SQLite saver 설치를 재시작
   복구·승인 검증 완료로 표현하지 않는다. 전체 E2E/실제 NVIDIA·OpenShell gate는 미실행이다.
 
-## 평가/trace 후속 조사 — 2026-09-26T07:59Z
+## 평가/trace 후속 조사 — 2026-09-26
 
 - 기존 ID를 확인했다: P1-006D(안전 trace) → P1-006(Persona 12/행동 verifier)
   → P1-006E(공격 회귀), 후속 Persona 24개는 P1-006B이다. 없는 P0-029/030을
@@ -216,3 +216,27 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   공개 게시 시뮬레이션은 test-only sink에서 관찰하고 P0 실제 write 금지를 유지한다.
 - 명세/파생 view 검증: taskctl validate에서 67 task와 current views 확인.
   전체 task의 제품 AC나 E2E 실행 결과를 의미하지 않는다.
+
+## 재개 사전 오류 / 계약 갱신 후속 보수 — 2026-09-26T07:57Z
+
+- 독립 probe에서 LangGraph 1.2.12의 checkpoint 없는 하위 graph가 부모 sync
+  durability를 상속할 때 `_put_checkpoint_fut` AttributeError를 재현했다.
+  부모 sync를 유지하고 하위 호출은 exit를 명시한 수정 후 정상 pending/재조회/
+  중복 wakeup을 확인했다. 이 probe는 정식 P0-016 V1을 대신하지 않는다.
+- 초기 DB 두 startup이 겹칠 때 seed marker가 빈 설치를 기존 것으로 오인할 수 있어
+  initialize의 기존 schema 판독·DDL·migration을 한 BEGIN IMMEDIATE에 넣었다.
+  동시 초기화 및 삭제 보존은 P0-016 회귀로 검증한다.
+- OPS-002 후속: 이미 통합된 consumer가 stale/reserved가 되면 publish-contract와
+  baseline 수락이 막히는 분기를 확인했다. 기존 성공·실패 evidence를 approaches에
+  보존하고 같은 cli/tests/docs 범위에서 AC5를 추가해 generation 3을 배정했다.
+  활성 claim·미통합 submission은 계속 거절하고 실제 통합 이력 확인·재검증 gate는
+  유지한다. 새로운 관리 framework나 상태 우회 도구는 만들지 않는다.
+- 로컬 read-only readiness: Colima CLI는 있으나 실행 중이 아니고 디스크 가용량은
+  91GiB이다. 서비스 기동/설치/실제 OpenShell 검증은 아직 수행하지 않았다.
+  [NemoClaw 공식 platform matrix](https://docs.nvidia.com/nemoclaw/latest/user-guide/openclaw/reference/platform-support)는
+  Apple Silicon + Colima/Docker Desktop을 제한 있는 검증 경로로 분류하며 임의
+  LangGraph 앱 자동 지원은 명시하지 않는다. 후속 최소 시연은 지원 runtime의
+  제한된 MCP/API consumer로 구성하고 앱 backend 밖의 격리 경계를 따로 표시한다.
+  [OpenShell middleware 공식 경계](https://docs.nvidia.com/openshell/extensibility/supervisor-middleware)는
+  네트워크 정책 후의 콘텐츠 검사이며 tls-skip/일부 응답·WebSocket 한계가 있다.
+  middleware 운영 구현은 다영 모듈의 범위로 유지한다.

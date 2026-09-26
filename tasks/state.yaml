@@ -1,10 +1,10 @@
 generated: true
 schema_version: '1.0'
-source_digest: 90ccf932af87ae9d0936f2129639dd8e28dcbaac346fa717169690ccd91c43b2
+source_digest: a92a660bcef79c35558f8134dcb7d5fefd7ba23802c77cb39f2594ad5bf3d6bc
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 13
+  OPS-002: 16
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -20,7 +20,7 @@ source_revisions:
   P0-013: 1
   P0-014: 24
   P0-015: 29
-  P0-016: 10
+  P0-016: 13
   P0-017: 5
   P0-018: 17
   P0-019: 4
@@ -69,11 +69,11 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T07:51:55+00:00'
+generated_at: '2026-09-26T07:57:02+00:00'
 counts:
   todo: 31
-  in_progress: 1
-  verifying: 3
+  in_progress: 2
+  verifying: 2
   blocked: 6
   done: 17
   deferred: 9
@@ -135,18 +135,18 @@ tasks:
   - status:verifying
   - reserved:OPS-002
 - id: OPS-002
-  status: verifying
+  status: in_progress
   workstream: contracts/control
-  owner: null
+  owner: worker-control
   recovery_required: false
-  integration: integrated
-  reserved: true
+  integration: pending
+  reserved: false
   blocker: null
   verification: stale
   planning_ready: false
   executable: false
   reasons:
-  - status:verifying
+  - status:in_progress
 - id: P0-001
   status: done
   workstream: contracts/control
@@ -364,7 +364,7 @@ tasks:
   integration: pending
   reserved: false
   blocker: null
-  verification: not_run
+  verification: passed
   planning_ready: false
   executable: false
   reasons:

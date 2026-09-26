@@ -252,14 +252,14 @@ verification:
   - 같은 thread 동시 invoke 거절/직렬화, checkpoint에 credential·authorization header 저장 없음.
   runner: pytest
 evidence_dir: .agent/evidence/P0-016
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-016/resume-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 5
+  spec_digest: e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31
+  contract_digest: 7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b
+  source_fingerprint: 6b6fccac4051a049f9568bdbb701fd00cb9dd44f440df3649b61c673140521a1
+  evidence: .agent/evidence/P0-016/resume-01/result.json
 integration:
   state: pending
   target: canonical integration branch after OPS-000
@@ -269,7 +269,7 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 10
+revision: 13
 spec_revision: 5
 claim_generation: 3
 claim:
@@ -284,11 +284,12 @@ claim:
   recovery_required: false
   context_digest: 114c771ecfbcb3cfb42d9fdfff380b742ab183781a2a62c13f01420af49b3094
 attempts:
-  count: 0
-  cycles: 0
+  count: 1
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: resume-01
+  evidence_refs:
+  - .agent/evidence/P0-016/resume-01/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -338,8 +339,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:49:54+00:00'
-concise_result: 'Specification changed: Existing direct Supervisor boundary tests must pass trusted Runtime.context
-  after principal leaves persisted state; no test removal or AC change'
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T07:57:02+00:00'
+concise_result: SQLite resume implementation present; pre-evidence independent review caught and fixed
+  inherited child sync durability incompatibility; formal AC not_run
+next_action: Finish independent review then freeze source and begin formal resume V1 evidence

@@ -12,7 +12,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | --- | --- | --- | --- | --- | --- | --- |
 | [OPS-000](tasks/OPS-000/task.yaml) | 사용자 변경을 보존한 Git/worktree baseline 등록 | P0 | verifying / stale | contracts/control | 0.5 | — |
 | [OPS-001](tasks/OPS-001/task.yaml) | 작업 이관·공통 CLI·병렬 제어 검증 | P0 | verifying / stale | contracts/control | 0.5 | — |
-| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | verifying / stale | contracts/control | 0.5 | — |
+| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | in_progress / stale | contracts/control | 0.5 | — |
 | [P0-001](tasks/P0-001/task.yaml) | 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정 | P0 | done / passed | contracts/control | 0 | — |
 | [P0-002](tasks/P0-002/task.yaml) | typed settings, `.env.example`, `.gitignore`, secret-safe doctor와 named dev credential 초기화 | P0 | done / passed | contracts/control | 0 | P0-001 |
 | [P0-003](tasks/P0-003/task.yaml) | 공통 Pydantic DTO, async ports, 오류 모델, state transition | P0 | done / passed | contracts/control | 0 | P0-001 |
@@ -28,7 +28,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-013](tasks/P0-013/task.yaml) | P0 전체 검증과 근거 기록 | P0 | done / passed | contracts/control | 0 | P0-001, P0-002, P0-003, P0-004, P0-005, P0-006, P0-007, P0-008, P0-009, P0-010, P0-011, P0-012 |
 | [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | done / passed | contracts/control | 1 | P0-003, P0-010 |
 | [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | done / passed | execution | 1.5 | P0-014, P0-005, P0-008 |
-| [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | in_progress / not_run | execution | 1.5 | P0-015 |
+| [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | in_progress / passed | execution | 1.5 | P0-015 |
 | [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | todo / not_run | contracts/control | 0.5 | P0-014, P0-016 |
 | [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | done / passed | agents | 0.5 | P0-014 |
 | [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | todo / not_run | agents | 1.5 | P0-018, P0-015 |

@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: verifying
+status: in_progress
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -27,6 +27,8 @@ scope:
     evidence/commit/close gate를 모두 요구한다.
   - E2E 공수 변경으로 D3 합계11h가 된 명세를 테스트에서 정직하게 검증하고 원래24h+기술4.5h+추가3h 기록을 보존. source worktree의 read-only migration
     감사는 명시 TASK_CONTROL_ROOT를 사용하며 잘못된 root guard를 우회하지 않음.
+  - 역사적 통합 증거/commit 결합이 유효하고 활성 claim이 없는 stale consumer에 한해 coordinator의 계약 발행·명시 baseline 수락을 허용한다.
+    기존 reservation/증거와 재검증 요구는 보존하고 active claim/미통합 제출/변조 evidence는 거절한다.
   excluded:
   - 새 task 관리 framework/서버/DB·자동 merge·임의 done
   - 기존 상태/evidence 삭제·제품 구현·실제 .env 접근
@@ -101,12 +103,19 @@ acceptance_criteria:
   expect: D1/D2/D4=8h, D3=11h 및 extra기술4.5h를 숨기지 않고 migration/원문체크/최종gate 보존을 검증; wrong/copied root는 계속
     거절
   required: true
+- id: AC5
+  given: 이미 integrated consumer의 관련 계약 artifact가 새 provider commit에서 변경되어 reconcile이 verifying/reserved로
+    표시
+  expect: 역사적 통합 증거/commit 결합이 유효하고 활성 claim이 없는 stale consumer에 한해 coordinator의 계약 발행·명시 baseline 수락을
+    허용한다. 기존 reservation/증거와 재검증 요구는 보존하고 active claim/미통합 제출/변조 evidence는 거절한다.
+  required: true
 verification:
 - id: V1
   ac_ids:
   - AC1
   - AC2
   - AC3
+  - AC5
   type: command
   availability: available
   prerequisites:
@@ -123,6 +132,8 @@ verification:
   assertions:
   - 통합된 task의 현재 clean baseline 재검증과 최초 provenance 보존을 실제 temp Git 이력으로 확인
   - 미통합/dirty/old branch·old claim·미검증 close 우회 불가
+  - 역사적 통합 증거/commit 결합이 유효하고 활성 claim이 없는 stale consumer에 한해 coordinator의 계약 발행·명시 baseline 수락을 허용한다.
+    기존 reservation/증거와 재검증 요구는 보존하고 active claim/미통합 제출/변조 evidence는 거절한다.
   runner: pytest
 - id: V2
   ac_ids:
@@ -155,44 +166,80 @@ verification_summary:
   source_fingerprint: 124a973b85030c7201a3e6e4faf98ff80377c6018c091ffd9d841de08b2658b9
   evidence: .agent/evidence/OPS-002/recovery-integrated-02/result.json
 integration:
-  state: integrated
+  state: pending
   target: canonical main
   reason: null
-  reservation: true
-  submission_generation: 1
-  submission:
-    head: bd1e34039973aa6da4a3e6fd0217ac422a683064
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 16
+spec_revision: 2
+claim_generation: 3
+claim:
+  session_id: worker-control
+  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+  branch: task/OPS-002-r2
+  generation: 3
+  claimed_at: '2026-09-26T07:55:40+00:00'
+  heartbeat_at: '2026-09-26T07:55:40+00:00'
+  lease_expires_at: '2026-09-26T08:10:40+00:00'
+  baseline_head: a612fc3360a6f2920b309d8056b7607aa6859194
+  recovery_required: false
+  context_digest: 54474dec8ea4c649909631543a195cee2621945c73259c99e681ca8fd5a039d6
+attempts:
+  count: 3
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: recovery-integrated-02
+  evidence_refs:
+  - .agent/evidence/OPS-002/recovery-01/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
     baseline_head: 5847ba7251124eb594d40f1b97ce12df08c791a8
-    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002
-    branch: task/OPS-002
-    evidence: .agent/evidence/OPS-002/recovery-01/result.json
-    changed_files:
-      docs/TASK_REVALIDATION.md: 1bef78cc8df5e7c456243adda71b4d065b1ffd5fc3ab9e37cfe6001d606f2c67
-      scripts/tasklib/cli.py: e0ff43fc0313babe507596e49717e58281e0a8d915f5b9f836828bb2d737ba3d
-      tests/test_task_migration.py: 838c95f39c91dfcf6acb63d57154909276ccc1d778518ba81825d1275d15b3a3
-      tests/test_taskctl.py: 422c381fc70fbdc8a58b47fe4b03afb39478827743ae6ac53d3b746a9791663c
-  result:
+    reason: Preserve prior integrated recovery evidence; prepare scoped fix for integrated stale consumer
+      contract publication and acceptance deadlock
+    at: '2026-09-26T07:55:11+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical main
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: bd1e34039973aa6da4a3e6fd0217ac422a683064
+        baseline_head: 5847ba7251124eb594d40f1b97ce12df08c791a8
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002
+        branch: task/OPS-002
+        evidence: .agent/evidence/OPS-002/recovery-01/result.json
+        changed_files:
+          docs/TASK_REVALIDATION.md: 1bef78cc8df5e7c456243adda71b4d065b1ffd5fc3ab9e37cfe6001d606f2c67
+          scripts/tasklib/cli.py: e0ff43fc0313babe507596e49717e58281e0a8d915f5b9f836828bb2d737ba3d
+          tests/test_task_migration.py: 838c95f39c91dfcf6acb63d57154909276ccc1d778518ba81825d1275d15b3a3
+          tests/test_taskctl.py: 422c381fc70fbdc8a58b47fe4b03afb39478827743ae6ac53d3b746a9791663c
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 1
+          spec_digest: 96abc4190be5b5be658e62d2b2974eb8eb00c49acaf958cbf47d4722a9deda3f
+          contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+          source_fingerprint: 124a973b85030c7201a3e6e4faf98ff80377c6018c091ffd9d841de08b2658b9
+          evidence: .agent/evidence/OPS-002/recovery-integrated-02/result.json
+        head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
+      evidence: .agent/evidence/OPS-002/recovery-integrated-02/result.json
     verification_summary:
-      state: passed
+      state: stale
       spec_revision: 1
       spec_digest: 96abc4190be5b5be658e62d2b2974eb8eb00c49acaf958cbf47d4722a9deda3f
       contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
       source_fingerprint: 124a973b85030c7201a3e6e4faf98ff80377c6018c091ffd9d841de08b2658b9
       evidence: .agent/evidence/OPS-002/recovery-integrated-02/result.json
-    head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
-  evidence: .agent/evidence/OPS-002/recovery-integrated-02/result.json
-revision: 13
-spec_revision: 1
-claim_generation: 1
-claim: null
-attempts:
-  count: 3
-  cycles: 1
-  no_progress_count: 0
-  latest_attempt: recovery-integrated-02
-  evidence_refs:
-  - .agent/evidence/OPS-002/recovery-01/result.json
-  approaches: []
+    latest_evidence_file: .agent/evidence/OPS-002/recovery-integrated-02/result.json
 blocker: null
 migration:
   original_status: new
@@ -205,7 +252,9 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:28:33+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T07:55:40+00:00'
+concise_result: 'Specification changed: Preserve original AC and add deadlock regression for inactive
+  already-integrated consumer contract publication/acceptance; no new framework or bypass of integration
+  evidence'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'
