@@ -153,3 +153,23 @@ done task마다 같은 target worktree에 git 조회를 반복한 `complete()→
 in-process 호출과 테스트에는 memo가 없어서 호출 사이의 source 변경(tampered head, dirty tree)을 기존대로
 탐지한다. fingerprint 비교·파일 hash·fencing·scope 규칙은 바꾸지 않았다. 같은 control 상태에서 CPU 시간이
 약 11.5초에서 1.7초로 줄었다. lock 대기 시간은 이 수치에 포함되지 않는다.
+
+
+## OPS-005 이후 재검증 운영 절차 (2026-09-27, OPS-002 갱신)
+
+- 계약 발행이나 공유 소스 변경 뒤 전체 cascade를 바로 돌리지 않는다. 다음에 claim할 task의 `depends_on` 중
+  stale인 task만 `REVAL_ONLY=<ID,...> revalidate_par.py` 또는 `tc.py revalidate`로 먼저 재검증한다.
+  stale 통합 예약은 새 claim의 충돌 사유가 아니지만 dependency gate는 그대로다(OPS-005).
+- 최종 acceptance(P0-026 closeout, P1-009) 전에는 모든 통합 task를 현재 target에서 재검증한다(전체 1회).
+- `TASK_EXECUTION_RULES.md`, `docs/PROJECT_CONTEXT.md` 같은 global context 문서는 모든 task의 context digest에
+  들어가므로 바꾸면 모든 통합 task가 stale이 된다(2026-09-27 OPS-005 merge에서 실제 발생). 절차 보완은
+  가능하면 이 문서(개별 task context가 아님)에 적고, global 문서 변경은 최종 전체 재검증 전에 묶는다.
+- 재검증과 통합 merge를 동시에 돌리지 않는다. 재검증 도중 target이 이동하면 worker 변경 없이 현재 target
+  HEAD로 clean fast-forward하고 같은 계획으로 worker evidence를 다시 캡처한 뒤 제출한다(OPS-005).
+- 도구 셸에서 `nohup … &`로 띄운 장시간 작업은 셸 세션 종료 때 함께 종료되었다(2026-09-27 실제 발생:
+  재검증과 통합이 로그 없이 중단). 장시간 cascade/통합은 유지되는 실행 세션에서 돌리고 주기적으로 조회한다.
+- 사건 기록: OPS-002의 post-ops004 재검증 claim은 P1-008C 통합으로 target이 이동해 submit이 거절되었고,
+  claim 중인 task는 revalidation recover가 불가했다. 소스 변경이 없는 재검증이었으므로 discard로 정리했고,
+  같은 이유로 막힌 OPS-003 stale 예약도 discard했다. 두 task의 과거 통합 이력은 attempts.approaches에 남아
+  있고, 이 문서 갱신(OPS-002)과 FF 재검증 binding 회귀(OPS-003)로 다시 완료한다.
+
