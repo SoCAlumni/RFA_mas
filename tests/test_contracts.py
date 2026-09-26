@@ -90,6 +90,46 @@ def test_team_member_binding_and_roundtrip():
     assert "prepare" in vars(__import__("rfa_mas.ports", fromlist=["RuntimePort"]).RuntimePort)
 
 
+def test_additive_team_effective_budget_and_lifecycle_bindings():
+    team = research_team().model_copy(
+        update={"definition_digest": "a" * 64, "execution_budget": c.TeamBudget(max_tokens=1000)}
+    )
+    assert c.TeamSpec.model_validate_json(team.model_dump_json()) == team
+    data = team.model_dump(mode="json")
+    data["execution_budget"]["max_tokens"] = team.template.budget.max_tokens + 1
+    with pytest.raises(ValidationError, match="execution budget"):
+        c.TeamSpec.model_validate(data)
+    instance = c.TeamInstance(
+        spec=team,
+        state="unknown",
+        mode="local",
+        member_states=tuple(
+            c.MemberLifecycle(agent_id=m.spec.agent_id, prepare="unknown") for m in team.members
+        ),
+    )
+    task = c.PersistentTask(
+        task_id=team.task_id,
+        owner_id=team.owner_id,
+        domain_id=team.domain_id,
+        team_id=team.team_id,
+        goal="research",
+    )
+    receipt = c.TeamLifecycle(
+        task=task,
+        team=instance,
+        generation=1,
+        operation="prepare",
+        operation_key="team:prepare:1",
+        phase="finished",
+        reason="outcome_unknown",
+    )
+    assert receipt.trace_collection == "uncollected"
+    bad = receipt.model_dump()
+    bad["task"]["owner_id"] = "different-owner"
+    with pytest.raises(ValidationError, match="binding"):
+        c.TeamLifecycle.model_validate(bad)
+
+
 @pytest.mark.parametrize(
     "mutation",
     [

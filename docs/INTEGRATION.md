@@ -87,6 +87,56 @@ bootstrap.py: settings에 따라 port 구현을 조립
 
 ## Port와 P0 구현
 
+### P0-019 internal TeamFactory boundary
+
+`container.team_factory.ensure(SelectionRequest, TrustedPrincipal, idempotency_key=..., task_id=None)`
+creates a server-owned Task/team or reuses a specified Task. It returns `TeamLifecycle` with
+`task.task_id`, `task.team_id`, the exact `team.spec`, member outcomes and `generation`.
+It is an internal application service, not a new HTTP route or a role-execution path.
+The caller supplies intent, not a SelectionDecision/owner/capability grant. Bootstrap reloads
+the approved catalog and resolves current installation-owner grants and configured budget
+for every invocation, including key replay. These narrow local capabilities do not grant
+source access, external egress, tool writes or OS isolation. Member source/tool scopes are
+empty until a trusted execution lease is assigned by P0-020/Policy; unique role memory
+namespaces and capability bounds are already part of the persisted, rechecked spec.
+
+SQLite migration3 adds Task details, owner-scoped idempotency keys, one occupied Task slot,
+member outcomes and immutable generation/phase lifecycle events. Existing
+`product_task_owners` is the ownership source. Registry-only legacy Tasks remain valid for
+session links but Factory rejects their missing definition: it never fabricates their goal.
+Same owner/key/content returns the prior Task/team; changed content conflicts. An explicit
+existing Task must match the stored goal/current approved definition/role bounds/mode/effective
+budget. There is no silent replacement when authorization/pins/budgets change.
+
+Reservation and CAS use short [SQLite IMMEDIATE transactions](https://www.sqlite.org/lang_transaction.html)
+and non-null unique Task/team keys; no runtime IO occurs in a DB transaction. Only the winner
+performs prepare with a fixed key. Pending/unknown/failed/cleaned records remain occupied;
+new requests return their actual state, not an executable partial team. The future executor
+must require current authorization and `team.state == ready` before role execution.
+Prepare failure records the actual member coverage then cleans only the owned team;
+invalid responses never supply a cleanup target. Unknown outcomes retain the slot and
+require explicit reconciliation, not automatic repeated prepare/cleanup. CAS fences late
+results in the core DB; it does not cancel unknown external effects or provide cross-process
+exactly-once tool writes (P0-021/P0-026).
+
+LocalRuntime preparation/cleanup allocates only process-local agent metadata. After a
+restart the durable Factory reuses the same team without a second preparation; the future
+role executor uses persisted AgentSpec. A new LocalRuntime cannot invent cleanup receipts
+for a previous process and reports unknown if its local metadata is unavailable. This
+conservative boundary is not remote runtime status reconciliation or OpenShell support.
+
+Factory receives the underlying configured RuntimePort and a trusted lifecycle-support/mode
+descriptor from bootstrap. It does not inspect `.inner` or infer support from decorator methods.
+Configured HTTP lifecycle is rejected before slot reservation/reuse, even though graph's
+ObservedPort exposes prepare/cleanup methods. Graph run observation remains unchanged;
+Factory lifecycle trace is **uncollected**, with durable SQLite records only. No successful
+local preparation is misreported as an observation invalid-contract failure.
+
+P0-020 must explicitly bind returned Task/team IDs to its existing server-owned Run/session
+and observation context. Current WorkService creates RunRecord before routing; this task does
+not modify service/graph/API to imply automatic Task/run binding. No public DTO or runtime
+response can self-authorize a Team selection, access grant or approval.
+
 | Port | 책임 | P0 기본 구현 | 교체 구현 | 현재 주장 범위 |
 | --- | --- | --- | --- | --- |
 | `ModelPort` | 근거 제한 생성·구조화 응답 | `MockModel` | NVIDIA adapter는 P1 | mock 생성만 검증 대상 |

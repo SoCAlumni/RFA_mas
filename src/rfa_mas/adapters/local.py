@@ -20,7 +20,9 @@ from rfa_mas.contracts import (
     Audience,
     DomainId,
     ExecutionContext,
+    ExecutionMode,
     KnowledgeDocument,
+    MemberLifecycle,
     ObservationRecord,
     PersistentTask,
     PolicyDecision,
@@ -34,6 +36,9 @@ from rfa_mas.contracts import (
     StructuredError,
     TaskRequest,
     TaskResult,
+    TeamInstance,
+    TeamLifecycle,
+    TeamSpec,
     ToolEffect,
     TraceEvent,
     TrustedPrincipal,
@@ -54,6 +59,32 @@ def _canonical_fingerprint(value: dict[str, Any]) -> str:
         sort_keys=True,
     )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _team_definition(spec: TeamSpec) -> dict:
+    # Stable across server-generated Task/team/member identifiers.
+    return {
+        "domain_id": spec.domain_id,
+        "owner_id": spec.owner_id,
+        "template": spec.template.model_dump(mode="json"),
+        "definition_digest": spec.definition_digest,
+        "execution_budget": spec.execution_budget.model_dump(mode="json")
+        if spec.execution_budget
+        else None,
+        "members": [
+            m.model_dump(mode="json")
+            | {
+                "spec": m.spec.model_dump(
+                    mode="json",
+                    exclude={
+                        "agent_id",
+                        "memory_namespace",
+                    },
+                )
+            }
+            for m in spec.members
+        ],
+    }
 
 
 @contextmanager
@@ -259,6 +290,32 @@ class SqliteWorkRepository:
                         "INSERT INTO rfa_schema_migrations VALUES (2, ?)",
                         (datetime.now(UTC).isoformat(),),
                     )
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version = 3"
+                ).fetchone():
+                    for statement in (
+                        "CREATE TABLE product_tasks (task_id TEXT PRIMARY KEY REFERENCES "
+                        "product_task_owners(task_id), task_json TEXT NOT NULL)",
+                        "CREATE TABLE team_slots (task_id TEXT PRIMARY KEY REFERENCES "
+                        "product_tasks(task_id), team_id TEXT NOT NULL UNIQUE, "
+                        "generation INTEGER NOT NULL, phase TEXT NOT NULL, "
+                        "request_fingerprint TEXT NOT NULL, lifecycle_json TEXT NOT NULL)",
+                        "CREATE TABLE task_creation_keys (owner_id TEXT NOT NULL, "
+                        "key_hash TEXT NOT NULL, request_fingerprint TEXT NOT NULL, "
+                        "task_id TEXT NOT NULL REFERENCES product_tasks(task_id), "
+                        "PRIMARY KEY(owner_id, key_hash))",
+                        "CREATE TABLE team_members (team_id TEXT NOT NULL REFERENCES "
+                        "team_slots(team_id), agent_id TEXT NOT NULL, state_json TEXT NOT NULL, "
+                        "PRIMARY KEY(team_id, agent_id))",
+                        "CREATE TABLE team_lifecycle_events (team_id TEXT NOT NULL REFERENCES "
+                        "team_slots(team_id), generation INTEGER NOT NULL, phase TEXT NOT NULL, "
+                        "record_json TEXT NOT NULL, PRIMARY KEY(team_id, generation, phase))",
+                    ):
+                        connection.execute(statement)
+                    connection.execute(
+                        "INSERT INTO rfa_schema_migrations VALUES (3, ?)",
+                        (datetime.now(UTC).isoformat(),),
+                    )
                 # Credentials authenticate this installation's owner, not a fixture
                 # or a user ID supplied in a request. No membership is implied.
                 connection.execute(
@@ -386,6 +443,224 @@ class SqliteWorkRepository:
                 )
 
         await asyncio.to_thread(operation)
+
+    @staticmethod
+    def _owned_team(connection, task_id: str, owner: str) -> TeamLifecycle:
+        owned = connection.execute(
+            "SELECT 1 FROM product_task_owners WHERE task_id = ? AND owner_id = ?",
+            (task_id, owner),
+        ).fetchone()
+        if owned is None:
+            raise ResourceNotFoundError("task")
+        row = connection.execute(
+            "SELECT lifecycle_json FROM team_slots WHERE task_id = ?", (task_id,)
+        ).fetchone()
+        if row is None:
+            # Legacy registry entries lack goal/template; never invent these.
+            raise RfaError("task_definition_missing", "Task 상세를 먼저 확인해야 합니다.")
+        return TeamLifecycle.model_validate_json(row[0])
+
+    @staticmethod
+    def _team_event(connection, record: TeamLifecycle) -> None:
+        connection.execute(
+            "INSERT INTO team_lifecycle_events VALUES (?, ?, ?, ?)",
+            (record.team.spec.team_id, record.generation, record.phase, record.model_dump_json()),
+        )
+        for member in record.team.member_states:
+            connection.execute(
+                "INSERT INTO team_members VALUES (?, ?, ?) ON CONFLICT(team_id, agent_id) "
+                "DO UPDATE SET state_json=excluded.state_json",
+                (record.team.spec.team_id, member.agent_id, member.model_dump_json()),
+            )
+
+    async def get_team_lifecycle(self, task_id: str, principal: TrustedPrincipal) -> TeamLifecycle:
+        owner = self._authenticated(principal)
+
+        def operation():
+            with self._connect() as connection:
+                return self._owned_team(connection, task_id, owner)
+
+        return await asyncio.to_thread(operation)
+
+    async def reserve_team(
+        self,
+        task: PersistentTask,
+        spec: TeamSpec,
+        principal: TrustedPrincipal,
+        *,
+        idempotency_key: str,
+        request_fingerprint: str,
+        mode: str,
+        existing_task_id: str | None,
+    ) -> tuple[TeamLifecycle, bool]:
+        owner = self._authenticated(principal)
+        task = PersistentTask.model_validate(task.model_dump())
+        spec = TeamSpec.model_validate(spec.model_dump())
+        if task.owner_id != owner or spec.owner_id != owner:
+            raise ResourceNotFoundError("task")
+        key_hash = _canonical_fingerprint({"key": idempotency_key})
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                if existing_task_id is not None:
+                    existing = self._owned_team(connection, existing_task_id, owner)
+                    if existing.task.domain_id != task.domain_id:
+                        raise ResourceNotFoundError("task")
+                key = connection.execute(
+                    "SELECT request_fingerprint, task_id FROM task_creation_keys "
+                    "WHERE owner_id = ? AND key_hash = ?",
+                    (owner, key_hash),
+                ).fetchone()
+                if key is not None:
+                    if key[0] != request_fingerprint:
+                        raise RfaError("idempotency_conflict", "동일 key의 내용이 다릅니다.")
+                    return self._owned_team(connection, key[1], owner), False
+                if existing_task_id is not None:
+                    row = connection.execute(
+                        "SELECT request_fingerprint FROM team_slots WHERE task_id = ?",
+                        (existing_task_id,),
+                    ).fetchone()
+                    # Fingerprint is intent-only; explicit Task vs create belongs to key binding.
+                    if row[0] != _canonical_fingerprint(
+                        {
+                            "goal": task.goal,
+                            "spec": _team_definition(spec),
+                        }
+                    ):
+                        raise RfaError("team_conflict", "기존 Task/팀 조건이 변경되었습니다.")
+                    record, created = existing, False
+                else:
+                    if connection.execute(
+                        "SELECT 1 FROM product_task_owners WHERE task_id = ?", (task.task_id,)
+                    ).fetchone():
+                        raise RfaError("team_conflict", "Task 식별자가 이미 사용 중입니다.")
+                    record = TeamLifecycle(
+                        task=task,
+                        team=TeamInstance(
+                            spec=spec,
+                            state="provisioning",
+                            mode=mode,
+                            member_states=tuple(
+                                MemberLifecycle(agent_id=m.spec.agent_id) for m in spec.members
+                            ),
+                        ),
+                        generation=1,
+                        operation="prepare",
+                        operation_key=f"{spec.team_id}:prepare:1",
+                        phase="pending",
+                        reason="reserved",
+                    )
+                    connection.execute(
+                        "INSERT INTO product_task_owners VALUES (?, ?, ?)",
+                        (task.task_id, owner, task.domain_id.value),
+                    )
+                    connection.execute(
+                        "INSERT INTO product_tasks VALUES (?, ?)",
+                        (task.task_id, task.model_dump_json()),
+                    )
+                    connection.execute(
+                        "INSERT INTO team_slots VALUES (?, ?, 1, 'pending', ?, ?)",
+                        (
+                            task.task_id,
+                            spec.team_id,
+                            _canonical_fingerprint(
+                                {
+                                    "goal": task.goal,
+                                    "spec": _team_definition(spec),
+                                }
+                            ),
+                            record.model_dump_json(),
+                        ),
+                    )
+                    self._team_event(connection, record)
+                    created = True
+                connection.execute(
+                    "INSERT INTO task_creation_keys VALUES (?, ?, ?, ?)",
+                    (owner, key_hash, request_fingerprint, record.task.task_id),
+                )
+                return record, created
+
+        return await asyncio.to_thread(operation)
+
+    async def finish_team_operation(
+        self,
+        task_id: str,
+        principal: TrustedPrincipal,
+        *,
+        generation: int,
+        instance: TeamInstance,
+        reason: str,
+    ) -> TeamLifecycle:
+        owner = self._authenticated(principal)
+        instance = TeamInstance.model_validate(instance.model_dump())
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                current = self._owned_team(connection, task_id, owner)
+                if current.generation != generation or current.phase != "pending":
+                    raise RfaError(
+                        "stale_team_operation", "이전 팀 작업 결과는 적용할 수 없습니다."
+                    )
+                if instance.spec != current.team.spec or instance.mode != current.team.mode:
+                    raise RfaError("invalid_runtime_contract", "팀 응답 참조가 일치하지 않습니다.")
+                record = TeamLifecycle.model_validate(
+                    current.model_dump()
+                    | {
+                        "team": instance.model_dump(),
+                        "phase": "finished",
+                        "reason": reason,
+                    }
+                )
+                changed = connection.execute(
+                    "UPDATE team_slots SET phase='finished', lifecycle_json=? "
+                    "WHERE task_id=? AND generation=? AND phase='pending'",
+                    (record.model_dump_json(), task_id, generation),
+                ).rowcount
+                if changed != 1:
+                    raise RfaError("stale_team_operation", "이전 팀 작업 결과입니다.")
+                self._team_event(connection, record)
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def start_team_cleanup(
+        self, task_id: str, principal: TrustedPrincipal
+    ) -> tuple[TeamLifecycle, bool]:
+        owner = self._authenticated(principal)
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                current = self._owned_team(connection, task_id, owner)
+                if current.operation == "cleanup":
+                    return (
+                        current,
+                        False,
+                    )  # Unknown/failed cleanup is reconciled, not blindly repeated.
+                if current.phase == "pending":
+                    raise RfaError("team_busy", "진행 중인 팀 준비를 먼저 확인해야 합니다.")
+                record = TeamLifecycle.model_validate(
+                    current.model_dump()
+                    | {
+                        "team": current.team.model_dump() | {"state": "cleanup_pending"},
+                        "generation": current.generation + 1,
+                        "operation": "cleanup",
+                        "operation_key": f"{current.team.spec.team_id}:cleanup:1",
+                        "phase": "pending",
+                        "reason": "cleanup_requested",
+                    }
+                )
+                connection.execute(
+                    "UPDATE team_slots SET generation=?, phase='pending', lifecycle_json=? "
+                    "WHERE task_id=? AND generation=?",
+                    (record.generation, record.model_dump_json(), task_id, current.generation),
+                )
+                self._team_event(connection, record)
+                return record, True
+
+        return await asyncio.to_thread(operation)
 
     async def create_owned_run(
         self,
@@ -1020,9 +1295,108 @@ class LocalRuntime:
         self._idempotency: dict[str, tuple[str, TaskResult]] = {}
         self._inflight: dict[str, tuple[str, asyncio.Task[TaskResult]]] = {}
         self._lock = asyncio.Lock()
+        self._teams: dict[str, TeamInstance] = {}
+        self._team_keys: dict[str, tuple[str, TeamInstance]] = {}
+        self._team_lock = asyncio.Lock()
+        self._prepared_agents: dict[str, AgentSpec] = {}
 
     def register(self, task_type: str, handler: TaskHandler) -> None:
         self._handlers[task_type] = handler
+
+    async def _prepare_member(self, member) -> None:
+        # Local metadata only: no process/container/OS sandbox is provisioned.
+        self._prepared_agents[member.spec.agent_id] = member.spec.model_copy(deep=True)
+
+    async def _cleanup_member(self, member) -> None:
+        self._prepared_agents.pop(member.spec.agent_id, None)
+
+    async def prepare(self, spec: TeamSpec, *, idempotency_key: str) -> TeamInstance:
+        spec = TeamSpec.model_validate_json(spec.model_dump_json(), strict=True)
+        if (
+            spec.template.runtime_kind != "local"
+            or not spec.definition_digest
+            or not spec.execution_budget
+        ):
+            raise RfaError("not_implemented", "검증된 local 팀 명세가 필요합니다.")
+        fingerprint = _canonical_fingerprint({"prepare": spec.model_dump(mode="json")})
+        async with self._team_lock:
+            if idempotency_key in self._team_keys:
+                old, result = self._team_keys[idempotency_key]
+                self._ensure_same_request(old, fingerprint)
+                return result.model_copy(deep=True)
+            existing = self._teams.get(spec.team_id)
+            if existing is not None:
+                if existing.spec != spec:
+                    raise RfaError("idempotency_conflict", "팀 명세가 변경되었습니다.")
+                return existing.model_copy(deep=True)
+            states = [MemberLifecycle(agent_id=m.spec.agent_id) for m in spec.members]
+            for index, member in enumerate(spec.members):
+                try:
+                    await self._prepare_member(member)
+                except RfaError as exc:
+                    # This single typed fixture error explicitly means no allocation.
+                    outcome = "failed" if exc.code == "member_prepare_failed" else "unknown"
+                    states[index] = states[index].model_copy(update={"prepare": outcome})
+                    break
+                except Exception:
+                    states[index] = states[index].model_copy(update={"prepare": "unknown"})
+                    break
+                states[index] = states[index].model_copy(update={"prepare": "prepared"})
+            state = "ready" if all(m.prepare == "prepared" for m in states) else "failed"
+            if any(m.prepare == "unknown" for m in states):
+                state = "unknown"
+            result = TeamInstance(
+                spec=spec,
+                state=state,
+                mode=ExecutionMode.LOCAL,
+                runtime_ref=f"local:{spec.team_id}",
+                member_states=tuple(states),
+                failed_agent_ids=tuple(m.agent_id for m in states if m.prepare == "failed"),
+            )
+            self._teams[spec.team_id] = result
+            self._team_keys[idempotency_key] = (fingerprint, result.model_copy(deep=True))
+            return result.model_copy(deep=True)
+
+    async def cleanup(self, team_id: str, *, idempotency_key: str) -> TeamInstance:
+        fingerprint = _canonical_fingerprint({"cleanup": team_id})
+        async with self._team_lock:
+            if idempotency_key in self._team_keys:
+                old, result = self._team_keys[idempotency_key]
+                self._ensure_same_request(old, fingerprint)
+                return result.model_copy(deep=True)
+            current = self._teams.get(team_id)
+            if current is None:
+                # Process restart cannot invent an external lifecycle receipt.
+                raise RfaError("outcome_unknown", "로컬 준비 상태를 확인할 수 없습니다.")
+            states = list(current.member_states)
+            for index, member in enumerate(current.spec.members):
+                if states[index].prepare not in {"prepared", "unknown"}:
+                    continue
+                try:
+                    await self._cleanup_member(member)
+                    outcome = "cleaned"
+                except RfaError as exc:
+                    outcome = "failed" if exc.code == "member_cleanup_failed" else "unknown"
+                except Exception:
+                    outcome = "unknown"
+                states[index] = states[index].model_copy(update={"cleanup": outcome})
+            state = "cleaned"
+            if any(m.cleanup == "failed" for m in states):
+                state = "failed"
+            if any(m.cleanup == "unknown" for m in states):
+                state = "unknown"
+            result = current.model_copy(
+                update={
+                    "state": state,
+                    "member_states": tuple(states),
+                    "failed_agent_ids": tuple(
+                        m.agent_id for m in states if m.prepare == "failed" or m.cleanup == "failed"
+                    ),
+                }
+            )
+            self._teams[team_id] = result
+            self._team_keys[idempotency_key] = (fingerprint, result.model_copy(deep=True))
+            return result.model_copy(deep=True)
 
     async def run(self, spec: AgentSpec, request: TaskRequest) -> TaskResult:
         fingerprint = _canonical_fingerprint(

@@ -51,3 +51,22 @@
 Coordinator가 변경 이유, 영향 provider/consumer task, 호환성, 데이터 migration 순서, schema/fixture 검증 evidence를 남긴다. 공유 계약은 worker 임의 수정 금지. 활성 claim을 멈추고 handoff/recovery 후 새 기준을 전달한다. 관련 task의 spec_revision/context/검증을 stale로 바꾸며 무관한 과거 완료 이력을 전부 다시 열지 않는다.
 
 새 확장 baseline의 path/version/digest를 `taskctl publish-contract`로 등록한 뒤 consumer는 `edit-spec`으로 새 계약과 unresolved 해소를 명시한다. 팀원 실제 스키마 차이는 adapter/mapper에 국한하고 별도 live gate로 검증한다.
+# P0-019 — Task/team lifecycle (additive 1.1, repository-local)
+
+- Existing frozen1.0 DTOs/ports remain unchanged. `TeamSpec` adds optional
+  `definition_digest` and `execution_budget` for prior provisional1.1 payload compatibility;
+  the new Factory requires both, and never edits the approved `TeamTemplate` budget.
+- `MemberLifecycle`, `TeamLifecycle` and extended `TeamInstance` states capture prepared,
+  not-started, failed, unknown and cleanup outcomes. Core validates the exact persisted
+  owner/task/team/domain/template/pin/budget/member/mode response binding again, including
+  Pydantic objects changed through `model_copy`. Schema acceptance alone is not authorization.
+- Migration3 preserves registry owner/domain, session relations and observation migration2;
+  one non-null primary-key Task slot remains occupied even after unknown/failed cleanup.
+  Lifecycle events record fixed operation keys and generation/phase CAS, not trace spans.
+- Runtime prepare/cleanup are implemented only for local metadata; this is not an OS sandbox.
+  Bootstrap injects the configured raw port and trusted support descriptor into TeamFactory;
+  existing graph run keeps its observed wrapper. Lifecycle trace collection is explicitly
+  `uncollected`, with SQLite lifecycle records as evidence. Reference HTTP lifecycle is
+  unsupported, without fallback. Actual teammate compatibility remains P1-008.
+- Runtime/consumer tests and regenerated extended schema are required before publication.
+  This entry does not preclaim target integration or real runtime validation.

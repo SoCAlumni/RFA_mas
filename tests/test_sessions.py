@@ -254,7 +254,11 @@ async def test_legacy_migration_is_versioned_idempotent_and_never_adopts_unknown
     with sqlite3.connect(path) as db:
         row = db.execute("SELECT request_json, owner_id, session_id, status FROM runs").fetchone()
         assert row == (legacy.model_dump_json(), None, None, "waiting_approval")
-        assert db.execute("SELECT version FROM rfa_schema_migrations").fetchall() == [(1,), (2,)]
+        assert db.execute("SELECT version FROM rfa_schema_migrations").fetchall() == [
+            (1,),
+            (2,),
+            (3,),
+        ]
 
 
 @pytest.mark.parametrize("final_status", ["running", "waiting_approval", "failed", "cancelled"])

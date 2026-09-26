@@ -12,6 +12,7 @@ import httpx
 import pytest
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.callbacks.manager import CallbackManager
+from langsmith.utils import get_env_var, tracing_is_enabled
 
 from rfa_mas.adapters.local import LocalJsonlTrace
 from rfa_mas.api.app import create_app
@@ -124,7 +125,25 @@ def install_authority(container, authority):
     container.service.start(container.checkpoints.saver)
 
 
-async def test_restart_resume_alias_sequence_and_native_ambient_guard(tmp_path, monkeypatch):
+@pytest.fixture(params=[False, True], ids=["cold-cache", "warm-false-cache"])
+def isolated_tracing_environment(request, monkeypatch):
+    # Regression: prior native executions can cache a false tracing lookup.
+    # Only reset this public SDK cache, never replace tracing_is_enabled/guard.
+    get_env_var.cache_clear()
+    if request.param:
+        monkeypatch.setenv("LANGSMITH_TRACING", "false")
+        monkeypatch.setenv("LANGCHAIN_TRACING_V2", "false")
+        assert tracing_is_enabled() is False
+    get_env_var.cache_clear()
+    try:
+        yield
+    finally:
+        get_env_var.cache_clear()
+
+
+async def test_restart_resume_alias_sequence_and_native_ambient_guard(
+    tmp_path, monkeypatch, isolated_tracing_environment
+):
     created = []
 
     def fake_tracer(*args, **kwargs):
