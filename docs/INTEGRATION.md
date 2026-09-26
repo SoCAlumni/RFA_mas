@@ -309,6 +309,37 @@ uv run uvicorn rfa_mas.reference.app:create_reference_contract_app \
   --factory --host 127.0.0.1 --port 8001
 ```
 
+### P1-008 확장 reference 계약 (worker 구현, 통합 전)
+
+이 절은 `wip/P1-008` worker 구현 내용이다. 통합·검증 전에는 사용 가능한 기능으로 표시하지 않는다. 모든 결과는 local/mock(simulated) 증거이며 실제 승희 Response/Tool, 다영 Runtime, MCP, OpenShell, 외부 게시 증거가 아니다.
+
+| Method / path | 요청 | 응답 | 의미 |
+| --- | --- | --- | --- |
+| `POST /v1/runtime/teams` | `{spec: TeamSpec}` + `Idempotency-Key` | `TeamInstance` | side effect. 자동 재시도 없음. timeout은 `outcome_unknown`(slot 점유 유지) |
+| `POST /v1/runtime/teams/{team_id}/cleanup` | 없음 + `Idempotency-Key` | `TeamInstance` | side effect. timeout은 `outcome_unknown` |
+| `GET /v1/local/reviews/{draft_id}` | 없음 | P1-008C `LocalReviewView`(1.1 `ApprovalReference` 포함) | 게시 전 승인 proof 조회(read) |
+| `POST /v1/local/publications` | `{approval_id, draft_id, version, payload_hash}` + `Idempotency-Key` | `LocalPublicationView`(mode=mock receipt) | side effect. timeout·전송 오류·5xx는 `outcome_unknown`, 4xx는 확정 거절 |
+| `GET /v1/local/publications/{publication_id}` | 없음 | `LocalPublicationView` | 원본 receipt 참조로만 대사(read) |
+| `POST /v1/reviews/{draft_id}/decision` | `{draft_version, content_hash, decision}` | `ReviewDecision` | reference fixture opt-in(`manual_decisions=True`) 수동 결정. 최신 version/hash에만 결합 |
+
+- 같은 consumer suite: `tests/test_http_contract.py`, `tests/test_consumer_safety.py`는 동일한 WorkService/DraftLifecycle consumer를 mock port와 reference HTTP(ASGI, loopback base URL)로 실행한다. approved/revision_requested/timeout(pending)/rejected(수동 결정)/게시 outcome_unknown, 정상·정책 deny·승인 없음·본문/source ACL/policy 변경·중복·timeout을 같은 의미로 검증한다. graph/application 모듈에는 httpx/MCP/FastAPI import와 URL/Authorization 문자열이 없어야 한다.
+- 계약 버전: 응답의 `schema_version`이 `1.0`/`1.1`이 아니면 `unsupported_contract_version` 명시 오류다. 조용히 1.0으로 해석하지 않는다.
+- 게시 adapter(`PublicationHttpAdapter`): `RESPONSE_BACKEND=http`이면 bootstrap이 DraftLifecycle에 연결한다. mock publisher로 fallback하지 않는다. POST 전에 stand-in의 `ApprovalReference`로 approved·미만료·설치 owner 승인자·draft/version/content/target/policy/source 결합을 확인한다. stand-in 승인 표현에서 core payload hash를 재계산해 첨부가 다르면 거절한다. 실패한 proof는 게시 0회이며 publication은 `failed`(확정 거절)다.
+- 알려진 한계: core graph의 검토 제출은 1.0 `/v1/reviews`다. stand-in은 1.1 `/v1/local/reviews` 제출에만 `ApprovalReference`를 발급한다. 따라서 stand-in으로 게시하려면 현재 초안의 1.1 mirror(`local_review_draft`)를 stand-in에서 승인해야 한다. core가 1.1로 제출하는 연결은 DraftLifecycle/graph 소유 후속 작업이다. stand-in에는 idempotency key 조회가 없다. 응답 receipt 참조를 받지 못한 timeout은 재시작 후에도 `outcome_unknown`로 남고 다시 POST하지 않는다.
+- 인증 callback(`ReviewCallbackVerifier`): `X-RFA-Timestamp`(unix 초)와 `X-RFA-Signature: sha256=<HMAC-SHA256(secret, "<timestamp>.<raw body>")>`를 요구한다. 서명은 parsing 전에 raw bytes로 검증하고 기본 허용 시차는 5분이다. 설치 owner 승인자와 현재 초안의 run/draft/version/content hash/target에 결합한다. 같은 event 재전송은 같은 결과를 반환하고, 같은 event ID에 다른 payload가 오면 `idempotency_conflict`다. callback은 재조회를 깨우는 wake-up일 뿐 승인이 아니다. core API route 연결은 공통 API 소유 task의 후속 작업이다.
+- reference fixture opt-in: `create_reference_contract_app(service_token=..., manual_decisions=True)`. 기본값은 동결된 1.0 fixture와 동일하다. token을 켜면 모든 route가 Bearer proof를 요구하므로 누락·위조 identity로는 handler가 실행되지 않는다. test token은 합성 값만 쓰고 `.env.example`에 넣지 않는다.
+- runtime: `RuntimeHttpAdapter.prepare/cleanup`은 P1-008D stand-in과 TeamSpec round-trip을 검증한다. core의 HTTP runtime 팀 실행(`RuntimeLifecycleSupport`)은 여전히 local 전용 명시 unsupported다. stand-in은 core의 `team_role` handler를 실행하지 않는다.
+- bootstrap: `build_container(..., http_transport=...)`는 테스트·local stack용 transport 주입이다. loopback URL 검사는 그대로 적용된다. `Container.service_owner_id()`는 stand-in boundary에 넣을 설치 owner를 repository에서 읽는다.
+
+| Port | read/query timeout | side-effect timeout |
+| --- | --- | --- |
+| Response | `GET /v1/reviews`: 제한 read retry 뒤 `upstream_timeout` | `POST /v1/reviews`: 1회, review `pending`(재조회로 대사, 재제출 없음; P0-021 ledger가 제출을 기록) |
+| Publication | 승인/receipt 조회: 제한 read retry | `POST /v1/local/publications`: 1회, `outcome_unknown`, 원본 receipt 조회로만 대사 |
+| Tool | READ만 제한 재시도, 이후 `timed_out` | WRITE는 P0에서 transport 전에 거절 |
+| Runtime | status: 제한 read retry | run/cancel/prepare/cleanup: 1회, `OutcomeUnknownError` |
+| Policy | 제한 read retry 뒤 `upstream_timeout` | 해당 없음 |
+
+
 이는 local contract fixture일 뿐 팀원 서비스가 아니다. fixture는 process memory에 review/runtime 상태를 보관하므로 재시작하면 사라진다.
 기본 `LocalRuntime`은 실행과 terminal status 조회만 제공하며 P0 cancel은 `not_implemented`로 명시 실패한다. reference HTTP fixture의 cancel 응답은 DTO 계약 시험용이며 실제 sandbox task 취소 증거가 아니다.
 

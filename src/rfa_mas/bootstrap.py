@@ -11,6 +11,7 @@ import httpx
 from rfa_mas.adapters.checkpoints import SqliteCheckpoints
 from rfa_mas.adapters.http import (
     PolicyHttpAdapter,
+    PublicationHttpAdapter,
     ReferenceHttpClient,
     ResponseHttpAdapter,
     RuntimeHttpAdapter,
@@ -187,6 +188,13 @@ class Container:
         return BoundContextReader(self.repository,self.policy,bound,
                                   issuer_supported=self.settings.policy_backend == "local")
 
+    async def service_owner_id(self) -> str:
+        """Installation owner injected into local stand-ins (P1-008C/D boundaries).
+
+        Server-verified identity from the repository, never a request/body claim.
+        """
+        return (await self.repository.local_principal()).user_id
+
     async def startup(self) -> None:
         if self.ready:
             return
@@ -229,11 +237,15 @@ def _http_port(
     settings: Settings,
     clients: list[httpx.AsyncClient],
     endpoint_name: str,
+    transport: httpx.AsyncBaseTransport | None = None,
 ) -> ReferenceHttpClient:
     require_loopback_reference_url(base_url, setting_name=endpoint_name)
     client = httpx.AsyncClient(
         base_url=base_url,
         timeout=httpx.Timeout(settings.http_timeout_seconds),
+        # Optional injected transport (ASGI/MockTransport in tests, local stack). The
+        # loopback URL check above still applies; the transport never widens egress.
+        transport=transport,
     )
     reference_client = ReferenceHttpClient(
         client,
@@ -328,7 +340,12 @@ class StagedContextBoundary:
         return await self._load(principal, work, request)
 
 
-def build_container(settings: Settings | None = None, *, project_resolver: ProjectResolver = no_projects) -> Container:
+def build_container(
+    settings: Settings | None = None,
+    *,
+    project_resolver: ProjectResolver = no_projects,
+    http_transport: httpx.AsyncBaseTransport | None = None,
+) -> Container:
     settings = settings or Settings()
     inspect_configuration(settings).require_available()
     redactor = SecretRedactor(settings.secret_values())
@@ -349,6 +366,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
                 settings=settings,
                 clients=clients,
                 endpoint_name="POLICY_BASE_URL",
+                transport=http_transport,
             )
         )
 
@@ -361,16 +379,17 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
 
     if settings.response_backend == "mock":
         response = MockResponse()
+        response_client = None
     else:
-        response = ResponseHttpAdapter(
-            _http_port(
-                base_url=settings.response_base_url or "",
-                token=settings.response_api_token,
-                settings=settings,
-                clients=clients,
-                endpoint_name="RESPONSE_BASE_URL",
-            )
+        response_client = _http_port(
+            base_url=settings.response_base_url or "",
+            token=settings.response_api_token,
+            settings=settings,
+            clients=clients,
+            endpoint_name="RESPONSE_BASE_URL",
+            transport=http_transport,
         )
+        response = ResponseHttpAdapter(response_client)
 
     if settings.tool_backend == "mock":
         tool = MockTool()
@@ -382,6 +401,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
                 settings=settings,
                 clients=clients,
                 endpoint_name="TOOL_BASE_URL",
+                transport=http_transport,
             )
         )
 
@@ -395,6 +415,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
                 settings=settings,
                 clients=clients,
                 endpoint_name="RUNTIME_BASE_URL",
+                transport=http_transport,
             )
         )
 
@@ -530,12 +551,20 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         guard_thread=checkpoints.guard,
         observations=observer,
     )
-    # P1-005A: only the in-process mock publisher exists. A non-mock response backend gets
-    # no publisher, so publication fails explicitly (501) instead of silently using mock.
+    # P1-005A/P1-008: mock backend -> in-process MockPublisher; http backend -> the
+    # Response service's publication endpoint (P1-008C local stand-in contract, mode=mock
+    # receipts). Never a silent mock fallback for a selected http backend.
+    async def installation_owner() -> str | None:
+        return (await repository.local_principal()).user_id
+
+    if response_client is None:
+        publisher = MockPublisher()
+    else:
+        publisher = PublicationHttpAdapter(response_client, expected_approver=installation_owner)
     drafts = DraftLifecycle(
         repository=repository,
         dependencies=lambda: service._dependencies,
-        publisher=MockPublisher() if settings.response_backend == "mock" else None,
+        publisher=publisher,
     )
     return Container(
         settings=settings,

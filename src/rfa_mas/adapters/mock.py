@@ -219,6 +219,33 @@ class MockResponse:
     async def get_decision(self, draft_id: str) -> ReviewDecision | None:
         return self._by_draft.get(draft_id)
 
+    async def decide(
+        self,
+        draft_id: str,
+        *,
+        draft_version: int,
+        content_hash: str,
+        decision: ReviewStatus,
+    ) -> ReviewDecision:
+        """Manual reviewer decision (P1-008 parity with the local stand-in).
+
+        Bound to the latest submitted version/hash; a stale or changed draft is rejected.
+        Only the review authority stand-in changes a decision; callers never self-approve.
+        """
+        if decision == ReviewStatus.PENDING:
+            raise RfaError("invalid_request", "대기 상태는 결정이 아닙니다.")
+        async with self._lock:
+            current = self._by_draft.get(draft_id)
+            if current is None:
+                raise RfaError("not_found", "검토 요청을 찾을 수 없습니다.")
+            if (current.draft_version, current.content_hash) != (draft_version, content_hash):
+                raise RfaError("approval_binding_mismatch", "최신 초안 버전과 결정이 다릅니다.")
+            updated = current.model_copy(
+                update={"decision": decision, "safe_reason": "수동 검토 결정(모의)입니다."}
+            )
+            self._by_draft[draft_id] = updated
+            return updated
+
 
 class MockPublisher:
     """P1-005A in-process publication stand-in: no network, no external write.

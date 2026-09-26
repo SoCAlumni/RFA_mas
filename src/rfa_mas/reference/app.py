@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hmac
 import json
 from typing import Annotated
 
-from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, ValidationError
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, SecretStr, ValidationError
 
 from rfa_mas.adapters.local import LocalPolicy
 from rfa_mas.adapters.mock import MockResponse, MockTool
@@ -19,6 +21,7 @@ from rfa_mas.contracts import (
     PolicyRequest,
     ResultStatus,
     ReviewDecision,
+    ReviewStatus,
     SimulationScenario,
     SourceLocation,
     StructuredError,
@@ -29,6 +32,7 @@ from rfa_mas.contracts import (
     WorkRequest,
     sha256_text,
 )
+from rfa_mas.errors import RfaError
 
 
 class ReviewSubmission(BaseModel):
@@ -45,10 +49,38 @@ class RuntimeSubmission(BaseModel):
     request: TaskRequest
 
 
-def create_reference_contract_app() -> FastAPI:
-    """Local fixture for our provisional contract, not a teammate service implementation."""
+class ReviewDecisionRequest(BaseModel):
+    """Manual reviewer decision bound to the exact submitted version/hash (P1-008)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    draft_version: int
+    content_hash: str
+    decision: ReviewStatus
+
+
+def create_reference_contract_app(
+    *, service_token: SecretStr | None = None, manual_decisions: bool = False
+) -> FastAPI:
+    """Local fixture for our provisional contract, not a teammate service implementation.
+
+    Defaults reproduce the frozen 1.0 fixture exactly. P1-008 opt-ins: service_token
+    makes every route require that bearer token (synthetic test secret only), so a
+    missing/forged identity proof is rejected before any handler runs; manual_decisions
+    adds the reviewer decision route used to reproduce rejected/revision decisions.
+    """
 
     app = FastAPI(title="RFA provisional teammate contract fixture", version="1.0")
+    if service_token is not None:
+        expected = f"Bearer {service_token.get_secret_value()}".encode()
+
+        @app.middleware("http")
+        async def authenticated(request: Request, call_next):
+            supplied = request.headers.get("authorization", "").encode()
+            if not hmac.compare_digest(supplied, expected):
+                return JSONResponse({"detail": "authentication required"}, status_code=401)
+            return await call_next(request)
+
     response_adapter = MockResponse()
     tool_adapter = MockTool()
     policy_adapter = LocalPolicy()
@@ -97,6 +129,21 @@ def create_reference_contract_app() -> FastAPI:
         if result is None:
             raise HTTPException(status_code=404, detail="review not found")
         return result
+
+    if manual_decisions:
+
+        @app.post("/v1/reviews/{draft_id}/decision", response_model=ReviewDecision)
+        async def decide_review(draft_id: str, body: ReviewDecisionRequest) -> ReviewDecision:
+            try:
+                return await response_adapter.decide(
+                    draft_id,
+                    draft_version=body.draft_version,
+                    content_hash=body.content_hash,
+                    decision=body.decision,
+                )
+            except RfaError as exc:
+                status = {"not_found": 404, "invalid_request": 422}.get(exc.code, 409)
+                raise HTTPException(status_code=status, detail=exc.code) from None
 
     @app.post("/v1/tools/execute", response_model=ToolResult)
     async def execute_tool(request: ToolRequest) -> ToolResult:
