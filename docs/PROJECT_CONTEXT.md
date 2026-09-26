@@ -4,8 +4,8 @@
 
 ## 현재 기준
 
-- 기존 P0-001~013은 기반 구현·offline 검증 이력이다. 확장된 제품 P0 전체 완료가 아니다. 영속 LangGraph resume, 사용자별 세션, 실제 Task 팀, 예약은 아직 없다.
-- 현재 milestone: D1 계약·세션·KB → D2 팀·후보·DRAFT → D3 복구·예약·reference·평가 → D4 실제 통합. 기존 D1~D3 코어 24h + 기술 고도화 4.5h, D4 조건부 8h. 증가분은 독립 세션에 배정할 계획이며 직렬 28.5h를 24h 완료로 약속하지 않는다. 용량 부족 시 필수 gate 미완료를 보고한다.
+- 기존 P0-001~013은 기반 구현·offline 검증 이력이며 확장된 제품 P0 전체 완료가 아니다. 기능별 최신 구현·검증·통합 상태는 task 원본과 WORK_LOG에서 확인한다. 이 공통 문서는 변경되는 진행 snapshot을 중복 관리하지 않는다.
+- milestone 순서: D1 계약·세션·KB → D2 팀·후보·DRAFT → D3 복구·예약·reference·평가 → D4 실제 통합. 최초 D1~D3 코어 24h에 승인된 E2E 보강 3h와 기술 고도화 4.5h를 더한 직렬 추정은 31.5h, D4 조건부 8h다. 독립 세션 병렬화는 충돌 검사를 따르며 24h 완료를 약속하지 않는다. 용량 부족 시 필수 gate 미완료를 보고한다.
 - 작업 명세/상태 원본은 canonical control root의 `tasks/<ID>/task.yaml`이다. `TASKS.md`, index/state는 파생 view다. 제품 기능/실행 명령의 현재 사실은 README·소스·검증 근거로 확인한다.
 - 사용자가 2026-09-26 전체 개발·Git commit·작업 로그를 승인했다. 최초 보존 커밋 `d51137a`를 만들고 canonical `main` baseline을 등록했다. 각 task는 유효 claim과 별도 source worktree에서 구현·검증 후 통합한다. 비밀 파일은 추적하지 않는다. [작업 기록](WORK_LOG.md)을 함께 갱신한다.
 

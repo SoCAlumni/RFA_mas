@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65",
+  "checked_at": "2026-09-26T08:22:29.445Z",
+  "reviewer": "rfa-coordinator",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "exit_code": 0,
+      "observation": "Frozen 1.0 schema/OpenAPI and 9 fixture shapes valid."
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "exit_code": 0,
+      "observation": "7 extended fixture shapes valid."
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_contracts.py",
+        "tests/test_trace_eval_contract.py"
+      ],
+      "exit_code": 0,
+      "observation": "64 passed in 0.57s; no skip/error."
+    }
+  ],
+  "compatibility": "Additive ResumeRequest, authenticated POST /v1/runs/{run_id}/resume and seed-once port. Frozen 1.0 contract preserved; teammate service support is still provisional."
+}

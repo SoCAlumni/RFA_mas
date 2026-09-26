@@ -252,16 +252,16 @@ verification:
   - 같은 thread 동시 invoke 거절/직렬화, checkpoint에 credential·authorization header 저장 없음.
   runner: pytest
 evidence_dir: .agent/evidence/P0-016
-latest_evidence_file: .agent/evidence/P0-016/resume-01/result.json
+latest_evidence_file: .agent/evidence/P0-016/resume-integrated-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 5
   spec_digest: e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31
-  contract_digest: 7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b
-  source_fingerprint: 6b6fccac4051a049f9568bdbb701fd00cb9dd44f440df3649b61c673140521a1
-  evidence: .agent/evidence/P0-016/resume-01/result.json
+  contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
+  source_fingerprint: 016107e8e8492ae05f6c527ad7fff5b5e61786b5c8c8558f9fdb818ce888b4c1
+  evidence: .agent/evidence/P0-016/resume-integrated-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: true
@@ -293,17 +293,25 @@ integration:
       tests/test_resume.py: dd776c7f54a68705c00a1433641b622eeba6b5cb1a996b41d45e8d4b3f4c50a2
       tests/test_supervisor_boundaries.py: fa5349793d8281c0bfc663564b00210c775a8340565bfd992c57a23318c721f7
       uv.lock: cbc662503129c4b6e550dbea9f7d932a7107494835507e911ab972edcf932b83
-  result: null
-  evidence: null
-revision: 15
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 5
+      spec_digest: e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31
+      contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
+      source_fingerprint: 016107e8e8492ae05f6c527ad7fff5b5e61786b5c8c8558f9fdb818ce888b4c1
+      evidence: .agent/evidence/P0-016/resume-integrated-01/result.json
+    head: 2a55de0d1eeedc593cb694a60e12482b3ba29dc1
+  evidence: .agent/evidence/P0-016/resume-integrated-01/result.json
+revision: 20
 spec_revision: 5
 claim_generation: 3
 claim: null
 attempts:
-  count: 1
+  count: 2
   cycles: 1
   no_progress_count: 0
-  latest_attempt: resume-01
+  latest_attempt: resume-integrated-01
   evidence_refs:
   - .agent/evidence/P0-016/resume-01/result.json
   approaches:
@@ -355,8 +363,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:01:31+00:00'
-concise_result: 'resume-01 passed: 22 resume tests, 164 related regression; contracts and lint passed,
-  integration pending.'
-next_action: Commit verified owned source, submit verifying, then coordinator integration after OPS-002
-  fix.
+updated_at: '2026-09-26T08:28:14+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

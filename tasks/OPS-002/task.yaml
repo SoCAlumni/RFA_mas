@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: in_progress
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -157,45 +157,53 @@ verification:
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
-latest_evidence_file: .agent/evidence/OPS-002/contract-recovery-01/result.json
+latest_evidence_file: .agent/evidence/OPS-002/contract-recovery-integrated-01/result.json
 verification_summary:
-  state: failed
+  state: stale
   spec_revision: 2
   spec_digest: dec5fa924d6efb42681a55c9ce30d10be71173fab91239f5c3780222697b5805
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-  source_fingerprint: c6c166007b3b9d79df7de8c35eddbfb3ae5ce1397d61bc7cba6a8daea5ba569a
-  evidence: .agent/evidence/OPS-002/contract-recovery-01/result.json
+  source_fingerprint: f22fbf1b2dcfa812ea077899507b60cb2de67fc722bf7acf83b40ec50d7c5ee2
+  evidence: .agent/evidence/OPS-002/contract-recovery-integrated-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical main
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 22
+  reservation: true
+  submission_generation: 3
+  submission:
+    head: 6f39c69902c60517a6fba78798d6d16d2767fbe5
+    baseline_head: a612fc3360a6f2920b309d8056b7607aa6859194
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+    branch: task/OPS-002-r2
+    evidence: .agent/evidence/OPS-002/contract-recovery-02/result.json
+    changed_files:
+      docs/TASK_REVALIDATION.md: 41623506078988e0208c94eb59cfc29e95d806aa9ce6b25c99ac94b7bcd76e83
+      scripts/tasklib/cli.py: 6105f75dcc26fe252c767363a5eb70a29cffc44977617e60414bbd132de77076
+      tests/test_taskctl.py: c4217e4f208ab8ebd7119136419554b9ec31bc7671970205e970f78f90818e00
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 2
+      spec_digest: dec5fa924d6efb42681a55c9ce30d10be71173fab91239f5c3780222697b5805
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: f22fbf1b2dcfa812ea077899507b60cb2de67fc722bf7acf83b40ec50d7c5ee2
+      evidence: .agent/evidence/OPS-002/contract-recovery-integrated-01/result.json
+    head: a94e9fad5fab4a7e2e1bf59b8c4f9395a388e41f
+  evidence: .agent/evidence/OPS-002/contract-recovery-integrated-01/result.json
+revision: 32
 spec_revision: 2
 claim_generation: 3
-claim:
-  session_id: worker-control
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
-  branch: task/OPS-002-r2
-  generation: 3
-  claimed_at: '2026-09-26T07:55:40+00:00'
-  heartbeat_at: '2026-09-26T08:07:58+00:00'
-  lease_expires_at: '2026-09-26T08:22:58+00:00'
-  baseline_head: a612fc3360a6f2920b309d8056b7607aa6859194
-  recovery_required: false
-  context_digest: 54474dec8ea4c649909631543a195cee2621945c73259c99e681ca8fd5a039d6
+claim: null
 attempts:
-  count: 4
-  cycles: 1
+  count: 6
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: contract-recovery-01
+  latest_attempt: contract-recovery-integrated-01
   evidence_refs:
   - .agent/evidence/OPS-002/recovery-01/result.json
   - .agent/evidence/OPS-002/contract-recovery-01/result.json
+  - .agent/evidence/OPS-002/contract-recovery-02/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -253,8 +261,7 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:09:26+00:00'
-concise_result: Reproduced contract deadlock in isolated fixture; implemented narrow historical-bound
-  acceptance and notice lifecycle fixes; required tests not_run
-next_action: Independent notice lifecycle review then frozen-source V1/V2 attempt; no product acceptance
-  claim
+updated_at: '2026-09-26T08:21:54+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

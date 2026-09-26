@@ -275,3 +275,19 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - dev_env의 로컬 생성 토큰은 상대 서비스에 등록된 credential이 아니다. 이번 후속
   설정 task는 기존 실제 env 프로필을 수정하지 않으며, 예약된 scheduler/NAT/retention
   설정을 실제 기능이 완성된 것처럼 표시하지 않는다.
+
+## OPS-002 / P0-016 대상 브랜치 통합 — 2026-09-26
+
+- OPS-002 두 번째 정식 시도 contract-recovery-02는 control 94 passed(112.01초),
+  migration 17 passed(11.99초). 첫 실패 기록을 유지했다. feature 6f39c69를 a94e9fa로
+  통합하고 target에서 94 passed(113.73초), 17 passed(12.28초)를 확인해 close했다.
+  비활성 과거 통합 예약의 직렬 재검증만 허용하며 활성/만료 claim과 미통합 제출은 거절한다.
+- P0-016 feature 3700de1을 2a55de0로 통합했다. 실제 schema/fixture 검사 후
+  RFA-EXTENDED 1.1 digest 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65를
+  발행했다. frozen/extended fixtures 9/7개와 계약·trace 회귀 64 passed(0.57초).
+  target resume 22 passed(1.25초), 관련 회귀 164 passed(2.53초)를 확인하고 close했다.
+  child durability의 알려진 경고는 유지했으며 외부 승인 원본·전체 E2E 성공 주장은 아니다.
+- 변경된 공통 schema/settings/lock에 따른 과거 task의 검증 stale은 구현 삭제가 아니다.
+  과거 evidence를 보존하고 필요한 선행 계약·세션·selector·NAT spike를 순서대로 재검증한다.
+  공통 context의 초기 미구현 snapshot을 최신 원본 참조로 바꿔 향후 진행 갱신마다
+  공통 설계 digest가 불필요하게 바뀌지 않게 했다. 이번 context 변경 자체도 재검증에 포함한다.
