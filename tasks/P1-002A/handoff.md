@@ -13,3 +13,7 @@
 
 - 사유: P1-003A 통합이 공동 소유 파일 docs/EDUCATION_MAPPING.md를 변경해 P1-002A 증거가 stale이 되었다.
 - 소스 변경 없이 main a92912c에서 같은 live V1을 worker/target 단계로 재실행한다.
+
+- reval1-worker(a92912c) 4 passed 275.6s(2건 timeout 후 재시도 성공)였으나 main이 462bd2f로 이동해 submit 거절. reval2-worker(462bd2f) 4 passed 69.2s였으나 claim baseline이 a92912c라 scope 검사에서 P0-020 변경이 섞여 거절.
+- 기준점 재설정 recover는 선행 P0-017이 P0-020 계약 발행 뒤 verifying/stale이라 거절됨.
+- 다음 첫 행동: P0-017이 다시 done이 되면 main HEAD로 worktree를 ff한 뒤 recover(integrated_revalidation, disposition resume)로 기준점을 현재 HEAD에 맞추고 새 attempt로 worker/target live V1 재실행 후 submit/integrate/close.

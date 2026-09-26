@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -166,42 +166,47 @@ verification:
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
-latest_evidence_file: .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
+latest_evidence_file: .agent/evidence/OPS-002/post-team-r5-target2/result.json
 verification_summary:
-  state: failed
+  state: passed
   spec_revision: 4
   spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-  source_fingerprint: 79ce47df77bd52ab768392e14f414ee823498cf18fd60433f195d20261928527
-  evidence: .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
+  source_fingerprint: 22ff20a2b25cac3ed9ef621b9e9ed7f4f2c7b5239ba28b1d1e1252da4a422a02
+  evidence: .agent/evidence/OPS-002/post-team-r5-target2/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical main
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 65
+  submission_generation: 12
+  submission:
+    head: 93cd3bf58e88dcea3c8722885d472b72f0362505
+    baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r5
+    branch: task/OPS-002-r5
+    evidence: .agent/evidence/OPS-002/post-team-r5-worker/result.json
+    changed_files:
+      docs/TASK_REVALIDATION.md: d05b772e8d1d88c410dad0c85fc4a1d989e7a9309af8edcb856de36dbc9aaa61
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 22ff20a2b25cac3ed9ef621b9e9ed7f4f2c7b5239ba28b1d1e1252da4a422a02
+      evidence: .agent/evidence/OPS-002/post-team-r5-target2/result.json
+    head: 975baaebbb2140c746d84a080ee3147942ee3a5a
+  evidence: .agent/evidence/OPS-002/post-team-r5-target2/result.json
+revision: 78
 spec_revision: 4
-claim_generation: 10
-claim:
-  session_id: rfa-coordinator
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
-  branch: task/OPS-002-r2
-  generation: 10
-  claimed_at: '2026-09-26T14:37:18+00:00'
-  heartbeat_at: '2026-09-26T14:43:49+00:00'
-  lease_expires_at: '2026-09-26T14:58:49+00:00'
-  baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
-  recovery_required: false
-  context_digest: f31729badfee720e37c869d548d67eca627f59279a4debd7260e8d8b7a6a2353
+claim_generation: 12
+claim: null
 attempts:
-  count: 12
+  count: 16
   cycles: 1
   no_progress_count: 0
-  latest_attempt: post-retrieval-r3-worker
+  latest_attempt: post-team-r5-target2
   evidence_refs:
   - .agent/evidence/OPS-002/recovery-01/result.json
   - .agent/evidence/OPS-002/contract-recovery-01/result.json
@@ -210,6 +215,8 @@ attempts:
   - .agent/evidence/OPS-002/current-effort-worker-02/result.json
   - .agent/evidence/OPS-002/post-retrieval-worker/result.json
   - .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
+  - .agent/evidence/OPS-002/post-team-r4-worker/result.json
+  - .agent/evidence/OPS-002/post-team-r5-worker/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -454,6 +461,77 @@ attempts:
       source_fingerprint: babae4028e00d2e765b359e66907ba84e283d5dc1cf5f50c482ad61870cee254
       evidence: .agent/evidence/OPS-002/post-retrieval-worker/result.json
     latest_evidence_file: .agent/evidence/OPS-002/post-retrieval-worker/result.json
+  - kind: recovery
+    generation: 11
+    baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+    reason: Plan timeout under concurrent load (env, not product); resume alone
+    at: '2026-09-26T14:51:48+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+      branch: task/OPS-002-r2
+      generation: 10
+      claimed_at: '2026-09-26T14:37:18+00:00'
+      heartbeat_at: '2026-09-26T14:43:49+00:00'
+      lease_expires_at: '2026-09-26T14:58:49+00:00'
+      baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+      recovery_required: false
+      context_digest: f31729badfee720e37c869d548d67eca627f59279a4debd7260e8d8b7a6a2353
+    integration:
+      state: pending
+      target: canonical main
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: failed
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 79ce47df77bd52ab768392e14f414ee823498cf18fd60433f195d20261928527
+      evidence: .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/post-retrieval-r3-worker/result.json
+  - kind: recovery
+    generation: 12
+    baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+    reason: 'Submit refused: FF''d worktree included out-of-scope integrated commits; resume on a clean
+      baseline worktree with an owned doc commit'
+    at: '2026-09-26T14:56:49+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+      branch: task/OPS-002-r2
+      generation: 11
+      claimed_at: '2026-09-26T14:51:48+00:00'
+      heartbeat_at: '2026-09-26T14:51:48+00:00'
+      lease_expires_at: '2026-09-26T15:06:48+00:00'
+      baseline_head: 62422a2d7014d4795d44988e562d6cbef43ddb23
+      recovery_required: false
+      context_digest: f31729badfee720e37c869d548d67eca627f59279a4debd7260e8d8b7a6a2353
+    integration:
+      state: pending
+      target: canonical main
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 0fcaa951bcb33a8da4fb55cbb02fc8f2f83b6054681e23ac7737d40dabb91459
+      evidence: .agent/evidence/OPS-002/post-team-r4-worker/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/post-team-r4-worker/result.json
 blocker: null
 migration:
   original_status: new
@@ -466,8 +544,7 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:44:27+00:00'
-concise_result: 'Recovery inspected: Expired lease after an env-only verification failure (TASK_CONTROL_ROOT
-  missing in isolated env); resume same revalidation'
+updated_at: '2026-09-26T15:06:18+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

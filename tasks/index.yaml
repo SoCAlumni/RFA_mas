@@ -1,10 +1,11 @@
 generated: true
 schema_version: '1.0'
-source_digest: 46a4b3491650e67b047af8267d62d9bdd3f98ba10ecaf3dbd4446abf10910ffc
+source_digest: 7b24f56faba998a32fdeb6f1320e742f206dc8894ec7da28038eac2fcb2fad03
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 65
+  OPS-002: 78
+  OPS-003: 1
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -32,17 +33,17 @@ source_revisions:
   P0-025: 12
   P0-025A: 2
   P0-026: 13
-  P0-027: 81
+  P0-027: 91
   P0-028: 51
   P1-001: 34
   P1-001A: 30
   P1-001B: 10
   P1-001C: 10
   P1-002: 3
-  P1-002A: 18
+  P1-002A: 21
   P1-003: 2
   P1-003A: 14
-  P1-004: 10
+  P1-004: 11
   P1-004A: 12
   P1-004B: 10
   P1-005: 12
@@ -72,7 +73,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T14:51:32+00:00'
+generated_at: '2026-09-26T15:12:15+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -89,6 +90,12 @@ tasks:
   workstream: contracts/control
   depends_on: []
   path: tasks/OPS-002/task.yaml
+- id: OPS-003
+  title: 통합 evidence head race 보정과 과거 binding 호환
+  workstream: contracts/control
+  depends_on:
+  - OPS-002
+  path: tasks/OPS-003/task.yaml
 - id: P0-001
   title: 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정
   workstream: contracts/control

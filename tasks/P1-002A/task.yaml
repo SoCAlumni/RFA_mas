@@ -134,14 +134,14 @@ verification:
   - 출력·evidence에 key/Authorization/reasoning_content 없음
   runner: pytest
 evidence_dir: .agent/evidence/P1-002A
-latest_evidence_file: .agent/evidence/P1-002A/reval1-worker/result.json
+latest_evidence_file: .agent/evidence/P1-002A/reval2-worker/result.json
 verification_summary:
   state: passed
   spec_revision: 2
   spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: caca1aedd9eb39d6ecc42ee93ec19b646359a028945e42947f0d04b6d6d2fb59
-  evidence: .agent/evidence/P1-002A/reval1-worker/result.json
+  source_fingerprint: 5699c788dcca119078b355eacc200653ce9ec43a6f42a8bc2201f10a9c49e28d
+  evidence: .agent/evidence/P1-002A/reval2-worker/result.json
 integration:
   state: pending
   target: canonical integration branch after OPS-000
@@ -151,7 +151,7 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 18
+revision: 21
 spec_revision: 2
 claim_generation: 2
 claim:
@@ -166,13 +166,14 @@ claim:
   recovery_required: false
   context_digest: b4fad6b37a4e26caac0b0f175b16fb2c29c2d70fe7f57f89a1dfe859057018a1
 attempts:
-  count: 3
-  cycles: 1
+  count: 4
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: reval1-worker
+  latest_attempt: reval2-worker
   evidence_refs:
   - .agent/evidence/P1-002A/v1-live-a1/result.json
   - .agent/evidence/P1-002A/reval1-worker/result.json
+  - .agent/evidence/P1-002A/reval2-worker/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -229,8 +230,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:51:32+00:00'
-concise_result: 'Recovery inspected: P1-003A integration changed shared owned file docs/EDUCATION_MAPPING.md;
-  P1-002A source unchanged, re-verify live V1'
-next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
-  AC'
+updated_at: '2026-09-26T14:54:25+00:00'
+concise_result: 'Revalidation live V1 passed twice (a92912c, 462bd2f) but submit blocked: main advanced
+  and dependency P0-017 stale after P0-020 contract publication'
+next_action: 'After P0-017 done: ff worktree to main, recover to re-anchor baseline, rerun worker/target
+  live V1, submit/integrate/close'

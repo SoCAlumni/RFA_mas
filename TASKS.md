@@ -12,7 +12,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | --- | --- | --- | --- | --- | --- | --- |
 | [OPS-000](tasks/OPS-000/task.yaml) | 사용자 변경을 보존한 Git/worktree baseline 등록 | P0 | verifying / stale | contracts/control | 0.5 | — |
 | [OPS-001](tasks/OPS-001/task.yaml) | 작업 이관·공통 CLI·병렬 제어 검증 | P0 | verifying / stale | contracts/control | 0.5 | — |
-| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | in_progress / failed | contracts/control | 0.5 | — |
+| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | done / passed | contracts/control | 0.5 | — |
+| [OPS-003](tasks/OPS-003/task.yaml) | 통합 evidence head race 보정과 과거 binding 호환 | P0 | todo / not_run | contracts/control | 0.5 | OPS-002 |
 | [P0-001](tasks/P0-001/task.yaml) | 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정 | P0 | done / passed | contracts/control | 0 | — |
 | [P0-002](tasks/P0-002/task.yaml) | typed settings, `.env.example`, `.gitignore`, secret-safe doctor와 named dev credential 초기화 | P0 | done / passed | contracts/control | 0 | P0-001 |
 | [P0-003](tasks/P0-003/task.yaml) | 공통 Pydantic DTO, async ports, 오류 모델, state transition | P0 | done / passed | contracts/control | 0 | P0-001 |
@@ -40,7 +41,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-025](tasks/P0-025/task.yaml) | UI polling 상태·안전한 이벤트·readiness·registry | P0 | todo / not_run | integration/evaluation | 0.5 | P0-015, P0-020, P0-024, P1-008 |
 | [P0-025A](tasks/P0-025A/task.yaml) | 동일 출처 세션·노트·질의·검토 기본 UI | P0 | todo / not_run | integration/evaluation | 2 | P0-015, P1-001A, P1-008C |
 | [P0-026](tasks/P0-026/task.yaml) | 합성 end-to-end 데모·D3 전달 패키지 | P0 | todo / not_run | integration/evaluation | 4 | P0-021, P0-024, P0-025, P1-006, P1-008, P1-001B, P1-006E, P1-005B |
-| [P0-027](tasks/P0-027/task.yaml) | NAT/LangGraph 호환성 spike·선택 extra 고정 | P0 | verifying / stale | integration/evaluation | 0.5 | P0-001, P0-007 |
+| [P0-027](tasks/P0-027/task.yaml) | NAT/LangGraph 호환성 spike·선택 extra 고정 | P0 | done / passed | integration/evaluation | 0.5 | P0-001, P0-007 |
 | [P0-028](tasks/P0-028/task.yaml) | NAT 평가 adapter·installed smoke와 native 동등성 | P0 | verifying / stale | integration/evaluation | 1.5 | P0-014, P0-027, P1-006D, P0-016 |
 | [P1-001](tasks/P1-001/task.yaml) | 노트·export 입력과 revision 저장 | P0 | verifying / stale | knowledge | 1 | P0-014, P0-015, P0-016 |
 | [P1-001A](tasks/P1-001A/task.yaml) | 권한 선필터·최신 lexical 검색·무효화 | P0 | verifying / stale | knowledge | 1.5 | P1-001, P0-016, P1-006 |
@@ -83,6 +84,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
+- OPS-003: planning ready; claim 가능
 
 ## 최종 gate
 
