@@ -9,7 +9,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -240,43 +240,54 @@ verification:
   - NAT raw 파일/오류 로그 canary 및 외부 network/tracer spy 검사; P1-006D allowlist export만 저장
   runner: pytest
 evidence_dir: .agent/evidence/P0-028
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-028/nat-target-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 11
+  spec_digest: 2c22fb36119b6410c20f1af0593dfe0e91b93d7d1c77ad9ce88d23adbaab9355
+  contract_digest: 999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f
+  source_fingerprint: c723a99bc2f5a6509fb36482d789e87bc8ce68ee2426745c1984f83e38cf2fb2
+  evidence: .agent/evidence/P0-028/nat-target-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 12
+  submission_generation: 1
+  submission:
+    head: fd6bc9416898c5efc4d49b05d08b311af2c13b24
+    baseline_head: 35f43400c57641dea9ab8397b018a98d7f5bea8b
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-028
+    branch: task/P0-028
+    evidence: .agent/evidence/P0-028/nat-adapter-02/result.json
+    changed_files:
+      configs/nat/rfa_eval.yml: d80f19e184606058dfd98fb64b963c04d247872d0f856da17118e67885ab0aa4
+      configs/nat/rfa_eval_cases.json: 5d615f55caf3c2b81481274882d22f547dfa71ef882c3859fcfd70070d15058f
+      src/rfa_mas/adapters/nat_eval.py: 724aea91a60a9435dd13fd5590b075df11766887f1a178d37a107499a694676b
+      tests/test_nat_adapter.py: 2fbb31a13409d1059043af2755f299b819419694f22e69a88853ec6e9b1c9dd8
+      tests/test_nat_smoke.py: bbd3cd419519ba1e5415a194fc15dc1a49217fd171c310d968559fd59e9e6c32
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 11
+      spec_digest: 2c22fb36119b6410c20f1af0593dfe0e91b93d7d1c77ad9ce88d23adbaab9355
+      contract_digest: 999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f
+      source_fingerprint: c723a99bc2f5a6509fb36482d789e87bc8ce68ee2426745c1984f83e38cf2fb2
+      evidence: .agent/evidence/P0-028/nat-target-01/result.json
+    head: e265be2814af44591a9b83c34930a02f26b35333
+  evidence: .agent/evidence/P0-028/nat-target-01/result.json
+revision: 25
 spec_revision: 11
 claim_generation: 1
-claim:
-  session_id: worker-nat
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-028
-  branch: task/P0-028
-  generation: 1
-  claimed_at: '2026-09-26T10:50:13+00:00'
-  heartbeat_at: '2026-09-26T10:50:13+00:00'
-  lease_expires_at: '2026-09-26T11:05:13+00:00'
-  baseline_head: 35f43400c57641dea9ab8397b018a98d7f5bea8b
-  recovery_required: false
-  context_digest: cf275e34aa7a71b4729fee595b6ebbb856e00175b8b2b068ee7b814815209ccb
+claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 3
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: nat-target-01
+  evidence_refs:
+  - .agent/evidence/P0-028/nat-adapter-01/result.json
+  - .agent/evidence/P0-028/nat-adapter-02/result.json
   approaches: []
 blocker: null
 migration:
@@ -289,7 +300,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T10:50:13+00:00'
-concise_result: 'Specification changed: Native observation API and integrated target evidence now available;
-  consume authorized durable ledger and explicit coverage, not JSONL counts'
-next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
+updated_at: '2026-09-26T11:07:50+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: Capture cycle2 then exact V1/V2 and bounded default/no-NAT verification.

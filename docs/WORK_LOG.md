@@ -566,3 +566,24 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   착수했다. 별도 source worktree와 patched Python/locked NAT extra를 사용한다.
   다음은 최신 baseline의 P0-019 팀 Factory이며 두 task의 수정 파일은 겹치지 않는다.
   전체 회귀의 추적 테스트 cache 문제와 최종10개 E2E/real gate는 여전히 미통과 상태다.
+
+## P0-028 NAT 평가 adapter 통합 — 2026-09-26
+
+- feature `fd6bc94`의 5개 소유 파일만 main에 통합했다. 공식 NAT1.8.0
+  EvaluationRun + langgraph_wrapper 바깥에서 기존 WorkService를 한 번 호출하며,
+  caller 소유 lifecycle/SQLite checkpoint/승인 대기 상태를 유지한다. 원문 대신
+  허용된 ledger·상태만 NAT로 전달하고 ambient tracer·출력 callback을 차단한다.
+- `nat-adapter-01`은 V1 21 passed/1 failed/1 teardown error, V2 2 passed였다.
+  ResumeRequest에 잘못된 필드를 쓴 테스트와 실제 LangSmith client를 만든 양성 대조
+  테스트가 원인이었다. 네트워크 guard가 접근 시도를 차단했으며 성공한 외부 전송은
+  없었다. 실패 evidence를 보존하고 실제 event_id와 client 없는 fake tracer로 수정했다.
+- 두 번째 worker cycle은 **22+2 passed**, 추가 실제 NAT 미설치 환경3개 및 관련
+  계약/trace DTO/resume95개 통과. root 독립 `nat-target-01`은 **22 passed(4.97초)**,
+  **2 passed(1.10초)**, skip/error0이었다. target source/result와 실패/성공 worker
+  evidence를 별도로 보존하고 generation1/revision25에서 integrate/close했다.
+- 단일 신뢰된 합성 harness가 범위다. 과거 run을 새 실행 증거로 재사용하지 않는다.
+  Tool/publish/internal_nodes는 uncollected, provider token은 null, Judge 품질은
+  not_run이다. NAT streaming/HITL resume·NVIDIA 실호출·팀원 실제 연결·최종 E2E
+  성공을 주장하지 않는다. 기본 Settings의 NAT flag는 여전히 예약 설정이다.
+- P0-019 handoff를 작성 전에 조회한 진단은 missing이었으며 완료 기록으로 사용하지
+  않았다. 해당 Factory 구현과 tracing-cache 순서 회귀 수정은 다음 통합 단위다.

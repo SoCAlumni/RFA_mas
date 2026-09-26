@@ -1,0 +1,79 @@
+{
+  "attempt_id": "nat-target-01",
+  "contract_digest": "999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_nat_adapter.py"
+        ],
+        "assertions": [
+          "same fixture/seed의 정책·draft binding과 authorized ledger 호출 수가 native와 일치; WorkService 한 번 호출 및 실제 읽기 calls>0",
+          "독립 DB alias join/영속 sequence와 transport 확인; uncollected/incomplete 또는 test_sink를 실제 ToolPort/publication 성공으로 승격하지 않음",
+          "NAT dependency 누락 오류·core fallback 없음; exporter canary/unknown token과 없는 원본 stage ID null 유지",
+          "전체 EvaluationRun ambient tracing guard·owned empty callbacks·CLI 미import·안전 output/error를 검사"
+        ],
+        "counts": {
+          "collected": 22,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 22,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "22 passed,15 warnings in4.97s. Actual target native/NAT equivalence, ledger, preexisting-run rejection, pending checkpoint, missing optional dependency, safe mode/error, tracing positive control and no network assertions pass. LangGraph child durability and ast.Str deprecation warnings retained. Subprocess timeout120 enforced; elapsed5.9384s.",
+        "result": "passed",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_nat_smoke.py"
+        ],
+        "assertions": [
+          "실제 설치한 EvaluationRun과 local evaluator 호출, 예상 evaluator/case 수·output 존재·error/workflow_interrupted 검사; 누락/예외/빈 결과는 passed 아님",
+          "collect>0, skip=0, actual NAT versions와 invocation argv·safe ledger/export ref 보존; fake provider 결과를 실제 Judge 품질 점수로 표시하지 않음",
+          "NAT raw 파일/오류 로그 canary 및 외부 network/tracer spy 검사; P1-006D allowlist export만 저장"
+        ],
+        "counts": {
+          "collected": 2,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 2,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "2 passed,3 warnings in1.10s. Actual installed EvaluationRun and registered local evaluator invoked, safe callback/output/no-network assertions passed. Intentionally swallowed evaluator exception correctly returns error, not success. Subprocess timeout300 enforced; elapsed1.9471s.",
+        "result": "passed",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": "canonical main; env -i PATH=/usr/bin:/bin; locked NAT1.8.0 actual installed, Python3.12.13/SQLite3.53.1; normal declared pytest plugins; synthetic fixture/temporary DB; .env untouched",
+    "finished_at": "2026-09-26T11:06:56.319169+00:00",
+    "limits": "Single trusted synthetic noninteractive harness. Native checkpoint preserved, not NAT streaming/HITL resume proof. Tool/publish/internal nodes uncollected; tokens null, Judge not_run. No real NVIDIA or teammate integration or final E2E claim.",
+    "reviewer": "rfa-coordinator independent target source review and isolated command execution",
+    "started_at": "2026-09-26T11:06:48.394401+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "c723a99bc2f5a6509fb36482d789e87bc8ce68ee2426745c1984f83e38cf2fb2",
+  "source_manifest": ".agent/evidence/P0-028/nat-target-01/source.json",
+  "spec_digest": "2c22fb36119b6410c20f1af0593dfe0e91b93d7d1c77ad9ce88d23adbaab9355",
+  "spec_revision": 11,
+  "task_id": "P0-028"
+}
