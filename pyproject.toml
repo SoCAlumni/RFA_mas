@@ -17,6 +17,8 @@ dependencies = [
   "pydantic==2.13.5",
   "pydantic-settings==2.15.0",
   "uvicorn==0.53.0",
+  "apscheduler==3.11.3",
+  "sqlalchemy==2.0.54",
 ]
 
 [project.optional-dependencies]
