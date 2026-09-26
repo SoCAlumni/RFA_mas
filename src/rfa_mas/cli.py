@@ -3,13 +3,17 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
+import sqlite3
 from dataclasses import asdict
 from pathlib import Path
 
 import uvicorn
+from pydantic import ValidationError
+from pydantic_settings import SettingsError
 
 from rfa_mas.api.app import create_app
-from rfa_mas.bootstrap import build_container
+from rfa_mas.bootstrap import build_container, inspect_configuration
 from rfa_mas.contracts import (
     Audience,
     DomainId,
@@ -20,7 +24,7 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.dev_env import initialize_dev_env
 from rfa_mas.errors import BackendNotImplementedError, ConfigurationError
-from rfa_mas.settings import Settings
+from rfa_mas.settings import PLANNED_SETTINGS, Settings
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -99,20 +103,42 @@ async def _demo(args: argparse.Namespace, settings: Settings) -> int:
         await container.shutdown()
 
 
+def sqlite_runtime_status() -> dict[str, object]:
+    """Read linked library version only; never opens a DB or upgrades the environment."""
+    measured = sqlite3.sqlite_version
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", measured)
+    version = tuple(map(int, match.groups())) if match else ()
+    assessment = "unknown"
+    if version and version[0] == 3:
+        if (
+            version >= (3, 51, 3)
+            or (version[:2] == (3, 50) and version[2] >= 7)
+            or (version[:2] == (3, 44) and version[2] >= 6)
+        ):
+            assessment = "fixed"
+        elif version >= (3, 7, 0):
+            assessment = "affected"
+    return {
+        "version": measured if match else "unknown",
+        "wal_reset_patch": assessment,
+        "assessment_basis": "official_release_version_not_binary_attestation",
+        "warning": None if assessment == "fixed" else f"sqlite_wal_reset_{assessment}",
+        "advisory": "https://sqlite.org/wal.html#walresetbug",
+        "integrity_check": "not_run",
+        "concurrency_check": "not_run",
+        "rfa_e2e": "not_run",
+    }
+
+
 def _doctor(settings: Settings) -> int:
-    missing = settings.missing_for_selected_modes()
-    reserved: list[str] = []
-    if settings.model_provider != "mock":
-        reserved.append(f"model:{settings.model_provider}")
-    if settings.retriever_backend != "mock":
-        reserved.append(f"retriever:{settings.retriever_backend}")
-    if settings.trace_backend != "local":
-        reserved.append(f"trace:{settings.trace_backend}")
-    if settings.enable_judge and settings.judge_provider != "mock":
-        reserved.append(f"judge:{settings.judge_provider}")
-    reserved.extend(settings.selected_reserved_features())
+    inspection = inspect_configuration(settings)
     payload = {
-        "ready": not missing and not reserved,
+        "ready": inspection.ready,
+        "ready_scope": "preflight_only",
+        "configuration_ready": inspection.configuration_ready,
+        "implementation_ready": inspection.implementation_ready,
+        "local_lifecycle": "not_run",
+        "provider_probe": "not_run",
         "selected_modes": {
             "model": settings.model_provider,
             "retriever": settings.retriever_backend,
@@ -122,13 +148,21 @@ def _doctor(settings: Settings) -> int:
             "policy": settings.policy_backend,
             "trace": settings.trace_backend,
             "judge": settings.judge_provider if settings.enable_judge else "disabled",
+            "nat": "selected_unavailable" if settings.enable_nat else "disabled",
+            "scheduler": "selected_unavailable" if settings.scheduler_enabled else "disabled",
         },
         "variables": [item.model_dump(mode="json") for item in settings.doctor_statuses()],
-        "missing": missing,
-        "reserved_not_implemented": reserved,
+        "missing": list(inspection.missing),
+        "invalid": list(inspection.invalid),
+        "reserved_not_implemented": list(inspection.reserved),
+        "nat_dependency": inspection.nat_dependency,
+        "planned_settings": [asdict(item) for item in PLANNED_SETTINGS],
         "external_writes_requested": settings.allow_external_writes,
         "external_writes_effective": settings.external_writes_effective,
+        "external_egress_requested": settings.allow_external_egress,
+        "external_egress_effective": settings.external_egress_effective,
         "local_identity_is_production_auth": False,
+        "runtime_checks": {"sqlite": sqlite_runtime_status()},
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if payload["ready"] else 1
@@ -139,11 +173,26 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "init-env":
         result = initialize_dev_env(target_name=args.output)
-        print(json.dumps(asdict(result), ensure_ascii=False, indent=2, sort_keys=True))
+        print(
+            json.dumps(
+                asdict(result)
+                | {
+                    "advisory": "Local credentials generated; service registration is not verified."
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+        )
         return
     if args.env_file is not None and (args.env_file.is_symlink() or not args.env_file.is_file()):
         parser.error("--env-file must point to an existing regular file")
-    settings = Settings() if args.env_file is None else Settings(_env_file=args.env_file)
+    try:
+        settings = Settings() if args.env_file is None else Settings(_env_file=args.env_file)
+    except (ValidationError, SettingsError):
+        # Pydantic errors can contain raw inputs; never print them or their chained cause.
+        print(json.dumps({"code": "configuration_error", "message": "Invalid settings input"}))
+        raise SystemExit(2) from None
     if args.command == "api":
         settings.ensure_ready()
         uvicorn.run(
