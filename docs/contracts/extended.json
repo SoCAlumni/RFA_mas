@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "3340d55dec80eea4bfba032743b03c9d126aaaa230e56b3c3a3cde3c04caba6f",
+  "digest": "3c5841c6de80d50d2d7f6813c1a930d78a0cf83dbb4623b2851bac7554e9c5ff",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -11983,7 +11983,7 @@
     "WorkRepositoryPort": {
       "append_observation": "(self, run_id: 'str', principal: 'TrustedPrincipal', event: 'TraceEvent', *, origin: 'str', provider_ref: 'str', transport: 'str | None' = None, provider_kind: 'str' = 'builtin') -> 'ObservationRecord'",
       "authorized_metadata": "(self, domain_id, principal, *, audiences=(<Audience.PRIVATE: 'private'>, <Audience.OWNER: 'owner'>, <Audience.BUSINESS_UNIT: 'business_unit'>, <Audience.COMPANY: 'company'>, <Audience.PUBLIC: 'public'>), target=<Audience.OWNER: 'owner'>, endpoint='local-preview', policy_version='local-v1', query=None, limit=100) -> 'list[SourceMetadata]'",
-      "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None) -> 'SessionRecord'",
+      "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None, retry_of: 'str | None' = None) -> 'SessionRecord'",
       "create_run": "(self, request: 'WorkRequest') -> 'None'",
       "create_session": "(self, principal: 'TrustedPrincipal') -> 'SessionRecord'",
       "delete_knowledge": "(self, source_id: 'str', request: 'KnowledgeDelete', principal: 'TrustedPrincipal') -> 'KnowledgeRevision'",
@@ -12002,9 +12002,11 @@
       "local_principal": "(self) -> 'TrustedPrincipal'",
       "observation_alias": "(self, run_id: 'str', principal: 'TrustedPrincipal', kind: 'str', reference: 'str' = '') -> 'str'",
       "observation_context": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'ExecutionContext'",
+      "owned_run_request": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'dict'",
       "read_sources": "(self, domain_id, principal, references, *, audiences=(<Audience.PRIVATE: 'private'>, <Audience.OWNER: 'owner'>, <Audience.BUSINESS_UNIT: 'business_unit'>, <Audience.COMPANY: 'company'>, <Audience.PUBLIC: 'public'>), target=<Audience.OWNER: 'owner'>, endpoint='local-preview', policy_version='local-v1', metadata_only=False) -> 'list[SourceRead] | list[SourceMetadata]'",
       "register_task_owner": "(self, task: 'PersistentTask') -> 'None'",
       "reserve_team": "(self, task: 'PersistentTask', spec: 'TeamSpec', principal: 'TrustedPrincipal', *, idempotency_key: 'str', request_fingerprint: 'str', mode: 'str', existing_task_id: 'str | None') -> 'tuple[TeamLifecycle, bool]'",
+      "retry_links": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[RetryLink, ...]'",
       "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
       "save_result": "(self, result: 'RunResult') -> 'None'",
       "seed_documents_once": "(self, documents: 'list[KnowledgeDocument]') -> 'None'",
@@ -12088,11 +12090,11 @@
   "source_files": {
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
     "src/rfa_mas/api/app.py": "40c2f2f2ac7a40fdc445c6ca32b9af794d7df287ebd97a08efbd425a847c7cf6",
-    "src/rfa_mas/application/state_machine.py": "fbc90e928ea5d04bc0d2d7af3dbad0ce392cbe7a1e49594356c3d22517ea22e3",
+    "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
     "src/rfa_mas/contracts/__init__.py": "c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
     "src/rfa_mas/contracts/models.py": "3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a",
-    "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
+    "src/rfa_mas/ports/interfaces.py": "65822ed6ebd4f1feada462dfb8e711ab40abce1ceca025ebdc61a2a97d35a915",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",
