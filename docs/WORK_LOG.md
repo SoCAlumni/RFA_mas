@@ -587,3 +587,48 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   성공을 주장하지 않는다. 기본 Settings의 NAT flag는 여전히 예약 설정이다.
 - P0-019 handoff를 작성 전에 조회한 진단은 missing이었으며 완료 기록으로 사용하지
   않았다. 해당 Factory 구현과 tracing-cache 순서 회귀 수정은 다음 통합 단위다.
+
+## P0-019 영속 팀 Factory 통합·전체 회귀 — 2026-09-26
+
+- feature `0f2cc17`, main 통합 `b5c825e`: migration3에 Task 상세·owner별 생성 key·
+  Task당 팀 슬롯·멤버별 준비/정리·generation CAS 기록을 추가했다. Runtime IO는
+  DB transaction 밖이며 unknown/부분 실패/정리 실패에 새 팀을 자동 생성하지 않는다.
+  Factory는 매 요청 현재 승인 pin/권한/예산을 다시 확인하고 raw RuntimePort와 명시적
+  지원 descriptor를 사용한다. 응답의 spec/mode/member/resource 참조 변형도 거절한다.
+- 기존1.0은 보존하고1.1 typed lifecycle을 발행했다. 새 digest는
+  `32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77`이며
+  실제 schema와 fixture9+7 검사 근거를 teams-publication-01.json에 남겼다.
+  팀원 API 합의·OpenShell 운영 또는 역할별 graph 실행 완료를 의미하지 않는다.
+- 첫 worker cycle은 **38+182 passed**, 추가 회귀122 passed였다. root 독립
+  `teams-target-01`도 **38 passed(0.43초)+182 passed(8.80초)**, skip/error0으로
+  통과해 generation1/revision20에서 통합·close했다. 첫 lint42개(대부분 format/import)
+  및 잔여2개는 정식 검증 전 수정했고 실제 실패/진행 과정은 handoff에 남겼다.
+- 이어 실행한 전체 suite는 **596 passed/1 failed,77 warnings(151.27초)**였다.
+  실패는 tests/test_task_migration.py:90의 D3 예상11h와 실제12h 차이다. 앞선
+  P1-006 조사에서1→2h로 늘린 명세를 일정 회귀 기대값에 반영하지 못했다.
+  이전 tracing-cache 실패는 이 전체 실행에서 재현되지 않았다. 전체 통과로
+  기록하지 않고 full-regression-01.json을 보존한 채 기존 OPS-002에서 보수한다.
+- 다음 역할 실행 P0-020은 실제 service/Run projection과 observation actor 경계를
+  조사해 누락된 durable Task/Team 결합·역할 관측·취소 파일 범위를 추가했다.
+  기존 AC/선행 작업은 유지하고 추정1.5→3h, 아직 draft/not_run이다. 따라서 현재
+  D1=8.5h/D2=10h/D3=12h, 기술 추가6h 포함 직렬36.5h다. 최초31.5h와 중간34h는
+  역사적 추정이며 24시간 완료를 주장하지 않는다. 일정 변경 때문에 보안/최종 gate를 줄이지 않는다.
+- NVIDIA adapter도 공식 hosted 모델 reference와 local NIM 예제를 구분해 명세를
+  보강했다. httpx 재사용, 허가된 endpoint·남은 예산·안전한 오류·명시적 mode를
+  소비하고 tool loop는 만들지 않는다. 미정인 egress/예산 계약을 draft로 명시했다.
+  named/auto timeout을 미지원으로 단정하지 않으며 실제 제품 경유 호출은 P1-002A다.
+  [Lightning hosted API](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-5-lightning-30b-a3b-infer),
+  [local NIM 예제](https://docs.nvidia.com/nim/large-language-models/2.0.10/get-started/advanced/get-started-nemotron-3.5-lightning.html)를 연결했다.
+- 준비 과정의 잘못된 docs/contract_baseline.py 및 adapters/observations.py 경로는
+  실제 scripts/contract_baseline.py·application/observations.py로 수정했다.
+  P1-002 첫 edit-spec은 오래된 expected revision1로 거절됐고 최신2 확인 후 반영했다.
+  OPS-002 patch 검증 준비의 unsupported structuredClone·read_input 반환형 오인은
+  실제 오류에 따라 JSON clone/YAML parsing으로 수정해 세 번째 검증에 성공했다.
+  이 준비 진단을 제품 테스트나 실제 공급자 검증으로 집계하지 않는다.
+- 새 계약의 consumer 수락과 YAML67개 정합성 검사를 수행했다. 관련 기반은 새 source
+  재검증 후 의존성을 해제한다. 키·실제 env·외부 write는 접근/실행하지 않았고 최종
+  사용자10개 시나리오와 실제 NVIDIA/Skill/NemoClaw/OpenShell gate는 여전히 미완료다.
+- OPS-002 첫 명세 갱신은 inactive reservation의 계약 수락만 허용하는 guard에 의해
+  거절됐다. 기존 clean/idle feature와 미통합 변경 없음·외부 효과 없음을 확인한 뒤,
+  역사적 통합/evidence를 approaches에 보존하며 reservation만 명시 archive-discard했다.
+  코드를 삭제하거나 framework guard를 바꾸지 않았고 새 일정 AC를 정당하게 반영했다.

@@ -15,43 +15,112 @@ spec_state: draft
 unresolved:
 - P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
 - Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- P0-019 발행 및 P1-001/P1-001A 저장·최신 ACL 계약 통합 후 현재 TeamLifecycle/RunRecord/RepositoryPort와 최종 RFA-EXTENDED
+  digest를 다시 읽고 이 provider 변경의 입력 baseline으로 고정한다. 이 patch의 null은 ready가 아니다.
 workstream: agents
 execution_role: coordinator
-estimated_effort: 1.5
+estimated_effort: 3.0
 product_owner: 민섭
 execution_class: 이 저장소 구현
-product_mode: 단일 domain_task·메모리 runtime만 implemented; 팀 실행 missing/not_run. 제어·권한 local(false), 모델/실험/tool
-  공급자 mock(true). GPU/팀원 없이 완료.
+product_mode: 조사 시 canonical은 단일 domain_task 실행과 owner-bound Run/관측만 구현되어 있고 팀 역할 실행은 missing/not_run이다.
+  LocalRuntime.status는 in-memory _results.get(run_id)이고 cancel 본문은 not_implemented를 발생시킨다. P0-019 prepare/cleanup
+  구현은 별도 선행 산출물이며 역할 실행 증거가 아니다. 후속 구현의 권한·저장·예산·취소 제어는 local, 모델·실험·read tool 공급자는 mock/simulated이다.
+  GPU·키·외부 서비스 없이 검증하며 실제 NVIDIA/Skill/OpenShell 또는 실측 실험 성공으로 표시하지 않는다.
 scope:
   included:
-  - 역할별 typed 입력·결과, ToolPort read 실행 연결, Supervisor 위임·수집, shared team budget과 LocalRuntime cancel/status.
-    최소 구현은 순차 실행·concurrency=1이며 병렬화를 완료 조건으로 넣지 않는다.
-  - P1-006D safe TracePort로 실제 역할·tool read 시작/끝/실패 관측을 생산; Run/Task/Team/Agent·policy/source 참조를 연결하고
-    token 미제공 null. 평가 fixture 결과와 실제 core 관측을 구분.
+  - 기존 역할별 typed 입력·결과, ToolPort read 실행 연결, Supervisor 위임·수집, shared team budget과 LocalRuntime cancel/status를
+    구현한다. 최소 구현은 순차 실행·concurrency=1이며 병렬화는 AC가 아니다. Benchmark의 supervisor/paper_scout/experiment_runner/result_analyst와
+    Research의 supervisor/source_scout/evidence_reviewer가 각각 실제 handler를 실행하고 Supervisor만 결과를 수집한다.
+  - P0-019 TeamFactory.ensure와 승인 TeamSpec/별도 execution_budget/definition_digest를 재사용한다. WorkService.run은
+    현재 graph 전에 create_owned_run을 호출하고 _execute_inner의 frozen1.0 projection은 DirectWorkRequest.task_id를
+    제거한다는 조사 사실 때문에 service와 repository 경계가 필요하다. Run 생성은 유지하고 Supervisor의 명시적 팀 실행 분기에서 선택/재사용한 ready
+    팀을 첫 역할 실행 전에 owner/domain 확인된 Run에 원자적으로 한 번 결합한다. 신규 Task 생성 key는 서버 Run 기준으로 안정화하며 client/team/actor
+    ID 문자열이나 저장된 과거 principal을 현재 권한으로 사용하지 않는다.
+  - 기존 RepositoryPort와 SQLite migration 체계에 Run↔Task↔Team 결합과 역할 실행 기록의 최소 메서드를 추가한다. 저장된 product_task_owners/TeamLifecycle가
+    소유권 원본이며 session_tasks의 N:M 연결도 같은 짧은 transaction에서 갱신한다. 동일 결합은 멱등 허용, 다른 task/team/domain 재결합·타인
+    Task·비 ready 팀은 거절한다. runtime IO를 transaction 안에서 수행하지 않는다. binding/역할 receipt의 generation·완료 조건을
+    검사하고 미완료/unknown 부작용은 재시작만으로 성공 또는 재실행 허가로 바꾸지 않는다.
+  - RuntimePort/ToolPort와 기존 contracts/models.py를 유일한 계약 원본으로 유지한다. 역할 입력/결과·부분 결과·사용량·부모 Run/역할 실행 key의
+    typed envelope는 기존 1.1 계약에 추가/확장하고 1.0 AgentSpec/TaskRequest/TaskResult/ToolRequest/RunResult wire
+    schema는 변경하지 않는다. envelope가 legacy payload/output에 들어갈 때도 경계에서 재검증하며 capability·identity·source scope의
+    원본은 현재 인증 context와 저장된 승인 TeamSpec이다. 별도 DTO 파일/port 프레임워크/상태 원본을 만들지 않는다.
+  - 역할별 tool allowlist·capability·허용 source·domain/task/team/agent memory namespace를 실제 호출 전에 강제한다. TeamFactory의
+    빈 source/tool scope는 권한 없음이며 P1-001A의 현재 ACL 조회와 신뢰된 역할 정책의 교집합만 부여한다. 다른 역할/Task memory 접근과 worker
+    직접 메시지는 거절한다. 별도 memory engine 없이 고정 namespace와 제한된 실행 context를 사용하며 문자열을 붙였다는 이유만으로 OS 격리 또는 영속 memory
+    기능을 주장하지 않는다.
+  - P1-001A 최신 자료/ACL 경계를 소비하고 기존 LocalPolicy/mock 안에서만 역할을 실행한다. 미구현 endpoint-egress 증명이 필요한 실제 Model/Tool/Response
+    외부 호출은 실행 전에 fail closed한다. P1-005가 후속 egress 확장·조립을 맡으므로 역방향 의존성을 추가하지 않는다. 일반 저장/검색 요청에는 팀을 만들지
+    않으며 명시적 팀 실행 입력 경계와 P1-004 후속 intent router 책임을 구분한다. 기존 단일 domain 경로와 review/승인 재개는 호환 유지하고 범용 router를
+    중복 구현하지 않는다.
+  - P1-006D Observations와 기존 trace 저장/alias를 확장한다. 현재 observation_context는 team_id를 읽지 않고 ObservedPort.run은
+    domain-supervisor 이외 actor를 assistant-supervisor로 축소하므로 저장된 팀 멤버 검증을 통과한 actor만 안전한 alias로 매핑한다. Run/Task/Team/domain
+    결합은 DB 원본에서 읽고 초기 request 단계에 아직 없는 task/team은 null을 유지한다. 뒤의 결합 때문에 이미 저장된 관측을 재작성하지 않는다. 역할별 순서·지연·실패·실제
+    tool read는 관측하고 실제 없는 policy decision/approval/sandbox ID는 만들지 않는다.
+  - ObservedPort.execute를 기존 ToolPort decorator로 연결하고 ledger의 tool collected/incomplete/calls를 실제 port
+    receipt 기준으로 계산한다. 시작 intent만 남으면 calls=null이며 test_sink receipt와 구분한다. source/policy 참조는 신뢰된 현재 저장
+    상태에 결합하고 token 미제공은 null이다. raw prompt/문서/도구 인자/사용자 지정 ID/secret은 trace에 남기지 않는다. native trace guard·alias
+    재시작 안정성·JSONL at-least-once export 의미·file TTL/DB ledger 보존 경계는 유지한다.
+  - 팀 전체의 step/tool/time/concurrency 예산을 역할 사이 공유하고 다음 작업 직전에 남은 예산·취소 상태를 검사한다. 역할마다 전체 예산을 새로 지급하지 않는다.
+    토큰 상한이 필요한 호출은 provider의 강제 가능한 상한과 신뢰할 수 있는 사용량 계약이 없으면 시작/후속 호출 전에 budget_unavailable로 안전 중단한다.
+    usage unknown을 0으로 차감하거나 임의 추정값을 실측으로 기록하지 않는다. 결정적 fake provider의 bounded usage fixture는 simulated로
+    구분하여 정상 예산 경로를 검증한다. 필수 worker 실패/timeout/예산 부족 시 이미 수집한 안전한 부분 결과와 고정 사유를 보존하고 review를 시작하지 않는다.
+  - LocalRuntime의 in-flight 역할 실행 key와 부모 제품 Run을 구분하여 같은 run_id의 여러 역할이 status를 덮어쓰지 않게 한다. owner-authorized
+    서비스 취소 경계가 현재 역할을 중단하고 다음 역할/tool 호출을 차단한다. 부모 Run 취소와 1.1 역할 취소 receipt 의미를 분리하고 기존 1.0 ResultStatus를
+    임의 변경하지 않는다. RuntimePort cancel은 외부 인증 원본이 아니며 API/서비스의 인증을 대신하지 않는다. 취소/unknown 뒤 늦은 결과가 terminal
+    상태를 덮어쓰지 못하고 이미 발생한 효과를 되돌렸다고 주장하지 않는다. 새 HTTP 취소 endpoint/UI는 이 task의 완료 조건이 아니며 서비스-level 경로와 실제
+    spy로 검증한다.
+  - P0-019는 main b5c825e에 통합되었고 tests/test_teams.py와 application/teams.py는 기존 선행 소스다. 해당 Factory/lifecycle을
+    재작성하지 않는다. 시작 시 KB/권한 선행 산출물과 최종 계약 digest를 다시 확인하고 공통 소유 파일은 coordinator 한 명이 직렬 수정한다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  - 실제 승인/게시 원본·OpenShell sandbox·새 runtime/backend/framework·worker 직접 통신·Debate 구현
+  - P1-004 범용 intent router·P1-005 egress 정책 확장·P0-021 전체 recovery 기능의 중복 구현 또는 역방향 의존성 추가
+  - 임의 GPU 실험·새 메모리 엔진·HTTP 취소 API/UI 구현과 미수집 usage를 실측으로 간주하는 방식
   owned_paths:
   - src/rfa_mas/application/graphs/supervisor.py
   - src/rfa_mas/application/graphs/domain.py
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/observations.py
+  - src/rfa_mas/application/workers.py
   - src/rfa_mas/adapters/local.py
   - src/rfa_mas/adapters/mock.py
   - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/ports/interfaces.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/contracts/__init__.py
+  - docs/contracts/extended.json
+  - docs/INTEGRATION.md
+  - docs/CONTRACT_CHANGELOG.md
   - tests/test_supervisor_boundaries.py
-  - src/rfa_mas/application/workers.py
   - tests/test_teams.py
+  - tests/test_team_execution.py
+  - tests/test_sessions.py
+  - tests/test_resume.py
+  - tests/test_trace_contract.py
+  - tests/test_contracts.py
   read_only_paths:
   - AGENTS.md
-  - src/rfa_mas/contracts
-  - src/rfa_mas/ports/interfaces.py
-  - docs/INTEGRATION.md
+  - src/rfa_mas/application/teams.py
+  - src/rfa_mas/application/team_selector.py
+  - fixtures/teams/templates.json
+  - src/rfa_mas/application/resume_policy.py
+  - src/rfa_mas/application/state_machine.py
+  - src/rfa_mas/api/app.py
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/adapters/http.py
   - docs/EVALUATION_CONTEXT.md
+  - scripts/contract_baseline.py
+  - tests/test_contract_baseline.py
+  - tests/test_graph.py
+  - tests/test_api.py
   planned_paths:
   - src/rfa_mas/application/workers.py
-  - tests/test_teams.py
+  - tests/test_team_execution.py
   shared_resources:
   - composition
   - sqlite-migrations
+  - canonical-contracts
 depends_on:
 - id: P0-019
   condition: integrated_done
@@ -73,7 +142,7 @@ contract_refs:
 - id: RFA-EXTENDED
   version: '1.1'
   digest: null
-  role: consumer
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -81,22 +150,43 @@ context:
   read:
   - path: docs/archive/TASKS_2026-09-26.md
     section: P0-020 — 역할별 실행·Supervisor 수집·팀 예산·취소
-    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+    reason: 기존 AC1-AC4와 범위 보존; 전체 archive를 읽지 않음
+  - path: src/rfa_mas/application/teams.py
+    section: P0-019 통합 후 TeamFactory.ensure/cleanup 및 RuntimeLifecycleSupport
+    reason: 통합된 선행 input; 승인 명세·실행 예산·현재 권한·ready 상태 재사용 경계
+  - path: src/rfa_mas/application/service.py
+    section: run/_execute/_execute_inner/resume와 frozen WorkRequest projection
+    reason: graph 이전 owner-bound Run 생성 및 후속 Task/Team binding·취소 서비스 경계
   - path: src/rfa_mas/application/graphs/supervisor.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: SupervisorDependencies/route/delegate/review/await_review
+    reason: 기존 단일 DRAFT/승인 resume를 보존하면서 순차 역할 위임·수집 연결
   - path: src/rfa_mas/application/graphs/domain.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: InvocationContext/authorize/retrieve/generate/build_domain_task_handler
+    reason: 현재 identity·권한·payload 경계를 확인하고 역할 입력/결과로 좁혀 재사용
   - path: src/rfa_mas/adapters/local.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: create_owned_run/observation_context/append_observation 및 P0-019 team lifecycle/LocalRuntime
+    reason: 짧은 DB transaction·one-time binding·CAS·migration·in-flight status/cancel 구현 경계
+  - path: src/rfa_mas/application/observations.py
+    section: Observations.record/ledger 및 ObservedPort.run/_call
+    reason: 검증된 역할 actor·Team alias와 실제 ToolPort 수집; intent/receipt 및 null coverage 보존
   - path: src/rfa_mas/adapters/mock.py
-    section: task에 관련된 정의/호출부
-    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+    section: MockModel/MockTool
+    reason: 결정적 simulated 모델/실험/read 도구 fixture와 실제 write 비활성 유지
+  - path: src/rfa_mas/contracts/models.py
+    section: TeamSpec/TeamLifecycle/ExecutionContext/RunRecord 및 legacy Task/Tool/Model/Trace DTO
+    reason: 기존 계약 원본에서만 additive1.1 envelope·사용량·부분 결과를 확장; 1.0 동결
+  - path: src/rfa_mas/ports/interfaces.py
+    section: WorkRepositoryPort/RuntimePort/ToolPort/ModelPort
+    reason: repository 원본 결합과 runtime 취소·역할 실행 의미를 기존 포트에서 정의
+  - path: src/rfa_mas/bootstrap.py
+    section: TeamFactory composition/LocalRuntime.register/ObservedPort/WorkService
+    reason: adapter 주입은 한 곳; graph에 URL·credential·MCP SDK를 넣지 않음
+  - path: docs/INTEGRATION.md
+    section: Task team lifecycle / persistent session / observations와 P1-001A 최신 자료 계약
+    reason: 선행 통합 이후의 실제 public/local 계약과 미지원 범위를 다시 읽음
   - path: docs/EVALUATION_CONTEXT.md
     section: A / F/G — 실행 관측 생산자와 UI 안전 참조
-    reason: 평가가 소비할 실제 관측을 core에 연결; 원본 상태·권한 유지
+    reason: 평가용 합성 기록과 실제 core 관측을 구분하는 consumer 계약
   handoff: tasks/P0-020/handoff.md
   dependency_results:
   - tasks/P0-019/handoff.md
@@ -106,29 +196,67 @@ context:
 deliverables:
 - path: src/rfa_mas/application/graphs/supervisor.py
   availability: existing
-  description: 역할별 typed 입력·결과, ToolPort read 실행 연결, Supervisor 위임·수집, shared team budget과 LocalRuntime
-    cancel/status. 최소 구현은 순차 실행·concurrency=1이며 병렬화를 완료 조건으로 넣지 않는다.
+  description: 명시적 팀 실행 분기·ready binding·순차 위임/수집·단일 검토; 일반 질의와 승인 resume 유지
 - path: src/rfa_mas/application/graphs/domain.py
   availability: existing
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
-- path: src/rfa_mas/adapters/local.py
+  description: 현재 identity 및 역할 scope 아래 재사용하는 근거/생성 경계
+- path: src/rfa_mas/application/service.py
   availability: existing
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
-- path: src/rfa_mas/adapters/mock.py
+  description: durable Run 생성·Task/Team 결합 조립·owner-authorized 취소·안전한 부분 결과 경계
+- path: src/rfa_mas/application/observations.py
   availability: existing
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
-- path: src/rfa_mas/bootstrap.py
-  availability: existing
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
-- path: tests/test_supervisor_boundaries.py
-  availability: existing
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+  description: 저장된 멤버 actor와 Team alias·실제 tool read receipt·incomplete coverage
 - path: src/rfa_mas/application/workers.py
   availability: planned
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+  description: 역할별 제한 handler·공유 예산·Supervisor-only 입력/결과 조립; 새 framework 아님
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: 기존 DB의 additive Run/team binding·역할 기록 및 bounded LocalRuntime status/cancel
+- path: src/rfa_mas/adapters/mock.py
+  availability: existing
+  description: read-only simulated 역할 실험과 bounded fake usage fixture; 외부 write 비활성 유지
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 단일 trusted composition에서 TeamFactory·역할 handler·ToolPort observer 연결
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: 기존 repository/runtime 포트의 최소 결합·역할 실행/취소 계약
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 유일한 DTO 원본 내 additive1.1 역할 입력/결과·사용량·Run 결합 계약
+- path: src/rfa_mas/contracts/__init__.py
+  availability: existing
+  description: 추가1.1 DTO export; legacy wire 유지
+- path: docs/contracts/extended.json
+  availability: existing
+  description: 실제 DTO에서 재생성한 additive1.1 schema; coordinator 발행 전 provisional
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 역할 execution/cancel/unknown·binding·관측 coverage·로컬과 실제 서비스 경계
+- path: docs/CONTRACT_CHANGELOG.md
+  availability: existing
+  description: 1.1 변경 이유·영향 consumer·migration·1.0 호환 검증 기록
+- path: tests/test_supervisor_boundaries.py
+  availability: existing
+  description: 기존 Supervisor/approval binding 보존 및 역할 집계·scope 위조 음성 회귀
 - path: tests/test_teams.py
+  availability: existing
+  description: P0-019 선행 통합에서 제공한 기존 lifecycle 테스트를 보존하고 실제 역할 연결만 보강
+- path: tests/test_team_execution.py
   availability: planned
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+  description: 두 패턴 실제 순차 역할·ToolPort spy·budget/cancel·부분 실패·durable binding 검증
+- path: tests/test_sessions.py
+  availability: existing
+  description: migration 보존·세션 N:M·같은 Task 후속 Run/team 재사용·타인 재결합 차단
+- path: tests/test_resume.py
+  availability: existing
+  description: 재시작 결합/권한·승인 대기 복구와 완료 역할/tool/review 미중복 회귀
+- path: tests/test_trace_contract.py
+  availability: existing
+  description: 역할/Team alias·실제 tool receipt·export 실패/unknown/null usage·canary·native guard
+- path: tests/test_contracts.py
+  availability: existing
+  description: 기존 frozen1.0 호환 및 additive1.1 역할/Run/사용량 schema 음성 검증
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -158,10 +286,9 @@ verification:
   type: command
   availability: planned
   prerequisites:
-  - 두 template 실제 local dispatch, 역할 도구/자료 권한 부족, worker 실패·timeout·취소·예산 소진. mock latency/score를 측정값으로
-    출력하지 않는 assertion.
-  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
-    성공 아님.
+  - P0-019/P0-017/P1-001A/P1-006D 통합·검증 완료, 최종1.1 baseline 수락 및 신규 test_team_execution 구현
+  - 명시적 mock/local 설정·합성 자료·tmp_path DB/checkpoint·fake clock/spies; 실제 .env/키/외부 네트워크 불사용
+  - 두 template 실제 local dispatch, 역할 도구/자료 권한 부족, worker 실패·timeout·취소·예산 소진 및 simulated 표기 assertion
   cwd: .
   argv:
   - .venv/bin/python
@@ -170,6 +297,7 @@ verification:
   - -q
   - tests/test_supervisor_boundaries.py
   - tests/test_teams.py
+  - tests/test_team_execution.py
   timeout_seconds: 120
   procedure: []
   assertions:
@@ -179,6 +307,47 @@ verification:
   - step/token/time/tool/concurrency 총예산 초과와 필수 worker 실패 시 안전 stop·부분 결과
   - 취소 후 새 역할/tool 호출 금지, 모의 실험 조건/수치를 simulated로 표시.; provider 미제공 token은 null, raw prompt/본문/인자·secret
     trace 미수집
+  - 실제 handler/ToolPort spy로 두 패턴 역할 순서·횟수·Supervisor 경유를 확인하고 일반 질의가 팀을 생성하지 않음
+  - 타인/다른 domain/비 ready 팀·member/spec 변조·forged identity와 미허용 tool/source/memory는 실제 호출 전 차단
+  - 전체 예산은 역할마다 초기화되지 않으며 usage 미제공 호출은 fail closed; fake usage는 simulated이고 실측 token 아님
+  - 취소 barrier 이후 신규 역할/tool spy count는 증가하지 않고 pending/unknown 결과를 성공 또는 재실행 허가로 전환하지 않음
+  - 팀 생성 key replay/동시 요청/후속 Run은 기존 팀을 사용하며 부모 Run과 역할 실행 key·부분 결과가 충돌하지 않음
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 신규 결합/migration/actor/ToolPort coverage assertion을 각 기존 테스트 파일에 구현한 뒤 실행
+  - source worktree의 명시적 합성 fixture만 사용; 자동 .env 로딩·NVIDIA/팀원 호출 없음
+  - schema artifact는 실제 DTO에서 재생성하고 1.0 frozen 기준·선행 완료 증거를 보존
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_sessions.py
+  - tests/test_resume.py
+  - tests/test_trace_contract.py
+  - tests/test_contracts.py
+  - tests/test_contract_baseline.py
+  - tests/test_graph.py
+  - tests/test_api.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 기존 session/checkpoint/observation/team migration·owner binding을 보존하고 최초결합 원자성/동일결합 멱등성/재결합 거절을 확인
+  - fresh process에서 같은 Run/Task/Team 및 actor alias를 복원하고 승인 재개가 완료 role/tool/review를 다시 호출하지 않음
+  - 초기 request의 null Task/Team과 뒤의 실제 결합 이벤트를 구분하며 과거 관측을 재작성하거나 없는 stage ID를 생성하지 않음
+  - role별 tool receipt·incomplete/calls=null·test_sink provenance가 분리되고 ledger가 JSONL line수 대신 실제 호출 증거
+    원본임
+  - 공개 DTO/오류/trace canary 차단·현재 source ACL 회수·native trace guard 및 owner-authorized 기록 조회가 유지됨
+  - legacy1.0 schema/API/approval binding이 유지되고 additive1.1 입력/결과·usage는 유효성 검사를 통과함
   runner: pytest
 evidence_dir: .agent/evidence/P0-020
 latest_evidence_file: null
@@ -198,8 +367,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 7
-spec_revision: 7
+revision: 9
+spec_revision: 9
 claim_generation: 0
 claim: null
 attempts:
@@ -221,7 +390,9 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T10:24:58+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T11:19:08+00:00'
+concise_result: 'Specification changed: Source preflight found Run created before graph and task projection
+  loss; include durable binding/role observations/cancel within existing AC, retain KB prerequisites and
+  draft state. Estimate1.5 to3h is explicit additional work, not implementation.'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

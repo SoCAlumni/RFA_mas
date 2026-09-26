@@ -9,7 +9,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -289,7 +289,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006D
 latest_evidence_file: .agent/evidence/P1-006D/trace-target-02/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 10
   spec_digest: f5cd80c60368647a46c8cb104c7fc6d8bb8fa3596e862ec4a9ddb980f81371d3
   contract_digest: 999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f
@@ -299,7 +299,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 6073519dbb084e9c4310f924e530887023fcb7df
@@ -338,7 +338,7 @@ integration:
       evidence: .agent/evidence/P1-006D/trace-target-02/result.json
     head: e634435b36a6e36a035a858fdf31fda78b72dcfc
   evidence: .agent/evidence/P1-006D/trace-target-02/result.json
-revision: 29
+revision: 30
 spec_revision: 10
 claim_generation: 1
 claim: null
@@ -363,6 +363,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T10:28:10+00:00'
+updated_at: '2026-09-26T11:13:29+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: Final trace-03 required verification after immutable storage/outward projection separation.
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

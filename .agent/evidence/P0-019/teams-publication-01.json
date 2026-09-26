@@ -1,0 +1,14 @@
+{
+  "task_id": "P0-019",
+  "reviewer": "rfa-coordinator",
+  "source_commit": "0f2cc179e443f6f1b6ada018c33ebe4cd66937b5",
+  "target_head": "b5c825edb8a8788b881a8315b03cd5cf12882d92",
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77",
+  "checks": [
+    {"argv":[".venv/bin/python","scripts/contract_baseline.py","check"],"cwd":".","exit_code":0,"observed":"Frozen schema/OpenAPI and9 fixture shapes valid; baseline0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0"},
+    {"argv":[".venv/bin/python","scripts/contract_baseline.py","check-extended"],"cwd":".","exit_code":0,"observed":"Extended schema and7 fixture shapes valid"}
+  ],
+  "limits": "Additive repository-local1.1 TeamLifecycle/MemberLifecycle/TeamSpec bounds and WorkRepository methods. Actual teammate support, role execution and OpenShell are not verified. Local metadata is not sandbox; target V1/V2 follows publication."
+}

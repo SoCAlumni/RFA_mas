@@ -1,0 +1,149 @@
+{
+  "attempt_id": "teams-01",
+  "contract_digest": "999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f",
+  "mode": "Task/TeamInstance 테이블 없음; missing/not_run. registry·중복 방지 local(false), provisioning fixture mock(true). 외부 의존 없음; actual identity/lifecycle는 P1-008B.",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py",
+          "tests/test_settings.py",
+          "tests/test_api.py",
+          "tests/test_supervisor_boundaries.py",
+          "tests/test_http_contract.py"
+        ],
+        "counts": {
+          "collected": 122,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 122,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "........................................................................ [ 59%]\n..................................................                       [100%]\n=============================== warnings summary ===============================\ntests/test_resume.py: 17 warnings\ntests/test_api.py: 2 warnings\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-019/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n122 passed, 19 warnings in 5.68s\n",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+        "timeout_seconds": 60
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check-extended"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "extended contract: 7 fixture shapes valid\n",
+        "timeout_seconds": 60
+      },
+      {
+        "kind": "static_checks",
+        "observed": "Ruff on owned Python source/tests passed; git diff --check passed.",
+        "result": "passed"
+      }
+    ],
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_teams.py"
+        ],
+        "assertions": [
+          "동시 생성과 migration 재적용에서 Task당 occupied 팀 하나 및 기존 owner/session 데이터가 유지된다.",
+          "멱등 충돌·타인 owner/domain·위조 선택·폐기 pin·예산 변형을 runtime 실행 전에 거절한다.",
+          "재시작/다른 session에서도 같은 팀과 승인 template를 재사용하며 별도 execution_budget이 실제로 전달된다.",
+          "member 부분 실패/unknown/cleanup 실패/늦은 응답을 기록하고 반쪽 실행·중복·silent fallback이 없다.",
+          "같은 service 인스턴스에서 grant/pin 회수 후 재사용을 차단하고 schema-valid 타인 응답·mode/budget/member/model_copy 변조를 수용하거나 타인 runtime을 cleanup하지 않는다.",
+          "decorator의 lifecycle 메서드가 있어도 실제 configured runtime이 미지원이면 슬롯 예약·runtime IO 전에 거절한다. 지원되는 Factory는 주입된 원래 RuntimePort를 사용하며 준비·정리의 durable DB 결과와 trace 미수집을 구분한다. 기존 graph run 관측 경로는 보존한다."
+        ],
+        "counts": {
+          "collected": 38,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 38,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "......................................                                   [100%]\n38 passed in 0.44s\n",
+        "result": "passed",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_contracts.py",
+          "tests/test_contract_baseline.py",
+          "tests/test_trace_eval_contract.py",
+          "tests/test_team_selector.py",
+          "tests/test_sessions.py",
+          "tests/test_local_adapters.py",
+          "tests/test_trace_contract.py"
+        ],
+        "assertions": [
+          "기존 selector/session/local adapter 회귀와 frozen/extended schema 및 fixture 검사가 통과한다.",
+          "앞선 테스트로 env lookup cache가 warm해진 실행 순서에서도 실제 fake tracer positive control이 실행되고 native run/resume에서는 생성되지 않는다. 테스트 종료 후 cache를 비워 다른 테스트에 상태를 남기지 않는다. 선행 full-regression-01 실패를 새 통과로 덮어쓰지 않는다."
+        ],
+        "counts": {
+          "collected": 182,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 182,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "........................................................................ [ 39%]\n........................................................................ [ 79%]\n......................................                                   [100%]\n=============================== warnings summary ===============================\ntests/test_contract_baseline.py: 4 warnings\ntests/test_sessions.py: 11 warnings\ntests/test_trace_contract.py: 14 warnings\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-019/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n182 passed, 29 warnings in 8.83s\n",
+        "result": "passed",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "isolation": "Every product/contract command ran under env -i PATH only, normal pytest plugin autoload, bounded subprocess timeout; synthetic temporary DB, no dotenv/key/network",
+      "known_warnings": "V2 29 and related19 existing LangGraph no-child-checkpointer durability warnings; V1 none.",
+      "nat": "module absent; default locked dependencies only",
+      "python": "3.12.13",
+      "source_baseline": "5d641b83ca4541774e2858c84fe43c93d4a02734",
+      "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-019",
+      "sqlite": "3.53.1"
+    },
+    "finished_at": "2026-09-26T11:12:05+00:00",
+    "limits": "Local durable state and synthetic Runtime fixtures; local metadata is not OS sandbox. Role execution and trusted Task/Run binding remain P0-020; unknown cleanup/restart receipt reconciliation not automatic. Factory lifecycle trace explicitly uncollected, DB events only. No fullsuite or final E2E/live NVIDIA/NAT/OpenShell/team-service gate. Historical P1-006D full-regression-01 failure preserved; cold/warm false-cache positive/negative controls now genuinely pass in V2.",
+    "reviewer": "session_review (delegated rfa-coordinator)",
+    "started_at": "2026-09-26T11:10:19+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "2f5c8022bbff78b829204bcc9b3c5d8ac97dbfc12cd155c62c55064c4a3437a1",
+  "source_manifest": ".agent/evidence/P0-019/teams-01/source.json",
+  "spec_digest": "fd9f97d6966011847d5d05144b6f51da2f9712c439b8a9b8baaece2cd6f99634",
+  "spec_revision": 9,
+  "task_id": "P0-019"
+}

@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: verifying
+status: todo
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -25,8 +25,10 @@ scope:
     recovery를 허용한다. 최초 제출의 baseline/commit/evidence는 approaches에 보존한다.
   - 미통합/만료된 worker 회수는 기존 baseline을 유지하고 범위 밖 변경을 새 baseline으로 세탁하지 않는다. 수정된 현재 소스에 대해 새 worker 및 integration
     evidence/commit/close gate를 모두 요구한다.
-  - E2E 공수 변경으로 D3 합계11h가 된 명세를 테스트에서 정직하게 검증하고 원래24h+기술4.5h+추가3h 기록을 보존. source worktree의 read-only migration
-    감사는 명시 TASK_CONTROL_ROOT를 사용하며 잘못된 root guard를 우회하지 않음.
+  - 승인된 현재 추정 P1-006 1→2h 및 P0-020 1.5→3h를 실제 project milestone 합산과 대조한다. D1=8.5/D2=10/D3=12/D4=8h, 추가
+    기술6h, 직렬36.5h를 명시 검증하며 초기24h+E2E추가3h+기술4.5h=31.5h 및 앞선34h 이력을 보존한다. 이번 후속 소스 수정은 tests/test_task_migration.py와
+    docs/TASK_REVALIDATION.md 두 파일만으로 제한하고 CLI/framework 구현은 변경하지 않는다. 명시 TASK_CONTROL_ROOT와 wrong/copied
+    root guard를 유지한다.
   - 역사적 통합 증거/commit 결합이 유효하고 활성 claim이 없는 stale consumer에 한해 coordinator의 계약 발행·명시 baseline 수락을 허용한다.
     기존 reservation/증거와 재검증 요구는 보존하고 active claim/미통합 제출/변조 evidence는 거절한다.
   excluded:
@@ -65,10 +67,15 @@ context:
     reason: 임시 fixture에서 재현
   - path: tests/test_task_migration.py
     section: ROOT/records/effort test
-    reason: 확인된 D3 11.0 != 8.0 실패 수정
+    reason: 현재 full-regression-01에서 실제 D3 12 != 11 실패 및 승인된 P0-020 증가로 D2 10/직렬36.5가 된 정확한 기대값 보수; 기존
+      gates 유지
   - path: docs/WORK_LOG.md
     section: P0-015 착수 / E2E 검증 연결
     reason: 승인된 E2E 범위·실제 실패 근거
+  - path: .agent/evidence/P0-019/full-regression-01.json
+    section: counts/log_excerpt/cause/limits
+    reason: 실제597 collected/596 passed/1 failed 전체 회귀 중 일정 기대값 누락의 첫 실패 근거; 후속 성공으로 덮어쓰지 않고 최대3회 로그 기반
+      cycle에 연결
   handoff: tasks/OPS-002/handoff.md
   dependency_results: []
 deliverables:
@@ -99,9 +106,10 @@ acceptance_criteria:
   expect: 재검증한 A가 close되면 필요한 후속 dependency만 해제; 원래 검증을 새 source에 재사용하지 않음
   required: true
 - id: AC4
-  given: 승인된 E2E 1h→4h 및 P0-017/P0-019/P1-006D 조사 기반 추정 증가와 명시 control root를 사용한 source worktree 감사
-  expect: 현재 D1/D2=8.5h, D3=11h, D4=8h, 추가 기술6h 및 직렬34h를 검증하고 초기31.5h(추가 기술4.5h) 이력·migration/원문체크/최종gate를
-    보존; wrong/copied root는 계속 거절
+  given: 승인된 E2E/기존 preflight 추정 이력에 P1-006 1→2h, P0-020 1.5→3h의 현재 승인 명세를 더하고 명시 control root로 source
+    worktree를 감사
+  expect: 현재 D1=8.5h, D2=10h, D3=12h, D4=8h, 추가 기술6h 및 직렬36.5h를 실제 task/project 합산으로 검증하고 초기31.5h(추가 기술4.5h)와
+    중간34h 이력·migration/원문체크/최종gate를 보존; wrong/copied root는 계속 거절
   required: true
 - id: AC5
   given: 이미 integrated consumer의 관련 계약 artifact가 새 provider commit에서 변경되어 reconcile이 verifying/reserved로
@@ -153,8 +161,8 @@ verification:
   timeout_seconds: 120
   procedure: []
   assertions:
-  - canonical 원문/task/DAG/ID/생성 view와 현재 D1/D2=8.5h·D3=11h·D4=8h·추가 기술6h·직렬34h가 일치하고 초기31.5h 이력과 final
-    gate를 보존
+  - canonical 원문/task/DAG/ID/생성 view와 현재 D1=8.5h·D2=10h·D3=12h·D4=8h·추가 기술6h·직렬36.5h가 일치하고 초기31.5h 및 중간34h
+    이력과 모든 final gate를 보존
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
@@ -167,37 +175,21 @@ verification_summary:
   source_fingerprint: a1037ed89a5b090ecf4400cf03fd4fa470a6ef94c588373e514df9d005aa8f2d
   evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
 integration:
-  state: integrated
+  state: pending
   target: canonical main
   reason: null
-  reservation: true
-  submission_generation: 6
-  submission:
-    head: a8d288846e43c377cebd48fe18beb8147c150284
-    baseline_head: 53d7068246b91a25dc9286acf02923ee0713cd8b
-    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
-    branch: task/OPS-002-r2
-    evidence: .agent/evidence/OPS-002/schedule-worker-01/result.json
-    changed_files:
-      docs/TASK_REVALIDATION.md: e8bf688de99e4e78bc850ca5bb6362686047b59f35a29868783a7eafddf1ebf0
-      tests/test_task_migration.py: 5b60fbdb9ac92499a42a18ae7ec2e118bf0e208bb468b9f0b8b27894510473f5
-  result:
-    verification_summary:
-      state: passed
-      spec_revision: 3
-      spec_digest: 8bc3a46834e7220f31b65f93ebcca58157a82a165f72c89042abb7def03d3ba2
-      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-      source_fingerprint: a1037ed89a5b090ecf4400cf03fd4fa470a6ef94c588373e514df9d005aa8f2d
-      evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
-    head: ff3c8288e74f50414173921bee6e321084c2e085
-  evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
-revision: 45
-spec_revision: 3
-claim_generation: 6
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 47
+spec_revision: 4
+claim_generation: 7
 claim: null
 attempts:
   count: 8
-  cycles: 1
+  cycles: 0
   no_progress_count: 0
   latest_attempt: schedule-target-01
   evidence_refs:
@@ -329,6 +321,48 @@ attempts:
       source_fingerprint: f22fbf1b2dcfa812ea077899507b60cb2de67fc722bf7acf83b40ec50d7c5ee2
       evidence: .agent/evidence/OPS-002/contract-recovery-integrated-01/result.json
     latest_evidence_file: .agent/evidence/OPS-002/contract-recovery-integrated-01/result.json
+  - kind: recovery
+    generation: 7
+    baseline_head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+    reason: Archive inactive integrated reservation to update approved numeric schedule AC; retain code
+      and every historical evidence; no framework changes
+    at: '2026-09-26T11:23:00+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical main
+      reason: null
+      reservation: true
+      submission_generation: 6
+      submission:
+        head: a8d288846e43c377cebd48fe18beb8147c150284
+        baseline_head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r2
+        branch: task/OPS-002-r2
+        evidence: .agent/evidence/OPS-002/schedule-worker-01/result.json
+        changed_files:
+          docs/TASK_REVALIDATION.md: e8bf688de99e4e78bc850ca5bb6362686047b59f35a29868783a7eafddf1ebf0
+          tests/test_task_migration.py: 5b60fbdb9ac92499a42a18ae7ec2e118bf0e208bb468b9f0b8b27894510473f5
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 3
+          spec_digest: 8bc3a46834e7220f31b65f93ebcca58157a82a165f72c89042abb7def03d3ba2
+          contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+          source_fingerprint: a1037ed89a5b090ecf4400cf03fd4fa470a6ef94c588373e514df9d005aa8f2d
+          evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
+        head: ff3c8288e74f50414173921bee6e321084c2e085
+      evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 3
+      spec_digest: 8bc3a46834e7220f31b65f93ebcca58157a82a165f72c89042abb7def03d3ba2
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: a1037ed89a5b090ecf4400cf03fd4fa470a6ef94c588373e514df9d005aa8f2d
+      evidence: .agent/evidence/OPS-002/schedule-target-01/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/schedule-target-01/result.json
 blocker: null
 migration:
   original_status: new
@@ -341,7 +375,9 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T09:12:06+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T11:23:16+00:00'
+concise_result: 'Specification changed: Update explicitly approved effort totals from actual task/project
+  source; preserve original31.5/intermediate34 and all security/final gates. Only bounded schedule test/docs
+  maintenance follows.'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -66,7 +66,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a
+  digest: 32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77
   role: consumer
 context:
   global_refs:
@@ -179,7 +179,7 @@ verification:
 evidence_dir: .agent/evidence/P0-017
 latest_evidence_file: .agent/evidence/P0-017/post-trace-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 12
   spec_digest: 38ac76dd81d2187b3c37226268c6b049da9c4c51da606463ba57b9b45098f137
   contract_digest: 999598c3b8770f4a21b9df3cbf0d712f0d9f53d06f54d954b6e659247dd4b42f
@@ -189,7 +189,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 35f43400c57641dea9ab8397b018a98d7f5bea8b
@@ -214,8 +214,8 @@ integration:
       evidence: .agent/evidence/P0-017/post-trace-target-01/result.json
     head: 35f43400c57641dea9ab8397b018a98d7f5bea8b
   evidence: .agent/evidence/P0-017/post-trace-target-01/result.json
-revision: 34
-spec_revision: 12
+revision: 37
+spec_revision: 14
 claim_generation: 2
 claim: null
 attempts:
@@ -284,7 +284,9 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T10:50:07+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T11:20:45+00:00'
+concise_result: 'Specification changed: Reviewed additive P0-019 TeamLifecycle/TeamSpec and repository
+  baseline32b512; existing1.0 and observation meanings preserved. Accept input digest only; implementation
+  and fresh source validation remain separate gates.'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

@@ -1,0 +1,15 @@
+{
+  "reviewer":"rfa-coordinator",
+  "source_head":"b5c825edb8a8788b881a8315b03cd5cf12882d92",
+  "product_source_manifest":".agent/evidence/P0-019/teams-target-01/source.json",
+  "started_at":"2026-09-26T11:15:02.071640+00:00",
+  "finished_at":"2026-09-26T11:17:34.300990+00:00",
+  "argv":[".venv/bin/python","-m","pytest","-q"],
+  "cwd":".","timeout_seconds":600,"elapsed_seconds":152.2377,
+  "environment":"env -i PATH=/usr/bin:/bin; normal declared pytest plugins; installed locked NAT; synthetic local tests only",
+  "exit_code":1,"result":"failed",
+  "counts":{"collected":597,"passed":596,"failed":1,"errors":0,"skipped":0,"xfailed":0,"deselected":0},
+  "log_excerpt":"1 failed,596 passed,77 warnings in151.27s. tests/test_task_migration.py::test_schedule_effort_and_final_acceptance_are_separate line90 expected D3 effort11, actual12. The previously approved P1-006 preflight changed estimate1h to2h but the migration regression expectation was not updated. No product failure observed in this run; full suite still failed.",
+  "cause":"Task-plan/control regression drift, not the prior LangSmith tracing cache bug. Existing team/NAT/trace tests passed in this same ordered run. Need scoped OPS-002 follow-up and explicit current effort totals, preserving final-gate assertions and original migration history.",
+  "limits":"Product manifest is linked above; it is not a complete independent control-source manifest for this supplemental whole-suite check. Operational tasks were unchanged during this command. No final10 E2E/live-model/OpenShell gate claimed. Do not overwrite this failed record when rerunning."
+}

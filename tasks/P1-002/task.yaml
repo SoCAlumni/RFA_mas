@@ -1,187 +1,264 @@
-schema_version: "1.0"
-id: "P1-002"
-title: "NVIDIA ModelPort adapter 준비"
-objective: "mock 생성을 NVIDIA 호출로 교체할 좁은 경계를 준비한다."
-kind: "task"
+schema_version: '1.0'
+id: P1-002
+title: NVIDIA ModelPort adapter 준비
+objective: mock 생성을 NVIDIA 호출로 교체할 좁은 경계를 준비한다.
+kind: task
 source_tasks:
-  - "P1-002"
+- P1-002
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P1"
-status: "todo"
-spec_state: "ready"
-unresolved: []
-workstream: "integration/evaluation"
-execution_role: "coordinator"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P1
+status: todo
+spec_state: draft
+unresolved:
+- P1-005의 trusted model-egress handoff가 아직 미정이다. 현재 ModelRequest에는 authenticated principal/current source
+  revision·ACL/query·첨부의 전송 판단/허용 endpoint를 전달하는 계약이 없다. 정책을 caller 또는 LLM의 allow 필드로 대신하지 말고, coordinator가
+  최소 typed context 또는 신뢰된 decorator 경계와 계약 version/digest를 발행·수락한 뒤에만 이 task를 ready로 전환한다.
+- P0-020→P1-005의 남은 model/output-token·전체 run deadline·호출/재시도 예산을 ModelPort adapter에 전달하는 계약이 아직 미정이다.
+  HTTP_TIMEOUT_SECONDS와 MAX_READ_RETRIES만으로 팀 전체 예산 준수를 주장할 수 없다. 기존 DTO/포트를 임의 확장하지 않고 coordinator가 producer/consumer
+  경계와 검증 fixture를 확정한다.
+workstream: integration/evaluation
+execution_role: coordinator
 estimated_effort: 1.5
-product_owner: "민섭"
-execution_class: "이 저장소 구현"
-product_mode: "기존 provider reserved, adapter missing/not_run. 준비 검증 local+simulated transport; real 미실행. 외부 없이 계약 구현 가능; API 사용 권한/계정 readiness는 다음 카드."
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: 기존 NVIDIA provider는 reserved이며 adapter missing/not_run. 이 task는 httpx MockTransport를 사용하는
+  local/simulated 계약 구현; 실제 NVIDIA 호출 성공과 한국어 품질 증거는 P1-002A. 현재 연구는 공식 hosted API 문서와 local NIM 예제 확인이며
+  real provider 검증이 아니다.
 scope:
   included:
-    - "ModelPort adapter·구조화 응답 validator·tool request 제한. 기존 Lightning main/Ultra Judge 후보를 공식 model card/API reference와 대조하고 지원 기능/한국어 rubric을 기록; 검증 안 된 기능은 enabled로 광고하지 않음."
+  - ModelPort adapter·구조화 응답 validator·tool request 제한. 기존 Lightning main/Ultra Judge 후보를 공식 model card/API
+    reference와 대조하고 지원 기능/한국어 rubric을 기록; 검증 안 된 기능은 enabled로 광고하지 않음.
+  - 기존 httpx로 async NVIDIA chat/completions adapter와 좁은 DTO mapper를 구현한다. ModelPort.generate→ModelResult
+    경계를 유지하고 URL/auth/provider SDK를 graph에 넣지 않는다. 기존 loopback 전용 ReferenceHttpClient의 제한을 NVIDIA 연결을
+    위해 완화하지 않는다.
+  - 현재 ModelRequest에는 tool schema/호출 실행 계약이 없다. 이 adapter는 텍스트 또는 검증된 JSON object에서 content를 매핑하는 1회 생성
+    경계이며 tool loop/MCP 실행을 하지 않는다. 선택하지 않은 tool_calls, 비어 있는 content, 잘못된 schema 및 잘린 finish_reason=length를
+    성공으로 처리하지 않는다. P1-002A의 tool_choice probe도 호출 제안 생성 검증이지 도구 실행 증거가 아니다.
+  - hosted endpoint/model ID와 local NIM/vLLM 설정 근거를 구분해 기록한다. stream=false를 명시하고 reasoning을 사용자 content/trace에
+    복사하지 않는다. JSON object 요청을 사용한다면 내부 Pydantic 응답 검증과 content 매핑을 적용하며, json_schema/strict 서버 지원은 확인
+    없이 활성화하지 않는다. chat_template_kwargs는 HTTP JSON 최상위 필드이며 SDK extra_body를 wire 필드로 복사하지 않는다.
+  - P1-005의 신뢰된 정책 경계에서 query·근거·첨부·현재 source/policy·정확한 추론 endpoint를 허가한 요청만 전송한다. 키 존재, ALLOW_EXTERNAL_EGRESS,
+    trace ID, caller/모델 작성 allow는 권한 증명이 아니다. 기존 NVIDIA_BASE_URL/NVIDIA_MODEL/NVIDIA_API_KEY, HTTP_TIMEOUT_SECONDS/MAX_READ_RETRIES를
+    재사용하고 새 동의어 환경변수를 만들지 않는다.
+  - 인증 헤더를 갖는 httpx 요청은 허가된 HTTPS endpoint에만 전송하고 자동 redirect 및 ambient proxy를 사용하지 않는다(follow_redirects=false,
+    trust_env=false). 응답 크기를 제한하고 timeout/429/5xx/잘못된 JSON/schema/401·403/202 pending을 비밀 없는 도메인 오류로 매핑한다.
+    202를 완료 또는 도구 write 실패로 추정하지 않는다; 확인된 polling 계약이 없으면 명시적 미완료로 반환한다.
+  - coordinator가 확정한 남은 예산 안에서만 429/일시적 5xx의 bounded Retry-After를 처리한다. 자동 호출은 최초 포함 최대 3회와 기존 설정 상한 중
+    작은 값이며 총 deadline을 넘지 않는다. timeout 후 반복 비용도 예산에 포함하고 auth/schema/validation 오류는 자동 반복하지 않는다. 취소를 전파하고
+    provider 오류·설정 누락을 mock fallback으로 바꾸지 않는다.
+  - bootstrap에 adapter 생성/종료를 배선하고 ObservedPort의 현재 model mode=mock 하드코딩을 실제 선택 provider/transport 증거
+    경계에 맞춘다. MockTransport 통과를 real 네트워크 증거로 표시하지 않는다. ModelResult의 실제 provider 결과와 mock retrieval을 포함한
+    전체 제품의 simulated 상태를 구분하며 raw prompt/본문/인자/reasoning/응답/secret을 관측 ledger에 저장하지 않는다.
+  - 기본 mock 부팅은 키 없이 유지한다. 선택된 nvidia 설정 누락은 정확한 configuration error로 처리하고 doctor에는 configured/missing·준비
+    상태만 남긴다. 기능 활성화와 정책 허가는 분리한다. docs/evidence/nvidia-model.md에는 capability 근거와 not_run만 먼저 작성하고, P1-002A가
+    같은 파일에 별도 실제 호출 증거를 순차 추가한다.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  - 신규 NVIDIA SDK/framework·로컬 GPU NIM 설치·MCP/tool 실행 loop·graph 재작성·Judge 구현. Judge 호출은 기존 별도 평가 task의
+    책임이다.
+  - P1-002A 소유 tests/integration/test_nvidia_live.py 구현/실행·실제 credential 사용·실측 품질 주장. timeout만으로 tool_choice
+    미지원이라고 결론내리지 않는다.
   owned_paths:
-    - "src/rfa_mas/bootstrap.py"
-    - "src/rfa_mas/settings.py"
-    - "src/rfa_mas/contracts/models.py"
-    - ".env.example"
-    - "src/rfa_mas/adapters/nvidia.py"
-    - "tests/test_nvidia_contract.py"
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/contracts/models.py
+  - .env.example
+  - src/rfa_mas/adapters/nvidia.py
+  - tests/test_nvidia_contract.py
+  - docs/evidence/nvidia-model.md
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - src/rfa_mas/adapters/http.py
+  - src/rfa_mas/application/observations.py
+  - src/rfa_mas/security.py
+  - src/rfa_mas/application/graphs/domain.py
   planned_paths:
-    - ".env.example"
-    - "src/rfa_mas/adapters/nvidia.py"
-    - "tests/test_nvidia_contract.py"
+  - src/rfa_mas/adapters/nvidia.py
+  - tests/test_nvidia_contract.py
+  - docs/evidence/nvidia-model.md
   shared_resources:
-    - "canonical-contracts"
-    - "composition"
-    - "dependencies-settings"
+  - canonical-contracts
+  - composition
+  - dependencies-settings
 depends_on:
-  -
-    id: "P0-014"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
-  -
-    id: "P0-017"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
-  -
-    id: "P1-005"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-014
+  condition: integrated_done
+  required_output: 기존 ModelRequest/ModelResult 및 trace/evidence 계약 baseline; 변경은 coordinator 발행/consumer
+    수락 절차로만 수행.
+- id: P0-017
+  condition: integrated_done
+  required_output: 기존 NVIDIA/HTTP 설정·reserved provider/configured-only doctor 경계; mock 기본 부팅과 real readiness를
+    분리한 검증.
+- id: P1-005
+  condition: integrated_done
+  required_output: current source/ACL/policy·query/첨부·endpoint를 연결하는 trusted model-egress handoff와 P0-020에서
+    내려오는 남은 실행 예산 계약·negative fixture가 통합되어야 한다. 현재 미정인 전달 경계의 version/digest 수락 전에는 이 task의 claim을 허용하지
+    않는다.
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P1-002 — NVIDIA ModelPort adapter 준비"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "src/rfa_mas/bootstrap.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/settings.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/contracts/models.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P1-002/handoff.md"
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-002 — NVIDIA ModelPort adapter 준비
+    reason: 기존 AC·범위·우선순위를 보존한다.
+  - path: src/rfa_mas/contracts/models.py
+    section: ModelRequest/ModelResult 및 신뢰된 정책·실행 예산의 확정 후 추가 계약
+    reason: 현재 요청에는 principal/egress/budget/tool schema가 없다. 필드나 허가 의미를 임의로 만들지 않는다.
+  - path: src/rfa_mas/ports/interfaces.py
+    section: ModelPort.generate
+    reason: adapter_name/simulated와 async generate 계약을 유지; 실제 tool loop는 현 인터페이스에 없다.
+  - path: src/rfa_mas/bootstrap.py
+    section: inspect_configuration/build_container/ObservedPort(model) 및 container 종료
+    reason: reserved→구현된 provider 조립과 mode=mock 하드코딩, client lifecycle을 함께 확인한다.
+  - path: src/rfa_mas/settings.py
+    section: NVIDIA_*/HTTP_TIMEOUT_SECONDS/MAX_READ_RETRIES/ALLOW_EXTERNAL_EGRESS 및 doctor readiness
+    reason: 현재 변수명만 재사용; secret 값 접근 없이 설정 여부와 권한을 분리한다.
+  - path: src/rfa_mas/adapters/http.py
+    section: ReferenceHttpClient의 loopback-only 경계
+    reason: 팀원 로컬 HTTP용 제한을 보존하고 NVIDIA용 좁은 httpx client를 별도로 둔다.
+  - path: src/rfa_mas/application/observations.py
+    section: ObservedPort/Observations 모델 호출 관측
+    reason: 실제 provider mode·호출/실패 메타데이터만 연결; 미수집 token은 null/unknown이고 원문을 보내지 않는다.
+  - path: src/rfa_mas/security.py
+    section: SecretRedactor 및 logging filter
+    reason: 비밀 마스킹만으로 private payload가 안전해지지 않으므로 fixed safe errors와 payload 미수집을 검증한다.
+  - path: src/rfa_mas/application/graphs/domain.py
+    section: 모델 생성 전 ModelRequest 조립·정책 검사
+    reason: 읽기 전용 consumer 조사; P1-005가 확정할 trusted egress/remaining budget 연결을 중복 구현하지 않는다.
+  - path: docs/evidence/nvidia-model.md
+    section: 신규 예정 — hosted/local capability 기준과 P1-002A live evidence 구획
+    reason: '2026-09-26 공식 자료 조사 기준이며 구현 때 재확인한다. Hosted 카드: https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b/modelcard
+      및 https://build.nvidia.com/nvidia/nemotron-3-ultra-550b-a55b/modelcard . Lightning 카드에 Korean은 명시되지
+      않고 Ultra에는 명시되지만 실제 한국어 품질은 별도 검증이다. 정확한 POST https://integrate.api.nvidia.com/v1/chat/completions
+      / model ID·stream·max_tokens·202 근거: https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-5-lightning-30b-a3b-infer
+      및 https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b-infer . Hosted reference의
+      tool_choice/response_format 생략은 미지원 증거가 아니다.'
+  - path: docs/PRODUCT_REQUIREMENTS.md
+    section: 공식 자료 확인과 남은 확인 항목 — Lightning 모델 페이지
+    reason: Local NIM 2.0.10의 json_object·enable_thinking·auto tool flags는 https://docs.nvidia.com/nim/large-language-models/2.0.10/get-started/advanced/get-started-nemotron-3.5-lightning.html
+      ; MCP 실행은 client 책임이라는 근거는 https://docs.nvidia.com/nim/large-language-models/2.0.10/advanced-use-cases/tool-calling-and-mcp.html
+      . none/auto/required/named 형태와 서버 parser 조건 참고는 https://docs.vllm.ai/en/stable/features/tool_calling/
+      . 이 서버별 근거를 현재 hosted 계정의 기능 검증으로 대체하지 않는다.
+  handoff: tasks/P1-002/handoff.md
   dependency_results:
-    - "tasks/P0-014/handoff.md"
-    - "tasks/P0-017/handoff.md"
-    - "tasks/P1-005/handoff.md"
+  - tasks/P0-014/handoff.md
+  - tasks/P0-017/handoff.md
+  - tasks/P1-005/handoff.md
 deliverables:
-  -
-    path: "src/rfa_mas/bootstrap.py"
-    availability: "existing"
-    description: "ModelPort adapter·구조화 응답 validator·tool request 제한. 기존 Lightning main/Ultra Judge 후보를 공식 model card/API reference와 대조하고 지원 기능/한국어 rubric을 기록; 검증 안 된 기능은 enabled로 광고하지 않음."
-  -
-    path: "src/rfa_mas/settings.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/contracts/models.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: ".env.example"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/adapters/nvidia.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "tests/test_nvidia_contract.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: NVIDIA adapter lifecycle/명시 readiness 조립과 ObservedPort mode의 실제 provider 구분; 기본 mock 유지.
+- path: src/rfa_mas/settings.py
+  availability: existing
+  description: 기존 설정 이름/SecretStr/configured-only doctor 재사용; 정책·예산 계약 확정 후 필요한 최소 검증만 추가.
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 기존 공개 DTO 보존; coordinator가 승인·발행한 정책/예산 계약 및 구조화 응답의 최소 검증만 반영.
+- path: .env.example
+  availability: existing
+  description: 이미 존재하는 예시의 관련 설명만 구현된 기능에 맞춰 갱신; 비밀 값은 빈칸, 실제 .env 미접근.
+- path: src/rfa_mas/adapters/nvidia.py
+  availability: planned
+  description: httpx ModelPort HTTP mapper, bounded async lifecycle/deadline/retry, fail-closed egress
+    소비와 secret-safe 오류; tool loop 없음.
+- path: tests/test_nvidia_contract.py
+  availability: planned
+  description: 실제 네트워크를 차단한 MockTransport 성공/오류/egress/예산/취소/설정/관측 mode·canary 회귀.
+- path: docs/evidence/nvidia-model.md
+  availability: planned
+  description: P1-002가 공식 URL/확인일/model ID·hosted/local 지원 근거와 not_run 구획을 생성한다. 기존 P1-002A의 동일 planned
+    산출물을 재사용하며, 선행 통합 후 해당 task만 live 증거를 추가한다. 이 task에서는 호출 횟수·성능·tool 기능 성공을 실측으로 기록하지 않는다.
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "endpoint/model ID·tool calling/structured output 가능 여부 및 확인일 기록"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "timeout·429/rate limit·잘못된 JSON·비밀 마스킹 처리, model/tool 전체 budget 존중"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "model-egress 허가된 합성 요청만 전송 가능, 선택 실패 시 mock fallback 없음"
-    required: true
-  -
-    id: "AC4"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "MockTransport로 ModelPort 계약 통과, 실제 네트워크 테스트와 분리."
-    required: true
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: endpoint/model ID·tool calling/structured output 가능 여부 및 확인일 기록
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: timeout·429/rate limit·잘못된 JSON·비밀 마스킹 처리, model/tool 전체 budget 존중
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: model-egress 허가된 합성 요청만 전송 가능, 선택 실패 시 mock fallback 없음
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: MockTransport로 ModelPort 계약 통과, 실제 네트워크 테스트와 분리.
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-      - "AC4"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "계약·429/timeout/schema 오류·tool allowlist·secret-safe 로그 검사. README의 실제 호출 주장은 P1-002A 완료 후만."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/test_nvidia_contract.py"
-    timeout_seconds: 120
-    procedure: []
-    assertions:
-      - "endpoint/model ID·tool calling/structured output 가능 여부 및 확인일 기록"
-      - "timeout·429/rate limit·잘못된 JSON·비밀 마스킹 처리, model/tool 전체 budget 존중"
-      - "model-egress 허가된 합성 요청만 전송 가능, 선택 실패 시 mock fallback 없음"
-      - "MockTransport로 ModelPort 계약 통과, 실제 네트워크 테스트와 분리."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P1-002"
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 계약·429/timeout/schema 오류·tool allowlist·secret-safe 로그 검사. README의 실제 호출 주장은 P1-002A 완료 후만.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  - P1-005의 trusted egress·남은 예산 producer/consumer 계약과 fixture가 발행·통합된 후 실행한다. 현재 테스트 파일은 신규 예정이다.
+  - httpx MockTransport와 합성 secret/canary만 사용; 물리 네트워크 차단 및 fake clock/sleep로 retry를 검사한다. 실제 시간 대기/credential
+    사용 금지.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_nvidia_contract.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - endpoint/model ID·tool calling/structured output 가능 여부 및 확인일 기록
+  - timeout·429/rate limit·잘못된 JSON·비밀 마스킹 처리, model/tool 전체 budget 존중
+  - model-egress 허가된 합성 요청만 전송 가능, 선택 실패 시 mock fallback 없음
+  - MockTransport로 ModelPort 계약 통과, 실제 네트워크 테스트와 분리.
+  - 정확한 model/messages/stream=false 및 구조화 응답 payload를 검사한다; JSON object·schema 오류/빈 content/truncated
+    응답/예기치 않은 tool_calls는 성공으로 정규화하지 않고 tool 실행은 0회이다.
+  - 허가 없음·위조 allow·source/policy 변경·query/첨부 canary·허가되지 않은 endpoint는 outbound 0회; redirect/auth/proxy를
+    통한 다른 수신처 전송도 0회이다.
+  - 429 Retry-After/5xx/timeout/취소/401·403/422/202/과대 응답/JSON 오류를 구분한다; 최대 3회 및 남은 deadline·호출 예산을 넘지
+    않고 polling 미확정 202를 완료로 표시하지 않는다.
+  - 예외·log·trace에 synthetic API key/Bearer/private 본문·query·응답/reasoning이 없고, error cause를 통해 원문이 재노출되지
+    않는다.
+  - 키 없는 mock 정상 부팅과 선택된 nvidia의 명시적 configuration error를 모두 검증한다; doctor는 값 없이 상태만 출력하며 ALLOW_EXTERNAL_EGRESS만으로
+    허가하지 않는다.
+  - bootstrap의 선택 provider 관측 mode를 검사하되 MockTransport 증거는 simulated이고 live success가 아니다; provider 미제공
+    token 사용량은 null/unknown으로 유지한다.
+  runner: pytest
+evidence_dir: .agent/evidence/P1-002
 latest_evidence_file: null
 verification_summary:
-  state: "not_run"
+  state: not_run
   spec_revision: null
   spec_digest: null
   contract_digest: null
   source_fingerprint: null
   evidence: null
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: pending
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 3
+spec_revision: 3
 claim_generation: 0
 claim: null
 attempts:
@@ -190,17 +267,21 @@ attempts:
   no_progress_count: 0
   latest_attempt: null
   evidence_refs: []
+  approaches: []
 blocker: null
 migration:
-  initial_spec_revision: 2
-  original_status: "todo"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P1-002"
-  prior_claim: "기존 provider reserved, adapter missing/not_run. 준비 검증 local+simulated transport; real 미실행. 외부 없이 계약 구현 가능; API 사용 권한/계정 readiness는 다음 카드."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-002
+  prior_claim: 기존 provider reserved, adapter missing/not_run. 준비 검증 local+simulated transport; real 미실행.
+    외부 없이 계약 구현 가능; API 사용 권한/계정 readiness는 다음 카드.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T03:13:39.816Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "계약·429/timeout/schema 오류·tool allowlist·secret-safe 로그 검사. README의 실제 호출 주장은 P1-002A 완료 후만."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T11:19:54+00:00'
+concise_result: 'Specification changed: Official hosted/local capability preflight; preserve ACs and split
+  real proof, mark missing trusted egress and remaining-budget producer contract unresolved rather than
+  claiming readiness'
+next_action: 계약·429/timeout/schema 오류·tool allowlist·secret-safe 로그 검사. README의 실제 호출 주장은 P1-002A 완료 후만.
