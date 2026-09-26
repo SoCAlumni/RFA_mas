@@ -1,0 +1,59 @@
+{
+  "attempt_id": "target-0926213742",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock 제품 보수; real 모델/서비스 주장 없음",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_sqlite_multiprocess.py",
+          "tests/test_knowledge.py",
+          "tests/test_sessions.py"
+        ],
+        "assertions": [
+          "API 요청 40/40이 성공하고 서버가 SIGBUS 없이 살아 있다(실제 subprocess 회귀).",
+          "검사는 lstat/경로 chmod만 사용하고 기존 파일을 open/close하지 않아 SQLite 공유 lock이 풀리지 않는다.",
+          "0600·소유자·일반 파일·symlink 거절 보장이 유지되고 sidecar 삭제 경쟁(0 link)은 오류로 오판하지 않는다."
+        ],
+        "counts": {
+          "collected": 72,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 72,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 21.01,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T21:38:05.831855+00:00",
+        "id": "V1",
+        "log_excerpt": "72 passed, 12 warnings in 20.03s",
+        "result": "passed",
+        "started_at": "2026-09-26T21:37:44.821823+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "37284238d8d35a7353618a8e270bc29f2b875095",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-26T21:38:05.831940+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T21:37:44.821108+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "b7122b30c3c13095ed16b2db64570a2ac25cf11eb28f1057e005cb514ad8da41",
+  "source_manifest": ".agent/evidence/P0-005A/target-0926213742/source.json",
+  "spec_digest": "b06f10419219806f736818e07ac14b1493c1cded1f47e0341ef3bec2b689f63f",
+  "spec_revision": 6,
+  "task_id": "P0-005A"
+}

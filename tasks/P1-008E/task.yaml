@@ -10,10 +10,9 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: todo
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: verifying
+spec_state: ready
+unresolved: []
 workstream: agents
 execution_role: coordinator
 estimated_effort: 1.0
@@ -53,7 +52,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
   role: consumer
 context:
   global_refs:
@@ -129,33 +128,55 @@ verification:
   - 확정 거절은 FAILED, timeout·5xx·판독 불가는 outcome_unknown으로 조회만 하고 재전송하지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-008E
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-008E/target-0926215653/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 6
+  spec_digest: 9fb5d8937972ffa62ede2593afd734038bab64dd06dd1f306d4b2ae0b2a41a1b
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: bc5c3d9226457dcb6ee62968b47ebb515db4c5e23510e301c92ee35ca4c2f8cd
+  evidence: .agent/evidence/P1-008E/target-0926215653/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 5
-spec_revision: 5
-claim_generation: 0
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: 81b1c08f404aacd5e473fc8e255e87db0fcd59cf
+    baseline_head: 37284238d8d35a7353618a8e270bc29f2b875095
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008E-int-0926215606
+    branch: task/P1-008E-int-0926215606
+    evidence: .agent/evidence/P1-008E/worker-0926215620/result.json
+    changed_files:
+      src/rfa_mas/adapters/http.py: 0262bf6af254a91ef2a0328f71b302bcc0bc3626442891e6d7ef0249ed1d4dcd
+      src/rfa_mas/adapters/local.py: 4f712938ff61d61468b2b0fdfedf4626fc5e32ab7a90b0e6c85b2a7ef1481f6e
+      src/rfa_mas/adapters/mock.py: aab4f494933038cdc7037e04774952c4d75738e381344c0202319059c5dcbe88
+      src/rfa_mas/application/drafts.py: 1bcbc935766dadf2784d6f66ead9f554e62b57bab901a3f1ff5c170b09efc8f4
+      src/rfa_mas/errors.py: 702a214984a5b625eb91078402e82e9092af08222dadd454f59511d0fd0c5ba1
+      tests/test_consumer_safety.py: d1958f29da37e8f2597ab6b3925e9d60dd3c9af98540c70a48c41e9fed25a7f7
+      tests/test_effect_ledger.py: ad5e2bf5c53ed4d2c6470c21c7857390333cad4acec49c51098f3798c5d78c2a
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 6
+      spec_digest: 9fb5d8937972ffa62ede2593afd734038bab64dd06dd1f306d4b2ae0b2a41a1b
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: bc5c3d9226457dcb6ee62968b47ebb515db4c5e23510e301c92ee35ca4c2f8cd
+      evidence: .agent/evidence/P1-008E/target-0926215653/result.json
+    head: 81b1c08f404aacd5e473fc8e255e87db0fcd59cf
+  evidence: .agent/evidence/P1-008E/target-0926215653/result.json
+revision: 15
+spec_revision: 6
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926215653
+  evidence_refs:
+  - .agent/evidence/P1-008E/worker-0926215620/result.json
   approaches: []
 blocker: null
 migration:
@@ -168,6 +189,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:15:47+00:00'
-concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
-next_action: claim 후 cherry-pick·검증·통합.
+updated_at: '2026-09-26T22:20:08+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

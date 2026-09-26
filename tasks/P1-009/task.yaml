@@ -37,6 +37,8 @@ scope:
   - docs/INTEGRATION.md
   - docs/EDUCATION_MAPPING.md
   - docs/DEMO.md
+  - docs/evidence/llmops.md
+  - docs/evidence/e2e-final.md
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/contracts
@@ -45,6 +47,7 @@ scope:
   - RFA_E2E_Test_Scenarios_10_ko.md
   planned_paths:
   - docs/DEMO.md
+  - docs/evidence/e2e-final.md
   shared_resources:
   - contract-docs
 depends_on:
@@ -96,6 +99,10 @@ deliverables:
 - path: docs/DEMO.md
   availability: planned
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/evidence/e2e-final.md
+  availability: planned
+  description: RFA_E2E_Test_Scenarios_10_ko.md 10개 시나리오 최종 실행 보고(controlled/real-model/real-integration
+    분리)
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -143,6 +150,25 @@ verification:
     표시하고 보고서 작성 완료를 제품 전체 통과로 표현하지 않음
   - 제출 요건은 공식 폼을 재확인해 차이만 알리고 공개되지 않은 배점 추가 금지.
   runner: manual
+- id: V2
+  ac_ids:
+  - AC1
+  type: command
+  availability: available
+  prerequisites:
+  - source worktree; 합성 fixture만; .env 읽기 금지
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_demo_e2e.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - README/DEMO에 쓴 rfa demo --full 명령이 실제로 동작하고 mock/local/simulated 표시·canary 없음·재시작 보존을 만족한다.
+  runner: pytest
 evidence_dir: .agent/evidence/P1-009
 latest_evidence_file: null
 verification_summary:
@@ -161,8 +187,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 5
-spec_revision: 5
+revision: 6
+spec_revision: 6
 claim_generation: 0
 claim: null
 attempts:
@@ -184,7 +210,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T06:54:37+00:00'
-concise_result: 'Specification changed: 사용자 지정 E2E 원문 10개를 기존 final_acceptance에 연결; 3회 controlled·실제 kill/restart·100요청
-  부하·real/UI 개별 gate 유지. P0-026 검증 공수 1h→4h로 명시 확대'
+updated_at: '2026-09-26T22:11:54+00:00'
+concise_result: 'Specification changed: Own the final E2E report file and the P1-006B evidence refresh;
+  add a command check that the documented demo runs'
 next_action: 변경된 adapter 대상 회귀 + 최종 합성 데모, 링크/교육-task-file 매핑 확인. 새 코드가 없으면 문서 검증만.

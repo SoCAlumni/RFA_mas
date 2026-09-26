@@ -1,0 +1,58 @@
+{
+  "attempt_id": "pre-P1-004C-worker-0926215732",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "현재 get_result는 owner 인자를 받지 않음; 신규 기능 missing/not_run. 저장/권한 local(false), 응답 생성 mock(true). 외부 의존 없음; loopback 개발 identity는 production 인증 증거 아님.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_sessions.py"
+        ],
+        "assertions": [
+          "body의 owner/thread/membership 주장을 신뢰하지 않고 서버 principal로 조회·쓰기 허가",
+          "한 세션의 여러 Task/Run, 같은 Task의 여러 세션 연결 허용",
+          "기존 DB 자료 보존, owner 미상 legacy run은 임의 귀속하지 않고 restricted 처리",
+          "다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회."
+        ],
+        "counts": {
+          "collected": 26,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 26,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 8.24,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T21:57:43.307446+00:00",
+        "id": "V1",
+        "log_excerpt": "26 passed, 11 warnings in 7.24s",
+        "result": "passed",
+        "started_at": "2026-09-26T21:57:35.070798+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "81b1c08f404aacd5e473fc8e255e87db0fcd59cf",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-015",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T21:57:43.307503+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T21:57:35.069846+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "2d61ffdb9069080823d987b502c38d7b0ad8baba614882e9100cc24fb6338ccd",
+  "source_manifest": ".agent/evidence/P0-015/pre-P1-004C-worker-0926215732/source.json",
+  "spec_digest": "a09b75a3eb474eadf0ef26d146349d6e6a5a3b7a66c67132e72d898267d31558",
+  "spec_revision": 5,
+  "task_id": "P0-015"
+}

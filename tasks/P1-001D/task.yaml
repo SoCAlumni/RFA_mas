@@ -10,9 +10,8 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
 status: verifying
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: agents
 execution_role: coordinator
 estimated_effort: 1.0
@@ -45,7 +44,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 2dd6adcb078d77040080742b45b5c0b100321d1bc100927b94d125e2210388c3
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
   role: consumer
 context:
   global_refs:
@@ -107,52 +106,95 @@ verification:
   - 질의 term 수 상한으로 SQLite 오류 없이 처리된다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-001D
-latest_evidence_file: .agent/evidence/P1-001D/target-0926202914/result.json
+latest_evidence_file: .agent/evidence/P1-001D/pre-P1-001E-target-0926221924/result.json
 verification_summary:
   state: stale
-  spec_revision: 7
-  spec_digest: efddd163a9fe3c2b81b0d9ad1ba766fda7853ed66cf1fa39a15b75f99ad57b96
-  contract_digest: eb5c83eaa114df06262526a92737190509a319a5f2f39d208cdc2a0ff549bbce
-  source_fingerprint: b8d3d86d4fdfc91272289907e929c06bced57821573f97ce4a57972671926835
-  evidence: .agent/evidence/P1-001D/target-0926202914/result.json
+  spec_revision: 10
+  spec_digest: d7549b7a3b582c00bf3a1a6341e2cacd46c21fcdf2b4aac182a0980c4bbe937a
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 695d1f2d255b687b09daa5867f3f1d6735871eccceee17645a75acee595bcd9c
+  evidence: .agent/evidence/P1-001D/pre-P1-001E-target-0926221924/result.json
 integration:
   state: integrated
   target: main canonical control checkout
   reason: null
   reservation: true
-  submission_generation: 1
+  submission_generation: 2
   submission:
-    head: d962b8a25de0d6bf44359a7f79a7989b4cc99928
-    baseline_head: 8e7f73610660ca1929c55e09c997f061f2a9762d
+    head: bfd25669ee36a3b1f2f71953e4480c1774a4fdae
+    baseline_head: bfd25669ee36a3b1f2f71953e4480c1774a4fdae
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001D-int-0926202851
     branch: task/P1-001D-int-0926202851
-    evidence: .agent/evidence/P1-001D/worker-0926202902/result.json
+    evidence: .agent/evidence/P1-001D/pre-P1-001E-worker-0926221912/result.json
     changed_files:
-      src/rfa_mas/adapters/local.py: 5cbbbf362a05208af245d1ae0a1cbe8ba1dd6d1403440a55a1cad6cac8222225
+      src/rfa_mas/adapters/local.py: 4f712938ff61d61468b2b0fdfedf4626fc5e32ab7a90b0e6c85b2a7ef1481f6e
       src/rfa_mas/adapters/retrieval.py: 5e09db9af998079344287a8c8f9777fa56ec329fc1d80ffc7680c9aee99b7219
       tests/test_retrieval.py: 24646f78ff83e021bb3ff5fdecaec0ccd7a7f94931d360ad81a29117b6f12ac4
   result:
     verification_summary:
       state: passed
+      spec_revision: 10
+      spec_digest: d7549b7a3b582c00bf3a1a6341e2cacd46c21fcdf2b4aac182a0980c4bbe937a
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 695d1f2d255b687b09daa5867f3f1d6735871eccceee17645a75acee595bcd9c
+      evidence: .agent/evidence/P1-001D/pre-P1-001E-target-0926221924/result.json
+    head: bfd25669ee36a3b1f2f71953e4480c1774a4fdae
+  evidence: .agent/evidence/P1-001D/pre-P1-001E-target-0926221924/result.json
+revision: 28
+spec_revision: 10
+claim_generation: 2
+claim: null
+attempts:
+  count: 4
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: pre-P1-001E-target-0926221924
+  evidence_refs:
+  - .agent/evidence/P1-001D/worker-0926202902/result.json
+  - .agent/evidence/P1-001D/pre-P1-001E-worker-0926221912/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: bfd25669ee36a3b1f2f71953e4480c1774a4fdae
+    reason: Direct/transitive dependencies of P1-001E before claim (OPS-005)
+    at: '2026-09-26T22:19:10+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: d962b8a25de0d6bf44359a7f79a7989b4cc99928
+        baseline_head: 8e7f73610660ca1929c55e09c997f061f2a9762d
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001D-int-0926202851
+        branch: task/P1-001D-int-0926202851
+        evidence: .agent/evidence/P1-001D/worker-0926202902/result.json
+        changed_files:
+          src/rfa_mas/adapters/local.py: 5cbbbf362a05208af245d1ae0a1cbe8ba1dd6d1403440a55a1cad6cac8222225
+          src/rfa_mas/adapters/retrieval.py: 5e09db9af998079344287a8c8f9777fa56ec329fc1d80ffc7680c9aee99b7219
+          tests/test_retrieval.py: 24646f78ff83e021bb3ff5fdecaec0ccd7a7f94931d360ad81a29117b6f12ac4
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 7
+          spec_digest: efddd163a9fe3c2b81b0d9ad1ba766fda7853ed66cf1fa39a15b75f99ad57b96
+          contract_digest: eb5c83eaa114df06262526a92737190509a319a5f2f39d208cdc2a0ff549bbce
+          source_fingerprint: b8d3d86d4fdfc91272289907e929c06bced57821573f97ce4a57972671926835
+          evidence: .agent/evidence/P1-001D/target-0926202914/result.json
+        head: d962b8a25de0d6bf44359a7f79a7989b4cc99928
+      evidence: .agent/evidence/P1-001D/target-0926202914/result.json
+    verification_summary:
+      state: stale
       spec_revision: 7
       spec_digest: efddd163a9fe3c2b81b0d9ad1ba766fda7853ed66cf1fa39a15b75f99ad57b96
       contract_digest: eb5c83eaa114df06262526a92737190509a319a5f2f39d208cdc2a0ff549bbce
       source_fingerprint: b8d3d86d4fdfc91272289907e929c06bced57821573f97ce4a57972671926835
       evidence: .agent/evidence/P1-001D/target-0926202914/result.json
-    head: d962b8a25de0d6bf44359a7f79a7989b4cc99928
-  evidence: .agent/evidence/P1-001D/target-0926202914/result.json
-revision: 18
-spec_revision: 9
-claim_generation: 1
-claim: null
-attempts:
-  count: 2
-  cycles: 1
-  no_progress_count: 0
-  latest_attempt: target-0926202914
-  evidence_refs:
-  - .agent/evidence/P1-001D/worker-0926202902/result.json
-  approaches: []
+    latest_evidence_file: .agent/evidence/P1-001D/target-0926202914/result.json
 blocker: null
 migration:
   original_status: new_coordinator_fix
@@ -164,7 +206,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:15:47+00:00'
+updated_at: '2026-09-26T22:20:08+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

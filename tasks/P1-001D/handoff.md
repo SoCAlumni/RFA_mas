@@ -14,3 +14,7 @@
 
 - 개발 검증: test_retrieval 35 passed. stack 구간 254 passed.
 
+## 재검증 pre-P1-001E (2026-09-26T22:19Z)
+
+- 사유: Direct/transitive dependencies of P1-001E before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD bfd2566에서 계획된 검증을 worker/target 단계로 재실행한다.
