@@ -409,7 +409,6 @@ def test_nat_dependency_presence_never_implies_adapter_support(installed, monkey
 @pytest.mark.parametrize(
     "overrides,feature",
     [
-        ({"scheduler_enabled": True}, "feature:scheduler"),
         ({"allow_external_egress": True}, "feature:external_egress_policy"),
     ],
 )

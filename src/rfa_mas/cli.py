@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import re
+import signal
 import sqlite3
 from dataclasses import asdict
 from pathlib import Path
@@ -13,7 +14,7 @@ from pydantic import ValidationError
 from pydantic_settings import SettingsError
 
 from rfa_mas.api.app import create_app
-from rfa_mas.bootstrap import build_container, inspect_configuration
+from rfa_mas.bootstrap import build_container, build_scheduler_runner, inspect_configuration
 from rfa_mas.contracts import (
     Audience,
     DomainId,
@@ -23,7 +24,7 @@ from rfa_mas.contracts import (
     WorkRequest,
 )
 from rfa_mas.dev_env import initialize_dev_env
-from rfa_mas.errors import BackendNotImplementedError, ConfigurationError
+from rfa_mas.errors import BackendNotImplementedError, ConfigurationError, RfaError
 from rfa_mas.settings import PLANNED_SETTINGS, Settings
 
 
@@ -68,6 +69,17 @@ def _parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("doctor", help="Show configured/missing variable names without values")
 
+    scheduler = subparsers.add_parser(
+        "scheduler",
+        help="Run the single-owner APScheduler runner (separate from the API; one process)",
+    )
+    scheduler.add_argument(
+        "--run-seconds",
+        type=float,
+        default=None,
+        help="Stop after this many seconds (smoke checks); default runs until SIGINT/SIGTERM",
+    )
+
     evaluation = subparsers.add_parser("evaluate", help="Run isolated synthetic rule evaluation")
     evaluation.add_argument("--dataset", default="persona-core-v1")
     evaluation.add_argument("--judge", default="disabled", help="disabled or mock only")
@@ -104,6 +116,42 @@ async def _demo(args: argparse.Namespace, settings: Settings) -> int:
         print(result.model_dump_json(indent=2))
         return 0 if result.status.value in {"completed", "waiting_approval"} else 1
     finally:
+        await container.shutdown()
+
+
+async def _scheduler(args: argparse.Namespace, settings: Settings) -> int:
+    """Dedicated runner process. The FastAPI app/workers never start a scheduler."""
+    if not settings.scheduler_enabled:
+        print(json.dumps({"code": "scheduler_disabled", "setting": "SCHEDULER_ENABLED"}))
+        return 2
+    container = build_container(settings)
+    await container.startup()
+    runner = build_scheduler_runner(settings, container)
+    try:
+        try:
+            await runner.start()
+        except RfaError as exc:
+            if exc.code != "scheduler_owner_locked":
+                raise
+            print(json.dumps({"code": exc.code}))
+            return 3
+        print(json.dumps({"status": "scheduler_running", "jobs": len(runner.jobs()),
+                          "sync": runner.last_sync}))
+        stop = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        signals = (signal.SIGINT, signal.SIGTERM)
+        for signum in signals:
+            loop.add_signal_handler(signum, stop.set)
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=args.run_seconds)
+        except TimeoutError:
+            pass
+        finally:
+            for signum in signals:
+                loop.remove_signal_handler(signum)
+        return 0
+    finally:
+        await runner.stop()
         await container.shutdown()
 
 
@@ -153,7 +201,8 @@ def _doctor(settings: Settings) -> int:
             "trace": settings.trace_backend,
             "judge": settings.judge_provider if settings.enable_judge else "disabled",
             "nat": "selected_unavailable" if settings.enable_nat else "disabled",
-            "scheduler": "selected_unavailable" if settings.scheduler_enabled else "disabled",
+            # Enabled means only the dedicated `rfa scheduler` process may run jobs.
+            "scheduler": "rfa_scheduler_cli" if settings.scheduler_enabled else "disabled",
         },
         "variables": [item.model_dump(mode="json") for item in settings.doctor_statuses()],
         "missing": list(inspection.missing),
@@ -226,6 +275,12 @@ def main() -> None:
         return
     if args.command == "doctor":
         raise SystemExit(_doctor(settings))
+    if args.command == "scheduler":
+        try:
+            raise SystemExit(asyncio.run(_scheduler(args, settings)))
+        except (ConfigurationError, BackendNotImplementedError) as exc:
+            print(json.dumps({"code": exc.code, "message": exc.safe_message}, ensure_ascii=False))
+            raise SystemExit(2) from None
     if args.command == "demo":
         try:
             raise SystemExit(asyncio.run(_demo(args, settings)))

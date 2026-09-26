@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Protocol
 from zoneinfo import ZoneInfo
@@ -28,6 +29,32 @@ from rfa_mas.errors import RfaError
 DEFAULT_TIMEZONE = "Asia/Seoul"
 JOB_TYPES = ("kb_refresh", "candidate_scan", "briefing")
 PrincipalResolver = Callable[[str], Awaitable[TrustedPrincipal | None]]
+
+
+@dataclass(frozen=True)
+class MissPolicy:
+    """APScheduler 3.x add_job options for one job_type (P0-023/P0-024)."""
+
+    coalesce: bool
+    misfire_grace_seconds: int | None  # None: run late once, however late (APScheduler 3.x).
+    max_instances: int = 1
+
+
+# Missed fires (PC off/asleep) are coalesced by APScheduler into the most recent one.
+# briefing: always one late run with the latest allowed material (older notifications held).
+# candidate_scan: one late run within 24h; older fires become skipped ledger rows.
+# kb_refresh: one late run within 1h; the next run recomputes only changed sources.
+MISS_POLICIES = {
+    "briefing": MissPolicy(coalesce=True, misfire_grace_seconds=None),
+    "candidate_scan": MissPolicy(coalesce=True, misfire_grace_seconds=86_400),
+    "kb_refresh": MissPolicy(coalesce=True, misfire_grace_seconds=3_600),
+}
+SKIP_MISSED = MissPolicy(coalesce=True, misfire_grace_seconds=60)
+
+
+def miss_policy(job_type: str, mode: str = "job_type_default") -> MissPolicy:
+    """SCHEDULER_MISFIRE_POLICY=skip_missed disables catch-up for every job type."""
+    return SKIP_MISSED if mode == "skip_missed" else MISS_POLICIES[job_type]
 
 
 def _now() -> datetime:

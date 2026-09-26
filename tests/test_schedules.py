@@ -5,14 +5,35 @@ Synthetic notes, local SQLite and explicit clocks only: no network, keys or real
 
 from __future__ import annotations
 
+import argparse
+import asyncio
+import contextlib
+import io
+import json
+import os
+import pickle
 import sqlite3
+import stat
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
+from apscheduler.triggers.cron import CronTrigger
 from pydantic import ValidationError
 
-from rfa_mas.adapters.scheduler import ApschedulerTriggers
+from rfa_mas import cli
+from rfa_mas.adapters import scheduler as scheduler_module
+from rfa_mas.adapters.scheduler import (
+    DISPATCHER_REF,
+    ApschedulerTriggers,
+    ManualClock,
+    RunnerLock,
+    SchedulerRunner,
+)
 from rfa_mas.api.app import create_app, resolve_principal
 from rfa_mas.application.candidates import CandidateService
 from rfa_mas.application.scheduling import (
@@ -22,7 +43,7 @@ from rfa_mas.application.scheduling import (
     occurrence,
     run_key,
 )
-from rfa_mas.bootstrap import build_container
+from rfa_mas.bootstrap import build_container, build_scheduler_runner
 from rfa_mas.contracts import KnowledgeWrite, ScheduleCreate
 from rfa_mas.errors import RfaError
 from rfa_mas.settings import Settings
@@ -65,6 +86,15 @@ def create(job_type: str = "briefing", cron: str = "0 9 * * *", **extra) -> Sche
 def rows(container, sql: str, *params):
     with sqlite3.connect(container.repository.path) as db:
         return db.execute(sql, params).fetchall()
+
+
+def runner_files(settings) -> tuple[bool, bool]:
+    path = settings.scheduler_jobstore_path
+    return path.exists(), Path(str(path) + ".owner.lock").exists()
+
+
+def file_mode(path: Path) -> int:
+    return stat.S_IMODE(path.stat().st_mode)
 
 
 class Resolver:
@@ -389,3 +419,249 @@ async def test_assistant_route_passes_the_schedule_service(env):
         schedule_id = made.json()["schedule"]["schedule_id"]
         assert [s["schedule_id"] for s in (await client.get("/v1/schedules")).json()] == [
             schedule_id]
+
+
+# -- P0-023: single-owner APScheduler 3.x runner ---------------------------------------------
+@pytest.fixture
+async def runner_env(tmp_path):
+    settings = make_settings(tmp_path, scheduler_enabled=True)
+    container = build_container(settings)
+    await container.startup()
+    owner = await container.repository.local_principal()
+    clock = ManualClock(CLOCK)
+    runners: list[SchedulerRunner] = []
+
+    def make(**changes) -> SchedulerRunner:
+        runner = build_scheduler_runner(settings, container, clock=clock,
+                                        sync_interval_seconds=None)
+        for name, value in changes.items():
+            setattr(runner, name, value)
+        runners.append(runner)
+        return runner
+
+    try:
+        yield SimpleNamespace(
+            container=container, owner=owner, clock=clock, settings=settings, make=make,
+            schedules=ScheduleService(container.repository, ApschedulerTriggers(),
+                                      clock=clock.now))
+    finally:
+        for runner in runners:
+            await runner.stop()
+        await container.shutdown()
+
+
+async def runs_of(env, schedule):
+    return await env.schedules.runs(schedule.schedule_id, env.owner)
+
+
+async def test_job_ids_are_stable_and_only_a_definition_change_replaces_the_job(runner_env):
+    env = runner_env
+    schedule = await env.schedules.create(create(), env.owner)
+    runner = env.make()
+    await runner.start()
+    assert runner.last_sync == {"added": 1}
+    [job] = runner.jobs()
+    assert job.id == job_id(env.owner.user_id, schedule.schedule_id)
+    assert job.next_run_time == NINE_KST
+    for _ in range(2):  # Repeated initialization keeps one job and its next run.
+        assert await runner.sync() == {"unchanged": 1}
+    assert [(j.id, j.next_run_time) for j in runner.jobs()] == [(job.id, NINE_KST)]
+    await runner.stop()
+    changed = env.make(misfire_policy="skip_missed")
+    await changed.start()
+    assert changed.last_sync == {"replaced": 1}  # The one intended upsert.
+    [replaced] = changed.jobs()
+    assert replaced.id == job.id and replaced.name != job.name
+    assert replaced.misfire_grace_time == 60
+
+
+async def test_add_job_uses_3x_crontrigger_and_per_job_type_miss_policy(runner_env):
+    env = runner_env
+    made = {kind: await env.schedules.create(create(kind), env.owner)
+            for kind in ("briefing", "candidate_scan", "kb_refresh")}
+    runner = env.make()
+    await runner.start()
+    jobs = {job.args[0]: job for job in runner.jobs()}
+    for kind, grace in (("briefing", None), ("candidate_scan", 86_400), ("kb_refresh", 3_600)):
+        job = jobs[made[kind].schedule_id]
+        assert isinstance(job.trigger, CronTrigger) and str(job.trigger.timezone) == "Asia/Seoul"
+        assert (job.coalesce, job.max_instances, job.misfire_grace_time) == (True, 1, grace)
+        assert job.func_ref == DISPATCHER_REF and job.args == (made[kind].schedule_id,)
+        assert job.kwargs == {}
+
+
+async def test_owner_lock_refuses_a_second_runner_here_and_in_another_process(runner_env,
+                                                                             tmp_path):
+    env = runner_env
+    first = env.make()
+    await first.start()
+    with pytest.raises(RfaError) as error:
+        await env.make().start()
+    assert error.value.code == "scheduler_owner_locked"
+    lock_path = Path(str(env.settings.scheduler_jobstore_path) + ".owner.lock")
+    with pytest.raises(RfaError):
+        RunnerLock(lock_path).acquire()
+    env_file = tmp_path / "runner.env"
+    env_file.write_text(f"DATABASE_URL={env.settings.database_url}\n"
+                        f"TRACE_DIR={env.settings.trace_dir}\nSCHEDULER_ENABLED=true\n")
+    completed = await asyncio.to_thread(
+        subprocess.run,
+        [sys.executable, "-m", "rfa_mas", "--env-file", str(env_file), "scheduler",
+         "--run-seconds", "0"],
+        cwd=tmp_path, capture_output=True, text=True, timeout=120,
+        env={"PATH": os.environ.get("PATH", ""), "HOME": str(tmp_path), "LANG": "C.UTF-8"},
+    )
+    assert completed.returncode == 3, completed.stdout[-500:]
+    assert json.loads(completed.stdout.strip().splitlines()[-1]) == {
+        "code": "scheduler_owner_locked"}
+    await first.stop()
+    again = env.make()
+    await again.start()  # Released on stop: a later single runner may own the store.
+    assert scheduler_module._ACTIVE is again
+
+
+async def test_cli_runner_requires_the_gate_and_runs_a_real_asyncio_scheduler(tmp_path):
+    disabled = make_settings(tmp_path)
+    with contextlib.redirect_stdout(io.StringIO()) as output:
+        assert await cli._scheduler(argparse.Namespace(run_seconds=0), disabled) == 2
+    assert json.loads(output.getvalue())["code"] == "scheduler_disabled"
+    enabled = make_settings(tmp_path, scheduler_enabled=True)
+    with contextlib.redirect_stdout(io.StringIO()) as output:
+        assert await cli._scheduler(argparse.Namespace(run_seconds=0.05), enabled) == 0
+    assert json.loads(output.getvalue())["status"] == "scheduler_running"
+    assert scheduler_module._ACTIVE is None  # Stopped and released after the bounded run.
+    assert file_mode(enabled.scheduler_jobstore_path) == 0o600
+
+
+async def test_api_lifespan_and_workers_never_start_the_scheduler(tmp_path, capsys):
+    settings = make_settings(tmp_path, scheduler_enabled=True)
+    app = create_app(settings)
+    async with app.router.lifespan_context(app):
+        container = app.state.container
+        assert container.ready and scheduler_module._ACTIVE is None
+        assert not any(isinstance(value, SchedulerRunner) for value in vars(container).values())
+        assert runner_files(settings) == (False, False)  # Job store/lock never opened.
+    assert cli._doctor(settings) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["selected_modes"]["scheduler"] == "rfa_scheduler_cli"
+    assert "feature:scheduler" not in report["reserved_not_implemented"]
+
+
+async def test_restart_keeps_persisted_next_run_and_coalesces_missed_fires(runner_env):
+    env = runner_env
+    await env.container.knowledge.write(note("i17", "issue #17: checksum 확인 필요, 10월 2일 마감"),
+                                        env.owner)
+    made = {kind: await env.schedules.create(create(kind), env.owner)
+            for kind in ("briefing", "candidate_scan", "kb_refresh")}
+    runner = env.make()
+    await runner.start()
+    env.clock.set(NINE_KST)
+    await runner.tick()
+    for schedule in made.values():
+        assert [(r.status, r.scheduled_fire_time) for r in await runs_of(env, schedule)] == [
+            ("succeeded", NINE_KST)]
+    await runner.stop()  # PC off/asleep for three days.
+    env.clock.set(NINE_KST + timedelta(days=3, hours=2))  # 2026-10-04 11:00 KST
+    restarted = env.make()
+    await restarted.start()
+    assert restarted.last_sync == {"unchanged": 3}
+    # The persisted next run survives the restart (it is not recomputed from "now").
+    assert {job.next_run_time for job in restarted.jobs()} == {NINE_KST + timedelta(days=1)}
+    await restarted.tick()
+    latest = NINE_KST + timedelta(days=3)  # Three missed fires coalesce into the latest one.
+    expected = {"briefing": ("succeeded", None), "candidate_scan": ("succeeded", None),
+                "kb_refresh": ("skipped", "misfire")}  # 2h late > 1h grace
+    for kind, (status, reason) in expected.items():
+        history = await runs_of(env, made[kind])
+        assert len(history) == 2
+        assert (history[-1].status, history[-1].reason) == (status, reason)
+        assert history[-1].scheduled_fire_time == latest
+        assert history[-1].run_key == run_key(made[kind].schedule_id,
+                                              occurrence(latest, "Asia/Seoul"))
+    assert {job.next_run_time for job in restarted.jobs()} == {latest + timedelta(days=1)}
+    await restarted.tick()  # Same instant again: nothing new.
+    assert [len(await runs_of(env, s)) for s in made.values()] == [2, 2, 2]
+
+
+async def test_job_store_serializes_only_the_dispatcher_and_schedule_id(runner_env):
+    env = runner_env
+    await env.container.knowledge.write(note("private", f"1:1 {CANARY} 전에 확인 필요"),
+                                        env.owner)
+    schedule = await env.schedules.create(create("candidate_scan"), env.owner)
+    runner = env.make()
+    await runner.start()
+    env.clock.set(NINE_KST)
+    await runner.tick()
+    await runner.stop()
+    path = env.settings.scheduler_jobstore_path
+    assert file_mode(path) == 0o600
+    with sqlite3.connect(path) as db:
+        [(stored_id, blob)] = db.execute("SELECT id, job_state FROM apscheduler_jobs").fetchall()
+    assert stored_id == job_id(env.owner.user_id, schedule.schedule_id)
+    state = pickle.loads(blob)  # Our own test file; production never loads foreign stores.
+    assert set(state) == {"version", "id", "func", "trigger", "executor", "args", "kwargs",
+                          "name", "misfire_grace_time", "coalesce", "max_instances",
+                          "next_run_time"}
+    assert (state["func"], state["args"], state["kwargs"]) == (
+        DISPATCHER_REF, (schedule.schedule_id,), {})
+    for forbidden in (CANARY, env.owner.user_id, "Bearer", "prompt", "command"):
+        assert forbidden.encode() not in blob
+
+
+async def test_concurrent_fires_and_max_instances_yield_one_execution(runner_env):
+    env = runner_env
+    schedule = await env.schedules.create(create("candidate_scan", cron="0 * * * *"), env.owner)
+    runner = env.make()
+    await runner.start()
+    executor = runner.executor
+    results = await asyncio.gather(*(executor.execute(schedule.schedule_id, NINE_KST)
+                                     for _ in range(3)))
+    assert len({r.run_key for r in results}) == 1
+    release, entered = asyncio.Event(), asyncio.Event()
+
+    async def slow(schedule, principal, run):
+        entered.set()
+        await release.wait()
+        return {"slow": 1}
+
+    executor.handlers["candidate_scan"] = slow
+    env.clock.set(NINE_KST + timedelta(hours=1))
+    runner.scheduler.wakeup()
+    await asyncio.wait_for(entered.wait(), timeout=5)
+    env.clock.set(NINE_KST + timedelta(hours=2))  # Next fire while the first still runs.
+    runner.scheduler.wakeup()
+    for _ in range(5):
+        await asyncio.sleep(0)
+    release.set()
+    await runner.drain()
+    history = await runs_of(env, schedule)
+    assert [(r.scheduled_fire_time - NINE_KST, r.status, r.reason) for r in history] == [
+        (timedelta(0), "succeeded", None),
+        (timedelta(hours=1), "succeeded", None),
+        (timedelta(hours=2), "skipped", "max_instances"),
+    ]
+
+
+async def test_cancel_and_disable_reach_the_runner_without_running_jobs(runner_env):
+    env = runner_env
+    scan = await env.schedules.create(create("candidate_scan"), env.owner)
+    brief = await env.schedules.create(create("briefing"), env.owner)
+    runner = env.make()
+    await runner.start()
+    await env.schedules.cancel(scan.schedule_id, env.owner)  # Runner has not synced yet.
+    env.clock.set(NINE_KST)
+    await runner.tick()
+    [cancelled_fire] = await runs_of(env, scan)
+    assert (cancelled_fire.status, cancelled_fire.reason) == ("skipped", "schedule_cancelled")
+    assert (await runner.sync())["removed"] == 1
+    assert [job.args[0] for job in runner.jobs()] == [brief.schedule_id]
+    await env.schedules.disable(brief.schedule_id, env.owner)
+    assert (await runner.sync())["paused"] == 1
+    assert runner.jobs()[0].next_run_time is None
+    env.clock.set(NINE_KST + timedelta(days=2, hours=1))
+    await runner.tick()
+    assert len(await runs_of(env, brief)) == 1  # Only the 09:00 day-1 fire.
+    await env.schedules.enable(brief.schedule_id, env.owner)
+    assert (await runner.sync())["resumed"] == 1
+    # Fires missed while disabled are not replayed; the next run is computed from now.
+    assert runner.jobs()[0].next_run_time == NINE_KST + timedelta(days=3)

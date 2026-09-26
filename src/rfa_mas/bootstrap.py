@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -33,7 +34,7 @@ from rfa_mas.adapters.mock import (
     MockRetrieval,
     MockTool,
 )
-from rfa_mas.adapters.scheduler import ApschedulerTriggers
+from rfa_mas.adapters.scheduler import ApschedulerTriggers, ManualClock, SchedulerRunner
 from rfa_mas.application.drafts import DraftLifecycle
 from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
 from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
@@ -45,7 +46,8 @@ from rfa_mas.application.graphs import (
 from rfa_mas.application.knowledge import KnowledgeService
 from rfa_mas.application.observations import Observations, ObservedPort
 from rfa_mas.application.resume_policy import ResumePolicy
-from rfa_mas.application.scheduling import DEFAULT_TIMEZONE, ScheduleService
+from rfa_mas.application.candidates import CandidateService
+from rfa_mas.application.scheduling import ScheduleExecutor, ScheduleService
 from rfa_mas.application.service import WorkService
 from rfa_mas.application.team_selector import APPROVED_PINS, TeamSelector, TemplateRegistry
 from rfa_mas.application.teams import RuntimeLifecycleSupport, TeamFactory
@@ -103,6 +105,10 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
         invalid.extend(name for name in exc.missing if name not in missing)
     except (ValueError, OSError):
         invalid.append("DATABASE_URL/CHECKPOINT_PATH")
+    try:
+        _ = settings.scheduler_jobstore_path
+    except (ConfigurationError, ValueError, OSError):
+        invalid.append("SCHEDULER_JOBSTORE_URL")
     for name, mode, url in (
         ("RESPONSE_BASE_URL", settings.response_backend, settings.response_base_url),
         ("TOOL_BASE_URL", settings.tool_backend, settings.tool_base_url),
@@ -590,6 +596,47 @@ def build_container(
         drafts=drafts,
         context=staged_context,
         schedules=ScheduleService(repository, ApschedulerTriggers(),
-                                  default_timezone=DEFAULT_TIMEZONE),
+                                  default_timezone=settings.default_timezone),
         http_clients=clients,
+    )
+
+
+def build_scheduler_runner(
+    settings: Settings,
+    container: Container,
+    *,
+    clock: ManualClock | None = None,
+    sync_interval_seconds: float | None = 30.0,
+) -> SchedulerRunner:
+    """Composition for the dedicated `rfa scheduler` process only (never the API lifespan).
+
+    Jobs call only existing internal services with the owner re-resolved at every fire.
+    No publisher, response/tool port or team runner is reachable from here.
+    """
+    if not settings.scheduler_enabled:
+        raise ConfigurationError(["SCHEDULER_ENABLED"])
+    now = clock.now if clock is not None else (lambda: datetime.now(UTC))
+    repository = container.repository
+
+    async def resolve_owner(owner_id: str) -> TrustedPrincipal | None:
+        # Single-installation identity, re-read for every fire (never cached in the job).
+        principal = await repository.local_principal()
+        return principal if principal.user_id == owner_id else None
+
+    accumulator = container.knowledge.accumulator
+    executor = ScheduleExecutor(
+        repository,
+        resolve_principal=resolve_owner,
+        candidates=CandidateService(repository, accumulator, clock=now),
+        accumulator=accumulator,
+        clock=now,
+    )
+    return SchedulerRunner(
+        jobstore_path=settings.scheduler_jobstore_path,
+        repository=repository,
+        executor=executor,
+        misfire_policy=settings.scheduler_misfire_policy,
+        sync_interval_seconds=sync_interval_seconds,
+        clock=clock,
+        now=now,
     )

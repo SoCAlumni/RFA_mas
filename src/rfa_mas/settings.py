@@ -5,8 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 from urllib.parse import unquote, urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from rfa_mas.contracts import SecretStatus
@@ -25,27 +26,6 @@ class PlannedSetting:
 
 # Canonical future-setting catalog. These are NOT BaseSettings fields or env inputs.
 PLANNED_SETTINGS = (
-    PlannedSetting(
-        "scheduler_backend", ("P0-023",), "Single runner not implemented", "SCHEDULER_BACKEND"
-    ),
-    PlannedSetting(
-        "scheduler_jobstore",
-        ("P0-023",),
-        "Persistent scheduler not implemented",
-        "SCHEDULER_JOBSTORE_URL",
-    ),
-    PlannedSetting(
-        "ui_timezone",
-        ("P0-024",),
-        "User timezone and Asia/Seoul default are planned",
-        "DEFAULT_TIMEZONE",
-    ),
-    PlannedSetting(
-        "scheduler_misfire",
-        ("P0-024",),
-        "Job-type miss policies not implemented",
-        "SCHEDULER_MISFIRE_POLICY",
-    ),
     PlannedSetting(
         "team_tokens", ("P0-020",), "Total team enforcement not implemented", "MAX_TEAM_TOKENS"
     ),
@@ -153,7 +133,15 @@ class Settings(BaseSettings):
     allow_external_writes: bool = False
     allow_external_egress: bool = False
     enable_nat: bool = False
+    # P0-023: enables only the dedicated `rfa scheduler` process; the API never starts it.
     scheduler_enabled: bool = False
+    scheduler_backend: Literal["apscheduler"] = "apscheduler"
+    # Separate SQLite file owned by the runner (default: <DATABASE_URL file>.scheduler.sqlite).
+    scheduler_jobstore_url: str | None = None
+    # Server default display/schedule timezone; internal times are UTC.
+    default_timezone: str = "Asia/Seoul"
+    # job_type_default: per-job_type table in application/scheduling.py; skip_missed: no catch-up.
+    scheduler_misfire_policy: Literal["job_type_default", "skip_missed"] = "job_type_default"
     enable_debate: bool = False
     enable_auto_domain_creation: bool = False
 
@@ -188,11 +176,28 @@ class Settings(BaseSettings):
         "policy_base_url",
         "langfuse_base_url",
         "judge_model",
+        "scheduler_jobstore_url",
         mode="before",
     )
     @classmethod
     def empty_string_is_none(cls, value: object) -> object:
         return None if value == "" else value
+
+    @field_validator(
+        "scheduler_backend", "default_timezone", "scheduler_misfire_policy", mode="before"
+    )
+    @classmethod
+    def empty_scheduler_value_is_default(cls, value: object, info: ValidationInfo) -> object:
+        return cls.model_fields[info.field_name].default if value == "" else value
+
+    @field_validator("default_timezone")
+    @classmethod
+    def known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("unknown IANA timezone") from None
+        return value
 
     @property
     def database_path(self) -> Path:
@@ -213,6 +218,24 @@ class Settings(BaseSettings):
         return self.checkpoint_path or self.database_path.with_name(
             self.database_path.name + ".checkpoints.sqlite"
         )
+
+    @property
+    def scheduler_jobstore_path(self) -> Path:
+        """Local SQLite file for the APScheduler job store, never the app/checkpoint DB."""
+        url = self.scheduler_jobstore_url
+        if url is None:
+            return self.database_path.with_name(self.database_path.name + ".scheduler.sqlite")
+        parsed = urlparse(url)
+        if parsed.scheme != "sqlite" or parsed.netloc not in {"", "localhost"}:
+            raise ConfigurationError(["SCHEDULER_JOBSTORE_URL (local sqlite path required)"])
+        raw_path = unquote(parsed.path)
+        if url.startswith("sqlite:///./"):
+            path = Path(raw_path.lstrip("/"))
+        else:
+            path = Path(raw_path[1:]) if raw_path.startswith("//") else Path(raw_path)
+        if not raw_path.strip("/") or path in {self.database_path, self.resolved_checkpoint_path}:
+            raise ConfigurationError(["SCHEDULER_JOBSTORE_URL (separate sqlite file required)"])
+        return path
 
     @field_validator("checkpoint_path", mode="before")
     @classmethod
@@ -291,8 +314,6 @@ class Settings(BaseSettings):
             reserved.append("feature:debate")
         if self.enable_auto_domain_creation:
             reserved.append("feature:auto_domain_creation")
-        if self.scheduler_enabled:
-            reserved.append("feature:scheduler")
         if self.allow_external_egress:
             reserved.append("feature:external_egress_policy")
         return tuple(reserved)
