@@ -463,3 +463,46 @@ async def test_default_team_runner_has_no_external_search(tmp_path):
         assert "nemo-retriever" not in container.team_runner.tools.adapter_name
     finally:
         await container.shutdown()
+
+
+async def test_bootstrap_nemo_cli_wires_the_skill_tool_and_keeps_kb_local(tmp_path, fake):
+    """Proposal wiring (shared bootstrap/settings; coordinator applies)."""
+    from rfa_mas.errors import ConfigurationError
+
+    index_dir = tmp_path / "index"
+    index_dir.mkdir()
+    (index_dir / "index_manifest.json").write_text(
+        (FIXTURES / "index_manifest.json").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    base = {
+        "_env_file": None,
+        "database_url": f"sqlite:///{tmp_path / 'b.db'}",
+        "trace_dir": (tmp_path / "traces").resolve(),
+        "retriever_backend": "nemo_cli",
+        "retriever_index_dir": index_dir,
+    }
+    missing = Settings(**base)
+    assert {"RETRIEVER_CLI_PATH", "NVIDIA_API_KEY"} <= set(missing.missing_for_selected_modes())
+    with pytest.raises(ConfigurationError):
+        build_container(missing)
+    configured = Settings(**base, retriever_cli_path=fake.binary, nvidia_api_key=SecretStr(KEY))
+    container = build_container(configured)
+    await container.startup()
+    try:
+        runner = container.team_runner
+        assert runner.external_search == ExternalSearchBinding(
+            TOOL_NAME, "triv-demo-public-papers", Audience.PUBLIC
+        )
+        assert runner.tools.adapter_name == "local-analysis-tools+nemo-retriever-cli"
+        assert runner.retrieval.adapter_name == container.retrieval.adapter_name
+        assert "nemo" not in container.retrieval.adapter_name
+    finally:
+        await container.shutdown()
+    broken = Settings(
+        **(base | {"retriever_index_dir": tmp_path / "absent"}),
+        retriever_cli_path=fake.binary,
+        nvidia_api_key=SecretStr(KEY),
+    )
+    with pytest.raises(ConfigurationError) as error:
+        build_container(broken)
+    assert KEY not in str(error.value)

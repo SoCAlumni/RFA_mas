@@ -34,6 +34,15 @@ from rfa_mas.adapters.mock import (
     MockRetrieval,
     MockTool,
 )
+from rfa_mas.adapters.nemo_retriever import (
+    TOOL_NAME as SKILL_TOOL_NAME,
+)
+from rfa_mas.adapters.nemo_retriever import (
+    NemoRetrieverTool,
+    RetrieverConfig,
+    RetrieverIndex,
+    RetrieverToolRouter,
+)
 from rfa_mas.adapters.scheduler import ApschedulerTriggers, ManualClock, SchedulerRunner
 from rfa_mas.application.drafts import DraftLifecycle
 from rfa_mas.application.events import EventFeed
@@ -57,7 +66,7 @@ from rfa_mas.application.scheduling import (
 from rfa_mas.application.service import WorkService
 from rfa_mas.application.team_selector import APPROVED_PINS, TeamSelector, TemplateRegistry
 from rfa_mas.application.teams import RuntimeLifecycleSupport, TeamFactory
-from rfa_mas.application.workers import TEAM_ROLE_TASK, TeamRunner
+from rfa_mas.application.workers import TEAM_ROLE_TASK, ExternalSearchBinding, TeamRunner
 from rfa_mas.contracts import (
     AdapterInfo,
     DomainId,
@@ -220,7 +229,7 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
             _nvidia_config(settings)
         except ValueError as exc:
             invalid.extend(str(exc).split(","))
-    if settings.retriever_backend not in {"local", "mock"}:
+    if settings.retriever_backend not in {"local", "mock", "nemo_cli"}:
         reserved.append(f"retriever:{settings.retriever_backend}")
     # Installed metadata is not an import/compatibility check or product NAT integration.
     try:
@@ -341,6 +350,30 @@ def _load_documents(directory: Path) -> list[KnowledgeDocument]:
             except Exception as exc:
                 raise ValueError(f"Invalid fixture {path}:{line_number}") from exc
     return documents
+
+
+def _team_tools(settings: Settings, observer: Observations):
+    """Team role tools: local READ computations, plus the Skill tool for nemo_cli (P1-003)."""
+    local = ObservedPort(LocalAnalysisTools(), observer, "tool", mode="local")
+    if settings.retriever_backend != "nemo_cli":
+        return local, None
+    try:
+        config = RetrieverConfig(
+            binary=settings.retriever_cli_path or Path(),
+            embedding="hosted",
+            api_key=settings.nvidia_api_key,
+        )
+    except ValueError:
+        raise ConfigurationError(
+            ["RETRIEVER_CLI_PATH (absolute nemo-retriever 26.8.1 binary)"]
+        ) from None
+    try:
+        index = RetrieverIndex.from_manifest(settings.retriever_index_dir / "index_manifest.json")
+    except (OSError, ValueError, KeyError):
+        raise ConfigurationError(["RETRIEVER_INDEX_DIR (valid index_manifest.json)"]) from None
+    skill = ObservedPort(NemoRetrieverTool(config, (index,)), observer, "tool", mode="real")
+    binding = ExternalSearchBinding(SKILL_TOOL_NAME, index.index_id, index.audience)
+    return RetrieverToolRouter(local, skill), binding
 
 
 def _http_port(
@@ -511,7 +544,8 @@ def build_container(
             )
         )
 
-    if settings.retriever_backend == "local":
+    # nemo_cli keeps the ACL-checked KB reader local; the official Skill is a Research tool.
+    if settings.retriever_backend in {"local", "nemo_cli"}:
         retrieval = LocalRetrieval(repository, policy_version=policy.policy_version)
     elif settings.retriever_backend == "mock":
         retrieval = MockRetrieval(repository, policy_version=policy.policy_version)
@@ -627,14 +661,17 @@ def build_container(
         provider_kind="reference_http" if settings.runtime_backend == "http" else "builtin",
     )
     # P0-020: roles use only the allowlisted local READ computations; the configured
-    # external ToolPort (mock/HTTP) is not granted to team roles.
+    # external ToolPort (mock/HTTP) is not granted to team roles. P1-003 adds only the
+    # official nemo-retriever Skill tool, and only when RETRIEVER_BACKEND=nemo_cli.
+    team_tools, external_search = _team_tools(settings, observer)
     team_runner = TeamRunner(
         repository=repository,
         factory=team_factory,
         runtime=observed_runtime,
         retrieval=observed_retrieval,
-        tools=ObservedPort(LocalAnalysisTools(), observer, "tool", mode="local"),
+        tools=team_tools,
         policy_version=lambda: policy.policy_version,
+        external_search=external_search,
     )
 
     # P0-025: owner event feed; present/validate are read at call time from the service.

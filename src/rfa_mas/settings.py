@@ -103,6 +103,7 @@ class Settings(BaseSettings):
     retriever_index_dir: Path = Path("./.local/retriever")
     retriever_service_url: str | None = None
     nemo_retriever_api_token: SecretStr | None = None
+    retriever_cli_path: Path | None = None
 
     response_backend: Literal["mock", "http"] = "mock"
     response_base_url: str | None = None
@@ -266,6 +267,8 @@ class Settings(BaseSettings):
             required.update({"NVIDIA_MODEL", "NVIDIA_API_KEY"})
         if self.retriever_backend == "nemo_service":
             required.update({"RETRIEVER_SERVICE_URL", "NEMO_RETRIEVER_API_TOKEN"})
+        if self.retriever_backend == "nemo_cli":
+            required.update({"RETRIEVER_CLI_PATH", "NVIDIA_API_KEY"})
         for backend, _base_url, _token, base_name, token_name in (
             (
                 self.response_backend,
@@ -355,6 +358,7 @@ class Settings(BaseSettings):
             "NVIDIA_API_KEY": self.nvidia_api_key is not None,
             "RETRIEVER_SERVICE_URL": bool(self.retriever_service_url),
             "NEMO_RETRIEVER_API_TOKEN": self.nemo_retriever_api_token is not None,
+            "RETRIEVER_CLI_PATH": self.retriever_cli_path is not None,
             "RESPONSE_BASE_URL": bool(self.response_base_url),
             "RESPONSE_API_TOKEN": self.response_api_token is not None,
             "TOOL_BASE_URL": bool(self.tool_base_url),
