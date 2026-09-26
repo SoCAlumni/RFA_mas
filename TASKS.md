@@ -29,11 +29,11 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-011](tasks/P0-011/task.yaml) | LLMOps interface와 24개 합성 평가 사례 | P0 | done / passed | integration/evaluation | 0 | P0-003, P0-006 |
 | [P0-012](tasks/P0-012/task.yaml) | 개발·통합·교육 문서와 provisional registry | P0 | done / passed | contracts/control | 0 | P0-001, P0-002, P0-003, P0-004, P0-005, P0-006, P0-007, P0-008, P0-009, P0-010, P0-011 |
 | [P0-013](tasks/P0-013/task.yaml) | P0 전체 검증과 근거 기록 | P0 | done / passed | contracts/control | 0 | P0-001, P0-002, P0-003, P0-004, P0-005, P0-006, P0-007, P0-008, P0-009, P0-010, P0-011, P0-012 |
-| [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | verifying / stale | contracts/control | 1 | P0-003, P0-010 |
-| [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | verifying / stale | execution | 1.5 | P0-014, P0-005, P0-008 |
+| [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | done / passed | contracts/control | 1 | P0-003, P0-010 |
+| [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | done / passed | execution | 1.5 | P0-014, P0-005, P0-008 |
 | [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | verifying / stale | execution | 1.5 | P0-015 |
 | [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | verifying / stale | contracts/control | 1 | P0-014, P0-016 |
-| [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | verifying / stale | agents | 0.5 | P0-014 |
+| [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | done / passed | agents | 0.5 | P0-014 |
 | [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | verifying / stale | agents | 2 | P0-018, P0-015, P0-016 |
 | [P0-020](tasks/P0-020/task.yaml) | 역할별 실행·Supervisor 수집·팀 예산·취소 | P0 | verifying / stale | agents | 3 | P0-019, P0-017, P1-001A, P1-006D |
 | [P0-021](tasks/P0-021/task.yaml) | durable 실행 기록·재개 멱등성·결과 대사 | P0 | todo / not_run | execution | 1.5 | P0-016, P0-020, P1-005A |
@@ -57,10 +57,10 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-004A](tasks/P1-004A/task.yaml) | 검토된 지식 축적·provenance | P0 | verifying / stale | knowledge | 0.5 | P0-020, P1-001A |
 | [P1-004B](tasks/P1-004B/task.yaml) | TodoCandidate 수락·보류·기각·중복 제거 | P0 | verifying / stale | knowledge | 1 | P1-004A, P0-019 |
 | [P1-005](tasks/P1-005/task.yaml) | 대상별 DRAFT·읽기/공유/외부 전송 정책 | P0 | verifying / stale | agents | 1 | P0-020, P1-004A, P1-001B |
-| [P1-005A](tasks/P1-005A/task.yaml) | DRAFT 편집·승인 무효화·안전한 mock 게시 상태 | P0 | done / passed | agents | 1 | P1-005, P0-016 |
+| [P1-005A](tasks/P1-005A/task.yaml) | DRAFT 편집·승인 무효화·안전한 mock 게시 상태 | P0 | verifying / stale | agents | 1 | P1-005, P0-016 |
 | [P1-005B](tasks/P1-005B/task.yaml) | 피드백 4분류·scope·취소 | P0 | todo / not_run | agents | 0.5 | P1-005A |
-| [P1-005C](tasks/P1-005C/task.yaml) | staged-context retrieval 경계의 관측 가능성(행위 검증 회귀 보수) | P0 | todo / not_run | integration/evaluation | 0.5 | P1-005, P1-006 |
-| [P1-006](tasks/P1-006/task.yaml) | 핵심 12 Persona QA·행위 verifier·Judge 상태 분리 | P0 | verifying / stale | integration/evaluation | 2 | P0-014, P1-006D |
+| [P1-005C](tasks/P1-005C/task.yaml) | staged-context retrieval 경계의 관측 가능성(행위 검증 회귀 보수) | P0 | cancelled / not_run | integration/evaluation | 0.5 | P1-005 |
+| [P1-006](tasks/P1-006/task.yaml) | 핵심 12 Persona QA·행위 verifier·Judge 상태 분리 | P0 | done / passed | integration/evaluation | 2 | P0-014, P1-006D |
 | [P1-006A](tasks/P1-006A/task.yaml) | 실제 Judge adapter·품질 평가 | P1 | todo / not_run | integration/evaluation | 1.5 | P1-006, P1-002 |
 | [P1-006B](tasks/P1-006B/task.yaml) | Persona 시뮬레이션·버전 회귀 비교 | P1 | todo / not_run | integration/evaluation | 1 | P1-006 |
 | [P1-006C](tasks/P1-006C/task.yaml) | Langfuse 연결·redaction·보존 확인 | P1 | todo / not_run | integration/evaluation | 1 | P1-006, P1-006D |
@@ -88,6 +88,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 ## 다음 작업
 
 - OPS-002: planning ready; claim 가능
+- P1-006B: planning ready; claim 가능
+- P1-006E: planning ready; claim 가능
 
 ## 최종 gate
 

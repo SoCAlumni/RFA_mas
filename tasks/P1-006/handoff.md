@@ -36,3 +36,28 @@ Next first action: submit unchanged artifact and capture/repeat target exact V1/
 
 - 사유: Direct/transitive dependencies of P1-005 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 0161cc2에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-004 (2026-09-26T17:24Z)
+
+- 사유: Direct/transitive dependencies of P1-004 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD cf05f47에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+
+## 재검증 보수 — P1-005 이후 staged-context 관측 (2026-09-27)
+
+- P1-005 통합 뒤 pre-P1-004 재검증에서 V1이 4 failed(53 passed)였다. `test_behavior_verifier`의 retrieval 관측이 unknown이 되거나 KeyError가 났다.
+- 원인: 공개/owner local 대상의 근거 로딩이 retrieval port가 아닌 staged-context loader로 이동했는데, BoundarySpy는 retrieval port만 감쌌다.
+- 수정(이 task 소유 파일):
+  - `evaluation.BoundarySpy`가 P1-005C의 `container.context.load`를 retrieval로 관측한다. 실제로 서비스했거나 실패한 호출만 센다(None은 port spy에 맡김).
+  - 회귀 테스트 `test_staged_context_boundary_is_the_observed_retrieval_boundary` 추가.
+- 평가 규칙(불일치=ERROR, 누락=UNKNOWN)은 바꾸지 않았다.
+
+
+
+## 재통합 — P1-005 이후 staged-context 관측 보수 (2026-09-27)
+
+- 원래 통합 이력(재검증 포함)은 attempts.approaches에 보존. P1-005 이후 재검증 실패로 discard하고 이 변경으로 다시 통합한다.
+- scope 추가(edit-spec): `src/rfa_mas/bootstrap.py`, `tests/test_staged_context_boundary.py`. 등록했던 P1-005C는 P1-001A→P1-006 의존으로 순환이 생겨 이 task가 흡수한다.
+- 변경: bootstrap이 staged-context load를 `container.context`(StagedContextBoundary)로 노출하고 domain graph가 호출 시점에 조회한다. BoundarySpy가 그 경계를 retrieval로 관측한다.
+- 개발 검증: test_evaluation + test_behavior_verifier + test_staged_context_boundary 61 passed. late lookup을 early binding으로 바꾸면 경계 테스트 2건이 실패함을 확인했다.
+

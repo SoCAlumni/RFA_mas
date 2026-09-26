@@ -37,3 +37,8 @@ Worker actual: V1 teams38 passed (wall1.361s), exact V2 seven-file regression182
 
 - 사유: Direct/transitive dependencies of P1-005 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 0161cc2에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-005C (2026-09-26T17:30Z)
+
+- 사유: Dependencies of P1-005C after RFA-EXTENDED republish (P1-005A)
+- 소스 변경 없이 현재 통합 HEAD cf05f47에서 계획된 검증을 worker/target 단계로 재실행한다.
