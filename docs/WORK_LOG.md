@@ -91,3 +91,45 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   다음은 P0-015 사용자 소유 세션/조회/DB migration. local.py를 공유하는 trace
   작업은 동시에 수정하지 않는다. 운영 audit는 source 변화로 stale 표시되며
   최종 회귀 때 현재 baseline으로 재검증한다; 과거 성공 증거는 보존된다.
+
+## P0-015 착수 / E2E 검증 연결 — 2026-09-26T06:54:51Z
+
+- 별도 task/P0-015 worktree에서 세션 구현 착수. 코드 변경 전 조사로 typed
+  SessionCreate/Message/Detail/RunRecord와 API/기존 graph 보안 회귀 파일이 필요함을
+  확인했다. coordinator가 최소 계약/export scope를 승인하고 새 generation 3으로
+  claim을 교체했다. 설치별 서버 생성 local-owner와 기본 membership 없음,
+  실제 loopback peer만 키 없는 로컬 데모 허용; legacy owner 미상은 restricted.
+- claim scope 갱신의 첫 recover는 지원하지 않는 --generation 인자로 실패했다.
+  뒤따른 edit/claim도 보호 규칙으로 거절되었으며 원본 변경/파일 삭제는 없었다.
+  parser를 확인하여 잘못된 옵션 제거, 각 exit code 확인 후에만 다음 명령을
+  실행하도록 수정했다. 수정 재시도 1회에 성공. 제품 검증 시도와 구분한다.
+- 사용자 원본 RFA_E2E_Test_Scenarios_10_ko.md를 보존하고 기존 P0-026에 연결했다.
+  controlled 01~04/06~09, 실제 subprocess kill/restart 및 100요청 부하 10,
+  20/1000문서·golden20·3회 반복·사전 threshold/기능/보안/품질/성능 분리를 명시.
+- E2E-09 M01 피드백 기능의 P1-005B 선행을 추가했다. P1-007B에는 E2E-05의
+  실제 sandbox allow/deny와 정상 endpoint/sentinel 확인을 보강했고, P1-009에는
+  10개 전체/variant·API/UI·real별 evidence 표를 연결했다. 새 final task는 만들지 않음.
+- P0-026의 검증 범위가 단일 데모보다 커져 예상 1h→4h(+3h)로 명시했다.
+  기존 개발 추정 28.5h에 이를 더하면 직렬 핵심 추정은 31.5h이며 24h 완료를
+  보장하지 않는다. 공통 local.py/DTO 수정은 병렬 금지, 검토/통합도 필요하다.
+- 이 항목은 명세 연결만 검증했다. E2E 10개 실행, UI, 실제 모델/팀원/격리
+  완료 주장은 아직 하지 않는다. scripts/taskctl.py validate 결과: 66 task 유효.
+
+## 다음 구현의 공식 자료 조사 — 2026-09-26
+
+- P0-016: 설치 LangGraph 1.2.12/checkpoint 4.2.0에 대해 PyPI의
+  langgraph-checkpoint-sqlite 3.1.1은 checkpoint >=4.1,<5와 Python >=3.10을 요구한다.
+  아직 설치·resolver·실행 검증하지 않은 후보다. [배포 metadata](https://pypi.org/pypi/langgraph-checkpoint-sqlite/3.1.1/json),
+  [공식 persistence](https://docs.langchain.com/oss/python/langgraph/persistence),
+  [interrupt 재개](https://docs.langchain.com/oss/python/langgraph/interrupts)를 확인했다.
+  interrupt 이전 node 코드가 재실행될 수 있으므로 멱등 기록과 재인증을 분리 검증한다.
+- 탐색 중 존재하지 않는 graph/builder.py 읽기는 exit 1이었다. `rg --files`로 실제
+  application/graphs/supervisor.py·domain.py를 확인했다. reference 사이트 markdown
+  응답은 web 도구가 읽지 못해 공식 문서와 배포 metadata를 사용했다.
+- P1-003 후보는 공식 Skill의 nemo-retriever 26.8.1 CLI + 로컬 LanceDB + 명시적인
+  NVIDIA hosted embedding이다. 일반 PC에 GPU/전체 Blueprint를 요구하지 않는다.
+  기존 core/NAT와 urllib3/tokenizers pin이 달라 격리 CLI 환경에서 검증할 예정이다.
+  [고정 Skill 원본](https://github.com/NVIDIA/skills/blob/46293cb1dcc3b6984f1569cf8d819a387d5a9916/skills/nemo-retriever/SKILL.md),
+  [26.08.1 CLI](https://github.com/NVIDIA/NeMo-Retriever/blob/26.08.1/nemo_retriever/docs/cli/README.md).
+  CLI evidence에는 RFA revision/ACL이 없으므로 신뢰된 index manifest와 매핑해야 한다.
+  이 조사는 설치·Skill 실행·실제 embedding 성공 증거가 아니다.

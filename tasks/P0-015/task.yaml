@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: todo
+status: in_progress
 spec_state: ready
 unresolved: []
 workstream: execution
@@ -26,6 +26,8 @@ scope:
     WorkRepositoryPort 재사용; 필요한 경우에만 별도 repository 경계 분리.
   - P0-014 1.1 SessionRecord/DirectWorkRequest 의미를 수락. 기존 /v1/work HTTP wire와 DB 자료를 보존하고 owner 접근 검사
     회귀는 tests/test_api.py에서 함께 검증. 새 공유 DTO/계약 export 변경이 필요하면 coordinator에게 이유·호환성·영향을 먼저 보고한다.
+  - Coordinator가 SessionMessage/SessionDetail/RunRecord 최소 1.1 확장과 새 세션 API/port를 승인. 기존 1.0 wire surface를
+    projection으로 검증하고 현재 확장 schema를 생성한다. 원본 baseline.json은 보존, 실제 계약 변경 digest는 검증/통합 시 publish-contract한다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -37,6 +39,13 @@ scope:
   - src/rfa_mas/application/sessions.py
   - tests/test_sessions.py
   - tests/test_api.py
+  - tests/test_graph.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/contracts/__init__.py
+  - scripts/contract_baseline.py
+  - docs/contracts/extended.json
+  - docs/INTEGRATION.md
+  - docs/CONTRACT_CHANGELOG.md
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/contracts
@@ -47,6 +56,7 @@ scope:
   shared_resources:
   - canonical-contracts
   - sqlite-migrations
+  - contract-docs
 depends_on:
 - id: P0-014
   condition: integrated_done
@@ -65,7 +75,7 @@ contract_refs:
 - id: RFA-EXTENDED
   version: '1.1'
   digest: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
-  role: consumer
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -176,17 +186,31 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 4
-spec_revision: 4
-claim_generation: 0
-claim: null
+revision: 10
+spec_revision: 5
+claim_generation: 3
+claim:
+  session_id: rfa-coordinator
+  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-015
+  branch: task/P0-015
+  generation: 3
+  claimed_at: '2026-09-26T06:52:22+00:00'
+  heartbeat_at: '2026-09-26T06:57:15+00:00'
+  lease_expires_at: '2026-09-26T07:12:15+00:00'
+  baseline_head: 8b0372dfe6901656c3408b2074191ee545a1b84a
+  recovery_required: false
+  context_digest: b890e42063c115e19f25f2a354ceb3192829dfe838635526efe630f4a8ec0667
 attempts:
   count: 0
   cycles: 0
   no_progress_count: 0
   latest_attempt: null
   evidence_refs: []
-  approaches: []
+  approaches:
+  - reason: clean 조사 상태에서 typed session API 계약 범위 승인; old claim만 fencing, 코드 삭제 없음
+    at: '2026-09-26T06:52:17+00:00'
+    cycles: 0
+    no_progress_count: 0
 blocker: null
 migration:
   original_status: todo
@@ -199,8 +223,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T06:48:13+00:00'
-concise_result: 'Specification changed: 1.1 SessionRecord/DirectWorkRequest 및 owner/thread 신뢰 경계 검토 완료;
-  새 endpoint는 후속 구현, API 권한 회귀 소유 범위 포함'
+updated_at: '2026-09-26T06:57:15+00:00'
+concise_result: 'Specification changed: 실제 API/typed history의 최소 계약 확장과 owner 보안 회귀; coordinator가 schema
+  export와 버전 발행 관리'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.
