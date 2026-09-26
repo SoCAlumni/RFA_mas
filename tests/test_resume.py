@@ -13,6 +13,7 @@ import httpx
 import pytest
 
 from rfa_mas.adapters.checkpoints import SqliteCheckpoints
+from rfa_mas.adapters.local import SqliteWorkRepository, _sqlite_setup_guard
 from rfa_mas.api.app import create_app, resolve_principal
 from rfa_mas.bootstrap import build_container
 from rfa_mas.contracts import (
@@ -468,6 +469,225 @@ async def test_two_fresh_container_startups_preserve_single_fixture_seed(tmp_pat
     finally:
         await first.shutdown()
         await second.shutdown()
+
+
+async def test_repository_wal_activation_is_setup_only_and_checks_actual_mode(
+    tmp_path, monkeypatch
+):
+    original_connect = sqlite3.connect
+    statements = []
+
+    def traced_connect(*args, **kwargs):
+        connection = original_connect(*args, **kwargs)
+        connection.set_trace_callback(statements.append)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", traced_connect)
+    repository = SqliteWorkRepository(tmp_path / "repository.sqlite")
+    await repository.initialize()
+    assert sum(sql == "PRAGMA journal_mode=WAL" for sql in statements) == 1
+    statements.clear()
+    owner = await repository.local_principal()
+    await repository.create_session(owner)
+    assert not any("journal_mode" in sql for sql in statements)
+    with original_connect(repository.path) as connection:
+        assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+
+    class RefusedWal(sqlite3.Connection):
+        def execute(self, sql, *args, **kwargs):
+            if sql == "PRAGMA journal_mode=WAL":
+                return super().execute("SELECT 'delete'")
+            return super().execute(sql, *args, **kwargs)
+
+    monkeypatch.setattr(
+        sqlite3,
+        "connect",
+        lambda *args, **kwargs: original_connect(*args, factory=RefusedWal, **kwargs),
+    )
+    refused = SqliteWorkRepository(tmp_path / "refused.sqlite")
+    with pytest.raises(RfaError) as error:
+        await refused.initialize()
+    assert error.value.code == "configuration_error"
+    with original_connect(refused.path) as connection:
+        assert not connection.execute("SELECT name FROM sqlite_master WHERE name='runs'").fetchall()
+    with _sqlite_setup_guard(refused.path, blocking=False):
+        pass  # Refused mode cannot leak the setup reservation.
+
+
+@pytest.mark.parametrize("target", ["repository", "checkpoint"])
+async def test_two_process_startups_coordinate_before_wal_and_keep_one_seed(tmp_path, target):
+    settings = offline_settings(tmp_path)
+    path = settings.database_path if target == "repository" else settings.resolved_checkpoint_path
+    script = r"""
+import asyncio, fcntl, json, sys
+from pathlib import Path
+from rfa_mas.bootstrap import build_container
+from scripts.contract_baseline import offline_settings
+original = fcntl.flock
+def observed(fd, operation):
+    if operation & fcntl.LOCK_EX:
+        try:
+            original(fd, operation | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("contended", flush=True)
+            if operation & fcntl.LOCK_NB:
+                raise
+            original(fd, operation)
+    else:
+        original(fd, operation)
+fcntl.flock = observed
+async def main():
+    instance = build_container(offline_settings(Path(sys.argv[1])))
+    try:
+        await instance.startup()
+        owner = await instance.repository.local_principal()
+        print(json.dumps({"ready": instance.ready, "owner": owner.user_id}), flush=True)
+    finally:
+        await instance.shutdown()
+asyncio.run(main())
+"""
+    processes = []
+    try:
+        with _sqlite_setup_guard(path):
+            for _ in range(2):
+                processes.append(
+                    await asyncio.to_thread(
+                        subprocess.Popen,
+                        [sys.executable, "-c", script, str(tmp_path)],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        env={"PATH": os.defpath, "PYTHONDONTWRITEBYTECODE": "1"},
+                    )
+                )
+            # An observed failed nonblocking acquisition proves both children
+            # reached the actual shared boundary, not merely a timing assertion.
+            for process in processes:
+                line = await asyncio.wait_for(asyncio.to_thread(process.stdout.readline), 10)
+                assert line.strip() == "contended"
+        outputs = await asyncio.gather(
+            *(asyncio.to_thread(process.communicate, timeout=10) for process in processes)
+        )
+        owners = []
+        for process, (output, stderr) in zip(processes, outputs, strict=True):
+            assert process.returncode == 0, stderr
+            result = json.loads(output.strip().splitlines()[-1])
+            assert result["ready"] is True
+            owners.append(result["owner"])
+        assert owners[0] == owners[1]
+        with sqlite3.connect(settings.database_path) as connection:
+            assert connection.execute("SELECT count(*) FROM installation_seeds").fetchone()[0] == 1
+            assert connection.execute("SELECT count(*) FROM local_identity").fetchone()[0] == 1
+            assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+        with sqlite3.connect(settings.resolved_checkpoint_path) as connection:
+            assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+    finally:
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            await asyncio.to_thread(process.communicate, timeout=10)
+
+
+async def test_checkpoint_setup_wait_is_bounded_and_cancel_safe(tmp_path, monkeypatch):
+    checkpoints = SqliteCheckpoints(tmp_path / "checkpoint.sqlite")
+    with _sqlite_setup_guard(checkpoints.path):
+        monkeypatch.setattr(checkpoints, "_setup_timeout_seconds", 0.0)
+        with pytest.raises(RfaError) as error:
+            await checkpoints.start()
+        assert error.value.code == "storage_busy" and checkpoints.saver is None
+        monkeypatch.setattr(checkpoints, "_setup_timeout_seconds", 5.0)
+        pending_start = asyncio.create_task(checkpoints.start())
+        await asyncio.sleep(0)  # Let acquisition encounter the held lock; no real-time wait.
+        pending_start.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await pending_start
+    await checkpoints.start()
+    # Setup lock is not held for the lifetime of the open saver.
+    with _sqlite_setup_guard(checkpoints.path, blocking=False):
+        pass
+    await checkpoints.close()
+
+
+async def test_checkpoint_refused_wal_releases_setup_and_connection(tmp_path, monkeypatch):
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+    async def unavailable_wal(self, config):
+        return None  # Simulate a saver/provider which did not actually activate WAL.
+
+    monkeypatch.setattr(AsyncSqliteSaver, "aget_tuple", unavailable_wal)
+    checkpoints = SqliteCheckpoints(tmp_path / "checkpoint.sqlite")
+    with pytest.raises(RfaError) as error:
+        await checkpoints.start()
+    assert error.value.code == "configuration_error"
+    assert checkpoints.saver is None and checkpoints._stack is None
+    with _sqlite_setup_guard(checkpoints.path, blocking=False):
+        pass
+
+
+def test_setup_lock_rejects_symlink_and_nonregular_files(tmp_path):
+    path = tmp_path / "repository.sqlite"
+    lock = tmp_path / "repository.sqlite.setup.lock"
+    target = tmp_path / "untouched"
+    target.write_text("synthetic unchanged")
+    lock.symlink_to(target)
+    with pytest.raises(OSError), _sqlite_setup_guard(path):
+        pytest.fail("symlink lock accepted")
+    assert target.read_text() == "synthetic unchanged"
+    lock.unlink()
+    os.mkfifo(lock)
+    with pytest.raises(RfaError, match="일반 파일"), _sqlite_setup_guard(path):
+        pytest.fail("FIFO lock accepted")
+
+
+def test_repository_setup_wait_is_bounded_without_replaying_sql(tmp_path):
+    path = tmp_path / "repository.sqlite"
+    with _sqlite_setup_guard(path):
+        with pytest.raises(RfaError) as error, _sqlite_setup_guard(path, timeout_seconds=0):
+            pytest.fail("held initialization lock accepted")
+        assert error.value.code == "storage_busy"
+    with _sqlite_setup_guard(path, blocking=False):
+        pass
+
+
+@pytest.mark.parametrize("outcome", ["cancel", "error"])
+async def test_checkpoint_failed_setup_drains_connection_before_releasing_lock(
+    tmp_path, monkeypatch, outcome
+):
+    import aiosqlite
+    from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+    checkpoints = SqliteCheckpoints(tmp_path / "checkpoint.sqlite")
+    entered = asyncio.Event()
+    close_observations = []
+    original_get = AsyncSqliteSaver.aget_tuple
+    original_close = aiosqlite.Connection.close
+
+    async def observed_setup(self, config):
+        await original_get(self, config)  # Start and actually initialize the SQLite worker.
+        entered.set()
+        if outcome == "error":
+            raise RuntimeError("synthetic setup failure")
+        await asyncio.Event().wait()
+
+    async def observed_close(self):
+        # The setup lock must remain held until queued SQLite operations drain.
+        with pytest.raises(BlockingIOError), _sqlite_setup_guard(checkpoints.path, blocking=False):
+            pytest.fail("setup reservation released before close")
+        await original_close(self)
+        close_observations.append(True)
+
+    monkeypatch.setattr(AsyncSqliteSaver, "aget_tuple", observed_setup)
+    monkeypatch.setattr(aiosqlite.Connection, "close", observed_close)
+    task = asyncio.create_task(checkpoints.start())
+    await asyncio.wait_for(entered.wait(), 5)
+    if outcome == "cancel":
+        task.cancel()
+    with pytest.raises(asyncio.CancelledError if outcome == "cancel" else RuntimeError):
+        await task
+    assert close_observations == [True]
+    assert checkpoints.saver is None and checkpoints._stack is None
+    with _sqlite_setup_guard(checkpoints.path, blocking=False):
+        pass
 
 
 async def test_credentials_and_historical_principal_are_not_checkpointed(tmp_path):

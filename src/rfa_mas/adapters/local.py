@@ -3,7 +3,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 import sqlite3
+import stat
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -48,6 +51,48 @@ def _canonical_fingerprint(value: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+@contextmanager
+def _sqlite_setup_guard(
+    path: Path, *, blocking: bool = True, timeout_seconds: float = 5.0
+) -> Iterator[None]:
+    """Same-host setup coordination, not a database/invocation authorization lock.
+
+    Blocking use belongs in a synchronous worker thread. Async callers use a
+    nonblocking acquisition and their own bounded, cancellable wait.
+    """
+    try:
+        import fcntl
+    except ImportError as exc:
+        raise RfaError(
+            "configuration_error", "SQLite setup에 동일-host POSIX lock이 필요합니다."
+        ) from exc
+    lock_path = Path(str(path.resolve()) + ".setup.lock")
+    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise RfaError("configuration_error", "SQLite setup lock은 일반 파일이어야 합니다.")
+        os.fchmod(descriptor, 0o600)
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                if not blocking:
+                    raise
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise RfaError("storage_busy", "SQLite 초기화가 진행 중입니다.") from None
+                time.sleep(min(0.01, remaining))
+            else:
+                break
+        try:
+            yield
+        finally:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+    finally:
+        os.close(descriptor)
+
+
 class SqliteWorkRepository:
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -57,7 +102,6 @@ class SqliteWorkRepository:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         try:
-            connection.execute("PRAGMA journal_mode=WAL")
             connection.execute("PRAGMA foreign_keys=ON")
             with connection:
                 yield connection
@@ -68,7 +112,13 @@ class SqliteWorkRepository:
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
         def operation() -> None:
-            with self._connect() as connection:
+            # WAL persists in the DB. Switching it on every connection can
+            # return SQLITE_BUSY immediately, despite SQLite's busy timeout.
+            # Only setup is serialized; no caller transaction is ever replayed.
+            with _sqlite_setup_guard(self.path), self._connect() as connection:
+                mode = connection.execute("PRAGMA journal_mode=WAL").fetchone()[0]
+                if mode != "wal":
+                    raise RfaError("configuration_error", "SQLite WAL 초기화에 실패했습니다.")
                 connection.execute("BEGIN IMMEDIATE")
                 had_prior_schema = bool(
                     connection.execute(
