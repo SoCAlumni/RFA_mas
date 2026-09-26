@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "3c5841c6de80d50d2d7f6813c1a930d78a0cf83dbb4623b2851bac7554e9c5ff",
+  "digest": "7d67fc7350f34152e5cded648c86212e64989b17cbbdb73d37b4b1c606380357",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -12095,7 +12095,7 @@
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
     "src/rfa_mas/contracts/models.py": "3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a",
     "src/rfa_mas/ports/interfaces.py": "65822ed6ebd4f1feada462dfb8e711ab40abce1ceca025ebdc61a2a97d35a915",
-    "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
+    "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",
   "status": "repository-local-provisional"
