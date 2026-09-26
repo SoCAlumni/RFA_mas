@@ -1,0 +1,96 @@
+{
+  "attempt_id": "technical-spec-01",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "development-control/local; product AC not_run",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_task_migration.py",
+          "tests/test_taskctl.py"
+        ],
+        "observed": "73 passed in 29.27s; temporary controls/worktrees only; includes new NAT independence/parallel scopes tests",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/ruff",
+          "format",
+          "--check",
+          "--no-cache",
+          "."
+        ],
+        "observed": "87 files already formatted; cache-enabled attempt had ENOSPC",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_local_adapters.py::test_draft_version_is_immutable_but_exact_resave_is_idempotent"
+        ],
+        "environment": {
+          "TMPDIR": "/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/rfa-spec-check.bIDYPG"
+        },
+        "observed": "1 passed in 0.01s. Isolated TMPDIR preflight only, not whole-suite pass.",
+        "result": "passed"
+      }
+    ],
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "assertions": [],
+        "counts": {
+          "collected": 256,
+          "deselected": 0,
+          "errors": 17,
+          "failed": 8,
+          "passed": 231,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 1,
+        "id": "V1",
+        "log_excerpt": "8 failed, 231 passed, 17 errors in 32.61s; affected SQLite-backed tests raised disk I/O error under env -i default /private/tmp. Concurrent Ruff cache write reported ENOSPC; disk free about 125 MiB.",
+        "result": "failed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "assertions": [
+          "기존 Pydantic/OpenAPI export 및 9개 합성 reference fixture의 schema·형식·binding이 현재 원본과 일치한다."
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T03:52:22+00:00",
+    "mode": "development-control/local; new product AC not_run",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-26T03:49:43+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "eda44c5b48abe6369d57289bf7c515dbd51a46ae0d479bc7fd824d14b33f652d",
+  "source_manifest": ".agent/evidence/OPS-001/technical-spec-01/source.json",
+  "spec_digest": "91c060a8498c5bf9210a8be4b94c9922ed38e9e8dbf79c1188745b7d2264a01b",
+  "spec_revision": 3,
+  "task_id": "OPS-001"
+}

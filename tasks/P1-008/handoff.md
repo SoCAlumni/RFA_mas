@@ -16,3 +16,7 @@
   - HTTP runtime의 팀 실행은 명시적 unsupported다.
   - 모두 local/mock(simulated)이다. 실제 teammate/MCP/OpenShell/게시가 아니다.
 
+## 재검증 pre-P0-025 (2026-09-26T21:13Z)
+
+- 사유: Direct/transitive dependencies of P0-025 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 90569fd에서 계획된 검증을 worker/target 단계로 재실행한다.

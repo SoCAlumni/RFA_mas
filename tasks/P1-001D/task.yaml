@@ -9,7 +9,7 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: todo
+status: verifying
 spec_state: draft
 unresolved:
 - Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
@@ -45,7 +45,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+  digest: 2dd6adcb078d77040080742b45b5c0b100321d1bc100927b94d125e2210388c3
   role: consumer
 context:
   global_refs:
@@ -107,33 +107,51 @@ verification:
   - 질의 term 수 상한으로 SQLite 오류 없이 처리된다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-001D
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-001D/target-0926202914/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 7
+  spec_digest: efddd163a9fe3c2b81b0d9ad1ba766fda7853ed66cf1fa39a15b75f99ad57b96
+  contract_digest: eb5c83eaa114df06262526a92737190509a319a5f2f39d208cdc2a0ff549bbce
+  source_fingerprint: b8d3d86d4fdfc91272289907e929c06bced57821573f97ce4a57972671926835
+  evidence: .agent/evidence/P1-001D/target-0926202914/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 5
-spec_revision: 5
-claim_generation: 0
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: d962b8a25de0d6bf44359a7f79a7989b4cc99928
+    baseline_head: 8e7f73610660ca1929c55e09c997f061f2a9762d
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001D-int-0926202851
+    branch: task/P1-001D-int-0926202851
+    evidence: .agent/evidence/P1-001D/worker-0926202902/result.json
+    changed_files:
+      src/rfa_mas/adapters/local.py: 5cbbbf362a05208af245d1ae0a1cbe8ba1dd6d1403440a55a1cad6cac8222225
+      src/rfa_mas/adapters/retrieval.py: 5e09db9af998079344287a8c8f9777fa56ec329fc1d80ffc7680c9aee99b7219
+      tests/test_retrieval.py: 24646f78ff83e021bb3ff5fdecaec0ccd7a7f94931d360ad81a29117b6f12ac4
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 7
+      spec_digest: efddd163a9fe3c2b81b0d9ad1ba766fda7853ed66cf1fa39a15b75f99ad57b96
+      contract_digest: eb5c83eaa114df06262526a92737190509a319a5f2f39d208cdc2a0ff549bbce
+      source_fingerprint: b8d3d86d4fdfc91272289907e929c06bced57821573f97ce4a57972671926835
+      evidence: .agent/evidence/P1-001D/target-0926202914/result.json
+    head: d962b8a25de0d6bf44359a7f79a7989b4cc99928
+  evidence: .agent/evidence/P1-001D/target-0926202914/result.json
+revision: 18
+spec_revision: 9
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926202914
+  evidence_refs:
+  - .agent/evidence/P1-001D/worker-0926202902/result.json
   approaches: []
 blocker: null
 migration:
@@ -146,6 +164,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T20:04:21+00:00'
-concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
-next_action: claim 후 cherry-pick·검증·통합.
+updated_at: '2026-09-26T21:15:47+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

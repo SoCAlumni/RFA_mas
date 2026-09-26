@@ -25,3 +25,13 @@
 
 - 사유: Direct/transitive dependencies of P0-022 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 3466bc5에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-020B (2026-09-26T20:46Z)
+
+- 사유: Direct/transitive dependencies of P0-020B before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 1a1e59f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-025 (2026-09-26T21:11Z)
+
+- 사유: Direct/transitive dependencies of P0-025 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 90569fd에서 계획된 검증을 worker/target 단계로 재실행한다.

@@ -1,0 +1,58 @@
+{
+  "attempt_id": "worker-0926211524",
+  "contract_digest": "30ff81466a8ea725d3122fd5f73eb65004a7ec6512712958d653a02cfc2cb796",
+  "mode": "기존 health/ready/work GET만 verified; 확장 missing/not_run. local(false), mock worker/receipt는 true. UI/상위 registry 미확인은 P0 blocker 아님, 실제 UI는 P1-008B.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_api.py"
+        ],
+        "assertions": [
+          "task/team/worker/run/검토·receipt ref와 stop reason 표시; 허용 source/policy/draft version/hash/approval/receipt를 같은 Run으로 추적 가능, 미발생 ID null",
+          "owner 권한으로 status/event/notification 조회, private 원문·비밀 없는 응답; private title/요약/관계도 제외, 외부 trace ID 입력으로 조회 권한을 획득하지 못함",
+          "health가 살아 있어도 선택한 real backend 미준비는 ready=false/정확한 configuration error",
+          "UI 전체나 SSE를 중복 구현하지 않고 실제 제공 capability만 registry에 등록."
+        ],
+        "counts": {
+          "collected": 18,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 18,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 7.43,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T21:15:35.147067+00:00",
+        "id": "V1",
+        "log_excerpt": "18 passed, 7 warnings in 6.28s",
+        "result": "passed",
+        "started_at": "2026-09-26T21:15:27.716588+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "c78cf25d2276b4c54f223744e9ca423d03643cb8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-025-int-0926211511",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T21:15:35.147140+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T21:15:27.715370+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "51532821943edb79e310e96a53927f75895c34a29c569c8b159e4f63fef53120",
+  "source_manifest": ".agent/evidence/P0-025/worker-0926211524/source.json",
+  "spec_digest": "ebc3a630bc596508264b80da7289024f0ebf8343785ee76a192f6307135830db",
+  "spec_revision": 18,
+  "task_id": "P0-025"
+}

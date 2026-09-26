@@ -1,0 +1,59 @@
+{
+  "attempt_id": "migration-final-01",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "development-control/local; product AC not_run",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "assertions": [
+          "기존 58개 ID/체크/AC/주석/링크가 원문 또는 단일 task 원본에 보존되고 YAML/DAG/참조 검증을 통과한다.",
+          "동시 claim·경로/자원 충돌·revision/generation·만료 복구·submit 예약·done gate를 임시 Git worktree에서 재현한다.",
+          "원본 저장 뒤 view 실패/변조를 복구하고 재생성은 결정적이며 단일 context pack/handoff로 재개할 수 있다."
+        ],
+        "counts": {
+          "collected": 254,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 254,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "254 passed in 29.06s",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "assertions": [],
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "schema/OpenAPI and 9 fixture shapes valid; this command does not execute runtime behavior. Planned assertion mapping needs correction.",
+        "result": "failed"
+      }
+    ],
+    "finished_at": "2026-09-26T03:23:15Z",
+    "note": "제품/runtime 회귀는 V1 전체 suite에서 통과. V2는 shape check만 수행하므로 기존 표현을 성공으로 인정하지 않고 검증 계획을 정정한다. 제품 AC 축소 없음.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-26T03:21:16Z"
+  },
+  "result": "failed",
+  "source_fingerprint": "06413d8dcef48ae211046d8d4d58d58fcc29683e7f646a1f96aeafff86da9a7b",
+  "source_manifest": ".agent/evidence/OPS-001/migration-final-01/source.json",
+  "spec_digest": "413efe5ff579b672696345e85ec44ea2399f7f22a74d6366243f48fd8659b359",
+  "spec_revision": 2,
+  "task_id": "OPS-001"
+}

@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "c78cf25d2276b4c54f223744e9ca423d03643cb8",
+  "started_at": "2026-09-26T21:15:42.398403+00:00",
+  "finished_at": "2026-09-26T21:15:44.314086+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T21:15:42.398514+00:00",
+      "finished_at": "2026-09-26T21:15:43.405222+00:00",
+      "elapsed_seconds": 1.0067825419828296,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T21:15:43.405263+00:00",
+      "finished_at": "2026-09-26T21:15:44.302173+00:00",
+      "elapsed_seconds": 0.8969804169610143,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P0-025 additive 1.1 status/event/readiness DTOs; migration 13. No live provider claim."
+}

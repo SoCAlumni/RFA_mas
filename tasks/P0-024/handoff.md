@@ -14,3 +14,7 @@
   - 예약 실행은 Run binding이 없어 local trace를 내지 않는다(증거는 ID/수만 담은 schedule_runs).
   - P0-025 notification 이벤트 source는 아직 미연결이다.
 
+## 재검증 pre-P0-025 (2026-09-26T21:14Z)
+
+- 사유: Direct/transitive dependencies of P0-025 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 90569fd에서 계획된 검증을 worker/target 단계로 재실행한다.

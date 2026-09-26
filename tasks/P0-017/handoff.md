@@ -62,3 +62,28 @@ Next first action: submit unchanged source and capture fresh target evidence, re
 
 - 사유: Direct/transitive dependencies of P0-024 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 501aebf에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-005B (2026-09-26T20:08Z)
+
+- 사유: Direct/transitive dependencies of P1-005B before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 68d474f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-001D (2026-09-26T20:22Z)
+
+- 사유: Direct/transitive dependencies of P1-001D before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 8e7f736에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-006B (2026-09-26T20:50Z)
+
+- 사유: Direct/transitive dependencies of P1-006B before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 554894a에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-025 (2026-09-26T20:56Z)
+
+- 사유: Direct/transitive dependencies of P0-025 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 90569fd에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-005A (2026-09-26T21:20Z)
+
+- 사유: Direct/transitive dependencies of P0-005A before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD c78cf25에서 계획된 검증을 worker/target 단계로 재실행한다.

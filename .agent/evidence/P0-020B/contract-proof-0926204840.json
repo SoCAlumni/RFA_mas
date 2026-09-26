@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "69f6c42e542f25652c7b56894d82b2b926cb6ebc7728947f02634c65560843a5",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "554894aa20e0a4edc277cb30298efd645d21e797",
+  "started_at": "2026-09-26T20:48:41.013727+00:00",
+  "finished_at": "2026-09-26T20:48:42.796725+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T20:48:41.013863+00:00",
+      "finished_at": "2026-09-26T20:48:41.954470+00:00",
+      "elapsed_seconds": 0.9406810416840017,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T20:48:41.954512+00:00",
+      "finished_at": "2026-09-26T20:48:42.787087+00:00",
+      "elapsed_seconds": 0.8326579579152167,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P0-020B team/cancel route schemas. No live provider claim."
+}

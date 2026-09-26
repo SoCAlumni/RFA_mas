@@ -72,12 +72,12 @@ scope:
   - tests/integration/test_nvidia_product_live.py
   - tests/test_api.py
   - tests/test_settings.py
+  - src/rfa_mas/application/observations.py
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/ports/interfaces.py
   - docs/INTEGRATION.md
   - src/rfa_mas/adapters/http.py
-  - src/rfa_mas/application/observations.py
   - src/rfa_mas/security.py
   - src/rfa_mas/application/graphs/domain.py
   planned_paths:
@@ -261,8 +261,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 4
-spec_revision: 4
+revision: 5
+spec_revision: 5
 claim_generation: 0
 claim: null
 attempts:
@@ -284,7 +284,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T18:22:08+00:00'
-concise_result: 'Specification changed: Coordinator resolves the two open design decisions (trusted egress
-  decorator boundary; per-call bounded budget, team token budget deferred) and adds touched test files'
+updated_at: '2026-09-26T20:25:18+00:00'
+concise_result: 'Specification changed: Add observations.py: NVIDIA adapter fixed error codes into the
+  SAFE_ERROR_CODES allowlist (E2E real-model gate finding)'
 next_action: 계약·429/timeout/schema 오류·tool allowlist·secret-safe 로그 검사. README의 실제 호출 주장은 P1-002A 완료 후만.

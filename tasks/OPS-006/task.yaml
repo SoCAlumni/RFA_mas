@@ -168,8 +168,8 @@ integration:
       evidence: .agent/evidence/OPS-006/target-0926193822/result.json
     head: 26d5b86c5e4625eb15653564b733d05e4829b163
   evidence: .agent/evidence/OPS-006/target-0926193822/result.json
-revision: 13
-spec_revision: 4
+revision: 16
+spec_revision: 7
 claim_generation: 1
 claim: null
 attempts:
@@ -192,7 +192,7 @@ migration:
   - 매 계약 변경마다 15개 이상 통합 task 재검증 필요 확인
   judgment: 규칙 완화 없이 이미 인정된 revalidation 이력을 새 generation으로 이어준다.
   initial_spec_revision: 1
-updated_at: '2026-09-26T20:04:21+00:00'
+updated_at: '2026-09-26T21:15:46+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

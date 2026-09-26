@@ -52,6 +52,8 @@ scope:
   - tests/e2e/test_rfa_scenarios.py
   - tests/e2e/test_process_recovery.py
   - tests/e2e/test_load.py
+  - tests/e2e
+  - fixtures/demo
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/contracts
@@ -93,6 +95,18 @@ depends_on:
 - id: P1-005B
   condition: integrated_done
   required_output: E2E-09 M01의 사용자 확인·scope·revision·새 세션 적용 및 철회 경계
+- id: P0-005A
+  condition: integrated_done
+  required_output: E2E harness가 발견한 결함 보수의 통합 결과
+- id: P1-008E
+  condition: integrated_done
+  required_output: E2E harness가 발견한 결함 보수의 통합 결과
+- id: P1-004C
+  condition: integrated_done
+  required_output: E2E harness가 발견한 결함 보수의 통합 결과
+- id: P1-001E
+  condition: integrated_done
+  required_output: E2E harness가 발견한 결함 보수의 통합 결과
 contract_refs:
 - id: RFA-DTO
   version: '1.0'
@@ -100,7 +114,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
+  digest: 2dd6adcb078d77040080742b45b5c0b100321d1bc100927b94d125e2210388c3
   role: consumer
 context:
   global_refs:
@@ -138,6 +152,10 @@ context:
   - tasks/P1-001B/handoff.md
   - tasks/P1-006E/handoff.md
   - tasks/P1-005B/handoff.md
+  - tasks/P0-005A/handoff.md
+  - tasks/P1-008E/handoff.md
+  - tasks/P1-004C/handoff.md
+  - tasks/P1-001E/handoff.md
 deliverables:
 - path: src/rfa_mas/cli.py
   availability: existing
@@ -341,8 +359,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 22
-spec_revision: 22
+revision: 26
+spec_revision: 26
 claim_generation: 0
 claim: null
 attempts:
@@ -364,8 +382,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T20:04:21+00:00'
-concise_result: 'Specification changed: 사용자 지정 E2E 원문 10개를 기존 final_acceptance에 연결; 3회 controlled·실제 kill/restart·100요청
-  부하·real/UI 개별 gate 유지. P0-026 검증 공수 1h→4h로 명시 확대'
+updated_at: '2026-09-26T21:15:47+00:00'
+concise_result: 'Specification changed: Integration prep: own tests/e2e and fixtures/demo; depend on the
+  four E2E-found fixes the acceptance tests require'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

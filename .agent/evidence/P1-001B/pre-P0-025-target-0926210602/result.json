@@ -1,0 +1,57 @@
+{
+  "attempt_id": "pre-P0-025-target-0926210602",
+  "contract_digest": "30ff81466a8ea725d3122fd5f73eb65004a7ec6512712958d653a02cfc2cb796",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_context_loading.py"
+        ],
+        "assertions": [
+          "read spy에서 선택한 L2만 읽고 전체 본문 주입 0회",
+          "multi-parent ACL/revision change는 cache 무효화, 제목/요약/관계 canary 포함 검사",
+          "지침/목표 보존·예산 부족 insufficient·실측 단위 확인"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 17,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.27,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T21:06:06.770962+00:00",
+        "id": "V1",
+        "log_excerpt": "17 passed in 0.30s",
+        "result": "passed",
+        "started_at": "2026-09-26T21:06:05.498323+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "90569fdb072bb21d51b91db7db47f6e4ec57e1d4",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-26T21:06:06.771021+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T21:06:05.497837+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "deb9c3f5df6a7aa7d35d41fb23f8cb44e03695ae81de3aa2f6de0d1a4ef35596",
+  "source_manifest": ".agent/evidence/P1-001B/pre-P0-025-target-0926210602/source.json",
+  "spec_digest": "97f2a062b826cd33a2d75ae7d2bee9ffe04ff208c1541f101b579cbabe7c5085",
+  "spec_revision": 31,
+  "task_id": "P1-001B"
+}

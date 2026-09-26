@@ -9,7 +9,7 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: todo
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -109,33 +109,51 @@ verification:
   - 401이며 상태 변화가 없다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-020B
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-020B/target-0926204845/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 1
+  spec_digest: 5688c8b4fe6247172536810757b928f675d69318daa672971b49b9b02a801e35
+  contract_digest: 30ff81466a8ea725d3122fd5f73eb65004a7ec6512712958d653a02cfc2cb796
+  source_fingerprint: 84198afbea28b69bc295101f07ec070f8fb760610ef73dc82d7cbbc626ba8f34
+  evidence: .agent/evidence/P0-020B/target-0926204845/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 1
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: 554894aa20e0a4edc277cb30298efd645d21e797
+    baseline_head: 1a1e59fad122ff1c5326fc27122a3bb287202160
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020B-int-0926204814
+    branch: task/P0-020B-int-0926204814
+    evidence: .agent/evidence/P0-020B/worker-0926204826/result.json
+    changed_files:
+      docs/contracts/extended.json: 69f6c42e542f25652c7b56894d82b2b926cb6ebc7728947f02634c65560843a5
+      src/rfa_mas/api/app.py: 38ad023cf45b43493651dbe5b1391a11f049efb5013d2838621c86d12a414668
+      tests/test_api.py: 7555d6ac64dee9857c99698e1643e47f706a262eaa77f09f6cf741608fa85792
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: 5688c8b4fe6247172536810757b928f675d69318daa672971b49b9b02a801e35
+      contract_digest: 30ff81466a8ea725d3122fd5f73eb65004a7ec6512712958d653a02cfc2cb796
+      source_fingerprint: 84198afbea28b69bc295101f07ec070f8fb760610ef73dc82d7cbbc626ba8f34
+      evidence: .agent/evidence/P0-020B/target-0926204845/result.json
+    head: 554894aa20e0a4edc277cb30298efd645d21e797
+  evidence: .agent/evidence/P0-020B/target-0926204845/result.json
+revision: 10
 spec_revision: 1
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926204845
+  evidence_refs:
+  - .agent/evidence/P0-020B/worker-0926204826/result.json
   approaches: []
 blocker: null
 migration:
@@ -148,6 +166,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:58:39+00:00'
-concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
-next_action: claim 후 cherry-pick·검증·통합.
+updated_at: '2026-09-26T21:15:45+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

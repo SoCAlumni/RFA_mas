@@ -164,8 +164,8 @@ integration:
       evidence: .agent/evidence/P1-006E/target-0926175016/result.json
     head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
   evidence: .agent/evidence/P1-006E/target-0926175016/result.json
-revision: 30
-spec_revision: 21
+revision: 33
+spec_revision: 24
 claim_generation: 1
 claim: null
 attempts:
@@ -187,7 +187,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T20:04:21+00:00'
+updated_at: '2026-09-26T21:15:47+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

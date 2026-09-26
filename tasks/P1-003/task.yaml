@@ -37,6 +37,7 @@ scope:
   - tests/test_retriever_contract.py
   - .env.example
   - tests/integration/test_retriever_product_live.py
+  - docs/evidence/nvidia-skill-product.md
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/contracts
@@ -46,6 +47,7 @@ scope:
   - src/rfa_mas/application/workers.py
   - fixtures/contracts/retriever
   - tests/test_retriever_contract.py
+  - docs/evidence/nvidia-skill-product.md
   shared_resources:
   - canonical-contracts
   - composition
@@ -179,8 +181,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 3
-spec_revision: 3
+revision: 4
+spec_revision: 4
 claim_generation: 0
 claim: null
 attempts:
@@ -202,8 +204,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T18:22:12+00:00'
-concise_result: 'Specification changed: Integration prep: accept current contract, add .env.example (RETRIEVER_CLI_PATH
-  name) and opt-in product live smoke'
+updated_at: '2026-09-26T20:53:36+00:00'
+concise_result: 'Specification changed: Add the product-path Skill smoke evidence file (new, P1-003-owned;
+  nvidia-skill.md stays P1-003A)'
 next_action: fake CLI/service의 실제 subprocess/transport 경계와 mapper·worker 연결 검사. 실제 Skill 실행은 P1-003A와
   분리.

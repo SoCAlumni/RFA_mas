@@ -126,8 +126,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 5
+spec_revision: 5
 claim_generation: 0
 claim: null
 attempts:
@@ -148,6 +148,6 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T20:04:21+00:00'
+updated_at: '2026-09-26T21:15:47+00:00'
 concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
 next_action: claim 후 cherry-pick·검증·통합.

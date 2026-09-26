@@ -74,3 +74,18 @@ P1-005B(피드백), P0-021(effect ledger)가 이 게시 기록을 재사용한�
 
 - 사유: Direct/transitive dependencies of P0-022 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 3466bc5에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-005B (2026-09-26T20:17Z)
+
+- 사유: Direct/transitive dependencies of P1-005B before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 68d474f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-020B (2026-09-26T20:46Z)
+
+- 사유: Direct/transitive dependencies of P0-020B before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 1a1e59f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-025 (2026-09-26T21:10Z)
+
+- 사유: Direct/transitive dependencies of P0-025 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 90569fd에서 계획된 검증을 worker/target 단계로 재실행한다.

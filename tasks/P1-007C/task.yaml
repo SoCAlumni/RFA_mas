@@ -36,6 +36,7 @@ scope:
   - scripts/openshell_e2e05.py
   - tests/integration/test_openshell_live.py
   - docs/evidence/openshell.md
+  - docs/EDUCATION_MAPPING.md
   read_only_paths:
   - src/rfa_mas/application/workers.py
   - src/rfa_mas/reference/local_runtime.py
@@ -59,7 +60,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 4c43f3cf8e8bee0726fdad28bf721047f738929fe1bc07d989c1fa2da34e5e42
+  digest: 7b61a759c697390f998c39c34c952fcbf7b1d4fccd3374402ac045f68c936012
   role: consumer
 context:
   global_refs:
@@ -182,8 +183,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 7
-spec_revision: 7
+revision: 11
+spec_revision: 11
 claim_generation: 0
 claim: null
 attempts:
@@ -204,8 +205,7 @@ migration:
   - P1-007B는 P1-008B(teammate identity) 대기로 blocked 유지 확인
   judgment: P1-007B 실제 teammate gate를 대체하지 않는 별도 로컬 실제 OpenShell 증거 task.
   initial_spec_revision: 1
-updated_at: '2026-09-26T20:04:21+00:00'
-concise_result: 'Specification changed: Split verification: deterministic classification/SupervisorBus
-  command check + manual review of the real OpenShell run report (live test is opt-in and cannot pass
-  in the isolated verifier)'
+updated_at: '2026-09-26T21:15:47+00:00'
+concise_result: 'Specification changed: Accept current RFA-EXTENDED; add EDUCATION_MAPPING.md (OpenShell
+  rows point to the real local evidence)'
 next_action: worktree에서 스크립트·정책 작성 후 실제 실행.

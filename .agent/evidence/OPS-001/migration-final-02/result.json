@@ -1,0 +1,109 @@
+{
+  "attempt_id": "migration-final-02",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "development-control/local; product AC not_run",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "ruff",
+          "check",
+          "."
+        ],
+        "observed": "All checks passed!",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "ruff",
+          "format",
+          "--check",
+          "."
+        ],
+        "observed": "84 files already formatted",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          "uv",
+          "lock",
+          "--check",
+          "--offline"
+        ],
+        "observed": "54 packages resolved; lock matches direct dependencies",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/taskctl.py",
+          "--control-root",
+          "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+          "validate"
+        ],
+        "observed": "60 tasks valid; generated views current",
+        "result": "passed"
+      }
+    ],
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "assertions": [
+          "기존 58개 ID/체크/AC/주석/링크가 원문 또는 단일 task 원본에 보존되고 YAML/DAG/참조 검증을 통과한다.",
+          "동시 claim·경로/자원 충돌·revision/generation·만료 복구·submit 예약·done gate를 임시 Git worktree에서 재현한다.",
+          "원본 저장 뒤 view 실패/변조를 복구하고 재생성은 결정적이며 단일 context pack/handoff로 재개할 수 있다.",
+          "합성 계약 fixture의 실제 local/reference 응답은 tests/test_contract_baseline.py에서 재생·대조된다."
+        ],
+        "counts": {
+          "collected": 254,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 254,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "254 passed in 30.46s",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "assertions": [
+          "기존 Pydantic/OpenAPI export 및 9개 합성 reference fixture의 schema·형식·binding이 현재 원본과 일치한다."
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T03:24:53Z",
+    "previous_attempt": "migration-final-01 retains real results but was not accepted because V2 assertion scope exceeded that CLI command; spec revision 3 corrected verification mapping without reducing AC.",
+    "reviewer": "rfa-coordinator",
+    "scope": "170 existing offline product tests + 13 current contract baseline tests + 57 task-control tests + 14 migration/protocol tests. Expanded product P0 and real NVIDIA/Skill/NemoClaw/OpenShell/teammate gates remain not_run.",
+    "started_at": "2026-09-26T03:23:50Z"
+  },
+  "result": "passed",
+  "source_fingerprint": "835ae63c3cee3abb9b9ec8f49191a4bca50b37cb7870b31ac36cee8f2741013b",
+  "source_manifest": ".agent/evidence/OPS-001/migration-final-02/source.json",
+  "spec_digest": "91c060a8498c5bf9210a8be4b94c9922ed38e9e8dbf79c1188745b7d2264a01b",
+  "spec_revision": 3,
+  "task_id": "OPS-001"
+}

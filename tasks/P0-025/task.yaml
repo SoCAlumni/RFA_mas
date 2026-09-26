@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -175,33 +175,62 @@ verification:
   - UI 전체나 SSE를 중복 구현하지 않고 실제 제공 capability만 registry에 등록.
   runner: pytest
 evidence_dir: .agent/evidence/P0-025
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-025/target-0926211547/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 18
+  spec_digest: ebc3a630bc596508264b80da7289024f0ebf8343785ee76a192f6307135830db
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 6935dc83bae5358d8c003e59e76f3f59a7b4127c7be48fa9e6194788e1678946
+  evidence: .agent/evidence/P0-025/target-0926211547/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 18
+  submission_generation: 1
+  submission:
+    head: c78cf25d2276b4c54f223744e9ca423d03643cb8
+    baseline_head: 90569fdb072bb21d51b91db7db47f6e4ec57e1d4
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-025-int-0926211511
+    branch: task/P0-025-int-0926211511
+    evidence: .agent/evidence/P0-025/worker-0926211524/result.json
+    changed_files:
+      docs/INTEGRATION.md: 21508ed486e1bf5b3d46fc8f8d8d39356181fdf79e2f38a4dbe1579e02c591cb
+      docs/contracts/extended.json: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+      registry/service.json: 1fe9f0d40188321ae53016c5c9cee4797b1b39a409cb5635dcbc33bee797caf7
+      src/rfa_mas/adapters/local.py: 4e4e4aa6aaa23cf60646131912e9d7a88b060e3511ca51604d0b449b0cada8ed
+      src/rfa_mas/api/app.py: 52c7d6c7119867a40cbb2e7aa1e4cc46c86ce668ce84a897f044e88821c04db1
+      src/rfa_mas/application/events.py: fedde716ae35b47098c874a1638ccda09835ac04e9f38458c6f2fad63343ac5e
+      src/rfa_mas/application/observations.py: 074da905677a16061407d9564b2eb979ae54113b81d930d1ca36d1100a1a8d96
+      src/rfa_mas/bootstrap.py: 34c2d4dd9a717e5925754dd14d2949762499040d58f8a3bbd074b92a7d9730dc
+      src/rfa_mas/contracts/__init__.py: ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9
+      src/rfa_mas/contracts/models.py: 206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a
+      tests/test_api.py: 7ea5f247374e56e292ace31328aa55a44e1713386a1edf9c087f5d83aead9148
+      tests/test_knowledge.py: fe508338be4f3458c5eea15820e6173a1db92a4a840d69b62e9699c2e75aca0f
+      tests/test_sessions.py: a1016f7162576590f45152e1513911354b73304f14de89bd9f68742f41f1395e
+      tests/test_teams.py: ef4ff249f339838a185c5554d1295bb5e8e9124d622237c0666cccdf2b443cfe
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 18
+      spec_digest: ebc3a630bc596508264b80da7289024f0ebf8343785ee76a192f6307135830db
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 6935dc83bae5358d8c003e59e76f3f59a7b4127c7be48fa9e6194788e1678946
+      evidence: .agent/evidence/P0-025/target-0926211547/result.json
+    head: c78cf25d2276b4c54f223744e9ca423d03643cb8
+  evidence: .agent/evidence/P0-025/target-0926211547/result.json
+revision: 26
 spec_revision: 18
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926211547
+  evidence_refs:
+  - .agent/evidence/P0-025/worker-0926211524/result.json
   approaches: []
 blocker: null
 migration:
@@ -215,8 +244,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T17:59:51+00:00'
-concise_result: 'Specification changed: Integration prep from reviewed wip/stack segment: accept current
-  RFA-EXTENDED, add files the segment touches (shared contracts/migration tests/composition)'
+updated_at: '2026-09-26T21:16:01+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

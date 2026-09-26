@@ -165,8 +165,8 @@ integration:
       evidence: .agent/evidence/OPS-003/target-repair-0926200126/result.json
     head: 07cc0dc2d37575c92f2a39820d3cb0819ac42929
   evidence: .agent/evidence/OPS-003/target-repair-0926200126/result.json
-revision: 35
-spec_revision: 11
+revision: 38
+spec_revision: 14
 claim_generation: 3
 claim: null
 attempts:
@@ -233,7 +233,7 @@ migration:
   - P1-001 integration.result.head(caf7bd2)≠manifest head(3a1a5ee), fingerprint 동일 확인
   judgment: 동시 세션 commit에 의한 도구 race. 규칙 완화 없이 기록 head를 캡처 head로 고정한다.
   initial_spec_revision: 1
-updated_at: '2026-09-26T20:04:21+00:00'
+updated_at: '2026-09-26T21:15:46+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

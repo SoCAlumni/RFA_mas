@@ -1,0 +1,89 @@
+{
+  "attempt_id": "pre-P1-001D-worker-0926201930",
+  "contract_digest": "eb5c83eaa114df06262526a92737190509a319a5f2f39d208cdc2a0ff549bbce",
+  "mode": "schema 1.0 기반만 implemented/verified; 확장 missing, 검증 not_run. 계약 local, fixture simulated=true. 외부 의존 없음; 상대 스키마 미확인은 provisional 유지.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_contracts.py"
+        ],
+        "assertions": [
+          "위 식별자 관계와 상태 원본, 읽기/공유/전송 권한 명시; session/task/team/run/agent/trace와 source revision/location·policy decision·draft/approval/receipt를 join하며 발생 전 단계는 null. trace ID/모델 allow는 인증·정책 증명이 아님",
+          "direct user와 internal/public channel 진입 DTO 구분, 외부 요청은 Supervisor에만 도달; context stage와 역할/목표/endpoint read/share/egress 판단 및 다중 부모 제한을 전달; 선택 읽기와 권한 선필터 인터페이스를 동결",
+          "Runtime의 run/status/cancel 유지, prepare/cleanup 보충 계약과 TeamSpec→AgentSpec binding 정의; 승인/게시 원본 승희·runtime 원본 다영·Policy 소유 미확정. 본문/첨부 hash·대상·정책·source ACL 변경과 unknown→조회 상태, mock/local/real·실험 measured/mock/not_run 구분",
+          "OpenAPI/예제 round-trip·변경 이력·미구현 route 표기 일치. 정상/deny/미승인/본문 변경/ACL 변경/중복/timeout fixture가 schema와 일치. EvalCase/Result는 evaluator/실행·모델·prompt·policy·dataset/source 버전·증거 및 pass/fail/error/not_run를 분리; default trace allowlist 밖 raw 값 거절, 미지원 계약 version 명시 거절"
+        ],
+        "counts": {
+          "collected": 15,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 15,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 0.89,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T20:19:33.601803+00:00",
+        "id": "V1",
+        "log_excerpt": "15 passed in 0.01s",
+        "result": "passed",
+        "started_at": "2026-09-26T20:19:32.712837+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_trace_eval_contract.py"
+        ],
+        "assertions": [
+          "7종 fixture round-trip·필수/optional/null 관계·위조 allow/version mismatch를 검증",
+          "합성 Run의 연결 및 raw metadata reject; exporter canary는 P1-006D에서 별도 확인"
+        ],
+        "counts": {
+          "collected": 50,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 50,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.7,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T20:19:35.300579+00:00",
+        "id": "V2",
+        "log_excerpt": "50 passed in 1.08s",
+        "result": "passed",
+        "started_at": "2026-09-26T20:19:33.602031+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "8e7f73610660ca1929c55e09c997f061f2a9762d",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-014",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T20:19:35.300621+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T20:19:32.711605+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "c6a88d9f740dc690c0d3db064a580671f5002638d75a4cd1ecb56e8cbecc3767",
+  "source_manifest": ".agent/evidence/P0-014/pre-P1-001D-worker-0926201930/source.json",
+  "spec_digest": "89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e",
+  "spec_revision": 4,
+  "task_id": "P0-014"
+}

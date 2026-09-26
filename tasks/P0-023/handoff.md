@@ -15,3 +15,7 @@
   - DST spring-forward 자동 테스트는 없다.
   - API 변경은 job store 동기화까지 약 30초가 걸린다(그 사이 fire는 상태 재검사 후 skip).
 
+## 재검증 pre-P0-025 (2026-09-26T21:14Z)
+
+- 사유: Direct/transitive dependencies of P0-025 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 90569fd에서 계획된 검증을 worker/target 단계로 재실행한다.
