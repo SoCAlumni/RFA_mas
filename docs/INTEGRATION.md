@@ -106,6 +106,15 @@ bootstrap.py: settings에 따라 port 구현을 조립
 
 현재 main Work 경로는 `RuntimePort`와 `ResponsePort`를 직접 사용한다. `ToolPort`는 아직 실행 경로에 연결되지 않았고, `RUNTIME_BACKEND=http`이면 8013 Runtime이 Domain TaskGraph를 호스팅하면서 Policy/Retriever/Model 경계를 호출하도록 구현해야 전체 topology가 실제로 사용된다.
 
+### NemoClaw/OpenShell sandbox agent 호출 경계 (P1-007 설계, not_run)
+
+RFA FastAPI/LangGraph process와 그 SQLite DB·checkpoint·trace·`.env`는 host의 일반 사용자 프로세스이며 어떤 sandbox 안에도 있지 않다. OpenShell/NemoClaw policy는 sandbox 안 agent의 파일·process·egress만 제한하고 RFA backend의 파일 접근과 outbound 연결은 제한하지 않는다. NemoClaw는 목록 외 agent harness를 지원하지 않으므로 이 서비스는 NemoClaw agent runtime이 아니라 sandbox 안 지원 agent가 호출하는 sandbox 밖 API로 둔다. 공식 근거, 보호되지 않는 범위, 합성 입력 계획은 [NemoClaw 증거](evidence/nemoclaw.md)에 있다.
+
+- Agent 허용 route는 기존 route 중 `GET /healthz`, `POST /v1/sessions`, `POST /v1/sessions/{session_id}/work`, `GET /v1/runs/{run_id}` 네 개로 제한한다. KB·candidate·resume·세션 목록 route는 허용 목록에 넣지 않는다. 새 route나 MCP wrapper는 없다. NemoClaw managed MCP는 HTTPS Streamable HTTP MCP endpoint만 받으므로 승희 경계가 MCP endpoint를 제공할 때 다시 검토한다.
+- OpenShell과 NemoClaw는 loopback 목적지를 차단하므로 RFA를 non-loopback 주소에 bind해야 한다. 이 경우 `Settings`가 `APP_API_KEY`를 요구하며 keyless loopback 개발 모드는 쓸 수 없다.
+- `APP_API_KEY`는 단일 설치 owner를 인증하므로 agent는 허용 route에서 owner 권한을 갖는다. OpenShell REST rule은 method·path·query만 검사하므로 body의 `target.audience`는 기존 application policy가 계속 제한한다. Agent 전용 scoped principal은 인증·계약 변경이므로 coordinator 절차로만 추가한다.
+- 이 경로의 실제 호출, credential binding, 역할별 allow/deny는 P1-007A/P1-007B 범위이며 아직 실행하지 않았다.
+
 ## Port와 P0 구현
 
 ### P0-019 internal TeamFactory boundary
