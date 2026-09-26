@@ -68,6 +68,10 @@ def _parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("doctor", help="Show configured/missing variable names without values")
 
+    evaluation = subparsers.add_parser("evaluate", help="Run isolated synthetic rule evaluation")
+    evaluation.add_argument("--dataset", default="persona-core-v1")
+    evaluation.add_argument("--judge", default="disabled", help="disabled or mock only")
+
     openapi = subparsers.add_parser("openapi", help="Export the generated OpenAPI document")
     openapi.add_argument("--output", default="openapi.json")
     return parser
@@ -171,6 +175,24 @@ def _doctor(settings: Settings) -> int:
 def main() -> None:
     parser = _parser()
     args = parser.parse_args()
+    if args.command == "evaluate":
+        # Dispatch BEFORE Settings(), env-file inspection or provider construction.
+        if (
+            args.env_file is not None
+            or args.dataset != "persona-core-v1"
+            or args.judge not in {"disabled", "mock"}
+        ):
+            print(json.dumps({"code": "evaluation_configuration_rejected"}))
+            raise SystemExit(2)
+        from rfa_mas.application.evaluation import run_persona_evaluation
+
+        try:
+            report = asyncio.run(run_persona_evaluation(judge_mode=args.judge))
+        except Exception:
+            print(json.dumps({"code": "evaluation_error", "product_final_gate": "not_run"}))
+            raise SystemExit(2) from None
+        print(report.model_dump_json(indent=2))
+        raise SystemExit(report.exit_code)
     if args.command == "init-env":
         result = initialize_dev_env(target_name=args.output)
         print(
