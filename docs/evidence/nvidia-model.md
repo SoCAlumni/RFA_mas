@@ -58,4 +58,11 @@ env RFA_NVIDIA_LIVE=1 \
 
 ## P1-002 제품 adapter 구획
 
-not_run. P1-002가 MockTransport 계약 테스트와 bootstrap 조립을 완료한 뒤, 제품 경로 live 확인을 이 아래에 별도로 추가한다.
+제품 경로: `MODEL_PROVIDER=nvidia`이면 bootstrap이 `NvidiaChatModel`을 `PublicOnlyEgressGate` 뒤에 조립한다. gate는 설정된 endpoint/model에만, 모든 근거가 public이고 질의·발췌에 비공개 표식이 없을 때만 전송을 허가한다. domain graph는 mock이 아닌 provider를 cloud endpoint로 보고, P1-005 screen으로 public이 아닌 근거를 먼저 제외한다. key/model이 없으면 `configuration_error`이며 mock으로 대체하지 않는다. 예산은 `NVIDIA_MAX_OUTPUT_TOKENS`와 domain task timeout을 쓴다. Run 예산 계약이 발행되기 전까지의 잠정값이다.
+
+| 실행 (2026-09-27 KST, `wip/stack`) | 결과 |
+| --- | --- |
+| MockTransport 계약 `tests/test_nvidia_contract.py` | 42 passed. 네트워크·credential 없음. live 증거가 아니다 |
+| opt-in live `tests/integration/test_nvidia_product_live.py`, n=1 | 1 passed. `WorkService.run` → domain graph → 관측 mode `real` → hosted chat completions. HTTP 시도 1회, 모델 호출 29.8초, Run 전체 30.3초, `completed`. 전송 본문에는 합성 공개 노트만 있었고 owner 전용 노트와 canary는 없었다. DRAFT 근거 audience는 public뿐이고 답에 합성 출시일이 들어 있었다. 증거 파일에는 길이·hash·latency만 저장하고 key는 저장하지 않는다 |
+
+표본이 1회라 지연 분포나 품질을 주장하지 않는다. 검토 단계는 mock이며 외부 게시는 없다.
