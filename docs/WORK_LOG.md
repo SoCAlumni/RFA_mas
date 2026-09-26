@@ -864,3 +864,17 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   남겼다. P1-005 통합 뒤 claim/통합 대상에 포함한다. 병렬 분담 질문에 대한 사용자 답은 아직 없고 기존 가정(NVIDIA 실제
   연동은 다른 세션)을 유지한다.
 
+
+## Coordinator — 2026-09-27 01:45~02:25 KST (16:45~17:25 UTC)
+
+- 통합·close: P1-008D(ab9cf68), P0-025A(9336690), P1-001B(559c366), P1-004A(0bdef6a, RFA-EXTENDED 003af117), P1-004B(d3cad28, 25928d88), P2-003(0161cc2, 9455b302), P1-005(d8c596d), P1-005A(9178e20, b2e601b8).
+- 각 발행 뒤 다음 claim의 직접(전이) 의존성만 재검증(OPS-005 규칙). `revalidate_par.py`에 REVAL_ONLY + stale 전이 폐포를 추가했다. 처음 버전은 이미 done인 의존성의 하위까지 다시 열어 불필요한 재검증이 생겼고, stale 집합으로 제한하도록 수정했다.
+- 오류와 조치:
+  1. P1-001B claim 거절(spec unresolved) → digest 고정 edit-spec 후 성공.
+  2. chain 작업(P1-004A~P1-005A)의 wip commit이 owned_paths 밖 파일을 건드림 → coordinator edit-spec으로 scope 추가(bootstrap, contracts/__init__, extended.json, CHANGELOG, migration 단언 테스트).
+  3. migration 7 추가로 고정 목록 단언 3건 실패 → 0cee5e4에서 "빈틈없는 1..N" 단언으로 교체.
+  4. P1-006E 레드팀: P1-005가 근거 로딩을 staged-context로 옮겨 retrieval test double이 호출되지 않음(5 failed) → 공격을 합성 공개 KB note로 심고 서버측 읽기·screen 보류를 관측하도록 보수(b9bb0de). RT03 strict xfail은 실제 단언으로 전환. screen을 끄면 2건 실패함을 확인.
+  5. test_behavior_verifier 4건 실패(P1-005 이후 retrieval spy 0회) → P1-005C 등록, staged-context 경계를 container에 노출하고 spy가 관측(93fe378, 57+1 passed).
+- 보조 worker 결과: P0-021(effect ledger, migration 9, 47 passed), P1-008(reference 계약 suite 60 passed, HTTP publisher·callback verifier), P0-022/23/24(APScheduler 3.11.3 + SQLAlchemy 2.0.54 pin, migration 10/11, test_schedules 43 passed), P1-005B(피드백 4분류, migration 12, 16 passed), P1-006B(persona 24사례, mock 기준 security 4 fail은 P1-005 screen 이전 main 기준), P1-001D(Recall@5 small20 0.61→1.0, load1000 0.52→1.0, 같은 harness·seed), P0-020A(결정적 후속 비교), P0-020B(team/cancel HTTP). 모두 wip branch이며 ledger_worker가 선형 통합 stack(wip/stack)으로 충돌을 해소 중이다.
+- 설정 점검: main checkout에는 `.env`가 없고 NVIDIA 키는 명시 env 파일(`.env.dev`, 값 미열람)로만 live 테스트가 사용한다. doctor 기준 LANGFUSE_* 미설정 → P1-006C live는 로컬 self-host(colima) 시도 또는 not_run.
+
