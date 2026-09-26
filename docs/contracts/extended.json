@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "4705cbefe353df15510404192e18158a071089b319f1a729ae19c7e662678117",
+  "digest": "3fc935a736c3b4a3bb2d76f84791aaa7d658cfb9a6f959d4429d41695072ba53",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -2650,6 +2650,163 @@
             "title": "ReviewStatus",
             "type": "string"
           },
+          "RoleOutcome": {
+            "additionalProperties": false,
+            "description": "One role execution receipt collected by the team Supervisor.",
+            "properties": {
+              "agent_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "duration_ms": {
+                "anyOf": [
+                  {
+                    "minimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Duration Ms"
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "evidence": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/EvidenceRef"
+                },
+                "title": "Evidence",
+                "type": "array"
+              },
+              "execution_key": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Execution Key",
+                "type": "string"
+              },
+              "input_tokens": {
+                "anyOf": [
+                  {
+                    "minimum": 0.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Input Tokens"
+              },
+              "output": {
+                "additionalProperties": true,
+                "title": "Output",
+                "type": "object"
+              },
+              "output_tokens": {
+                "anyOf": [
+                  {
+                    "minimum": 0.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Output Tokens"
+              },
+              "role": {
+                "enum": [
+                  "supervisor",
+                  "paper_scout",
+                  "experiment_runner",
+                  "result_analyst",
+                  "source_scout",
+                  "evidence_reviewer"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "status": {
+                "enum": [
+                  "succeeded",
+                  "failed",
+                  "denied",
+                  "timed_out",
+                  "cancelled",
+                  "budget_exceeded",
+                  "unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "steps": {
+                "default": 0,
+                "minimum": 0.0,
+                "title": "Steps",
+                "type": "integer"
+              },
+              "tool_calls": {
+                "default": 0,
+                "minimum": 0.0,
+                "title": "Tool Calls",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "role",
+              "agent_id",
+              "execution_key",
+              "status",
+              "simulated"
+            ],
+            "title": "RoleOutcome",
+            "type": "object"
+          },
+          "RunCancelState": {
+            "description": "Cancel sets a durable barrier; effects already done stay done.\n\n\"cancelling\": a live invocation was signalled and stops at its next effect boundary.\n\"cancelled\": no invocation was running (e.g. waiting for approval), so the run ended here\n(P0-021 durable cancel).",
+            "properties": {
+              "state": {
+                "enum": [
+                  "cancelling",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "title": "RunCancelState",
+            "type": "object"
+          },
           "RunRecord": {
             "additionalProperties": false,
             "description": "Owner-authorized metadata, including runs without a final result yet.",
@@ -3648,6 +3805,108 @@
             "title": "TaskCandidateRef",
             "type": "object"
           },
+          "TeamBudget": {
+            "additionalProperties": false,
+            "properties": {
+              "concurrency": {
+                "default": 2,
+                "maximum": 16.0,
+                "minimum": 1.0,
+                "title": "Concurrency",
+                "type": "integer"
+              },
+              "max_steps": {
+                "default": 30,
+                "maximum": 1000.0,
+                "minimum": 1.0,
+                "title": "Max Steps",
+                "type": "integer"
+              },
+              "max_tokens": {
+                "default": 16000,
+                "minimum": 1.0,
+                "title": "Max Tokens",
+                "type": "integer"
+              },
+              "max_tool_calls": {
+                "default": 10,
+                "maximum": 1000.0,
+                "minimum": 0.0,
+                "title": "Max Tool Calls",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "timeout_seconds": {
+                "default": 180,
+                "exclusiveMinimum": 0.0,
+                "maximum": 3600.0,
+                "title": "Timeout Seconds",
+                "type": "number"
+              }
+            },
+            "title": "TeamBudget",
+            "type": "object"
+          },
+          "TeamBudgetUsage": {
+            "additionalProperties": false,
+            "properties": {
+              "elapsed_ms": {
+                "minimum": 0.0,
+                "title": "Elapsed Ms",
+                "type": "number"
+              },
+              "limits": {
+                "$ref": "#/components/schemas/TeamBudget"
+              },
+              "max_concurrency_observed": {
+                "minimum": 0.0,
+                "title": "Max Concurrency Observed",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "steps": {
+                "minimum": 0.0,
+                "title": "Steps",
+                "type": "integer"
+              },
+              "tokens": {
+                "anyOf": [
+                  {
+                    "minimum": 0.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Tokens"
+              },
+              "tool_calls": {
+                "minimum": 0.0,
+                "title": "Tool Calls",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "steps",
+              "tool_calls",
+              "elapsed_ms",
+              "max_concurrency_observed",
+              "limits"
+            ],
+            "title": "TeamBudgetUsage",
+            "type": "object"
+          },
           "TeamExecutionRequest": {
             "additionalProperties": false,
             "description": "Explicit team-execution intent (P0-020). No capability, identity or grant claims.\n\nTemplate choice, role capabilities and budgets are decided server-side by the\nTeamSelector/TeamFactory from the authenticated principal.",
@@ -3699,6 +3958,105 @@
               "goal"
             ],
             "title": "TeamExecutionRequest",
+            "type": "object"
+          },
+          "TeamRunResult": {
+            "additionalProperties": false,
+            "description": "Supervisor-collected team result for one product Run (not approval authority).",
+            "properties": {
+              "findings": {
+                "additionalProperties": true,
+                "title": "Findings",
+                "type": "object"
+              },
+              "pattern": {
+                "enum": [
+                  "benchmark",
+                  "research"
+                ],
+                "title": "Pattern",
+                "type": "string"
+              },
+              "roles": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/RoleOutcome"
+                },
+                "title": "Roles",
+                "type": "array"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "status": {
+                "enum": [
+                  "completed",
+                  "partial",
+                  "failed",
+                  "cancelled"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "stop_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Stop Reason"
+              },
+              "summary": {
+                "default": "",
+                "maxLength": 20000,
+                "title": "Summary",
+                "type": "string"
+              },
+              "task_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Task Id",
+                "type": "string"
+              },
+              "team_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Team Id",
+                "type": "string"
+              },
+              "usage": {
+                "$ref": "#/components/schemas/TeamBudgetUsage"
+              }
+            },
+            "required": [
+              "run_id",
+              "task_id",
+              "team_id",
+              "pattern",
+              "status",
+              "usage",
+              "simulated"
+            ],
+            "title": "TeamRunResult",
             "type": "object"
           },
           "TodoCandidate": {
@@ -5393,6 +5751,64 @@
             ]
           }
         },
+        "/v1/runs/{run_id}/cancel": {
+          "post": {
+            "operationId": "cancel_run_v1_runs__run_id__cancel_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunCancelState"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Cancel Run",
+            "tags": [
+              "work"
+            ]
+          }
+        },
         "/v1/runs/{run_id}/draft": {
           "get": {
             "operationId": "get_draft_state_v1_runs__run_id__draft_get",
@@ -5826,6 +6242,64 @@
               }
             },
             "summary": "Resume Run",
+            "tags": [
+              "work"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/team": {
+          "get": {
+            "operationId": "get_team_result_v1_runs__run_id__team_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/TeamRunResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Team Result",
             "tags": [
               "work"
             ]
@@ -15334,7 +15808,7 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
-    "src/rfa_mas/api/app.py": "a0e61cdd873c85f6402d06b458b092c0ef67a9011191ffc0cd4321f79be71ff6",
+    "src/rfa_mas/api/app.py": "38ad023cf45b43493651dbe5b1391a11f049efb5013d2838621c86d12a414668",
     "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
     "src/rfa_mas/contracts/__init__.py": "269a01e4abe4f4f694f6bc7f2d57d1b6bc394cfa90137802f5c11e1d175a2f18",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
