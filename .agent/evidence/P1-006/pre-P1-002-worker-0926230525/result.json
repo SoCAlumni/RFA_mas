@@ -1,0 +1,93 @@
+{
+  "attempt_id": "pre-P1-002-worker-0926230525",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "기존 evaluate_case/24 fixture 유지. 구현 예정인 native 합성 실행·관측 verifier는 local이며 MockJudge/test sink는 simulated이다. 평가기 검증과 12개 제품 시나리오 verdict를 분리한다. 미수집/미구현 조건은 unknown/not_run이며 실제 Judge·NAT·승인/게시·OpenShell 검증이 아니다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_evaluation.py",
+          "tests/test_behavior_verifier.py",
+          "tests/test_staged_context_boundary.py"
+        ],
+        "assertions": [
+          "기존24 ID와C01~C12요구/변형보존, fixture identity별 source/audience와사칭거절, 미구현제품gate 미통과",
+          "실제관찰에기반한규칙fail/pass, missing/incomplete unknown/error, sink/negative/native provenance와CLI exit검증",
+          "Judge disabled/error/invalid/mock/test-double상태및호출수분리, score없는미검증과규칙독립성·fake재현성",
+          "default Settings/dotenv/외부provider미사용, 보고서canary차단·버전/관찰참조·제품/품질gate분리"
+        ],
+        "counts": {
+          "collected": 68,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 68,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 60.74,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T23:06:29.847748+00:00",
+        "id": "V1",
+        "log_excerpt": "68 passed, 55 warnings in 59.63s",
+        "result": "passed",
+        "started_at": "2026-09-26T23:05:29.109618+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_trace_contract.py",
+          "tests/test_trace_eval_contract.py",
+          "tests/test_contract_baseline.py",
+          "tests/test_api.py"
+        ],
+        "assertions": [
+          "기존trusted 관측/null-stage/coverage/재개/기밀경계와frozen1.0·extended schema/fixture·API회귀보존"
+        ],
+        "counts": {
+          "collected": 103,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 103,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 16.34,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T23:06:46.184960+00:00",
+        "id": "V2",
+        "log_excerpt": "103 passed, 25 warnings in 15.30s",
+        "result": "passed",
+        "started_at": "2026-09-26T23:06:29.849556+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "88c33d9c79c936fd3f0006fb46df3c7d177d4e04",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006-int-0926173855",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T23:06:46.185097+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T23:05:29.108956+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "f02df624fb954fd974164a3188560dc3857914a147451a96def6b1ce66ffc435",
+  "source_manifest": ".agent/evidence/P1-006/pre-P1-002-worker-0926230525/source.json",
+  "spec_digest": "fcb9a79227218988dd6aaf0e50bea94632ff3bee0ac69cb4150a19899996788a",
+  "spec_revision": 42,
+  "task_id": "P1-006"
+}

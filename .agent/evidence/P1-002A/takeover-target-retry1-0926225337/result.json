@@ -1,0 +1,64 @@
+{
+  "attempt_id": "takeover-target-retry1-0926225337",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "opt-in direct hosted API live smoke. build.nvidia.com hosted endpoint(integrate.api.nvidia.com)에 고정된 합성 한국어 요청만 보내 실제 NVIDIA 모델 호출·structured/tool 제안 지원·근거 충실도를 입증한다. 제품 ModelPort/bootstrap/graph 경로의 live 증거가 아니며 그 연결은 P1-002 이후 별도 검증이다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          "env",
+          "RFA_NVIDIA_LIVE=1",
+          "RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev",
+          "RFA_NVIDIA_EVIDENCE_OUT=/tmp/rfa-nvidia-live-evidence.json",
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_nvidia_live.py"
+        ],
+        "assertions": [
+          "hosted 합성 요청 실제 성공과 model echo·usage·finish_reason=stop",
+          "json_object Pydantic 검증 통과와 named tool_choice 제안(실행 0회)",
+          "근거 질문 정확 사실+[E1] 인용 한국어 답변, 근거 밖 질문 '근거 부족'",
+          "출력·evidence에 key/Authorization/reasoning_content 없음"
+        ],
+        "counts": {
+          "collected": 4,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 108.99,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T22:55:29.610481+00:00",
+        "id": "V1",
+        "log_excerpt": "4 passed in 107.79s (0:01:47)",
+        "result": "passed",
+        "started_at": "2026-09-26T22:53:40.617177+00:00",
+        "timeout_seconds": 420
+      }
+    ],
+    "environment": {
+      "head": "88c33d9c79c936fd3f0006fb46df3c7d177d4e04",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-26T22:55:29.610545+00:00",
+    "limits": "Opt-in live direct hosted NVIDIA API smoke (synthetic request); env file path only, values never read. Retry after a live finish_reason=length on the JSON-object case.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T22:53:40.614891+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "5302977cc06d52a5ee4cf1a6b13b5746c3fb3bc31fc036b2fbff59f9833a7418",
+  "source_manifest": ".agent/evidence/P1-002A/takeover-target-retry1-0926225337/source.json",
+  "spec_digest": "125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747",
+  "spec_revision": 2,
+  "task_id": "P1-002A"
+}

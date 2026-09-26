@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P1
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -167,33 +167,57 @@ verification:
     검증 주장 없음).
   runner: manual
 evidence_dir: .agent/evidence/P1-006C
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-006C/target-0926234549/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 4
+  spec_digest: 8d69a450c7e1f53ce784c5a8e90f418a189bedaa8460b8c2d3581c4bc4f602be
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: 37bc27e7ba12fea800cf14901020247ba48864859894c144c6cf41b1c3042faf
+  evidence: .agent/evidence/P1-006C/target-0926234549/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 4
+  submission_generation: 1
+  submission:
+    head: 6f3f3618b61e0d189751be58ac6034ee782cdae7
+    baseline_head: ddb70d8b5ae8e790dd9ef7a4f0e1dfdeedf9b554
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006C-int-0926234526
+    branch: task/P1-006C-int-0926234526
+    evidence: .agent/evidence/P1-006C/worker-0926234538/result.json
+    changed_files:
+      .env.example: 48daee24469f6f7e40f68145ff1bf746c104cbaf09bc32fc28dd2964da4fbef8
+      docs/INTEGRATION.md: 714769830fd959c17fa674d1bd1b5dd32230187a1060cf1b28c90f16783805dd
+      docs/evidence/llmops.md: a6e980e90a895a1650e376acc671cbaa04dee863c2665880f065d364088fc65d
+      src/rfa_mas/adapters/langfuse.py: bda83d357c7e10de60b7cc6554c2732d9df78f6f1e17aa5c29a959935819f429
+      src/rfa_mas/bootstrap.py: 2fd32620d84a20f3143396ad3af60de515d82090407e0a6e323748d8c750e435
+      src/rfa_mas/settings.py: b61591f5e2a0b3be8413b8c9ef577e7047ec69fb281881b6762d9341114aaf8a
+      tests/integration/test_langfuse_live.py: b57733f6cbe42d1c5d922adba562fd2aa2350d95ee0f891784d9e68a1113c28a
+      tests/test_security.py: 25098daf2d08c6013b39580ca769bc9b1896605847b6cba5e666953e804552d9
+      tests/test_settings.py: e902e8c6de9e8447bbfd9757830738b95672bf50c57cce7846cbcc3f242e341d
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: 8d69a450c7e1f53ce784c5a8e90f418a189bedaa8460b8c2d3581c4bc4f602be
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 37bc27e7ba12fea800cf14901020247ba48864859894c144c6cf41b1c3042faf
+      evidence: .agent/evidence/P1-006C/target-0926234549/result.json
+    head: 6f3f3618b61e0d189751be58ac6034ee782cdae7
+  evidence: .agent/evidence/P1-006C/target-0926234549/result.json
+revision: 12
 spec_revision: 4
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926234549
+  evidence_refs:
+  - .agent/evidence/P1-006C/worker-0926234538/result.json
   approaches: []
 blocker: null
 migration:
@@ -207,8 +231,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T18:24:31+00:00'
-concise_result: 'Specification changed: Split Langfuse-side retention (blocked: OSS 4.46 ignores LANGFUSE_INIT_PROJECT_RETENTION
-  without the Enterprise data-retention feature, observed live) into P1-006F; offline command check +
-  manual live review'
+updated_at: '2026-09-26T23:46:00+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: mock transport payload canary 검사, 실제 self-host endpoint에서 합성 trace 조회·보존 설정 대조.

@@ -82,3 +82,13 @@ Next first action: submit unchanged source and capture fresh post-knowledge-targ
 
 - 사유: Direct/transitive dependencies of P0-005A before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD c78cf25에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-003 (2026-09-26T23:17Z)
+
+- 사유: Direct/transitive dependencies of P1-003 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 8b06ac8에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-007 (2026-09-26T23:46Z)
+
+- 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 6f3f361에서 계획된 검증을 worker/target 단계로 재실행한다.

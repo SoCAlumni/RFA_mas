@@ -1,0 +1,56 @@
+{
+  "attempt_id": "reval2-worker",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "opt-in direct hosted API live smoke. build.nvidia.com hosted endpoint(integrate.api.nvidia.com)에 고정된 합성 한국어 요청만 보내 실제 NVIDIA 모델 호출·structured/tool 제안 지원·근거 충실도를 입증한다. 제품 ModelPort/bootstrap/graph 경로의 live 증거가 아니며 그 연결은 P1-002 이후 별도 검증이다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          "env",
+          "RFA_NVIDIA_LIVE=1",
+          "RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev",
+          "RFA_NVIDIA_EVIDENCE_OUT=/tmp/rfa-nvidia-live-evidence.json",
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_nvidia_live.py"
+        ],
+        "assertions": [
+          "hosted 합성 요청 실제 성공과 model echo·usage·finish_reason=stop",
+          "json_object Pydantic 검증 통과와 named tool_choice 제안(실행 0회)",
+          "근거 질문 정확 사실+[E1] 인용 한국어 답변, 근거 밖 질문 '근거 부족'",
+          "출력·evidence에 key/Authorization/reasoning_content 없음"
+        ],
+        "counts": {
+          "collected": 4,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "Worktree task/P1-002A-r2 @462bd2f. 4 passed in 69.20s. grounded_korean_answer http_200 [200] 19.87s True; out_of_evidence_marker http_200 [200] 21.18s True; json_object_structured http_200 [200] 69.16s True; named_tool_choice_proposal http_200 [200] 14.84s True | clean | 6f48008ac06283c932d7c5ffbef4a8e4ce7c369c512303748bfeff0bd6c6107a | ",
+        "observed": "Revalidation of direct hosted API smoke; product ModelPort path not_run (P1-002).",
+        "procedure_performed": true,
+        "result": "passed",
+        "timeout_seconds": 420
+      }
+    ],
+    "finished_at": "2026-09-26T14:53:23.344Z",
+    "reviewer": "worker-nvidia-1 (Codex agent self-run; revalidation)",
+    "started_at": "2026-09-26T14:52:13.342Z"
+  },
+  "result": "passed",
+  "source_fingerprint": "5699c788dcca119078b355eacc200653ce9ec43a6f42a8bc2201f10a9c49e28d",
+  "source_manifest": ".agent/evidence/P1-002A/reval2-worker/source.json",
+  "spec_digest": "125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747",
+  "spec_revision": 2,
+  "task_id": "P1-002A"
+}

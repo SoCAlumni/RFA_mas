@@ -1,6 +1,6 @@
 schema_version: '1.0'
 id: P1-006F
-title: Langfuse 보존 정책 실제 적용(OSS 제약으로 blocked)
+title: Langfuse 보존 정책을 community 버전에서 자체 삭제 job으로 적용
 objective: 내보낸 trace metadata의 보존 기간을 실제로 강제한다.
 kind: task
 source_tasks:
@@ -8,29 +8,46 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P1
-status: blocked
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: todo
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: coordinator
 estimated_effort: 1.0
 product_owner: 민섭
 execution_class: 본인 LLMOps
-product_mode: real Langfuse(local self-host) 필요; not_run
+product_mode: community(OSS) Langfuse 전용(2026-09-27 사용자 결정). 앱의 자체 삭제 job이 보존 기간을 적용한다. 로컬 self-host live
+  검증 완료(branch task/P1-006F 8f80676), main 통합 대기.
 scope:
   included:
-  - Enterprise data-retention 기능 또는 승인된 자체 ID 삭제 job
+  - '승인된 자체 삭제 job: 이 앱이 export한 trace(schema rfa-langfuse-export-v1, service rfa-mas)만 LANGFUSE_RETENTION_DAYS(기본
+    7일) 경과 시 trace ID로 삭제하고 재조회로 확인. 하루 1회 cron 실행(rfa langfuse-retention).'
+  - 삭제 뒤 남는 MinIO events/otel 원본 upload 파일을 community mc의 --older-than으로 같은 기간 뒤 정리하는 운영 명령.
+  - Enterprise data-retention 기능은 사용하지 않는다(사용자 결정 - community 무료 버전만).
   excluded:
   - 라이선스 우회
-  - 로컬 trace 원본 삭제
+  - 로컬 trace 원본 삭제(TRACE_RETENTION_DAYS 관리)
+  - 다른 앱의 Langfuse trace 삭제
   owned_paths:
   - src/rfa_mas/adapters/langfuse.py
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/cli.py
+  - src/rfa_mas/settings.py
+  - .env.example
+  - tests/test_langfuse_retention.py
+  - tests/integration/test_langfuse_live.py
   - docs/evidence/llmops.md
+  - docs/INTEGRATION.md
   read_only_paths: []
   planned_paths:
   - docs/evidence/llmops.md
-  shared_resources: []
+  - src/rfa_mas/adapters/langfuse.py
+  - src/rfa_mas/cli.py
+  - tests/integration/test_langfuse_live.py
+  - tests/test_langfuse_retention.py
+  shared_resources:
+  - composition
+  - dependencies-settings
 depends_on:
 - id: P1-006C
   condition: integrated_done
@@ -42,7 +59,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 4c43f3cf8e8bee0726fdad28bf721047f738929fe1bc07d989c1fa2da34e5e42
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
   role: consumer
 context:
   global_refs:
@@ -56,29 +73,67 @@ context:
   dependency_results:
   - tasks/P1-006C/handoff.md
 deliverables:
+- path: src/rfa_mas/adapters/langfuse.py
+  availability: planned
+  description: LangfuseRetentionSweeper(자체 삭제 job)
+- path: src/rfa_mas/cli.py
+  availability: planned
+  description: rfa langfuse-retention [--dry-run]
+- path: tests/test_langfuse_retention.py
+  availability: planned
+  description: 가짜 Langfuse 기반 보존·범위·허가·실패 회귀
 - path: docs/evidence/llmops.md
   availability: planned
-  description: 보존 적용 증거
+  description: 보존 적용 live 증거와 운영(cron) 절차
 acceptance_criteria:
 - id: AC1
   given: Langfuse로 내보낸 관측 metadata
-  expect: 지정 보존 기간이 지나면 Langfuse 측에서 실제로 삭제됨을 확인하거나, 승인된 자체 삭제 job이 ID 기준으로 삭제하고 그 결과를 조회로 확인한다.
+  expect: 승인된 자체 삭제 job이 보존 기간이 지난 이 앱의 trace만 ID 기준으로 삭제하고 그 결과를 조회로 확인한다. 보존 기간 안의 trace와 다른 앱의 trace는
+    삭제하지 않는다.
+  required: true
+- id: AC2
+  given: egress 허가 없음, key 없음, 서버 오류, 삭제 미확인
+  expect: 요청 0건 not_attempted 또는 failed/partial 고정 코드로 보고하며 삭제 성공으로 보고하지 않는다. 출력에 key·trace 본문이 없다.
   required: true
 verification:
 - id: V1
   ac_ids:
   - AC1
-  type: manual
-  availability: planned
+  - AC2
+  type: command
+  availability: available
   prerequisites:
-  - 보존 기능 사용 가능 환경
+  - source worktree; in-process 가짜 Langfuse(httpx.MockTransport)만; .env 읽기 금지
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_langfuse_retention.py
+  - tests/test_security.py
+  - tests/test_settings.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 만료된 이 앱 trace만 삭제·재조회 확인, 보존 기간 안/기간에 걸친/다른 앱 trace 유지
+  - 허가·key 없음 요청 0건, 오류·미확인은 failed/partial, 출력에 key·ID 없음
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  type: manual
+  availability: available
+  prerequisites:
+  - 공식 docker-compose Langfuse 4.46.0 로컬 live(저장소 밖 env 파일)
   cwd: .
   argv: []
-  timeout_seconds: 600
+  timeout_seconds: 900
   procedure:
-  - 보존 기간 경과 후 조회
+  - RFA_LANGFUSE_LIVE=1 RFA_LANGFUSE_ENV_FILE=<tmp> .venv/bin/python -m pytest -q tests/integration/test_langfuse_live.py
+  - MinIO mc rm --older-than 7d / 1m 전후 개수 비교
   assertions:
-  - 지정 보존 기간이 지나면 Langfuse 측에서 실제로 삭제됨을 확인하거나, 승인된 자체 삭제 job이 ID 기준으로 삭제하고 그 결과를 조회로 확인한다.
+  - 실제 시계에서 삭제 0, 시계+8일에서 이 앱 trace 삭제·조회 사라짐 확인, 다른 앱 trace 유지, CLI dry-run exit 0
   runner: manual
 evidence_dir: .agent/evidence/P1-006F
 latest_evidence_file: null
@@ -98,8 +153,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 7
-spec_revision: 7
+revision: 9
+spec_revision: 8
 claim_generation: 0
 claim: null
 attempts:
@@ -109,13 +164,7 @@ attempts:
   latest_attempt: null
   evidence_refs: []
   approaches: []
-blocker:
-  cause: 'Langfuse 4.46.0(OSS, 공식 docker-compose)은 Enterprise data-retention 라이선스 기능이 없으면 LANGFUSE_INIT_PROJECT_RETENTION을
-    적용하지 않는다(실제 관찰: 컨테이너 값 7, DB retention_days NULL). 최소 보존 3일·야간 cleanup이라 한 세션에서 만료 검증 불가.'
-  evidence:
-  - docs/evidence/llmops.md
-  resolve_when: Enterprise 기능 사용 가능 또는 사용자가 자체 삭제 job(범위·주기) 승인
-  affects: []
+blocker: null
 migration:
   original_status: new_split
   source_ref: 2026-09-27 P1-006C live 결과
@@ -126,6 +175,7 @@ migration:
   - langfuse_worker live 관찰
   judgment: P1-006C AC3의 보존 적용 부분을 외부 제약과 함께 분리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:15:47+00:00'
-concise_result: 'blocked: OSS Langfuse retention 미적용.'
+updated_at: '2026-09-26T22:57:10+00:00'
+concise_result: 'Specification changed: 사용자 승인(2026-09-27): community 전용, 자체 삭제 job으로 AC 변경. sweeper는
+  RFA DTO를 쓰지 않으며 현재 RFA-EXTENDED 1.1 digest 위에서 검증. 구현·live 검증 task/P1-006F 8f80676(main 미통합).'
 next_action: 사용자 결정 대기(Enterprise 또는 자체 삭제 job).

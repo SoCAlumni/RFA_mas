@@ -145,26 +145,26 @@ verification:
   - 출력·evidence에 key/Authorization 없음, Skill 출처·카탈로그 등재 기록
   runner: pytest
 evidence_dir: .agent/evidence/P1-003A
-latest_evidence_file: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+latest_evidence_file: .agent/evidence/P1-003A/final-live-target-0926225734/result.json
 verification_summary:
   state: stale
   spec_revision: 2
   spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e
-  evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+  source_fingerprint: 31789452e1bdf235723ce3f5c49829d08e955f2e6034e91d0ff631b20bbddbe6
+  evidence: .agent/evidence/P1-003A/final-live-target-0926225734/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: true
-  submission_generation: 1
+  submission_generation: 2
   submission:
-    head: f4aa90ff7170e7fd0fecb9a6c60414e69f805cf6
-    baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
-    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A
-    branch: task/P1-003A
-    evidence: .agent/evidence/P1-003A/v1-live-a1/result.json
+    head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+    baseline_head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A-r2
+    branch: task/P1-003A-r2
+    evidence: .agent/evidence/P1-003A/final-live-worker-0926225542/result.json
     changed_files:
       docs/EDUCATION_MAPPING.md: 32af81d3a93f2d10aa148b21e172d2d09f2a8cb0dce07c1ba11e8ab1f4c65466
       docs/evidence/nvidia-skill.md: ff1900ada0c43a9ef7f6df2d2c3d360bbde07841c6d7ed19d12a808f8bd3f5a5
@@ -178,22 +178,68 @@ integration:
       spec_revision: 2
       spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e
-      evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
-    head: caf7bd2f11b4c93f76ea28ab353e21d914fff930
-  evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
-revision: 14
+      source_fingerprint: 31789452e1bdf235723ce3f5c49829d08e955f2e6034e91d0ff631b20bbddbe6
+      evidence: .agent/evidence/P1-003A/final-live-target-0926225734/result.json
+    head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+  evidence: .agent/evidence/P1-003A/final-live-target-0926225734/result.json
+revision: 23
 spec_revision: 2
-claim_generation: 1
+claim_generation: 2
 claim: null
 attempts:
-  count: 2
+  count: 4
   cycles: 1
   no_progress_count: 0
-  latest_attempt: v1-live-target-a1
+  latest_attempt: final-live-target-0926225734
   evidence_refs:
   - .agent/evidence/P1-003A/v1-live-a1/result.json
-  approaches: []
+  - .agent/evidence/P1-003A/final-live-worker-0926225542/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+    reason: Live Skill smoke revalidation after all product integrations; old worktree diverged from main
+    at: '2026-09-26T22:55:40+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: f4aa90ff7170e7fd0fecb9a6c60414e69f805cf6
+        baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A
+        branch: task/P1-003A
+        evidence: .agent/evidence/P1-003A/v1-live-a1/result.json
+        changed_files:
+          docs/EDUCATION_MAPPING.md: 32af81d3a93f2d10aa148b21e172d2d09f2a8cb0dce07c1ba11e8ab1f4c65466
+          docs/evidence/nvidia-skill.md: ff1900ada0c43a9ef7f6df2d2c3d360bbde07841c6d7ed19d12a808f8bd3f5a5
+          tests/integration/fixtures/retriever/make_fixtures.py: 3c9fa529c7a54bcc22fa2bad673e7e40c03055cfcc0907a239a147c9211929a8
+          tests/integration/fixtures/retriever/synthetic_alpha_minutes.pdf: 5323d8dd4f3bc670c13bb1ddeba72600926e5f801a2a27663bfbdc771f43d099
+          tests/integration/fixtures/retriever/synthetic_security_policy.pdf: 469aba1b3ab180336f369ac31de2de5248c3dd30887663b0002a4c6e88388666
+          tests/integration/test_retriever_live.py: 403b9354f7671b4a3a742f15a96e90864a07ebbfbe6897db19da529fc0a143e9
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 2
+          spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
+          contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+          source_fingerprint: b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e
+          evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+        head: caf7bd2f11b4c93f76ea28ab353e21d914fff930
+      evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 2
+      spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: b4b6e7850a833702374f8de5f4a639a02c2b88935aaae4e9b2af13a487cb007e
+      evidence: .agent/evidence/P1-003A/v1-live-target-a1/result.json
+    latest_evidence_file: .agent/evidence/P1-003A/v1-live-target-a1/result.json
 blocker: null
 migration:
   original_status: blocked
@@ -206,7 +252,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:49:36+00:00'
+updated_at: '2026-09-26T23:16:53+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

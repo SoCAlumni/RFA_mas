@@ -97,3 +97,23 @@ Worker actual: V1 sessions26 passed (wall5.970s), API4 passed (wall1.151s), zero
 
 - 사유: Direct/transitive dependencies of P1-004C before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 81b1c08에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-002 (2026-09-26T22:59Z)
+
+- 사유: Direct/transitive dependencies of P1-002 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 88c33d9에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-003 (2026-09-26T23:17Z)
+
+- 사유: Direct/transitive dependencies of P1-003 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 8b06ac8에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-006C (2026-09-26T23:38Z)
+
+- 사유: Direct/transitive dependencies of P1-006C before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD ddb70d8에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-007 (2026-09-26T23:46Z)
+
+- 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 6f3f361에서 계획된 검증을 worker/target 단계로 재실행한다.

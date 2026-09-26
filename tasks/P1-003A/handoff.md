@@ -8,3 +8,8 @@
 - 실패/blocker/side effect: 외부 부작용 없음(hosted embedding/추론 읽기 호출). 임시 LanceDB는 pytest tmp에만 생성.
 - integration 예약: submit 후 pending. 대상 파일은 다른 task 예약과 겹치지 않는다.
 - 다음 첫 행동: coordinator가 f4aa90f를 main에 반영하고 target에서 같은 V1 argv로 새 integration attempt를 기록한 뒤 integrate/close. 제품 경로는 P1-003에서 이 CLI/evidence 형식을 adapter 입력으로 재사용.
+
+## 재검증 final-live (2026-09-26T22:55Z)
+
+- 사유: Live Skill smoke revalidation after all product integrations; old worktree diverged from main
+- 소스 변경 없이 현재 통합 HEAD 88c33d9에서 계획된 검증을 worker/target 단계로 재실행한다.

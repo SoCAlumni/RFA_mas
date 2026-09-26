@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P1
-status: todo
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -244,33 +244,58 @@ verification:
     token 사용량은 null/unknown으로 유지한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-002
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-002/target-0926231652/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 5
+  spec_digest: 3083424db52f0e7f2071a67cb0a1b76957992caf88b09ed6bba7c2004dc07fd5
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: fa211bdcc3d9d5cd1b0b5e9dd4fb81d0f8187d29f8d69dd7ea708d36038496a2
+  evidence: .agent/evidence/P1-002/target-0926231652/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 5
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: 8b06ac8b84b90c7438237d8a3627cb57299b15c7
+    baseline_head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-002-int-0926231626
+    branch: task/P1-002-int-0926231626
+    evidence: .agent/evidence/P1-002/worker-0926231638/result.json
+    changed_files:
+      .env.example: cd485aeffbec8f98120c535c9a9850aaa9a89df03d91b07cc660d73efd9505e2
+      docs/evidence/nvidia-model.md: a595dca25f7ca73ee5e6512e550f2a0d454051e697161400e976cfc7b3ee6fb6
+      src/rfa_mas/adapters/nvidia.py: bd4413f9a2c43f3b8fee1163ee9f89470f0ea78fdac9d7cf512beeff477731ff
+      src/rfa_mas/application/observations.py: 4a44a154afe86ce797be3e57de2487eecb73f7c7193f98d08b74104465e6dc90
+      src/rfa_mas/bootstrap.py: f9d3880a23b44f20f51893268c616bde17ce720f7bcec899af8209eed4a0b952
+      src/rfa_mas/settings.py: d3daf1118b359c4c8485c97058cbe2f38b33db83373c7d249ab2ee02977826da
+      tests/integration/test_nvidia_product_live.py: 7abb43cb6478eaf6619a3a83d57926c446c5867e5c1f9767dd4a6739bce40adc
+      tests/test_api.py: ff94da08ba4fe959511f3c81c0acb330c80a20f2769367cc1a61f39cb2656462
+      tests/test_nvidia_contract.py: 3be4a2b0145e3ee15ce8f01f6e47a54ce7da930c0da2151623c9427e2ce7f3e8
+      tests/test_settings.py: c6b5f430f68806c4c0026fcee398360ec98f4ece0b464af73001aa735cfffa0b
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 5
+      spec_digest: 3083424db52f0e7f2071a67cb0a1b76957992caf88b09ed6bba7c2004dc07fd5
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: fa211bdcc3d9d5cd1b0b5e9dd4fb81d0f8187d29f8d69dd7ea708d36038496a2
+      evidence: .agent/evidence/P1-002/target-0926231652/result.json
+    head: 8b06ac8b84b90c7438237d8a3627cb57299b15c7
+  evidence: .agent/evidence/P1-002/target-0926231652/result.json
+revision: 14
 spec_revision: 5
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926231652
+  evidence_refs:
+  - .agent/evidence/P1-002/worker-0926231638/result.json
   approaches: []
 blocker: null
 migration:
@@ -284,7 +309,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T20:25:18+00:00'
-concise_result: 'Specification changed: Add observations.py: NVIDIA adapter fixed error codes into the
-  SAFE_ERROR_CODES allowlist (E2E real-model gate finding)'
-next_action: 계약·429/timeout/schema 오류·tool allowlist·secret-safe 로그 검사. README의 실제 호출 주장은 P1-002A 완료 후만.
+updated_at: '2026-09-26T23:37:31+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'
