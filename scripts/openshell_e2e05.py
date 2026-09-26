@@ -182,9 +182,9 @@ def summarize(values: list[float]) -> dict[str, Any]:
         return {"n": 0}
     return {
         "n": len(values),
-        "median_ms": round(statistics.median(values), 1),
-        "min_ms": round(min(values), 1),
-        "max_ms": round(max(values), 1),
+        "median_ms": round(statistics.median(values), 3),
+        "min_ms": round(min(values), 3),
+        "max_ms": round(max(values), 3),
     }
 
 
@@ -385,6 +385,15 @@ class OpenShell:
             counts[status] = len(re.findall(r"Status:\s*" + status, ANSI.sub("", proc.stdout)))
         return counts
 
+    def wait_for_proposals(self, name: str, timeout_s: float = 15.0) -> dict[str, Any]:
+        """Wait until the policy advisor has flushed at least one proposal (or time out)."""
+        t = time.perf_counter()
+        counts = self.pending_rules(name)
+        while counts.get("pending", 0) < 1 and time.perf_counter() - t < timeout_s:
+            time.sleep(1.0)
+            counts = self.pending_rules(name)
+        return {**counts, "waited_ms": round((time.perf_counter() - t) * 1000, 1)}
+
     def delete(self, *names: str) -> None:
         if names:
             self.run("sandbox", "delete", *names, timeout=120)
@@ -454,6 +463,7 @@ class Row:
     evidence: list[str | None] = field(default_factory=list)
     safe_code: str | None = None
     note: str = ""
+    details: list[str] = field(default_factory=list)
 
     def result(self) -> dict[str, Any]:
         observed = sorted(set(self.classifications))
@@ -468,6 +478,7 @@ class Row:
             "safe_code": self.safe_code,
             "evidence_line": next((e for e in self.evidence if e), None),
             "note": self.note,
+            "details": self.details,
             "attempts": [
                 {k: v for k, v in a.items() if k not in ("t_start", "t_end")} for a in self.attempts
             ],
@@ -667,14 +678,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 )
             )
             attempts["R6"].append(shell.guest(name, {"op": "read", "path": str(HOST_SENTINEL)}))
-            rules = shell.pending_rules(name)
+            rules = shell.wait_for_proposals(name)
             attempts["R7"].append(shell.guest(name, {"op": "http_get", "url": denied_url}))
             cli_in_guest = shell.guest(name, {"op": "which", "name": "openshell"})
-            health_post = health()
+            # Count upstream hits caused by the sandbox before the host health check adds its own.
             internal_hits = sum(
                 1 for p in allowed_hits[hits_before[0] :] if p.startswith("/internal/")
             )
             denied_server_hits = len(denied_hits) - hits_before[1]
+            health_post = health()
             time.sleep(2)
             logs = shell.ocsf(name)
             h_ok = health_pre and health_post
@@ -726,9 +738,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     r.classifications.append(classify_network("deny", a, ev, h_ok))
                     if a.get("op_ms") is not None:
                         lat[bucket].append(a["op_ms"])
-            r = rows["R2"]
-            r.note = f"server saw {internal_hits} /internal/ requests during this sandbox"
-            rows["R3"].note = f"denied server saw {denied_server_hits} requests during this sandbox"
+            rows["R2"].note = "upstream server hit count excludes the host health checks"
+            rows["R2"].details.append(
+                f"iteration {i}: /internal/ requests reaching the upstream = {internal_hits}"
+            )
+            rows["R3"].note = "upstream server hit count excludes the host health checks"
+            rows["R3"].details.append(
+                f"iteration {i}: requests reaching the non-allowed server = {denied_server_hits}"
+            )
             rows["R4"].note = "bash launched directly by sandbox exec (no approved ancestor)"
             r = row(
                 "R4b",
@@ -776,7 +793,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "R7",
                 step="R7",
                 role="research",
-                probe="retry a denied endpoint after the policy advisor drafted proposals",
+                probe="retry a denied endpoint after denials (advisor proposals stay unapproved)",
                 expected="denied_by_policy",
             )
             r.safe_code = SAFE_CODES["network_l4"]
@@ -788,9 +805,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 if rules.get("approved"):
                     cls = "inconclusive"
                 r.classifications.append(cls)
-            r.note = (
-                f"proposals pending={rules.get('pending')} approved={rules.get('approved')} "
-                f"(approval mode manual); openshell CLI inside sandbox={cli_in_guest.get('found')}"
+            r.note = "approval mode manual (default); the worker cannot approve its own proposals"
+            r.details.append(
+                f"iteration {i}: proposals pending={rules.get('pending')} "
+                f"approved={rules.get('approved')} after {rules.get('waited_ms')} ms; "
+                f"openshell CLI inside sandbox={cli_in_guest.get('found')}"
             )
             report["sandboxes"].append(
                 {
