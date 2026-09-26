@@ -463,3 +463,7 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   adapter 소유 empty callback, CLI 미import를 명세에 추가했다. 독립 native/NAT
   DB의 alias 문자열이 아니라 run-observation 연결과 정책/본문 의미를 비교한다.
   이번 확인은 기존 설치 소스 읽기이며 workflow를 실행하거나 NAT 성공으로 세지 않았다.
+- 읽기 전용 탐색 중 존재하지 않는 `scripts/tasklib/controller.py`, `graphs/core.py`,
+  아직 생성 전인 feature `application/observations.py` 경로 조회가 각각 missing으로
+  끝났다. `rg --files`와 실제 cli.py/supervisor.py 경로로 교정했고 존재하는 구현이나
+  검증 결과로 기록하지 않았다. 동일 실패 명령의 반복 재시도는 하지 않았다.
