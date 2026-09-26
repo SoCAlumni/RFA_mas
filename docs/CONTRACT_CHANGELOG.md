@@ -6,7 +6,8 @@
 - 새 route: `POST/GET /v1/schedules`, `GET /v1/schedules/{id}`, `POST /v1/schedules/{id}/disable|enable|cancel`, `GET /v1/schedules/{id}/runs`. API는 의도만 저장하고 APScheduler job store를 열지 않는다. 다른 사용자 일정은 not_found.
 - 기존 P0-014 `ScheduleSpec`(job_type `organize`)은 변경하지 않았다. 구현 DTO는 카드 기준 `kb_refresh`를 사용한다. 통합 시 `ScheduleSpec` 폐기/별칭 여부는 coordinator 결정이 필요하다.
 - 도구: `scripts/contract_baseline.py`의 frozen 1.0 port 비교가 기록된 port만 보도록 고쳤다(새 1.1 port가 1.0 digest를 바꾸지 않음). 1.0 digest 불변.
-- 영향 consumer: P0-023(runner), P0-024(알림), P1-004 schedule intent(현재 unsupported 안내 유지).
+- 영향 consumer: P0-023(runner), P0-024(알림), P1-004 schedule intent.
+- P1-004 연결(additive 1.1): `IntentDecision.schedule`(`ScheduleCreate`), `AssistantResponse.schedule`(`Schedule`), status `scheduled`. 결정적 문구 규칙(매일/평일/주말/X요일/명시 cron + 시각 + allowlist job)만 예약 의도로 바꾸고 `ScheduleService`가 검증·저장한다. 세부가 없으면 `schedule_details_required`, 같은 문장 반복은 기존 활성 예약을 재사용한다. 채널 ingress는 계속 거절한다.
 
 ## 2026-09-27 — P1-005A DRAFT 편집·승인 무효화·모의 게시 상태 1.1 (통합·발행 대기)
 

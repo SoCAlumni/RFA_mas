@@ -201,7 +201,8 @@ def create_app(
     ) -> AssistantResponse:
         # Deterministic intent routing; identity comes from authentication only.
         return await selected_container.service.assist(
-            body, trusted_principal, knowledge=selected_container.knowledge
+            body, trusted_principal, knowledge=selected_container.knowledge,
+            schedules=selected_container.schedules,
         )
 
     @app.get("/v1/work/{run_id}", response_model=RunResult, tags=["work"])

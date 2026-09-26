@@ -315,3 +315,77 @@ async def test_schedule_api_routes_are_owner_bound(env):
             update={"user_id": "owner_stranger"})
         assert (await client.get(f"/v1/schedules/{schedule_id}")).status_code == 404
         assert (await client.get("/v1/schedules")).json() == []
+
+
+
+# -- P0-022: the P1-004 "schedule" intent stores owner intent through ScheduleService --------
+@pytest.mark.parametrize(("text", "job_type", "cron"), [
+    ("매일 오전 9시에 TRIV3 할 일 알려줘", "candidate_scan", "0 9 * * *"),
+    ("평일 오후 6시 반 TRIV3 브리핑 예약", "briefing", "30 18 * * mon-fri"),
+    ("매주 월요일, 수요일 8:15 TRIV3 자료 정리 예약", "kb_refresh", "15 8 * * mon,wed"),
+    ("TRIV3 브리핑 예약 cron 0 7 * * sat,sun", "briefing", "0 7 * * sat,sun"),
+    ("아침마다 TRIV3 요약 알림", "briefing", "0 9 * * *"),
+])
+def test_schedule_wording_routes_to_one_allowlisted_job_deterministically(text, job_type, cron):
+    from rfa_mas.application.graphs.supervisor import route_intent
+
+    first = route_intent(text, domain_id=None, task_id=None, ingress="direct")
+    assert first == route_intent(text, domain_id=None, task_id=None, ingress="direct")
+    assert first["intent"] == "schedule" and first["supported"] is True
+    assert first["schedule"] == {"job_type": job_type, "cron": cron, "domain_id": "triv3",
+                                 "task_ref": None}
+
+
+@pytest.mark.parametrize("text", [
+    "매일 TRIV3 브리핑 예약",          # no time
+    "TRIV3 9시 브리핑 예약",           # no recurrence
+    "매일 오전 9시 TRIV3 예약",        # no allowlisted job
+])
+def test_schedule_without_details_asks_for_them_and_stores_nothing(text):
+    from rfa_mas.application.graphs.supervisor import route_intent
+
+    decision = route_intent(text, domain_id=None, task_id=None, ingress="direct")
+    assert decision["intent"] == "schedule" and decision["supported"] is False
+    assert decision["limitations"] == ("schedule_details_required",)
+    assert decision["next_options"] and "schedule" not in decision
+
+
+async def test_assistant_schedule_intent_creates_one_owner_schedule(env):
+    from rfa_mas.contracts import AssistantRequest
+
+    container, owner, _, _ = env
+    service = container.service
+    request = AssistantRequest(text="매일 오전 9시에 TRIV3 할 일 알려줘")
+    made = await service.assist(request, owner, knowledge=container.knowledge,
+                                schedules=container.schedules)
+    again = await service.assist(request, owner, knowledge=container.knowledge,
+                                 schedules=container.schedules)
+    assert made.status == again.status == "scheduled" and made.run is None
+    assert made.schedule.schedule_id == again.schedule.schedule_id  # no duplicate fires
+    assert (made.schedule.job_type, made.schedule.cron, made.schedule.timezone) == (
+        "candidate_scan", "0 9 * * *", "Asia/Seoul")
+    assert made.schedule.owner_id == owner.user_id and made.schedule.state == "active"
+    assert rows(container, "SELECT count(*) FROM schedules") == [(1,)]
+    assert rows(container, "SELECT count(*) FROM runs") == [(0,)]  # intent only, no run
+    vague = await service.assist(AssistantRequest(text="매일 TRIV3 브리핑 예약"), owner,
+                                 knowledge=container.knowledge, schedules=container.schedules)
+    assert vague.status == "unsupported" and vague.stop_reason == "schedule_details_required"
+    channel = await service.assist(
+        AssistantRequest(text="매일 오전 9시 TRIV3 브리핑 예약", ingress="internal"), owner,
+        knowledge=container.knowledge, schedules=container.schedules)
+    assert channel.status == "unsupported" and channel.decision.rule == "channel-scope"
+    assert rows(container, "SELECT count(*) FROM schedules") == [(1,)]
+
+
+async def test_assistant_route_passes_the_schedule_service(env):
+    container, owner, _, _ = env
+    app = create_app(container=container)
+    app.dependency_overrides[resolve_principal] = lambda: owner
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                 base_url="http://test") as client:
+        made = await client.post("/v1/assistant",
+                                 json={"text": "평일 오후 6시 반 TRIV3 브리핑 예약"})
+        assert made.status_code == 201 and made.json()["status"] == "scheduled"
+        schedule_id = made.json()["schedule"]["schedule_id"]
+        assert [s["schedule_id"] for s in (await client.get("/v1/schedules")).json()] == [
+            schedule_id]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, TypedDict
@@ -116,8 +117,9 @@ BENCHMARK_TERMS = ("벤치마크", "benchmark", "실험", "지연", "latency", "
 CHANNEL_ALLOWED = frozenset({"query", "external_draft"})
 PATTERN_OUTPUTS = {"benchmark": ("benchmark_report",), "research": ("research_report",)}
 NEXT_OPTIONS = {
-    "schedule": ("예약 기능(P0-022/P0-023)이 준비되면 같은 요청을 다시 보내세요.",
-                 "지금은 필요한 질의를 직접 실행할 수 있습니다."),
+    "schedule": ("반복 주기와 시각을 함께 적어 주세요. 예: '매일 오전 9시 TRIV3 브리핑', "
+                 "'매주 월요일 18시 할 일 후보 정리', 'cron 0 9 * * mon-fri'.",
+                 "구조화된 예약은 /v1/schedules로 직접 만들 수 있습니다."),
     "feedback": ("피드백 분류·적용(P1-005B)이 준비되면 같은 요청을 다시 보내세요.",
                  "초안 수정은 검토 단계에서 요청할 수 있습니다."),
     "destructive-or-external-action": ("삭제·배포·결제는 비서가 수행하지 않습니다.",
@@ -125,6 +127,63 @@ NEXT_OPTIONS = {
     "channel-scope": ("외부/내부 채널은 질의와 공개 답변 초안만 요청할 수 있습니다.",),
     "domain-required": ("도메인(triv3 또는 quantization_research)을 지정해 다시 요청하세요.",),
 }
+
+
+# -- P0-022 deterministic schedule wording -> allowlisted job + 5-field cron --------------
+# First match wins. Only these three job types exist; nothing in the text becomes a
+# command, URL or prompt. Weekdays are always names (APScheduler 3.x numbers Monday=0).
+SCHEDULE_JOB_TERMS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("candidate_scan", ("할 일", "할일", "작업 후보", "후보", "todo")),
+    ("kb_refresh", ("자료 정리", "지식 정리", "새로고침", "갱신", "동기화", "refresh")),
+    ("briefing", ("브리핑", "요약", "briefing", "알림", "알려", "리마인드", "remind")),
+)
+_WEEKDAYS = {"월": "mon", "화": "tue", "수": "wed", "목": "thu", "금": "fri", "토": "sat",
+             "일": "sun"}
+_EXPLICIT_CRON = re.compile(r"cron[:\s]+((?:[a-z0-9*/,\-]+\s+){4}[a-z0-9*/,\-]+)")
+_CLOCK = re.compile(r"(\d{1,2}):(\d{2})")
+_KOREAN_TIME = re.compile(
+    r"(오전|오후|아침|저녁|밤)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분|\s*(반))?"
+)
+
+
+def parse_schedule(text: str) -> dict[str, str] | None:
+    """Deterministic schedule wording -> {job_type, cron}; None when details are missing."""
+    lowered = " ".join(text.lower().split())
+    job_type = next(
+        (name for name, terms in SCHEDULE_JOB_TERMS if any(t in lowered for t in terms)), None
+    )
+    if job_type is None:
+        return None
+    explicit = _EXPLICIT_CRON.search(lowered)
+    if explicit:
+        return {"job_type": job_type, "cron": explicit.group(1)}
+    if "평일" in lowered or "weekday" in lowered:
+        day_of_week = "mon-fri"
+    elif "주말" in lowered or "weekend" in lowered:
+        day_of_week = "sat,sun"
+    elif days := re.findall(r"([월화수목금토일])요일", lowered):
+        day_of_week = ",".join(dict.fromkeys(_WEEKDAYS[d] for d in days))
+    elif any(t in lowered for t in ("매일", "마다", "daily", "every day")):
+        day_of_week = "*"
+    else:
+        return None
+    hour = minute = None
+    if clock := _CLOCK.search(lowered):
+        hour, minute = int(clock.group(1)), int(clock.group(2))
+    elif match := _KOREAN_TIME.search(lowered):
+        period, hour = match.group(1), int(match.group(2))
+        minute = int(match.group(3)) if match.group(3) else 30 if match.group(4) else 0
+        if period in {"오후", "저녁", "밤"} and hour < 12:
+            hour += 12
+        elif period in {"오전", "아침"} and hour == 12:
+            hour = 0
+    elif "아침" in lowered or "morning" in lowered:
+        hour, minute = 9, 0
+    elif "저녁" in lowered or "evening" in lowered:
+        hour, minute = 18, 0
+    if hour is None or minute is None or not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return {"job_type": job_type, "cron": f"{minute} {hour} * * {day_of_week}"}
 
 
 def route_intent(text: str, *, domain_id: DomainId | None, task_id: str | None,
@@ -148,12 +207,20 @@ def route_intent(text: str, *, domain_id: DomainId | None, task_id: str | None,
         return decision | {"intent": "unsupported", "rule": "channel-scope", "supported": False,
                            "limitations": ("channel_scope",),
                            "next_options": NEXT_OPTIONS["channel-scope"]}
-    if intent in {"schedule", "feedback", "unsupported"}:
+    if intent in {"feedback", "unsupported"}:
         return decision | {"supported": False, "limitations": (f"{intent}_not_available",),
                            "next_options": NEXT_OPTIONS[rule if intent == "unsupported" else intent]}
     if domain is None:
         return decision | {"supported": False, "limitations": ("domain_not_resolved",),
                            "next_options": NEXT_OPTIONS["domain-required"]}
+    if intent == "schedule":
+        parsed = parse_schedule(text)
+        if parsed is None:
+            return decision | {"supported": False, "limitations": ("schedule_details_required",),
+                               "next_options": NEXT_OPTIONS["schedule"]}
+        # Intent only: the owner-scoped ScheduleService validates and stores it.
+        decision["schedule"] = parsed | {"domain_id": domain,
+                                         "task_ref": task_id}
     if intent == "task_run":
         pattern = "benchmark" if any(t in lowered for t in BENCHMARK_TERMS) else "research"
         decision["task_candidate"] = {"goal": text[:2000], "pattern": pattern}

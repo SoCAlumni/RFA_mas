@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "2a33195c9e7e900b019ca1fa4e393b5d1d4ed23ec4c63cb8eab7aa21043fcfa5",
+  "digest": "50a42ca771af67d5330b25c90b819ed704739930f865707874129a2d218a99d1",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -261,6 +261,16 @@
                   }
                 ]
               },
+              "schedule": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Schedule"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "schema_version": {
                 "const": "1.1",
                 "default": "1.1",
@@ -275,7 +285,8 @@
                   "failed",
                   "cancelled",
                   "partial",
-                  "unsupported"
+                  "unsupported",
+                  "scheduled"
                 ],
                 "title": "Status",
                 "type": "string"
@@ -996,6 +1007,16 @@
                 "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
                 "title": "Rule",
                 "type": "string"
+              },
+              "schedule": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ScheduleCreate"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "schema_version": {
                 "const": "1.1",
@@ -7050,6 +7071,17 @@
             ],
             "default": null
           },
+          "schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Schedule"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "schema_version": {
             "const": "1.1",
             "default": "1.1",
@@ -7064,7 +7096,8 @@
               "failed",
               "cancelled",
               "partial",
-              "unsupported"
+              "unsupported",
+              "scheduled"
             ],
             "title": "Status",
             "type": "string"
@@ -8941,6 +8974,17 @@
             "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
             "title": "Rule",
             "type": "string"
+          },
+          "schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ScheduleCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "schema_version": {
             "const": "1.1",
@@ -13484,11 +13528,11 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
-    "src/rfa_mas/api/app.py": "8b6655eff297fc139fad8b01565bd6320e621c241bb6ea7cd5ef3ad4beeb7e43",
+    "src/rfa_mas/api/app.py": "3be701f52fddc27d735867e2957e18a552f86d337cbdbdedb5235170bb4fed31",
     "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
     "src/rfa_mas/contracts/__init__.py": "355b3b3c298eac4cf2f0b5115db87d8ffefe037dd611b19d299139f310ac8acc",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "3d5da84ccf3517495b5c3233c6bf799a7fd961c194625f47efd194d82d81ea5b",
+    "src/rfa_mas/contracts/models.py": "9600fe31441910b37beef8fdce64bd6f745ca75aaf3c0c1dcf55e43efce9565d",
     "src/rfa_mas/ports/interfaces.py": "c1cf378035e4784a1094fa1721003f0202eefefd7f0b7cf53f7510f74c107d09",
     "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a"
   },

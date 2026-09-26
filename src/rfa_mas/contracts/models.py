@@ -913,6 +913,8 @@ class IntentDecision(ExtendedContractModel):
     supported: bool
     task_ref: OpaqueId | None = None
     task_candidate: TaskCandidateRef | None = None
+    # P0-022: deterministic schedule intent (validated/stored only by ScheduleService).
+    schedule: ScheduleCreate | None = None
     limitations: tuple[str, ...] = ()
     next_options: tuple[str, ...] = ()
 
@@ -922,11 +924,13 @@ class AssistantResponse(ExtendedContractModel):
 
     decision: IntentDecision
     status: Literal[
-        "stored", "completed", "waiting_approval", "failed", "cancelled", "partial", "unsupported"
+        "stored", "completed", "waiting_approval", "failed", "cancelled", "partial",
+        "unsupported", "scheduled",
     ]
     run: RunResult | None = None
     stored_source_id: OpaqueId | None = None
     stored_revision: OpaqueId | None = None
+    schedule: Schedule | None = None
     task_id: OpaqueId | None = None
     team_id: OpaqueId | None = None
     stop_reason: OpaqueId | None = None
@@ -1171,6 +1175,11 @@ class Schedule(ExtendedContractModel):
     @classmethod
     def as_utc(cls, value: datetime | None) -> datetime | None:
         return _utc(value)
+
+
+# P0-022: the assistant DTOs reference the schedule models defined above.
+IntentDecision.model_rebuild()
+AssistantResponse.model_rebuild()
 
 
 class JobRun(ExtendedContractModel):

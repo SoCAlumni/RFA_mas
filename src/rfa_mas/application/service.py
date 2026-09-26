@@ -498,10 +498,12 @@ class WorkService:
         return await self.present_result(record.result, principal)
 
     # -- P1-004 thin assistant execution boundary ---------------------------------------
-    async def assist(self, request, principal: TrustedPrincipal, *, knowledge=None):
+    async def assist(self, request, principal: TrustedPrincipal, *, knowledge=None,
+                     schedules=None):
         """Route untrusted text deterministically, then run exactly one existing path.
 
         store/query never create a Task or team; task_run uses the explicit team path;
+        schedule stores owner intent through ScheduleService (P0-022; never runs a job);
         channel ingress may only query or draft for a public target through this Supervisor.
         """
         from rfa_mas.application.graphs.supervisor import PATTERN_OUTPUTS, route_intent
@@ -524,6 +526,8 @@ class WorkService:
             return AssistantResponse(decision=decision, status="unsupported",
                                      stop_reason=decision.limitations[0] if decision.limitations
                                      else "unsupported", next_options=decision.next_options)
+        if decision.intent == "schedule":
+            return await self._assist_schedule(decision, principal, schedules)
         if decision.intent == "store_note":
             if knowledge is None:
                 raise RfaError("not_implemented", "노트 저장 경로가 구성되지 않았습니다.")
@@ -602,6 +606,40 @@ class WorkService:
                                  team_id=team_id, stop_reason=reason, partial=partial,
                                  next_options=options)
 
+    async def _assist_schedule(self, decision, principal: TrustedPrincipal, schedules):
+        """P0-022: store the routed schedule intent; the runner alone executes jobs."""
+        from rfa_mas.contracts import AssistantResponse
+
+        if schedules is None or decision.schedule is None:
+            # Explicit, never a silent fallback: no schedule service was composed here.
+            return AssistantResponse(
+                decision=decision, status="unsupported", stop_reason="schedule_not_available",
+                next_options=("구조화된 예약은 /v1/schedules로 만들 수 있습니다.",),
+            )
+        wanted = decision.schedule
+        timezone = wanted.timezone or schedules.default_timezone
+        # The same sentence twice keeps one active schedule (no duplicate fires).
+        for existing in await schedules.list(principal):
+            if existing.state == "active" and (
+                existing.job_type, existing.domain_id, existing.cron, existing.timezone,
+                existing.task_ref, existing.args,
+            ) == (
+                wanted.job_type, wanted.domain_id, " ".join(wanted.cron.split()), timezone,
+                wanted.task_ref, wanted.args,
+            ):
+                return AssistantResponse(decision=decision, status="scheduled",
+                                         schedule=existing)
+        try:
+            created = await schedules.create(wanted, principal)
+        except RfaError as exc:
+            if exc.code != "invalid_schedule":
+                raise
+            return AssistantResponse(decision=decision, status="unsupported",
+                                     stop_reason="invalid_schedule",
+                                     next_options=decision.next_options or (
+                                         "주기는 15분 이상, 요일은 이름(mon..sun)으로 적어 주세요.",
+                                     ))
+        return AssistantResponse(decision=decision, status="scheduled", schedule=created)
 
     async def team_result(self, run_id: str, principal: TrustedPrincipal):
         """Owner-authorized team receipt (roles, partial results, budget usage)."""
