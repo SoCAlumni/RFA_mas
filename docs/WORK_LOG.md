@@ -200,3 +200,19 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   이전 worktree/commit/기록은 삭제하지 않았다. 아직 제품 검증 cycle은 시작 전이다.
 - 새 resume 환경의 `uv sync --locked`는 성공했다. SQLite saver 설치를 재시작
   복구·승인 검증 완료로 표현하지 않는다. 전체 E2E/실제 NVIDIA·OpenShell gate는 미실행이다.
+
+## 평가/trace 후속 조사 — 2026-09-26T07:59Z
+
+- 기존 ID를 확인했다: P1-006D(안전 trace) → P1-006(Persona 12/행동 verifier)
+  → P1-006E(공격 회귀), 후속 Persona 24개는 P1-006B이다. 없는 P0-029/030을
+  생성하거나 기존 평가 task를 중복하지 않았다.
+- 실제 legacy service는 임의 metadata/caller ID를 LocalJsonlTrace.emit에 전달한다.
+  typed exporter만 추가해서 이 경로를 남기면 canary AC가 충족되지 않으므로
+  P1-006D coordinator scope에 service/API·기존 security 회귀·관찰 계약을 추가했다.
+  현재는 draft이며 제품 기능/검증 성공 주장이 아니다. P0-016과 공통 파일 충돌로
+  직렬 실행한다. P1-006 evaluator는 이 관찰 계약 이후 별도 파일에서 개발한다.
+- 현재 evaluator는 답변/evidence만 검사하고 실제 write/outbound ledger를 보지 않는다.
+  정상 deny·Judge 오류/disabled·미수집을 pass로 처리하지 않는 verifier가 필요하다.
+  공개 게시 시뮬레이션은 test-only sink에서 관찰하고 P0 실제 write 금지를 유지한다.
+- 명세/파생 view 검증: taskctl validate에서 67 task와 current views 확인.
+  전체 task의 제품 AC나 E2E 실행 결과를 의미하지 않는다.

@@ -23,6 +23,10 @@ product_mode: local/mock; 제품 실행과 평가 도구의 실제 실행 여부
 scope:
   included:
   - 기존 TracePort/LocalJsonlTrace를 확장하여 raw 본문 없이 실행·정책·근거·승인 참조와 실제 지연/호출을 연결한다.
+  - 1.1 typed observation ledger를 신뢰된 실행/테스트 boundary에서 생성하고 coverage/미수집을 구분한다. P1-006 verifier는 이 계약을
+    소비하며 모델의 성공 문구를 관찰로 신뢰하지 않는다.
+  - legacy emit 경로도 typed allowlist로 제한한다. 사용자 입력 ID/사유는 안전한 서버 발급 ID와 분리하고 API error/trace export canary를
+    검증한다. mock/local 원본과 평가용 test sink를 구분한다.
   excluded:
   - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 .env 접근
   - 새 framework/관측 서버/메모리 엔진·core graph 재작성
@@ -31,16 +35,32 @@ scope:
   - src/rfa_mas/adapters/local.py
   - src/rfa_mas/bootstrap.py
   - tests/test_trace_contract.py
-  read_only_paths:
-  - src/rfa_mas/contracts
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/api/app.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/contracts/__init__.py
   - src/rfa_mas/ports/interfaces.py
+  - src/rfa_mas/ports/__init__.py
+  - tests/test_security.py
+  - tests/test_api.py
+  - tests/test_trace_eval_contract.py
+  - docs/contracts/extended.json
   - docs/INTEGRATION.md
+  - docs/CONTRACT_CHANGELOG.md
+  - src/rfa_mas/application/observations.py
+  - fixtures/eval/observation_cases.json
+  read_only_paths:
   - docs/EVALUATION_CONTEXT.md
+  - src/rfa_mas/contracts/common.py
+  - scripts/contract_baseline.py
   planned_paths:
   - tests/test_trace_contract.py
+  - src/rfa_mas/application/observations.py
+  - fixtures/eval/observation_cases.json
   shared_resources:
   - composition
   - sqlite-migrations
+  - canonical-contracts
 depends_on:
 - id: P0-014
   condition: integrated_done
@@ -74,6 +94,15 @@ context:
   - path: src/rfa_mas/security.py
     section: SecretRedactor
     reason: 문자열 치환만으로 allowlist를 대체하지 않음
+  - path: src/rfa_mas/application/service.py
+    section: work_started/work_finished/work_resumed
+    reason: typed exporter만 추가하고 실제 legacy raw metadata 경로를 남기지 않기
+  - path: src/rfa_mas/api/app.py
+    section: request ID/trace ID/error boundary
+    reason: 관측 ID와 인증 증명 분리, 사용자 canary 입력의 trace/error 우회 방지
+  - path: tests/test_security.py
+    section: trace allowlist tests
+    reason: 기존 redaction 보호를 유지하며 arbitrary metadata 보존 기대는 명시적 안전 필드 검증으로 강화
   handoff: tasks/P1-006D/handoff.md
   dependency_results:
   - tasks/P0-014/handoff.md
@@ -87,6 +116,50 @@ deliverables:
 - path: tests/test_trace_contract.py
   availability: planned
   description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+- path: src/rfa_mas/application/service.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: src/rfa_mas/api/app.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: src/rfa_mas/contracts/__init__.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: src/rfa_mas/ports/__init__.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: tests/test_security.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: tests/test_api.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: tests/test_trace_eval_contract.py
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: docs/contracts/extended.json
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: docs/CONTRACT_CHANGELOG.md
+  availability: existing
+  description: 관찰 계약 및 실제 legacy service/API emission 경로의 최소 연결; frozen 1.0 baseline 보존
+- path: src/rfa_mas/application/observations.py
+  availability: planned
+  description: 신뢰된 observation record/coverage fixture; 본문·도구 인자 없이 deterministic verifier에 실제 경계 관찰을
+    제공
+- path: fixtures/eval/observation_cases.json
+  availability: planned
+  description: 신뢰된 observation record/coverage fixture; 본문·도구 인자 없이 deterministic verifier에 실제 경계 관찰을
+    제공
 acceptance_criteria:
 - id: AC1
   given: 합성 Run의 생성/검토/게시 각 단계
@@ -150,8 +223,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 4
-spec_revision: 4
+revision: 5
+spec_revision: 5
 claim_generation: 0
 claim: null
 attempts:
@@ -172,6 +245,8 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:19:53+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T07:51:55+00:00'
+concise_result: 'Specification changed: Read-only preflight found legacy service/API emits caller identifiers
+  and arbitrary metadata; extend coordinator-owned scope to secure the actual path and define observation
+  coverage for downstream evaluator. Remains draft until P0-016 contract publication.'
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
