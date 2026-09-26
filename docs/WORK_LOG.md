@@ -467,3 +467,23 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   아직 생성 전인 feature `application/observations.py` 경로 조회가 각각 missing으로
   끝났다. `rg --files`와 실제 cli.py/supervisor.py 경로로 교정했고 존재하는 구현이나
   검증 결과로 기록하지 않았다. 동일 실패 명령의 반복 재시도는 하지 않았다.
+
+## P1-006D 첫 구현·검증 checkpoint — 2026-09-26
+
+- 별도 feature에서 durable alias/단조 sequence/typed 원장, 실제 포트 관측,
+  native run/resume tracing guard, 오류 projection, 제한된 private JSONL exporter와
+  파일 TTL을 구현했다. 기존 LangSmith0.14.0의 직접 의존성 선언 외 package 버전은
+  바뀌지 않았다. 아직 main 통합이나 제품 E2E 완료는 아니다.
+- 첫 formal `trace-01`에서 신규 V1 **11 passed(1.81초)**, 기존 V2는
+  **200 passed / 2 failed(11.04초)**였다. 기존 `review_query_pending` code가
+  allowlist에서 빠졌고, failure projection이 허용된 public partial draft까지
+  제거한 것이 회귀 원인이다. 원래 테스트/AC를 낮추지 않고 안전한 nested projection과
+  기존 code 의미를 유지하도록 수정한다. 실패 evidence는 같은 파일에 덮어쓰지 않는다.
+- 코드 검토에서 runtime의 반환된 denied/timed_out/outcome_unknown 및 raised
+  OutcomeUnknownError가 성공/일반 실패로 잘못 표시될 수 있는 경계를 확인했다.
+  또한 요청에서 domain을 생략하면 라우팅 이후에도 source provenance를 놓칠 수 있다.
+  이를 두 번째 수정 검증에 포함하며 실제 trusted 경계에서만 domain/상태를 연결한다.
+- 구현 전 Ruff long-line 검사 실패는 22→2→0으로 보수했다는 worker 기록을 보존한다.
+  이는 제품 pytest 통과 숫자가 아니다. root의 추가 읽기에서 존재하지 않는
+  tests/test_cli.py와 생성 전 evidence 경로 조회는 missing으로 종료했으며, 실제 파일
+  목록/worker 단계 보고로 정정했다. 이러한 조회를 제품 검증으로 세지 않는다.
