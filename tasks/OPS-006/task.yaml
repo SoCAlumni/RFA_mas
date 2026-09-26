@@ -1,0 +1,196 @@
+schema_version: '1.0'
+id: OPS-006
+title: 만료된 integrated revalidation claim의 안전한 재발급
+objective: coordinator 작업 중단으로 lease가 만료된 재검증 claim은 heartbeat·일반 recovery로 이어갈 수 없어(범위 검사로 무변경 제출 불가)
+  통합 이력을 잃는 discard만 남는 도구 공백을 메운다.
+kind: task
+source_tasks:
+- OPS-003
+- OPS-004
+requirement_refs:
+- TASK_EXECUTION_RULES.md
+- docs/TASK_REVALIDATION.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: contracts/control
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭(개발 운영)
+execution_class: 개발 운영 도구 보수
+product_mode: 개발 task-control 전용; 제품 기능 아님
+scope:
+  included:
+  - 'recover: 미제출 integrated_revalidation claim(마지막 approach가 같은 generation)을 integrated_revalidation
+    inspection으로 재발급, 이전 approach의 통합 이력으로 revalidation baseline 확인'
+  - 회귀 테스트와 docs/TASK_REVALIDATION.md 절차 추가
+  excluded:
+  - 제품 소스 변경
+  - evidence/fingerprint·fencing·scope 규칙 완화
+  - 과거 evidence 재작성
+  - dependency gate 완화
+  owned_paths:
+  - scripts/tasklib/cli.py
+  - tests/test_taskctl.py
+  - docs/TASK_REVALIDATION.md
+  read_only_paths:
+  - scripts/tasklib/evidence.py
+  - scripts/tasklib/store.py
+  planned_paths: []
+  shared_resources:
+  - task-control
+depends_on: []
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: 12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: scripts/tasklib/cli.py
+    section: recover, revalidation_baseline, submission_paths
+    reason: 재발급 경계
+  handoff: tasks/OPS-006/handoff.md
+  dependency_results: []
+deliverables:
+- path: scripts/tasklib/cli.py
+  availability: existing
+  description: 도구 보정·회귀·규칙 문서
+- path: tests/test_taskctl.py
+  availability: existing
+  description: 도구 보정·회귀·규칙 문서
+- path: docs/TASK_REVALIDATION.md
+  availability: existing
+  description: 도구 보정·회귀·규칙 문서
+acceptance_criteria:
+- id: AC1
+  given: 제출 전에 lease가 만료된 integrated revalidation claim(coordinator 세션 중단)
+  expect: coordinator가 integrated_revalidation inspection으로 recover(resume)하면 현재 target HEAD의 clean worktree에
+    새 generation revalidation claim이 발급되고, 이전 통합 이력(integration/evidence binding)을 그대로 이어받아 무변경 재검증 제출·통합·close가
+    가능하다.
+  required: true
+- id: AC2
+  given: 이전 generation 요청, 이미 제출된 revalidation, 일반(비 revalidation) claim
+  expect: 이전 generation의 update/submit은 거절되고, 제출된 revalidation이나 일반 claim은 이 경로로 재발급되지 않는다. 범위 밖/dirty
+    제출은 기존대로 거절된다.
+  required: true
+- id: AC3
+  given: 기존 taskctl/이관 회귀
+  expect: fencing·evidence 불변성·scope·계약 수락 규칙을 약화하지 않고 기존 테스트가 통과한다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - 임시 Git/control fixture만 사용
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_taskctl.py
+  timeout_seconds: 600
+  procedure: []
+  assertions:
+  - coordinator가 integrated_revalidation inspection으로 recover(resume)하면 현재 target HEAD의 clean worktree에
+    새 generation revalidation claim이 발급되고, 이전 통합 이력(integration/evidence binding)을 그대로 이어받아 무변경 재검증 제출·통합·close가
+    가능하다.
+  - 이전 generation의 update/submit은 거절되고, 제출된 revalidation이나 일반 claim은 이 경로로 재발급되지 않는다. 범위 밖/dirty 제출은 기존대로
+    거절된다.
+  - fencing·evidence 불변성·scope·계약 수락 규칙을 약화하지 않고 기존 테스트가 통과한다.
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - TASK_CONTROL_ROOT를 canonical root로 명시
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_task_migration.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 기존 이관·명세·view 정합성 회귀가 유지된다.
+  runner: pytest
+evidence_dir: .agent/evidence/OPS-006
+latest_evidence_file: .agent/evidence/OPS-006/target-0926193822/result.json
+verification_summary:
+  state: passed
+  spec_revision: 3
+  spec_digest: 78a6a41626ec456b9b7e770d8128c66562f450fd99d220e09cabd888c94e6824
+  contract_digest: 47beffffdffd8285b1aa088f7324242a372b265883ba3b6bcaa5135829f639eb
+  source_fingerprint: fb11b35bdc92cc96550ad0d66149d2168990b5184f030c86ea2d91959c343014
+  evidence: .agent/evidence/OPS-006/target-0926193822/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 1
+  submission:
+    head: 26d5b86c5e4625eb15653564b733d05e4829b163
+    baseline_head: a021c182c1ccb253e696228e2956662ff80ced2b
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-006-int-0926193454
+    branch: task/OPS-006-int-0926193454
+    evidence: .agent/evidence/OPS-006/worker-0926193458/result.json
+    changed_files:
+      docs/TASK_REVALIDATION.md: edb3cffd7330baee12364720aff81dc643a0052919954de1e73dd98eba4e9fd0
+      scripts/tasklib/cli.py: fcf1c32208d02208eb7925c6496f5fe00b0ebedf67f2cda2f3da28a90135c044
+      tests/test_taskctl.py: 2ada1c8bcb2d46a97bd1c3e60a04a7d57d5a3a1ffd7278fdeb30d79182f256bc
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 3
+      spec_digest: 78a6a41626ec456b9b7e770d8128c66562f450fd99d220e09cabd888c94e6824
+      contract_digest: 47beffffdffd8285b1aa088f7324242a372b265883ba3b6bcaa5135829f639eb
+      source_fingerprint: fb11b35bdc92cc96550ad0d66149d2168990b5184f030c86ea2d91959c343014
+      evidence: .agent/evidence/OPS-006/target-0926193822/result.json
+    head: 26d5b86c5e4625eb15653564b733d05e4829b163
+  evidence: .agent/evidence/OPS-006/target-0926193822/result.json
+revision: 11
+spec_revision: 3
+claim_generation: 1
+claim: null
+attempts:
+  count: 2
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: target-0926193822
+  evidence_refs:
+  - .agent/evidence/OPS-006/worker-0926193458/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new_coordinator_fix
+  source_ref: 2026-09-27 P0-014 pre-P0-024 revalidation claim expired after chain stop
+  prior_claim: 없음
+  implementation_facts: 등록 시 구현/검증 not_run
+  previous_evidence: []
+  checks_this_migration:
+  - OPS-002 submit 거절 메시지와 revalidation_baseline 조건 확인
+  - 매 계약 변경마다 15개 이상 통합 task 재검증 필요 확인
+  judgment: 규칙 완화 없이 이미 인정된 revalidation 이력을 새 generation으로 이어준다.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T19:41:21+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: claim 후 recover 재발급 경로와 회귀 추가.

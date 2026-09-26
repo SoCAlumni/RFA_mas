@@ -16,11 +16,13 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [OPS-003](tasks/OPS-003/task.yaml) | 통합 evidence head race 보정과 과거 binding 호환 | P0 | todo / stale | contracts/control | 0.5 | OPS-002 |
 | [OPS-004](tasks/OPS-004/task.yaml) | taskctl 호출 단위 git 조회 memo로 cascade 비용 축소 | P0 | verifying / stale | contracts/control | 0.5 | OPS-003 |
 | [OPS-005](tasks/OPS-005/task.yaml) | stale 통합 예약의 claim 차단 완화와 target 이동 중 재검증 보정 | P0 | verifying / stale | contracts/control | 1 | OPS-004 |
+| [OPS-006](tasks/OPS-006/task.yaml) | 만료된 integrated revalidation claim의 안전한 재발급 | P0 | done / passed | contracts/control | 1 | — |
 | [P0-001](tasks/P0-001/task.yaml) | 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정 | P0 | done / passed | contracts/control | 0 | — |
 | [P0-002](tasks/P0-002/task.yaml) | typed settings, `.env.example`, `.gitignore`, secret-safe doctor와 named dev credential 초기화 | P0 | done / passed | contracts/control | 0 | P0-001 |
 | [P0-003](tasks/P0-003/task.yaml) | 공통 Pydantic DTO, async ports, 오류 모델, state transition | P0 | done / passed | contracts/control | 0 | P0-001 |
 | [P0-004](tasks/P0-004/task.yaml) | composition root와 adapter 주입 | P0 | done / passed | contracts/control | 0 | P0-002, P0-003 |
 | [P0-005](tasks/P0-005/task.yaml) | SQLite 상태, fixture 초기화, checkpoint/KB 책임 분리 | P0 | done / passed | knowledge | 0 | P0-003 |
+| [P0-005A](tasks/P0-005A/task.yaml) | SQLite 다중 프로세스 안전성(연결마다 DB/sidecar open·close 제거) | P0 | todo / not_run | agents | 1 | P0-023 |
 | [P0-006](tasks/P0-006/task.yaml) | 합성 문서와 deterministic mock/local adapter | P0 | done / passed | knowledge | 0 | P0-003, P0-005 |
 | [P0-007](tasks/P0-007/task.yaml) | Supervisor와 공통 Domain TaskGraph, DRAFT, mock 검토 | P0 | done / passed | agents | 0 | P0-004, P0-006 |
 | [P0-008](tasks/P0-008/task.yaml) | FastAPI health/readiness/work API와 OpenAPI export | P0 | done / passed | integration/evaluation | 0 | P0-007 |
@@ -79,6 +81,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-008B](tasks/P1-008B/task.yaml) | 다영 Runtime·UI 실제 교체 | P1 | blocked / not_run | integration/evaluation | 1 | P1-008, P0-025, P0-026 |
 | [P1-008C](tasks/P1-008C/task.yaml) | 수동 승인·모의 게시·READ tool 로컬 대체 모듈 | P0 | verifying / stale | integration/evaluation | 2 | P0-014 |
 | [P1-008D](tasks/P1-008D/task.yaml) | 합성 handler와 영속 lifecycle 로컬 runtime 대체 모듈 | P0 | verifying / stale | integration/evaluation | 2 | P0-014, P1-008C |
+| [P1-008E](tasks/P1-008E/task.yaml) | 승인 전 게시 시도가 run을 영구 실패로 만들지 않음(HTTP 경로) | P0 | todo / not_run | agents | 1 | P1-008, P0-021 |
 | [P1-009](tasks/P1-009/task.yaml) | D4 회귀·교육/심사 증거·최종 상태 확정 | P1 | todo / not_run | integration/evaluation | 1 | P0-026 |
 | [P2-001](tasks/P2-001/task.yaml) | clustering 기반 Task 후보 제안 | P2 | deferred / not_run | knowledge | 1.5 | P1-004B, P2-003 |
 | [P2-002](tasks/P2-002/task.yaml) | 제한된 DebateLease | P2 | deferred / not_run | agents | 2 | P2-003, P1-006B, P0-020 |
@@ -92,6 +95,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
+- P0-005A: planning ready; claim 가능
 
 ## 최종 gate
 

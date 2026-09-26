@@ -1,0 +1,172 @@
+schema_version: '1.0'
+id: P1-008E
+title: 승인 전 게시 시도가 run을 영구 실패로 만들지 않음(HTTP 경로)
+objective: HTTP stand-in 경로에서 승인 전 게시가 terminal failed receipt를 남겨 이후 승인된 게시까지 막는 결함을 mock 경로와 같은 의미로
+  고친다.
+kind: task
+source_tasks:
+- P1-008
+requirement_refs:
+- RFA_E2E_Test_Scenarios_10_ko.md
+- docs/PRODUCT_REQUIREMENTS.md
+priority: P0
+status: todo
+spec_state: ready
+unresolved: []
+workstream: agents
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: local/mock 제품 보수; real 모델/서비스 주장 없음
+scope:
+  included:
+  - DraftLifecycle publish 경로와 Publisher.authorize
+  excluded:
+  - 권한/정책 완화
+  - real provider 주장
+  - 다른 task 기능 확장
+  owned_paths:
+  - src/rfa_mas/adapters/http.py
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/adapters/mock.py
+  - src/rfa_mas/application/drafts.py
+  - src/rfa_mas/errors.py
+  - tests/test_consumer_safety.py
+  - tests/test_effect_ledger.py
+  read_only_paths: []
+  planned_paths: []
+  shared_resources:
+  - sqlite-migrations
+depends_on:
+- id: P1-008
+  condition: integrated_done
+  required_output: 통합된 선행 결과
+- id: P0-021
+  condition: integrated_done
+  required_output: 통합된 선행 결과
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: 12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: RFA_E2E_Test_Scenarios_10_ko.md
+    section: 관련 시나리오
+    reason: E2E harness가 발견한 결함의 합격 기준
+  handoff: tasks/P1-008E/handoff.md
+  dependency_results:
+  - tasks/P1-008/handoff.md
+  - tasks/P0-021/handoff.md
+deliverables:
+- path: src/rfa_mas/adapters/http.py
+  availability: existing
+  description: 보수 산출물
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: 보수 산출물
+- path: src/rfa_mas/adapters/mock.py
+  availability: existing
+  description: 보수 산출물
+- path: src/rfa_mas/application/drafts.py
+  availability: existing
+  description: 보수 산출물
+- path: src/rfa_mas/errors.py
+  availability: existing
+  description: 보수 산출물
+- path: tests/test_consumer_safety.py
+  availability: existing
+  description: 보수 산출물
+- path: tests/test_effect_ledger.py
+  availability: existing
+  description: 보수 산출물
+acceptance_criteria:
+- id: AC1
+  given: 승인 전 게시
+  expect: approval_required(409)이며 durable receipt·ledger 항목이 남지 않는다. 승인 뒤 같은 key로 정확히 1회 게시된다.
+  required: true
+- id: AC2
+  given: 두 검사 사이 승인 만료
+  expect: receipt 없이 거절되고 이후 유효 승인으로 1회 게시된다.
+  required: true
+- id: AC3
+  given: 실제로 보낸 게시의 확정 거절·timeout
+  expect: 확정 거절은 FAILED, timeout·5xx·판독 불가는 outcome_unknown으로 조회만 하고 재전송하지 않는다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - source worktree; 합성 fixture만; .env 읽기 금지
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_consumer_safety.py
+  - tests/test_effect_ledger.py
+  - tests/test_draft_lifecycle.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - approval_required(409)이며 durable receipt·ledger 항목이 남지 않는다. 승인 뒤 같은 key로 정확히 1회 게시된다.
+  - receipt 없이 거절되고 이후 유효 승인으로 1회 게시된다.
+  - 확정 거절은 FAILED, timeout·5xx·판독 불가는 outcome_unknown으로 조회만 하고 재전송하지 않는다.
+  runner: pytest
+evidence_dir: .agent/evidence/P1-008E
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new_coordinator_fix
+  source_ref: 2026-09-27 P0-026 E2E harness v2 보고(8d7fcca)
+  prior_claim: 없음
+  implementation_facts: wip/stack 개발 커밋 ac6f84f; 등록 시 공식 검증 not_run
+  previous_evidence: []
+  checks_this_migration:
+  - E2E harness 보고 결함 재확인
+  judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T19:33:37+00:00'
+concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
+next_action: claim 후 cherry-pick·검증·통합.

@@ -1,18 +1,20 @@
 generated: true
 schema_version: '1.0'
-source_digest: 4433bdb64a3631381d123d0950f6e06336e3c125015a24d4e442905d30c2c5bf
+source_digest: 8001a2b02cc08afe28f9cd230461b21e8a47aef232380e37ebc1851b2aa27b51
 source_revisions:
   OPS-000: 6
   OPS-001: 13
   OPS-002: 101
   OPS-003: 22
-  OPS-004: 18
+  OPS-004: 19
   OPS-005: 20
+  OPS-006: 11
   P0-001: 1
   P0-002: 1
   P0-003: 1
   P0-004: 1
   P0-005: 1
+  P0-005A: 1
   P0-006: 1
   P0-007: 1
   P0-008: 1
@@ -71,6 +73,7 @@ source_revisions:
   P1-008B: 4
   P1-008C: 29
   P1-008D: 20
+  P1-008E: 1
   P1-009: 5
   P2-001: 2
   P2-002: 2
@@ -81,7 +84,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T18:42:18+00:00'
+generated_at: '2026-09-26T19:41:21+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -116,6 +119,11 @@ tasks:
   depends_on:
   - OPS-004
   path: tasks/OPS-005/task.yaml
+- id: OPS-006
+  title: 만료된 integrated revalidation claim의 안전한 재발급
+  workstream: contracts/control
+  depends_on: []
+  path: tasks/OPS-006/task.yaml
 - id: P0-001
   title: 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정
   workstream: contracts/control
@@ -146,6 +154,12 @@ tasks:
   depends_on:
   - P0-003
   path: tasks/P0-005/task.yaml
+- id: P0-005A
+  title: SQLite 다중 프로세스 안전성(연결마다 DB/sidecar open·close 제거)
+  workstream: agents
+  depends_on:
+  - P0-023
+  path: tasks/P0-005A/task.yaml
 - id: P0-006
   title: 합성 문서와 deterministic mock/local adapter
   workstream: knowledge
@@ -586,6 +600,13 @@ tasks:
   - P0-014
   - P1-008C
   path: tasks/P1-008D/task.yaml
+- id: P1-008E
+  title: 승인 전 게시 시도가 run을 영구 실패로 만들지 않음(HTTP 경로)
+  workstream: agents
+  depends_on:
+  - P1-008
+  - P0-021
+  path: tasks/P1-008E/task.yaml
 - id: P1-009
   title: D4 회귀·교육/심사 증거·최종 상태 확정
   workstream: integration/evaluation

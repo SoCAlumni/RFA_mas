@@ -1,18 +1,20 @@
 generated: true
 schema_version: '1.0'
-source_digest: 4433bdb64a3631381d123d0950f6e06336e3c125015a24d4e442905d30c2c5bf
+source_digest: 8001a2b02cc08afe28f9cd230461b21e8a47aef232380e37ebc1851b2aa27b51
 source_revisions:
   OPS-000: 6
   OPS-001: 13
   OPS-002: 101
   OPS-003: 22
-  OPS-004: 18
+  OPS-004: 19
   OPS-005: 20
+  OPS-006: 11
   P0-001: 1
   P0-002: 1
   P0-003: 1
   P0-004: 1
   P0-005: 1
+  P0-005A: 1
   P0-006: 1
   P0-007: 1
   P0-008: 1
@@ -71,6 +73,7 @@ source_revisions:
   P1-008B: 4
   P1-008C: 29
   P1-008D: 20
+  P1-008E: 1
   P1-009: 5
   P2-001: 2
   P2-002: 2
@@ -81,13 +84,13 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T18:42:18+00:00'
+generated_at: '2026-09-26T19:41:21+00:00'
 counts:
-  todo: 16
+  todo: 18
   in_progress: 2
   verifying: 32
   blocked: 5
-  done: 14
+  done: 15
   deferred: 9
   cancelled: 1
 final_acceptance:
@@ -185,8 +188,6 @@ tasks:
   executable: false
   reasons:
   - status:verifying
-  - spec unresolved
-  - contract baseline pending/stale
   - dependency:OPS-003
 - id: OPS-005
   status: verifying
@@ -204,6 +205,19 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:OPS-004
+- id: OPS-006
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: integrated
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
 - id: P0-001
   status: done
   workstream: contracts/control
@@ -270,6 +284,18 @@ tasks:
   executable: false
   reasons:
   - status:done
+- id: P0-005A
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: true
+  executable: true
+  reasons: []
 - id: P0-006
   status: done
   workstream: knowledge
@@ -383,7 +409,7 @@ tasks:
   status: in_progress
   workstream: contracts/control
   owner: rfa-coordinator
-  recovery_required: false
+  recovery_required: true
   integration: pending
   reserved: false
   blocker: null
@@ -1201,6 +1227,20 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-014
   - dependency:P1-008C
+- id: P1-008E
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P1-008
+  - dependency:P0-021
 - id: P1-009
   status: todo
   workstream: integration/evaluation
