@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from rfa_mas.application.evaluation import evaluate_case, load_evaluation_cases
 from rfa_mas.contracts import (
     DraftTarget,
@@ -120,3 +122,23 @@ async def test_actual_judge_cannot_override_authoritative_rules(container, princ
     assert evaluation.simulated is False
     assert evaluation.rule_checks["forbidden_information_absent"] is False
     assert evaluation.rule_checks["evidence_within_allowed_scope"] is False
+
+
+@pytest.mark.parametrize("invalid", [False, True])
+async def test_legacy_judge_error_preserves_rules_without_fabricating_score(
+    container, principal, invalid
+):
+    class BrokenJudge:
+        async def evaluate(self, case, result):
+            if invalid:
+                return {"score": float("nan"), "reason": "SYNTHETIC_PRIVATE_CANARY_ERROR"}
+            raise RuntimeError("SYNTHETIC_PRIVATE_CANARY_ERROR")
+
+    case = load_evaluation_cases(Path("fixtures/eval/evaluation_cases.jsonl"))[0]
+    result = await container.service.run(WorkRequest(query=case.input), principal)
+    baseline = await evaluate_case(None, case, result)
+    actual = await evaluate_case(BrokenJudge(), case, result)
+    assert actual.rule_checks == baseline.rule_checks
+    assert actual.judge_kind == "not_run" and not actual.executed
+    assert actual.judge_score is None
+    assert "SYNTHETIC_PRIVATE_CANARY" not in actual.model_dump_json()
