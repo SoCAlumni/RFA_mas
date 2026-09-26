@@ -1,5 +1,11 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P1-004A 검토된 파생 지식 1.1 (통합·발행 대기)
+
+- additive 1.1: `DerivedItemProposal`(summary/todo/issue/decision/link, 부모 SourceRevisionRef 필수, 조건·불확실성), `AccumulatedItem`, `AccumulationReport`. epistemic 상태에 `simulated`를 추가했다(SourceMetadata/ContextItem 공통 `EpistemicState`). frozen 1.0 불변.
+- 파생 항목은 Supervisor gate(KnowledgeAccumulator)만 저장한다: 모든 부모를 현재 revision/ACL closure로 다시 읽고, "cited"는 부모 원문 인용이 확인될 때만 유지(아니면 inferred), 충돌 결정은 conflicting, 합성 실험 수치는 simulated. 모든 부모가 public일 때만 public, 아니면 owner. 기존 migration5 kb_revision_context와 write_derived_knowledge를 재사용하며 새 KB/요약 엔진은 없다.
+- 영향 consumer: P1-004B(후보), P1-005(대상별 DRAFT), P1-001B(L1 요약 소비).
+
 ## 2026-09-26 — P0-020 팀 역할 실행 1.1 (통합·발행 대기)
 
 - additive 1.1: `TeamExecutionRequest`(명시적 팀 실행 의도, 권한 주장 없음), `RoleOutcome`(역할 receipt), `TeamBudgetUsage`, `TeamRunResult`(Supervisor 수집 결과). `DirectWorkRequest.team`(선택). frozen 1.0 WorkRequest/TaskRequest/TaskResult/ToolRequest/RunResult wire schema는 변경하지 않았다.

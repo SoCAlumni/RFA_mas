@@ -880,6 +880,11 @@ class ChannelWorkRequest(DirectWorkRequest):
         return self
 
 
+# "simulated" marks synthetic experiment numbers (P1-004A); never a measured fact.
+EpistemicState = Literal["cited", "inferred", "simulated", "tentative", "conflicting"]
+DerivedKind = Literal["summary", "todo", "issue", "decision", "link"]
+
+
 class SourceRevisionRef(EvidenceRef):
     schema_version: Literal["1.1"] = "1.1"
     acl_revision: OpaqueId
@@ -937,7 +942,7 @@ class ContextItem(EvidenceItem):
     level: ContextLevel
     parents: tuple[SourceRevisionRef, ...] = Field(min_length=1)
     policies: PolicyBindings
-    epistemic_state: Literal["cited", "inferred", "tentative", "conflicting"] = "cited"
+    epistemic_state: EpistemicState = "cited"
     state: Literal["current", "stale", "restricted"] = "current"
 
 
@@ -960,7 +965,7 @@ class SourceMetadata(ExtendedContractModel):
     reference: SourceRevisionRef
     title: str
     character_count: int = Field(ge=0)
-    epistemic_state: Literal["cited", "inferred", "tentative", "conflicting"] = "cited"
+    epistemic_state: EpistemicState = "cited"
     parents: tuple[SourceRevisionRef, ...] = ()
     owner_id: str | None = None
     company_id: str | None = None
@@ -971,6 +976,36 @@ class SourceMetadata(ExtendedContractModel):
 class SourceRead(ExtendedContractModel):
     metadata: SourceMetadata
     content: str
+
+class DerivedItemProposal(ExtendedContractModel):
+    """Worker/extractor proposal. Not knowledge until the Supervisor gate accepts it."""
+
+    kind: DerivedKind
+    title: str = Field(min_length=1, max_length=300)
+    content: str = Field(min_length=1, max_length=5000)
+    epistemic_state: EpistemicState
+    parents: tuple[SourceRevisionRef, ...] = Field(min_length=1, max_length=32)
+    conditions: tuple[str, ...] = ()
+    uncertainty: str | None = Field(default=None, max_length=1000)
+    origin_ref: OpaqueId
+
+
+class AccumulatedItem(ExtendedContractModel):
+    kind: DerivedKind
+    title: str
+    review_state: Literal["accepted", "rejected"]
+    epistemic_state: EpistemicState
+    reason: OpaqueId
+    source_id: OpaqueId | None = None
+    source_revision: OpaqueId | None = None
+    parents: tuple[SourceRevisionRef, ...] = ()
+
+
+class AccumulationReport(ExtendedContractModel):
+    """Supervisor review receipt for a batch of derived proposals."""
+
+    items: tuple[AccumulatedItem, ...] = ()
+
 
 
 class ExperimentEvidence(ExtendedContractModel):

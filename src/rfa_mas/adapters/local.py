@@ -1671,7 +1671,9 @@ class SqliteWorkRepository:
                         for p in parents)
         if not parents or len(parents) > 32 or len({(p.source_id,p.source_revision) for p in parents}) != len(parents):
             raise RfaError("policy_denied", "전체 부모 근거가 필요합니다.")
-        if epistemic_state not in {"inferred", "tentative", "conflicting"}:
+        # "cited" only after the Supervisor gate verified a verbatim parent quote;
+        # "simulated" marks synthetic experiment numbers (P1-004A).
+        if epistemic_state not in {"cited", "inferred", "simulated", "tentative", "conflicting"}:
             raise RfaError("policy_denied", "파생 자료 상태가 올바르지 않습니다.")
         return await self.write_knowledge(request, principal, policy_version=policy_version,
                                          _parents=parents, _epistemic_state=epistemic_state)

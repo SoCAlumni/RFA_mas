@@ -398,6 +398,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
             ("trace", trace),
         )
     )
+    knowledge = KnowledgeService(repository, policy)
     service = WorkService(
         repository=repository,
         trace=trace,
@@ -417,6 +418,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
             validate_resume=ResumePolicy(repository, observed_policy),
             team_runner=team_runner,
             policy_version=lambda: policy.policy_version,
+            accumulator=knowledge.accumulator,
         ),
         adapters=adapters,
         guard_thread=checkpoints.guard,
@@ -426,7 +428,7 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         settings=settings,
         repository=repository,
         service=service,
-        knowledge=KnowledgeService(repository, policy),
+        knowledge=knowledge,
         model=model,
         retrieval=retrieval,
         response=response,

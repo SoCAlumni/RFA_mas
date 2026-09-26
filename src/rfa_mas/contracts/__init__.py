@@ -99,12 +99,15 @@ from rfa_mas.contracts.common import (
 )
 from rfa_mas.contracts.models import (
     ApprovalReference,
+    AccumulatedItem,
+    AccumulationReport,
     AttachmentRef,
     ChannelWorkRequest,
     ContextBundle,
     ContextItem,
     ContextRequest,
     DirectWorkRequest,
+    DerivedItemProposal,
     DraftBinding,
     DraftBundleV11,
     EvalResultV11,
@@ -154,6 +157,9 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "DerivedItemProposal",
+    "AccumulatedItem",
+    "AccumulationReport",
     "TeamExecutionRequest",
     "RoleOutcome",
     "TeamBudgetUsage",

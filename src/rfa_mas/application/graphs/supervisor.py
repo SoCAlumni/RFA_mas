@@ -37,6 +37,8 @@ class SupervisorDependencies:
     max_graph_steps: int
     max_tool_calls: int
     validate_resume: Callable[[DraftBundle, TrustedPrincipal], Awaitable[None]]
+    # P1-004A: deterministic Supervisor gate for derived knowledge (optional).
+    accumulator: Any = None
     # P0-020 explicit team execution. None keeps the single-domain path only.
     team_runner: Any = None
     policy_version: Callable[[], str] | None = None
@@ -266,6 +268,20 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
                 status=WorkStatus.CANCELLED if result.status == "cancelled" else WorkStatus.FAILED,
             )
             return update
+        if deps.accumulator is not None:
+            # Only this Supervisor gate turns reviewed role outputs into derived knowledge;
+            # workers never write the KB. Failures keep the run result and are counted.
+            try:
+                proposals = await deps.accumulator.team_proposals(
+                    work.domain_id, principal, result
+                )
+                report = await deps.accumulator.accumulate(work.domain_id, proposals, principal)
+                update["team_result"] = update["team_result"] | {
+                    "accumulated": sum(i.review_state == "accepted" for i in report.items),
+                    "rejected": sum(i.review_state == "rejected" for i in report.items),
+                }
+            except RfaError:
+                update["team_result"] = update["team_result"] | {"accumulation": "failed"}
         draft = team_draft(work, result, policy_version=deps.policy_version())
         if work.target.audience == Audience.PUBLIC and any(
             item.audience != Audience.PUBLIC for item in draft.allowed_evidence

@@ -551,3 +551,117 @@ async def test_invalid_import_rows_do_not_bypass_authentication(container):
             batch, OWNER.model_copy(update={"authenticated": False})
         )
     assert error.value.code == "authentication_required"
+
+
+# -- P1-004A reviewed knowledge accumulation --------------------------------------------
+from rfa_mas.contracts import DirectWorkRequest as _Direct  # noqa: E402
+from rfa_mas.contracts import DomainId as _Domain  # noqa: E402
+from rfa_mas.contracts import DraftTarget as _Target  # noqa: E402
+from rfa_mas.contracts import TeamExecutionRequest as _TeamRequest  # noqa: E402
+from rfa_mas.bootstrap import build_container as _build  # noqa: E402
+from rfa_mas.settings import Settings as _Settings  # noqa: E402
+
+
+async def _kb_container(tmp_path):
+    container = _build(_Settings(_env_file=None, database_url=f"sqlite:///{tmp_path / 'acc.db'}",
+                                 trace_dir=(tmp_path / "traces").resolve()))
+    await container.startup()
+    return container, await container.repository.local_principal()
+
+
+def _note(key, content, audience="owner", revision="r1", expected=None):
+    return KnowledgeWrite.model_validate({
+        "domain_id": "triv3", "provenance": {"provider": "note", "namespace": "acc",
+                                             "external_id": key},
+        "provider_revision": revision, "expected_revision": expected, "title": f"note {key}",
+        "content": content, "synthetic": True, "acl": {"audience": audience}})
+
+
+async def test_supervisor_gate_labels_extracted_items_and_never_promotes_inference(tmp_path):
+    container, owner = await _kb_container(tmp_path)
+    acc = container.knowledge.accumulator
+    try:
+        await container.knowledge.write(_note("plan", "\n".join([
+            "결정: SDK 공개 출시일은 2026-10-20이다.",
+            "B 결과 환경 checksum 확인 필요, 10월 2일 마감",
+            "다른 방법의 6.0ms는 검증 전 가설이다.",
+            "참고 문서 https://docs.example.invalid/sdk",
+        ])), owner)
+        proposals = await acc.extract(_Domain.TRIV3, owner)
+        kinds = sorted((p.kind, p.epistemic_state) for p in proposals)
+        assert ("decision", "cited") in kinds and ("todo", "cited") in kinds
+        assert ("summary", "tentative") in kinds and ("link", "cited") in kinds
+        # Proposals are not knowledge yet: nothing derived before the gate.
+        assert await acc.list_derived(_Domain.TRIV3, owner) == []
+        report = await acc.accumulate(_Domain.TRIV3, proposals, owner)
+        assert all(i.review_state == "accepted" for i in report.items)
+        derived = await acc.list_derived(_Domain.TRIV3, owner)
+        assert {d.epistemic_state for d in derived} == {"cited", "tentative"}
+        assert all(len(d.parents) == 1 for d in derived)
+        forged = proposals[0].model_copy(update={"content": "출시일은 이미 확정 완료되었다",
+                                                 "title": "uncited", "origin_ref": "forged"})
+        conflict = [proposals[0].model_copy(update={"title": "출시 결정", "kind": "decision",
+                                                    "origin_ref": f"c{i}", "content": text})
+                    for i, text in enumerate(("결정: SDK 공개 출시일은 2026-10-20이다.",
+                                              "출시일은 2026-10-27로 결정"))]
+        second = await acc.accumulate(_Domain.TRIV3, [forged, *conflict], owner)
+        states = {i.title: (i.epistemic_state, i.reason) for i in second.items}
+        assert states["uncited"] == ("inferred", "downgraded_uncited")
+        assert states["출시 결정"][0] == "conflicting"
+    finally:
+        await container.shutdown()
+
+
+async def test_stale_or_restricted_parent_excludes_derived_items(tmp_path):
+    container, owner = await _kb_container(tmp_path)
+    acc = container.knowledge.accumulator
+    try:
+        public = await container.knowledge.write(
+            _note("faq", "결정: 공개 FAQ 설치 절차는 v1이다.", audience="public"), owner)
+        private = await container.knowledge.write(
+            _note("mine", "결정: 개인 자원은 공유하지 않는다.", audience="owner"), owner)
+        report = await acc.accumulate(_Domain.TRIV3, await acc.extract(_Domain.TRIV3, owner), owner)
+        assert len([i for i in report.items if i.review_state == "accepted"]) == 2
+        public_view = await container.repository.authorized_metadata(
+            _Domain.TRIV3, owner, target=Audience.PUBLIC)
+        derived_public = [m for m in public_view if m.parents]
+        assert len(derived_public) == 1  # Only the item whose every parent is public.
+        assert all(p.source_id == public.document.source_id for p in derived_public[0].parents)
+        stale_proposals = await acc.extract(_Domain.TRIV3, owner)
+        await container.knowledge.write(_note("faq", "결정: 공개 FAQ 설치 절차는 v2이다.",
+                                              audience="public", revision="r2",
+                                              expected=public.document.source_revision), owner)
+        # The old derived item no longer survives the current-parent closure.
+        derived = await acc.list_derived(_Domain.TRIV3, owner)
+        assert all(p.source_id != public.document.source_id for d in derived for p in d.parents)
+        replay = await acc.accumulate(_Domain.TRIV3, stale_proposals, owner)
+        rejected = [i for i in replay.items if i.reason == "stale_or_restricted_parent"]
+        assert rejected and all(i.review_state == "rejected" for i in rejected)
+        assert private.document.source_id
+    finally:
+        await container.shutdown()
+
+
+async def test_completed_team_run_accumulates_simulated_and_tentative_items(tmp_path):
+    container, owner = await _kb_container(tmp_path)
+    try:
+        for key, content in (("a", "합성 benchmark A 로그. 환경 env-1, 지연 10.0ms, 정확도 81.0%"),
+                             ("b", "합성 benchmark B 로그. 환경 env-1, 지연 8.2ms, 정확도 80.8%"),
+                             ("m", "다른 방법 benchmark 지연 6.0ms는 검증 전 가설")):
+            await container.knowledge.write(_note(key, content), owner)
+        result = await container.service.run(_Direct(
+            query="TRIV3 benchmark 로그 검증", domain_id=_Domain.TRIV3,
+            target=_Target(audience=Audience.OWNER),
+            team=_TeamRequest(goal="TRIV3 benchmark 로그 검증과 지연 비교",
+                              outputs=("benchmark_report",))), owner)
+        assert result.status.value == "completed"
+        derived = await container.knowledge.accumulator.list_derived(_Domain.TRIV3, owner)
+        states = sorted(d.epistemic_state for d in derived)
+        assert states == ["simulated", "tentative"]
+        simulated = next(d for d in derived if d.epistemic_state == "simulated")
+        assert len(simulated.parents) == 2
+        body = (await container.repository.read_sources(
+            _Domain.TRIV3, owner, [simulated.reference]))[0].content
+        assert "-18.0%" in body and "-0.2%p" in body and "실측이 아님" in body
+    finally:
+        await container.shutdown()
