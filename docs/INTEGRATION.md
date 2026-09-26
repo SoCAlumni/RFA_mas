@@ -4,16 +4,16 @@
 
 ## 확정 아키텍처와 구현 상태의 구분
 
-2026-09-26에 확장한 P0 계획과 상태의 원본은 `tasks/<ID>/task.yaml`이며 [TASKS.md](../TASKS.md)는 생성된 조회 view다. 아래 기존 endpoint/DTO 표는 현재 schema 1.0 구현을 설명한다. 새 Session/Task/TeamSpec/Scheduler/callback/receipt API가 이미 제공된다는 뜻이 아니다. 최소 계약 변경은 P0-014, reference 확장은 P1-008에서 구현·검증 후 이 문서에 반영한다.
+2026-09-26에 확장한 P0 계획과 상태의 원본은 `tasks/<ID>/task.yaml`이며 [TASKS.md](../TASKS.md)는 생성된 조회 view다. 아래 기존 endpoint/DTO 표는 schema 1.0 구현을 설명한다. Session/Task/TeamSpec/Scheduler/receipt route는 해당 task(P0-015, P0-019/020, P0-022~024, P1-005A, P1-008)가 구현했으며 생성 OpenAPI가 기준이다. review callback은 검증 계약(`ReviewCallbackVerifier`)만 있고 core API route는 아직 없다. 2026-09-27(`wip/stack` 260f394) 기준 실제/모의 구분은 [README의 "실제 vs mock/local" 표](../README.md#실제-vs-mocklocal)를 본다.
 
 기존 Pydantic/OpenAPI의 repository-local provisional baseline은 [contracts/baseline.json](contracts/baseline.json), 합성 정상·거절·근거 부족·부분 실패·timeout fixture는 `fixtures/contracts/reference_cases.json`이다. `.venv/bin/python scripts/contract_baseline.py check`는 export·schema·fixture 형식을 검사하고, 실제 local/reference 응답은 `.venv/bin/python -m pytest -q tests/test_contract_baseline.py`로 대조한다. 생성 방향·version/digest 및 후속 변경은 [CONTRACT_CHANGELOG.md](CONTRACT_CHANGELOG.md)를 따른다. 이 baseline의 성공은 실제 팀원 API 지원이나 새 확장 schema 완료가 아니다.
 
-- 자체 UI와 FastAPI/LangGraph 코어를 유지한다. UI 구현은 다영 모듈을 연결하며 코어는 안전한 polling 상태·이벤트를 제공할 계획이다.
-- 세션 메타데이터·대화·run 소유권은 P0-015의 versioned SQLite migration으로 저장하며 모든 사용자 조회에 principal을 적용한다. `graph_checkpoints`는 여전히 최종 metadata일 뿐 재개 가능한 checkpointer가 아니다. 실제 LangGraph 재개는 P0-016의 별도 작업이며 KB와 분리한다.
-- 예약은 SchedulerPort 아래 APScheduler 3.x의 영속 job store를 단일 프로세스가 소유하도록 구현할 계획이다. FastAPI worker마다 시작하거나 직접 cron 엔진을 만들지 않는다.
+- 자체 UI와 FastAPI/LangGraph 코어를 유지한다. 코어는 polling 상태·이벤트 route(P0-025)를 제공하고, 교체 가능한 로컬 UI(P0-025A, `src/rfa_mas/ui/`)가 그 route를 쓴다. 다영 UI 모듈은 같은 route를 쓰도록 교체한다.
+- 세션 메타데이터·대화·run 소유권은 P0-015의 versioned SQLite migration으로 저장하며 모든 사용자 조회에 principal을 적용한다. 승인 대기 재개는 P0-016의 LangGraph SQLite checkpointer(`adapters/checkpoints.py`, 별도 파일 `<db>.checkpoints.sqlite`)가 담당하고 `graph_checkpoints` 테이블은 최종 metadata로만 남는다. KB와 분리한다.
+- 예약(P0-022~024)은 APScheduler 3.11.3의 영속 job store(`<db>.scheduler.sqlite`)를 `rfa scheduler` 단일 프로세스가 owner lock으로 소유한다. FastAPI worker에서 시작하지 않으며 직접 cron 엔진을 만들지 않는다.
 - OpenClaw Gateway/Deep Agents는 필수 dependency가 아니다. 내부 소스 복사·비공개 import는 하지 않으며 후속 도입은 worker/ChannelAdapter 교체로 제한한다.
-- 현재 `TaskRequest`는 일회 위임 DTO다. 지속 Task·Task당 활성 팀 하나·여러 Run·session↔Task N:M 관계는 P0-014/019에서 추가하며 기존 port 이름을 유지한다.
-- 기밀 검수 소유권은 미확정이다. 결정적 PolicyPort와 선택적 LLM 보조 검수를 분리하며 읽기·공유·cloud 전송 권한을 각각 검사하도록 P1-005에서 보강한다.
+- `TaskRequest`는 일회 위임 DTO다. 지속 Task·Task당 활성 팀 하나·여러 Run·session↔Task N:M 관계는 P0-014/019가 추가했으며 기존 port 이름을 유지한다.
+- 기밀 검수 소유권은 미확정이다. 결정적 PolicyPort와 선택적 LLM 보조 검수를 분리한다. P1-005가 staged context와 cloud 전송 screen을 추가해 읽기·공유·cloud 전송 권한을 따로 검사한다.
 
 새 API·설정·명령을 현재 사용 가능한 목록에 올리는 시점은 해당 task의 구현과 검증이 끝난 뒤다. 이 문서에서 과거 P0의 완료 범위는 기반 local/mock 계약에 한정된다.
 
@@ -35,7 +35,7 @@ P0-014의 additive RFA-EXTENDED 1.1 DTO는 `contracts/models.py`에 있으며 �
 | EvaluationCaseV11 / EvalResultV11 | 합성 fixture의 identity/seed/dataset/scenario/관찰. 규칙 gate와 Judge 상태를 분리하고 error/not_run/unknown을 pass로 바꾸지 않음. 기존 executed/simulated는 Judge 실행 의미를 유지; rules는 rule_status. 높은 Judge 점수도 실패한 규칙 gate를 변경하지 않음 |
 | ExperimentEvidence / ScheduleSpec | mock/not_run/measured 및 조건·측정 단위/증거 구분. 예약은 승인된 organize/candidate_scan/briefing만, 임의 shell/prompt 인자 없음. cron/timezone 실제 파싱은 P0-023의 고정 APScheduler에 위임 |
 
-기존 RuntimePort.run/status/cancel과 RetrievalPort.search, TracePort.emit을 유지하고 1.1 prepare/cleanup, load_context, emit_event를 추가했다. 기존 adapter는 새 메서드를 아직 구현하지 않는다. 1.1 consumer 조립 시 capability/version 검사를 하고 명시 unsupported 오류를 반환해야 하며 조용히 1.0/mock으로 fallback하지 않는다. 실제 HTTP version negotiation/timeout/callback/trace 전파는 P1-008의 후속 구현이다. source 권한과 승인 증명은 trace ID만으로 전달/획득되지 않는다.
+기존 RuntimePort.run/status/cancel과 RetrievalPort.search, TracePort.emit을 유지하고 1.1 prepare/cleanup, load_context, emit_event를 추가했다. 현재 prepare/cleanup은 `LocalRuntime`과 `RuntimeHttpAdapter`가, load_context는 `LocalRetrieval`과 `BoundContextReader`가 구현한다. `LocalJsonlTrace.emit_event`는 영속 관측 참조가 없는 임의 event를 거절하고 `LangfuseExportTrace`는 로컬 trace가 검증한 record만 내보낸다. 1.1 consumer 조립 시 capability/version 검사를 하고 명시 unsupported 오류를 반환해야 하며 조용히 1.0/mock으로 fallback하지 않는다. source 권한과 승인 증명은 trace ID만으로 전달/획득되지 않는다.
 
 `docs/contracts/baseline.json`의 source hash는 최초 1.0의 **역사적 provenance**를 보존한다. `build_baseline()`은 현재 코드에서 1.0 모델·원래 메서드·OpenAPI·상태 전이를 다시 생성해 원본과 대조하되 역사적 source hash를 현재 코드 해시라고 주장하지 않는다. 현재 코드 해시와 전체 확장 메서드는 `extended.json`에 기록된다. 1.0 호환성 검사, 1.1 schema/fixture 검사, 실제 runtime/consumer 실행 증거는 서로 다르다.
 
@@ -104,7 +104,7 @@ bootstrap.py: settings에 따라 port 구현을 조립
 
 `uv run rfa init-env --output .env.dev`는 각 내부 통신 구간에 서로 다른 credential을 생성하고 profile을 `0600`으로 저장한다. `uv run rfa --env-file .env.dev <command>`로 명시적으로 로드한다. 실제 수신 서비스는 대응 값을 별도 secret store에서 받아 constant-time 비교 등으로 검증해야 한다. 현재 reference fixture는 authorization header를 검증하지 않으므로 token 생성만으로 fixture 보안이 강화됐다고 주장하지 않는다. Langfuse key pair는 self-host 초기화에도 같은 pair를 주입해야 하고, `NVIDIA_API_KEY`는 외부 발급값이라 자동 생성하지 않는다.
 
-현재 main Work 경로는 `RuntimePort`와 `ResponsePort`를 직접 사용한다. `ToolPort`는 아직 실행 경로에 연결되지 않았고, `RUNTIME_BACKEND=http`이면 8013 Runtime이 Domain TaskGraph를 호스팅하면서 Policy/Retriever/Model 경계를 호출하도록 구현해야 전체 topology가 실제로 사용된다.
+Work 경로는 `RuntimePort`와 `ResponsePort`를 직접 사용한다. `TOOL_BACKEND`로 선택한 `ToolPort`(`MockTool`/`ToolHttpAdapter`)는 container에 조립되지만 Work 경로에서 호출하지 않는다. 팀 역할의 도구는 로컬 READ 계산(`LocalAnalysisTools`)이고, `RETRIEVER_BACKEND=nemo_cli`일 때만 Research 팀 source_scout에 공식 NeMo Retriever Skill 도구(`NemoRetrieverTool`, P1-003)가 추가된다. `RUNTIME_BACKEND=http`이면 8013 Runtime이 Domain TaskGraph를 호스팅하면서 Policy/Retriever/Model 경계를 호출하도록 구현해야 전체 topology가 실제로 사용된다.
 
 ### NemoClaw/OpenShell sandbox agent 호출 경계 (P1-007 설계, not_run)
 
@@ -169,11 +169,11 @@ response can self-authorize a Team selection, access grant or approval.
 
 | Port | 책임 | P0 기본 구현 | 교체 구현 | 현재 주장 범위 |
 | --- | --- | --- | --- | --- |
-| `ModelPort` | 근거 제한 생성·구조화 응답 | `MockModel` | NVIDIA adapter는 P1 | mock 생성만 검증 대상 |
-| `RetrievalPort` | domain/권한 범위의 근거 검색 | `MockRetrieval` + SQLite fixture | NeMo Retriever CLI/service는 P1 | 실제 RAG/skill 연결 아님 |
-| `ResponsePort` | 검수 DRAFT 제출, 결정 조회 | `MockResponse` | `ResponseHttpAdapter` | 승희 서비스 호환성 미검증 |
-| `ToolPort` | 구조화 tool 요청/결과 | `MockTool` | `ToolHttpAdapter` | MCP나 외부 채널 실행 아님 |
-| `RuntimePort` | `AgentSpec` task 실행·상태·취소 | `LocalRuntime` | `RuntimeHttpAdapter` | process-local이며 OpenShell sandbox 아님 |
+| `ModelPort` | 근거 제한 생성·구조화 응답 | `MockModel` | `NvidiaChatModel`(P1-002, `MODEL_PROVIDER=nvidia`): hosted chat completions, public-only egress gate, 누락 시 `configuration_error` | hosted 합성 호출과 제품 경로 live n=1([모델 증거](evidence/nvidia-model.md)). 품질·지연 분포는 주장하지 않음 |
+| `RetrievalPort` | domain/권한 범위의 근거 검색 | `LocalRetrieval`(SQLite KB, 권한 확인 뒤 한국어 BM25, P1-001D). `RETRIEVER_BACKEND=mock`은 `MockRetrieval` | 교체 구현 없음. NeMo Retriever는 RetrievalPort가 아니라 Research 팀의 ToolPort 도구로 연결(`RETRIEVER_BACKEND=nemo_cli`, P1-003). `nemo_service`는 reserved | KB는 로컬. Skill 결과는 DRAFT 근거에 결합하지 않음. Skill CLI 제품 경로 live n=1 |
+| `ResponsePort` | 검수 DRAFT 제출, 결정 조회 | `MockResponse` | `ResponseHttpAdapter`(reference fixture 또는 P1-008C stand-in). 게시는 `PublicationHttpAdapter` | 승희 서비스 호환성 미검증. stand-in receipt는 mode=mock |
+| `ToolPort` | 구조화 tool 요청/결과 | `MockTool`. 팀 역할은 `LocalAnalysisTools` | `ToolHttpAdapter`, `NemoRetrieverTool`(Research 팀 전용) | MCP나 외부 채널 실행 아님. WRITE는 전송 전 거절 |
+| `RuntimePort` | `AgentSpec` task 실행·상태·취소, TeamSpec prepare/cleanup | `LocalRuntime` | `RuntimeHttpAdapter`(reference fixture 또는 P1-008D stand-in) | process-local이며 OpenShell sandbox 아님. OpenShell 단독 역할 정책 관측은 [OpenShell 증거](evidence/openshell.md) |
 | `PolicyPort` | 자료 접근·공유·tool 정책 | `LocalPolicy` | `PolicyHttpAdapter` | application policy이며 OS 강제 아님 |
 | `JudgePort` | 근거 충실도·질문 해결도·작업 후보 유용성의 비권위적 보조 평가 | `MockJudge` | 실제 Judge는 P1 opt-in | privacy/access 규칙은 application의 결정적 evaluator가 별도 판정 |
 | `WorkRepositoryPort` | run, DRAFT, checkpoint, KB | `SqliteWorkRepository` | 미정 | 다른 서비스 DB를 공유하지 않음 |
@@ -307,7 +307,7 @@ UI는 HTTP GET polling만 쓴다. SSE와 알림 API는 없다. 모든 조회는 
 - event에는 ID·revision·hash·상태/사유 code만 있다. 원문 근거·초안 본문·제목·요약·부모 관계·prompt·도구 인자는 없다. source ref는 조회할 때마다 현재 ACL로 다시 확인하고, 더는 읽을 수 없는 ref는 `withheld_sources` 개수로만 남긴다.
 - `occurred_at`은 원본 저장소에 자체 시각이 있을 때만 채운다. `recorded_at`은 feed가 그 event를 처음 기록한 시각이다. feed는 조회 시점에 관측한 상태를 기록하므로 두 조회 사이의 중간 상태는 원본이 따로 저장하지 않았다면 나타나지 않는다.
 - 저장: SQLite migration 13 `run_event_feed`(append-only). 새 event 출처(예: P0-024 예약 알림, kind `notification` 예약)는 `application/events.py`의 `EventSource.collect()` 구현 하나를 추가한다. 현재 `notification` 생산자는 없다.
-- `/healthz`는 프로세스 생존만 뜻한다. `/readyz`는 기존 `{"status"}`에 `ready`와 `checks`를 더한다. service 시작, 선택 mode 구성(`missing`/`invalid` 설정 이름과 `reserved` 미구현 기능 code, 값은 없음), 선택한 HTTP backend마다 `/healthz` 도달 여부를 본다. 하나라도 아니면 503 `ready=false`. 선택 구성으로 container를 만들 수 없으면(예: `MODEL_PROVIDER=nvidia`) `create_app`은 `/healthz`와 `/readyz`만 응답하는 앱을 만들고 나머지는 503 `configuration_error`다. mock으로 대체하지 않는다. CLI `api`는 기존대로 시작 전에 설정 누락을 거절한다.
+- `/healthz`는 프로세스 생존만 뜻한다. `/readyz`는 기존 `{"status"}`에 `ready`와 `checks`를 더한다. service 시작, 선택 mode 구성(`missing`/`invalid` 설정 이름과 `reserved` 미구현 기능 code, 값은 없음), 선택한 HTTP backend마다 `/healthz` 도달 여부를 본다. 하나라도 아니면 503 `ready=false`. 선택 구성으로 container를 만들 수 없으면 `create_app`은 `/healthz`와 `/readyz`만 응답하는 앱을 만들고 나머지는 503 `configuration_error`다. 2026-09-27에 확인한 예: `MODEL_PROVIDER=nvidia`인데 `NVIDIA_API_KEY`/`NVIDIA_MODEL`이 없으면 `missing`에 두 이름, reserved인 `RETRIEVER_BACKEND=nemo_service`이면 `missing`과 `reserved: ["retriever:nemo_service"]`. mock으로 대체하지 않는다. 설정이 완전하면 `/readyz`는 200이며 provider를 probe하지 않으므로 key가 유효하다는 뜻은 아니다. CLI `api`는 시작 전에 설정 누락을 거절한다.
 - `registry/service.json`은 기본(mock/local) 구성이 실제로 제공하는 capability만 endpoint 또는 adapter와 함께 적고 `tests/test_api.py`가 OpenAPI·기본 adapter와 대조한다.
 
 ## Provisional HTTP reference contract
@@ -335,9 +335,9 @@ uv run uvicorn rfa_mas.reference.app:create_reference_contract_app \
   --factory --host 127.0.0.1 --port 8001
 ```
 
-### P1-008 확장 reference 계약 (worker 구현, 통합 전)
+### P1-008 확장 reference 계약
 
-이 절은 `wip/P1-008` worker 구현 내용이다. 통합·검증 전에는 사용 가능한 기능으로 표시하지 않는다. 모든 결과는 local/mock(simulated) 증거이며 실제 승희 Response/Tool, 다영 Runtime, MCP, OpenShell, 외부 게시 증거가 아니다.
+P1-008 구현이며 `wip/stack`에 포함되어 있다. 모든 결과는 local/mock(simulated) 증거이며 실제 승희 Response/Tool, 다영 Runtime, MCP, OpenShell, 외부 게시 증거가 아니다.
 
 | Method / path | 요청 | 응답 | 의미 |
 | --- | --- | --- | --- |
@@ -350,7 +350,7 @@ uv run uvicorn rfa_mas.reference.app:create_reference_contract_app \
 
 - 같은 consumer suite: `tests/test_http_contract.py`, `tests/test_consumer_safety.py`는 동일한 WorkService/DraftLifecycle consumer를 mock port와 reference HTTP(ASGI, loopback base URL)로 실행한다. approved/revision_requested/timeout(pending)/rejected(수동 결정)/게시 outcome_unknown, 정상·정책 deny·승인 없음·본문/source ACL/policy 변경·중복·timeout을 같은 의미로 검증한다. graph/application 모듈에는 httpx/MCP/FastAPI import와 URL/Authorization 문자열이 없어야 한다.
 - 계약 버전: 응답의 `schema_version`이 `1.0`/`1.1`이 아니면 `unsupported_contract_version` 명시 오류다. 조용히 1.0으로 해석하지 않는다.
-- 게시 adapter(`PublicationHttpAdapter`): `RESPONSE_BACKEND=http`이면 bootstrap이 DraftLifecycle에 연결한다. mock publisher로 fallback하지 않는다. POST 전에 stand-in의 `ApprovalReference`로 approved·미만료·설치 owner 승인자·draft/version/content/target/policy/source 결합을 확인한다. stand-in 승인 표현에서 core payload hash를 재계산해 첨부가 다르면 거절한다. 실패한 proof는 게시 0회이며 publication은 `failed`(확정 거절)다.
+- 게시 adapter(`PublicationHttpAdapter`): `RESPONSE_BACKEND=http`이면 bootstrap이 DraftLifecycle에 연결한다. mock publisher로 fallback하지 않는다. POST 전에 stand-in의 `ApprovalReference`로 approved·미만료·설치 owner 승인자·draft/version/content/target/policy/source 결합을 확인한다. stand-in 승인 표현에서 core payload hash를 재계산해 첨부가 다르면 거절한다. 실패한 proof는 게시 0회이며 이 branch에서 publication은 `failed`(확정 거절)다. 미통합 P1-008E(`wip/P1-008E`)는 이를 바꿔 dispatch 전 거절은 `approval_required`이고 receipt를 남기지 않으며, 전송한 게시의 확정 거절만 `failed`로 둔다.
 - 알려진 한계: core graph의 검토 제출은 1.0 `/v1/reviews`다. stand-in은 1.1 `/v1/local/reviews` 제출에만 `ApprovalReference`를 발급한다. 따라서 stand-in으로 게시하려면 현재 초안의 1.1 mirror(`local_review_draft`)를 stand-in에서 승인해야 한다. core가 1.1로 제출하는 연결은 DraftLifecycle/graph 소유 후속 작업이다. stand-in에는 idempotency key 조회가 없다. 응답 receipt 참조를 받지 못한 timeout은 재시작 후에도 `outcome_unknown`로 남고 다시 POST하지 않는다.
 - 인증 callback(`ReviewCallbackVerifier`): `X-RFA-Timestamp`(unix 초)와 `X-RFA-Signature: sha256=<HMAC-SHA256(secret, "<timestamp>.<raw body>")>`를 요구한다. 서명은 parsing 전에 raw bytes로 검증하고 기본 허용 시차는 5분이다. 설치 owner 승인자와 현재 초안의 run/draft/version/content hash/target에 결합한다. 같은 event 재전송은 같은 결과를 반환하고, 같은 event ID에 다른 payload가 오면 `idempotency_conflict`다. callback은 재조회를 깨우는 wake-up일 뿐 승인이 아니다. core API route 연결은 공통 API 소유 task의 후속 작업이다.
 - reference fixture opt-in: `create_reference_contract_app(service_token=..., manual_decisions=True)`. 기본값은 동결된 1.0 fixture와 동일하다. token을 켜면 모든 route가 Bearer proof를 요구하므로 누락·위조 identity로는 handler가 실행되지 않는다. test token은 합성 값만 쓰고 `.env.example`에 넣지 않는다.
@@ -367,7 +367,7 @@ uv run uvicorn rfa_mas.reference.app:create_reference_contract_app \
 
 
 이는 local contract fixture일 뿐 팀원 서비스가 아니다. fixture는 process memory에 review/runtime 상태를 보관하므로 재시작하면 사라진다.
-기본 `LocalRuntime`은 실행과 terminal status 조회만 제공하며 P0 cancel은 `not_implemented`로 명시 실패한다. reference HTTP fixture의 cancel 응답은 DTO 계약 시험용이며 실제 sandbox task 취소 증거가 아니다.
+`LocalRuntime.cancel`은 진행 중인 로컬 task만 취소하고 이미 끝난 효과는 되돌리지 않는다. run 수준 취소는 `POST /v1/runs/{run_id}/cancel`(P0-020B)과 P0-021의 durable cancel barrier가 담당한다. reference HTTP fixture의 cancel 응답은 DTO 계약 시험용이며 실제 sandbox task 취소 증거가 아니다.
 
 ## Adapter 교체 절차
 
@@ -399,6 +399,24 @@ RESPONSE_API_TOKEN=
 5. local reference fixture와 상대 contract test를 나란히 유지하되, fixture 성공을 live 성공으로 보고하지 않는다.
 
 MCP gateway가 실제로 필요해도 graph node에서 MCP SDK를 직접 호출하지 않는다. `ToolPort` 구현이 팀원 gateway 요청을 canonical `ToolRequest`/`ToolResult`로 변환한다.
+
+### 로컬 stand-in 교체 (P1-008C, P1-008D, P0-025A)
+
+팀원 모듈이 준비될 때까지 같은 자리를 채우는 로컬 구현이다. 결과는 local/mock(simulated)이며 팀원 서비스 호환성의 증거가 아니다. stand-in과 UI를 띄우는 CLI는 아직 없다(`rfa local-stack` 미구현). 각 factory는 전용 DB 경로, 설치 owner, `SecretStr` 서비스 token, 허용 host를 서버 쪽에서 주입받는다. 계약 test는 이 factory를 ASGI로 in-process 실행한다. 경계와 안전 규칙은 [LOCAL_MODULES.md](LOCAL_MODULES.md)에 있다.
+
+| stand-in | factory | core 설정 | core adapter | 교체 후 실행할 계약 test |
+| --- | --- | --- | --- | --- |
+| P1-008C 검토·게시·READ tool | `rfa_mas.reference.local_response.create_local_response_app(db_path=..., boundary=LocalServiceBoundary.create(owner_id=..., service_token=..., allowed_hosts=[...]))` | `RESPONSE_BACKEND=http`, `RESPONSE_BASE_URL`, `RESPONSE_API_TOKEN`. 도구는 `TOOL_BACKEND=http`, `TOOL_BASE_URL`, `TOOL_API_TOKEN` | `ResponseHttpAdapter`(검토 1.0 `/v1/reviews`), `PublicationHttpAdapter`(승인 proof `GET /v1/local/reviews/{draft_id}`, 게시 `POST /v1/local/publications`), `ToolHttpAdapter`(`POST /v1/tools/execute`) | `tests/test_local_response.py`, `tests/test_http_contract.py`, `tests/test_consumer_safety.py`, `tests/test_callbacks.py` |
+| P1-008D runtime | `rfa_mas.reference.local_runtime.create_local_runtime_app(db_path=..., boundary=...)` | `RUNTIME_BACKEND=http`, `RUNTIME_BASE_URL`, `RUNTIME_API_TOKEN` | `RuntimeHttpAdapter`(task run/status/cancel, `POST /v1/runtime/teams`, `POST /v1/runtime/teams/{team_id}/cleanup`) | `tests/test_local_runtime.py`, `tests/test_http_contract.py` |
+| P0-025A UI | `rfa_mas.ui.app.create_local_ui_app(allowed_hosts=..., core=UpstreamTarget(name="core", ...), review=UpstreamTarget(name="review", ...))` | core 설정 변경 없음. UI는 core API의 client다 | 없음. UI는 고정 upstream(core API, 검토 stand-in)만 호출하고 사용자가 URL을 지정하는 proxy는 없다 | `tests/test_local_ui.py`, `tests/test_api.py` |
+
+교체 순서:
+
+1. 팀원 서비스가 같은 route·envelope·오류 의미를 제공하면 core는 설정만 바꾼다: 해당 `*_BACKEND=http`, `*_BASE_URL`, `*_API_TOKEN`. 현재 adapter와 UI upstream은 loopback URL만 허용한다. 원격 서비스는 loopback gate를 실제 credential·egress 경계로 바꾸는 작업(P1-008A/B)이 먼저다.
+2. `uv run rfa doctor`로 변수 이름의 configured/missing 상태만 확인하고, `/readyz`로 선택한 각 HTTP backend의 `/healthz` 도달 여부를 확인한다. 두 stand-in은 `/healthz`를 제공한다.
+3. 위 표의 계약 test와 `.venv/bin/python scripts/contract_baseline.py check`, `check-extended`를 실행한다. 계약 test는 in-process stand-in을 대상으로 하므로 팀원 서비스에 대해서는 같은 시나리오를 기본 suite와 분리한 opt-in suite로 실행한다.
+4. route나 envelope가 다르면 위 "실제 계약이 다를 때" 절차대로 `src/rfa_mas/adapters/http.py`의 adapter와 DTO mapper만 바꾼다. graph, port, canonical DTO에는 팀원 전용 field·URL·인증을 넣지 않는다.
+5. `RESPONSE_BACKEND=http`이면 게시도 `PublicationHttpAdapter`로 가며 mock publisher로 fallback하지 않는다. 팀원 서비스는 승인 원본(`ApprovalReference`)과 게시 receipt 조회를 제공해야 한다. stand-in에는 idempotency key 조회가 없으므로 receipt 참조 없이 끝난 timeout은 `outcome_unknown`으로 남는다.
 
 ## 정책과 자료 흐름
 

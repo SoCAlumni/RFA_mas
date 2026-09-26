@@ -33,7 +33,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 학습 목표 | task | 파일 | 실행 증거 | 상태 |
 | --- | --- | --- | --- | --- |
 | Build a basic agent loop and identify its core components. | P0 기반, P0-018/019/020 | `application/graphs/supervisor.py`, `graphs/domain.py`, `application/workers.py` | `tests/test_graph.py`, `tests/test_supervisor_boundaries.py`, `tests/test_team_execution.py` offline suite | real(local) 제어 흐름 + mock 모델 |
-| Implement reliable tool use and function calling within an agent system. | P1-002A, P1-002 | `tests/integration/test_nvidia_live.py`, [모델 증거](evidence/nvidia-model.md); 제품 `ToolPort`는 `adapters/mock.py` | hosted Nemotron의 named tool_choice 제안 live 관측(도구 실행 0회) | real(hosted, 제안만); 제품 tool 실행 경로 mock; 제품 ModelPort NVIDIA 경로 not_run |
+| Implement reliable tool use and function calling within an agent system. | P1-002A, P1-002 | `tests/integration/test_nvidia_live.py`, [모델 증거](evidence/nvidia-model.md); 제품 `ToolPort`는 `adapters/mock.py` | hosted Nemotron의 named tool_choice 제안 live 관측(도구 실행 0회) | real(hosted, 제안만). 제품 ModelPort NVIDIA 경로 real n=1(구조화 JSON 응답만 받고 예기치 않은 tool_calls는 오류로 처리). 제품 tool 실행은 local READ/mock |
 | Design and coordinate multi-agent systems using structured routing patterns. | P0-018/019/020 | `application/team_selector.py`, `teams.py`, `workers.py`, `graphs/supervisor.py` | `tests/test_team_selector.py`, `tests/test_teams.py`, `tests/test_team_execution.py` offline suite | real(local) + mock 공급자; sandbox 위 다중 agent 실행 not_run |
 | Utilize OpenShell to configure agent identities and ensure safe, sandboxed operations. | P1-007, P1-007C, P1-007B, P1-008B | [NemoClaw 증거](evidence/nemoclaw.md) §4~§8, [OpenShell 증거](evidence/openshell.md) | OpenShell v0.1.1 단독 gateway에서 stand-in 역할별 정책(조사/실행)의 허용·차단을 OCSF 기록과 policy differential로 판정(P1-007C, E2E-05) | real(OpenShell local standalone, stand-in 역할 정책, 합성 자료); RFA identity 매핑·제품 역할 실행 경로 not_run; RFA backend는 sandbox 밖 |
 | Deploy and manage autonomous agents while building persistent skill libraries. | P1-007A, P1-003A, P1-003 | [NemoClaw 증거](evidence/nemoclaw.md) §8A, [Skill 증거](evidence/nvidia-skill.md), [Skill 제품 경로 증거](evidence/nvidia-skill-product.md), `tests/integration/test_retriever_live.py`, `tests/integration/test_retriever_product_live.py` | 공식 NeMo Retriever Skill CLI direct live 실행(P1-003A), 제품 Research 경로 live n=1(P1-003). NemoClaw 온보딩·정책 preset·agent 턴 실행(P1-007A n=1); NemoClaw skill 설치는 미실행 | Skill CLI real(direct, 제품 경로 n=1); NemoClaw 운영 real(n=1); 이 서비스는 sandbox 밖 API로만 연결 |
@@ -42,8 +42,8 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 
 | 계층 | 이 프로젝트에서의 역할 | P0 경계 | 상태 |
 | --- | --- | --- | --- |
-| 모델 추론 API | 텍스트 또는 구조화 응답 생성 | `ModelPort` 뒤의 결정적 mock | 제품 경로는 모의(P0); hosted NVIDIA 직접 호출은 합성 요청으로 live 확인(P1-002A), 제품 연결은 계획(P1-002) |
-| Agent Skill | worker가 특정 기능을 사용하는 절차와 지침 | skill을 설치하거나 실행하지 않음 | NeMo Retriever Skill 절차는 저장소 밖 pinned CLI로 실제 실행(P1-003A); 제품 worker 연결은 계획(P1-003) |
+| 모델 추론 API | 텍스트 또는 구조화 응답 생성 | `ModelPort` 뒤의 결정적 mock | 기본은 모의. `MODEL_PROVIDER=nvidia`이면 제품 경로가 hosted NVIDIA를 호출(P1-002, live n=1). hosted 직접 호출은 P1-002A |
+| Agent Skill | worker가 특정 기능을 사용하는 절차와 지침 | skill을 설치하거나 실행하지 않음 | NeMo Retriever Skill 절차를 저장소 밖 pinned CLI로 실제 실행(P1-003A). `RETRIEVER_BACKEND=nemo_cli`이면 Research 팀 도구로 실행(P1-003, live n=1) |
 | LangGraph | 상태, node, edge, routing, 종료 조건을 구성하는 orchestration | Supervisor와 공통 Domain TaskGraph | 실제(local), 검증 완료(P0) |
 | NemoClaw | 지원 agent runtime의 onboarding, lifecycle, 운영을 OpenShell과 묶는 reference stack | `RuntimePort`의 교체 지점만 제공 | 실행(n=1, P1-007A §8A). 목록 외 agent harness는 공식 Unsupported이므로 이 서비스는 sandbox 안 agent가 호출하는 sandbox 밖 API로 설계·실행했다 |
 | OpenShell | 파일, 네트워크, 프로세스 등 OS 수준 권한을 정책으로 제한하는 security runtime | P0 `LocalRuntime`/`LocalPolicy`가 대신하지 않음 | OpenShell 단독(local standalone)에서 stand-in 역할별 허용·차단을 실제 관측(P1-007C, [증거](evidence/openshell.md)). RFA 제품 경로의 강제 증거는 없음(계획 P1) |
@@ -62,7 +62,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 모델 응답과 tool 결과 및 실패 시나리오 | `src/rfa_mas/adapters/mock.py` | 모의(P0) | success/근거 부족/거절/수정/timeout tests — 통과 |
 | step/tool/timeout 예산에 따른 종료 | `supervisor.py`, `domain.py` | 실제(local), 검증 완료(P0) | budget/partial-result/timeout tests — 통과 |
 
-실제 NVIDIA 모델의 tool calling 및 구조화 출력 지원은 선택한 모델의 공식 model card로 확인해야 한다. 2026-09-26 hosted `nvidia/nemotron-3.5-lightning-30b-a3b`에서 json_object 응답과 named tool_choice 호출 제안을 합성 요청으로 관측했다([증거](evidence/nvidia-model.md)). 이는 도구 실행이나 제품 graph 경로 검증이 아니다. 모델 ID가 비어 있는 P0 mock 결과를 NVIDIA 호출 증거로 사용하지 않는다.
+실제 NVIDIA 모델의 tool calling 및 구조화 출력 지원은 선택한 모델의 공식 model card로 확인해야 한다. 2026-09-26 hosted `nvidia/nemotron-3.5-lightning-30b-a3b`에서 json_object 응답과 named tool_choice 호출 제안을 합성 요청으로 관측했다([증거](evidence/nvidia-model.md)). 이는 도구 실행이나 제품 graph 경로 검증이 아니다. 모델 ID가 비어 있는 P0 mock 결과를 NVIDIA 호출 증거로 사용하지 않는다. 2026-09-27에는 제품 ModelPort 경로(`MODEL_PROVIDER=nvidia`)로 합성 공개 노트 하나를 보내 hosted 모델의 구조화 응답을 받는 live smoke를 1회 실행했다(n=1). 품질이나 지연 분포의 근거는 아니다.
 
 ### Module 2 — routing, 병렬 작업, 자체 자료 RAG, 계획
 
@@ -74,7 +74,8 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 동일 TaskGraph를 prompt, 자료 scope, capability로 구분 | `src/rfa_mas/application/graphs/domain.py` | 실제(local), 검증 완료(P0) | two-domain template test — 통과 |
 | 검색 결과를 `EvidenceBundle`로 한정하는 `RetrievalPort` | `src/rfa_mas/ports/*` | 실제(local) 계약, 검증 완료(P0) | DTO/graph contract tests — 통과 |
 | 합성 fixture 검색, 근거 부족과 timeout | `src/rfa_mas/adapters/mock.py` | 모의(P0) | evidence/timeout tests와 scenario demo — 통과 |
-| 제품 worker의 NeMo Retriever 연결, 병렬 fan-out, deep planning | 교체 adapter 및 worker 미구현 | 계획(P1) | 미실행. 공식 Skill CLI 자체는 P1-003A에서 direct live 확인 |
+| 제품 worker의 NeMo Retriever 연결 | `src/rfa_mas/adapters/nemo_retriever.py`, `application/workers.py`(`ExternalSearchBinding`) | 실제(opt-in `nemo_cli`) | fake CLI 계약 test 27개 통과(`tests/test_retriever_contract.py`), 제품 경로 live n=1(P1-003) |
+| 병렬 fan-out, deep planning | 미구현 | 계획 | 미실행 |
 
 P0의 단일 domain 위임이나 mock 검색을 병렬 multi-agent 또는 실제 RAG 서비스 검증으로 보고하지 않는다.
 
@@ -84,7 +85,7 @@ P0의 단일 domain 위임이나 mock 검색을 병렬 multi-agent 또는 실제
 
 | 구현 연결 | 파일 | 상태 | 실행 증거 |
 | --- | --- | --- | --- |
-| `AgentSpec` 기반 실행/상태/취소 계약 | `src/rfa_mas/ports/*` | 실제(local) 계약, 검증 완료(P0) | runtime contract/idempotency tests — 통과; local cancel은 명시적 `not_implemented` |
+| `AgentSpec` 기반 실행/상태/취소 계약 | `src/rfa_mas/ports/*` | 실제(local) 계약, 검증 완료(P0) | runtime contract/idempotency tests — 통과; local cancel은 진행 중 task만 취소하며 run 수준 취소는 P0-020B/P0-021 |
 | 같은 프로세스에서 task를 실행하는 `LocalRuntime` | `src/rfa_mas/adapters/local.py` | 실제(local), sandbox 아님, 검증 완료(P0) | local runtime 동시 중복·status tests — 통과 |
 | runtime timeout/실패 시나리오 | `src/rfa_mas/adapters/http.py`, `application/service.py` | 모의(P0) | 부작용 timeout의 `outcome_unknown` 보존 test — 통과 |
 | NemoClaw sandbox agent가 이 서비스의 제한 API를 호출 | [NemoClaw 증거](evidence/nemoclaw.md) §8A; runtime adapter 미구현 | real(P1-007A, n=1) | OpenClaw agent 턴이 exec 도구로 healthz를 호출·보고, 허용 외 route는 OpenShell 정책 거부(OCSF DENIED) |
@@ -114,7 +115,7 @@ NemoClaw 공식 overview의 현재 예시는 OpenClaw, Hermes, LangChain Deep Ag
 | 검색 입력/출력의 안정된 application 계약 | `src/rfa_mas/ports/*` | 실제(local) 계약, 검증 완료(P0) | contract/graph tests — 통과 |
 | 합성 근거를 반환하는 검색 backend | `src/rfa_mas/adapters/mock.py` | 모의(P0) | graph/evidence tests — 통과 |
 | 공식 Skill 절차의 CLI ingest/query 실제 실행 | `tests/integration/test_retriever_live.py`, 저장소 밖 pinned nemo-retriever==26.8.1 | 실제(hosted embedding), 검증 완료(P1-003A direct smoke) | [증거](evidence/nvidia-skill.md) — 합성 PDF 3질문 top-1 source/page 일치 |
-| Skill 지침을 따르는 worker와 제한된 CLI/service adapter | 미구현 | 계획(P1) | CLI/service 결과를 `EvidenceBundle`로 정규화하는 test 필요 |
+| Skill 지침을 따르는 worker와 제한된 CLI/service adapter | `src/rfa_mas/adapters/nemo_retriever.py`, `src/rfa_mas/application/workers.py` | 실제(opt-in `nemo_cli`). service backend는 reserved | `tests/test_retriever_contract.py`가 CLI 결과의 `EvidenceBundle` 정규화·timeout·malformed 처리를 검사(27 passed). 제품 경로 live n=1 |
 
 `SKILL.md`는 사용 절차이지 LangGraph node나 tool adapter 구현이 아니다. Skill 설치만으로 graph 연결, index 준비, service 배포, 권한 검증이 끝났다고 주장하지 않는다. `26.8.1`은 확인 시점의 공식 skill 값이므로 P1 착수 때 다시 확인하고 호환 버전을 고정한다. 2026-09-26 재확인 결과 여전히 26.8.1이며 build.nvidia.com Skills 카탈로그에 등재되어 있다.
 
@@ -127,7 +128,7 @@ NemoClaw 공식 overview의 현재 예시는 OpenClaw, Hermes, LangChain Deep Ag
 | Supervisor graph와 공통 Domain TaskGraph 구성 | `src/rfa_mas/application/graphs/supervisor.py`, `domain.py` | 실제(local), 검증 완료(P0) | graph/supervisor boundary tests — 통과 |
 | graph node가 port만 호출하고 adapter는 composition root에서 주입 | `src/rfa_mas/application/graphs/*`, `src/rfa_mas/ports/*` | 실제(local) 설계, 검증 완료(P0) | import dependency-boundary test — 통과 |
 | 외부 승인과 runtime 상태를 graph checkpoint와 직접 공유하지 않음 | port/DTO 경계 | 실제(local) 설계, 검증 완료(P0) | SQLite schema 및 contract review — 통과 |
-| 로컬 영속 checkpointer·승인 대기 재개 | 미구현, P0-016/021 | 확장된 P0 계획 | 미실행 |
+| 로컬 영속 checkpointer·승인 대기 재개 | `src/rfa_mas/adapters/checkpoints.py`, `application/resume_policy.py`(P0-016), 효과 ledger(P0-021) | 실제(local) | `tests/test_resume.py`, `tests/test_effect_ledger.py` 통과 |
 | live human-in-the-loop, distributed deployment | 미구현 | 실제 승인은 P1-008A; 분산 배포는 4일 범위 밖 | 미실행 |
 
 LangGraph checkpoint는 중단된 graph 실행을 재개하기 위한 상태이고, 장기 KB는 출처·버전·audience를 가진 지식 저장소다. 둘을 같은 저장 책임으로 취급하거나 팀원 서비스 DB와 직접 공유하지 않는다.
@@ -142,6 +143,7 @@ LangGraph checkpoint는 중단된 graph 실행을 재개하기 위한 상태이�
 - OpenShell 단독 sandbox의 관측(P1-007C stand-in 역할 정책 포함)은 RFA 서비스 경로, NemoClaw 경로, RFA 제품 역할 실행의 권한 강제 증거가 아니다. RFA backend는 sandbox 밖에서 실행되며 보호되지 않는 범위는 [NemoClaw 증거 §6](evidence/nemoclaw.md)에 있다.
 - 실제 NemoClaw/OpenShell 주장은 공식 platform support 확인, live policy, runtime identity, 허용/차단 실행 증거가 모두 있을 때만 갱신한다.
 - 실제 모델, Retriever, MCP, 팀원 Response/Runtime 서비스가 없으면 명확한 `not_implemented` 또는 `configuration_error`를 반환하며 mock으로 조용히 대체하지 않는다.
+- Langfuse export 성공은 로컬 self-host 대상이며 Langfuse 쪽 보존 기간 적용(P1-006F)은 blocked다. NAT installed smoke는 mock 공급자 기준이다.
 - NemoClaw 공식 문서는 현재 제품을 trusted operator가 사용하는 one-host early-preview reference stack으로 한정한다. 이를 hosted service, multi-tenant enterprise control plane 또는 enterprise identity system으로 설명하지 않는다.
 
 ## 공식 출처
