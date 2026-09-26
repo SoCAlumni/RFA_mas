@@ -11,13 +11,11 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
 status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: contracts/control
 execution_role: coordinator
-estimated_effort: 0.5
+estimated_effort: 1.0
 product_owner: 민섭
 execution_class: 이 저장소 구현
 product_mode: 기존 설정 검증 통과, 신규 항목 missing/not_run. local(false). 외부 의존 없음.
@@ -66,7 +64,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65
   role: consumer
 context:
   global_refs:
@@ -117,10 +115,11 @@ deliverables:
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 acceptance_criteria:
 - id: AC1
-  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: session/checkpoint 경로, scheduler/jobstore/timezone/enabled/misfire, 팀 token/time/tool/concurrency,
-    eval opt-in·trace redaction/보존을 한 번만 정의; NAT/eval opt-in·Judge endpoint·외부 model/embedding/reranker/trace
-    전송 정책도 의미 중복 없이 한 번만 정의
+  given: 현재 구현된 설정과 아직 구현하지 않은 후속 기능을 구분한 합성 설정 입력
+  expect: 현재 소비되는 typed settings와 env example은 이름이 1대1로 대응한다. session/checkpoint는 실제 경로를 재사용하고 scheduler/jobstore/timezone/misfire,
+    팀 token/time/tool/concurrency, trace 보존, Judge endpoint와 embedding/reranker/trace egress의 미구현 설정은
+    소유 task·명칭·미적용 이유를 가진 단일 planned catalog로 정의한다. 실제 읽지 않는 예정 설정은 활성 env assignment로 광고하지 않으며 NAT·예약·외부
+    전송 진입 gate는 선택 시 명시적으로 미지원임을 반환한다. eval opt-in은 기존 ENABLE_JUDGE/평가 진입점을 재사용한다.
   required: true
 - id: AC2
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -146,9 +145,9 @@ verification:
   type: command
   availability: planned
   prerequisites:
-  - 설정 이름 parity·reserved/누락·secret masking tests 확장. real 계정/secret 파일 열기 없이 `_env_file=None` 사용.
-  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
-    성공 아님.
+  - 현재 설정 이름 parity와 planned catalog의 단일 소유·미지원 표시, reserved/누락·secret masking 검사를 tests/test_settings.py에
+    확장한다.
+  - 합성 기본값을 명시하고 _env_file=None을 사용한다. 실제 환경 파일·credential·네트워크는 읽지 않는다. live 연결은 not_run이다.
   cwd: .
   argv:
   - .venv/bin/python
@@ -159,14 +158,11 @@ verification:
   timeout_seconds: 120
   procedure: []
   assertions:
-  - session/checkpoint 경로, scheduler/jobstore/timezone/enabled/misfire, 팀 token/time/tool/concurrency,
-    eval opt-in·trace redaction/보존을 한 번만 정의; NAT/eval opt-in·Judge endpoint·외부 model/embedding/reranker/trace
-    전송 정책도 의미 중복 없이 한 번만 정의
-  - 모든 key/token 예시 값은 빈칸, 실제 env 덮어쓰기 없음
-  - doctor는 변수명·configured/missing만, local ready와 selected real readiness 구분; NAT extra missing/disabled와
-    실제 provider readiness를 구분하며 설치/키 존재로 egress를 허용하지 않음
-  - 외부 write 기본 false, flag는 권한 아님, real 누락/미지원 명확한 오류. 외부 egress도 기본 비활성; NAT 선택+의존성 누락은 명시 오류, core
-    기본 mock은 extra/키 없이 부팅
+  - 현재 typed settings/example의 1대1 이름과 planned catalog 단일 소유·미적용 상태를 확인한다.
+  - key/token 예제 값은 모두 빈칸이며 실제 env를 수정하지 않는다.
+  - doctor/bootstrap 공통 판정은 configuration/implementation과 local lifecycle/provider probe not_run을 구분하며
+    값과 credential을 출력하지 않는다.
+  - 기본 mock 부팅·외부 write/egress 비활성, 선택한 미지원 real/NAT/scheduler는 명시 오류이며 fallback이 없다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-017
 latest_evidence_file: null
@@ -186,8 +182,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 7
-spec_revision: 7
+revision: 9
+spec_revision: 9
 claim_generation: 0
 claim: null
 attempts:
@@ -208,8 +204,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:22:30+00:00'
-concise_result: 'Specification changed: Read-only synthetic preflight reproduced doctor true vs bootstrap
-  configuration failures; reuse checkpoint and require truthful per-feature readiness without env mutation'
+updated_at: '2026-09-26T08:39:32+00:00'
+concise_result: 'Specification changed: Finalize inspected effort/shared settings ownership before any
+  claim; current task behavior remains unimplemented and tests planned.'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

@@ -291,3 +291,45 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   과거 evidence를 보존하고 필요한 선행 계약·세션·selector·NAT spike를 순서대로 재검증한다.
   공통 context의 초기 미구현 snapshot을 최신 원본 참조로 바꿔 향후 진행 갱신마다
   공통 설계 digest가 불필요하게 바뀌지 않게 했다. 이번 context 변경 자체도 재검증에 포함한다.
+
+## 4f808b0 회귀·동시 초기화 실패·후속 설정 명세 — 2026-09-26
+
+- 고정 main 4f808b0에서 `.venv/bin/python -m pytest -q`는 466 passed,
+  46 warnings, 131.03초였다. known child durability 경고이며 full E2E/실연동 증거가 아니다.
+- P0-014는 별도 worker 14/50 passed(0.01/0.59초), target 14/50 passed(0.01/0.57초).
+  P0-015는 worker 26+API4 passed(1.34/0.21초), target 26+API4 passed(1.31/0.22초).
+  P0-018은 새 계약 digest 수락 후 worker 53+64 passed(0.07/0.58초),
+  target 53+64 passed(0.06/0.58초), frozen/extended 검사 통과. 과거 evidence는 보존했다.
+- 이어 P0-016 stable-main-worker-01은 1 failed, 21 passed(1.24초)였다.
+  동시 최초 startup이 `_connect`의 `PRAGMA journal_mode=WAL`에서 database is locked로
+  실패했다. 전체 테스트의 이전 성공으로 이 실패를 숨기지 않았다. 제어된 DELETE-mode
+  DB probe는 writer 유지 중 기본 5초 busy timeout에도 0.08ms의 즉시 SQLITE_BUSY를
+  재현했다. [SQLite busy handler](https://sqlite.org/c3ref/busy_handler.html)와
+  [WAL 영속성](https://sqlite.org/wal.html#persistence_of_wal_mode)을 근거로 일반 연결의
+  WAL 전환을 제거하고 repository/checkpoint setup만 제한된 같은-host lock으로
+  직렬화하는 보수를 승인했다. business SQL/tool write 재실행은 하지 않는다.
+  최초 실패 evidence를 봉인했고 수정 소스의 두 번째 정식 검증을 진행 중이다.
+- P0-017은 active 설정/example parity와 단일 planned catalog를 구분했다. 실제 읽지
+  않는 scheduler/예산/retention을 지원 설정으로 광고하지 않는다. P0-019는 기존 Task
+  owner registry·승인 template 보존, 별도 실행 예산·member lifecycle/unknown cleanup
+  예약을 명시했다. P1-006D는 실제 service/API trace 경계와 로컬 retention 소비를 포함한다.
+- 조사된 작업량에 맞춰 추정을 P0-017 0.5→1h, P0-019 1.5→2h, P1-006D 0.5→2h로
+  변경했다. 최초 31.5h 이력은 보존하며 현재 직렬 추정은 34h(D4 8h 별도)다.
+  이에 이관 테스트의 옛 고정 합계 두 곳이 실제 진단에서 2 failed(0.65초)로 확인됐다:
+  D1 8.5≠8, 기술 증가분 6≠4.5(D2도 8.5). 기존 OPS-002의 schedule 회귀 범위에서
+  승인된 새 합계와 변경 이유만 반영한다. 제품 보안/기능 AC를 낮추는 변경은 아니다.
+
+## SQLite 패치 런타임 격리 qualification — 2026-09-26
+
+- 현재 공유 Python3.12.13은 SQLite3.50.4였다. 이는 위 startup 오류와 별개인
+  [공식 WAL-reset 공지](https://sqlite.org/wal.html#the_wal_reset_bug)의 수정 전 범위다.
+  공식 PBS20260807의 동일 CPython3.12.13 arm64 artifact를 임시 디렉터리에 설치했다.
+  SHA256은 25baa97c65b3f0aa90e21131b4f9e80aef8899e8144006db8a9d2c1ab9e807e3과 일치했다.
+  실제 내장 SQLite3.53.1을 확인했다. 공유 interpreter/기존 venv는 아직 바꾸지 않았다.
+- 새 임시 DB에서 spawn 3프로세스×50 commit, PASSIVE/TRUNCATE checkpoint, 150행,
+  재오픈 WAL 및 전후 integrity_check=ok. 실제 AsyncSqliteSaver3.1.1 저장/새 saver 조회도
+  확인했다. rare bug 자체 재현 또는 모든 제품 AC 보장으로 확대하지 않는다.
+- 격리 venv에서 현재 exact lock + NAT extra 설치 후 기존 NAT spike 8 passed(9.24초).
+  pyproject/lock/.python-version 변경 없음, retry 없음. 상세 재현 명령/공식 출처는
+  `/private/tmp/rfa-sqlite-qualification.IKbCas/QUALIFICATION.md`에 보존했다.
+  root 환경 전환·전환 후 전체 회귀는 아직 미실행이며 활성 worker 검증 중 전환하지 않는다.

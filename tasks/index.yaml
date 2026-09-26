@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: f597022f69eed8513e88919fe410722adb9855fd2625bc369e117b16c8ba2126
+source_digest: ea6dcb11fe3f85e8f178f61460d894346a59f109c928ef5e7526acafbcf4caab
 source_revisions:
   OPS-000: 6
   OPS-001: 13
@@ -18,12 +18,12 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 25
-  P0-015: 30
-  P0-016: 20
-  P0-017: 7
-  P0-018: 19
-  P0-019: 5
+  P0-014: 33
+  P0-015: 38
+  P0-016: 27
+  P0-017: 9
+  P0-018: 28
+  P0-019: 7
   P0-020: 6
   P0-021: 5
   P0-022: 5
@@ -51,7 +51,7 @@ source_revisions:
   P1-006A: 4
   P1-006B: 3
   P1-006C: 3
-  P1-006D: 6
+  P1-006D: 8
   P1-006E: 5
   P1-007: 2
   P1-007A: 1
@@ -69,7 +69,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T08:28:14+00:00'
+generated_at: '2026-09-26T08:50:25+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -230,6 +230,7 @@ tasks:
   depends_on:
   - P0-018
   - P0-015
+  - P0-016
   path: tasks/P0-019/task.yaml
 - id: P0-020
   title: 역할별 실행·Supervisor 수집·팀 예산·취소
@@ -441,6 +442,8 @@ tasks:
   workstream: integration/evaluation
   depends_on:
   - P0-014
+  - P0-016
+  - P0-017
   path: tasks/P1-006D/task.yaml
 - id: P1-006E
   title: Workflow 레드팀 4종·정상 대조 회귀

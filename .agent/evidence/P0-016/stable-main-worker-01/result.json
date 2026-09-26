@@ -1,0 +1,44 @@
+{
+  "attempt_id": "stable-main-worker-01",
+  "contract_digest": "658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235",
+  "mode": "두 graph의 checkpointer 미주입 확인; 확장 missing/not_run. persistence local(false), model/review mock(true). 외부 의존 없음(설치 후 offline).",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py"
+        ],
+        "assertions": [],
+        "counts": {
+          "collected": 22,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 1,
+          "passed": 21,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 1,
+        "id": "V1",
+        "log_excerpt": "...................F..                                                   [100%]\n=================================== FAILURES ===================================\n________ test_two_fresh_container_startups_preserve_single_fixture_seed ________\n\ntmp_path = PosixPath('/private/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/pytest-of-minseop/pytest-91/test_two_fresh_container_start0')\n\n    async def test_two_fresh_container_startups_preserve_single_fixture_seed(tmp_path):\n        first, second = [build_container(offline_settings(tmp_path)) for _ in range(2)]\n        try:\n>           await asyncio.gather(first.startup(), second.startup())\n\ntests/test_resume.py:461: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nsrc/rfa_mas/bootstrap.py:57: in startup\n    await self.repository.initialize()\nsrc/rfa_mas/adapters/local.py:194: in initialize\n    await asyncio.to_thread(operation)\n/Users/minseop/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/asyncio/threads.py:25: in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/Users/minseop/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:59: in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nsrc/rfa_mas/adapters/local.py:71: in operation\n    with self._connect() as connection:\n         ^^^^^^^^^^^^^^^\n/Users/minseop/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/contextlib.py:137: in __enter__\n    return next(self.gen)\n           ^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <rfa_mas.adapters.local.SqliteWorkRepository object at 0x10b9aaf30>\n\n    @contextmanager\n    def _connect(self) -> Iterator[sqlite3.Connection]:\n        connection = sqlite3.connect(self.path)\n        connection.row_factory = sqlite3.Row\n        try:\n>           connection.execute(\"PRAGMA journal_mode=WAL\")\nE           sqlite3.OperationalError: database is locked\n\nsrc/rfa_mas/adapters/local.py:60: OperationalError\n=============================== warnings summary ===============================\ntests/test_resume.py: 17 warnings\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-016-r2/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED tests/test_resume.py::test_two_fresh_container_startups_preserve_single_fixture_seed\n1 failed, 21 passed, 17 warnings in 1.24s",
+        "result": "failed"
+      }
+    ],
+    "failure_analysis": "Fresh two-container startup fails at SqliteWorkRepository._connect PRAGMA journal_mode=WAL before initialize BEGIN IMMEDIATE. Actual database is locked. No source edits or unchanged retry; parent notified because task is no-code revalidation.",
+    "finished_at": "2026-09-26T08:38:03+00:00",
+    "limits": "Synthetic isolated database, no real env/provider accessed. Prior success does not override this failure.",
+    "reviewer": "rfa-coordinator no-code revalidation",
+    "started_at": "2026-09-26T08:36:31+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "2c117a3e5f75bb733a5f852d01ba6d85ac3fdb9a20242c5d426405fd8b5c2bd8",
+  "source_manifest": ".agent/evidence/P0-016/stable-main-worker-01/source.json",
+  "spec_digest": "e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31",
+  "spec_revision": 5,
+  "task_id": "P0-016"
+}

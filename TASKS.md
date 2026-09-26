@@ -26,12 +26,12 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-011](tasks/P0-011/task.yaml) | LLMOps interface와 24개 합성 평가 사례 | P0 | done / passed | integration/evaluation | 0 | P0-003, P0-006 |
 | [P0-012](tasks/P0-012/task.yaml) | 개발·통합·교육 문서와 provisional registry | P0 | done / passed | contracts/control | 0 | P0-001, P0-002, P0-003, P0-004, P0-005, P0-006, P0-007, P0-008, P0-009, P0-010, P0-011 |
 | [P0-013](tasks/P0-013/task.yaml) | P0 전체 검증과 근거 기록 | P0 | done / passed | contracts/control | 0 | P0-001, P0-002, P0-003, P0-004, P0-005, P0-006, P0-007, P0-008, P0-009, P0-010, P0-011, P0-012 |
-| [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | verifying / stale | contracts/control | 1 | P0-003, P0-010 |
-| [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | verifying / stale | execution | 1.5 | P0-014, P0-005, P0-008 |
-| [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | verifying / stale | execution | 1.5 | P0-015 |
-| [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | todo / not_run | contracts/control | 0.5 | P0-014, P0-016 |
-| [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | verifying / stale | agents | 0.5 | P0-014 |
-| [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | todo / not_run | agents | 1.5 | P0-018, P0-015 |
+| [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | done / passed | contracts/control | 1 | P0-003, P0-010 |
+| [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | done / passed | execution | 1.5 | P0-014, P0-005, P0-008 |
+| [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | in_progress / failed | execution | 1.5 | P0-015 |
+| [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | todo / not_run | contracts/control | 1 | P0-014, P0-016 |
+| [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | done / passed | agents | 0.5 | P0-014 |
+| [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | todo / not_run | agents | 2 | P0-018, P0-015, P0-016 |
 | [P0-020](tasks/P0-020/task.yaml) | 역할별 실행·Supervisor 수집·팀 예산·취소 | P0 | todo / not_run | agents | 1.5 | P0-019, P0-017, P1-001A, P1-006D |
 | [P0-021](tasks/P0-021/task.yaml) | durable 실행 기록·재개 멱등성·결과 대사 | P0 | todo / not_run | execution | 1.5 | P0-016, P0-020, P1-005A |
 | [P0-022](tasks/P0-022/task.yaml) | 안전한 예약 DTO·사용자별 일정 관리 | P0 | todo / not_run | execution | 0.5 | P0-014, P0-017, P1-004, P0-021 |
@@ -59,7 +59,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-006A](tasks/P1-006A/task.yaml) | 실제 Judge adapter·품질 평가 | P1 | todo / not_run | integration/evaluation | 1.5 | P1-006, P1-002 |
 | [P1-006B](tasks/P1-006B/task.yaml) | Persona 시뮬레이션·버전 회귀 비교 | P1 | todo / not_run | integration/evaluation | 1 | P1-006 |
 | [P1-006C](tasks/P1-006C/task.yaml) | Langfuse 연결·redaction·보존 확인 | P1 | todo / not_run | integration/evaluation | 1 | P1-006, P1-006D |
-| [P1-006D](tasks/P1-006D/task.yaml) | 안전한 trace allowlist·평가 관찰 계약 연결 | P0 | todo / not_run | integration/evaluation | 0.5 | P0-014 |
+| [P1-006D](tasks/P1-006D/task.yaml) | 안전한 trace allowlist·평가 관찰 계약 연결 | P0 | todo / not_run | integration/evaluation | 2 | P0-014, P0-016, P0-017 |
 | [P1-006E](tasks/P1-006E/task.yaml) | Workflow 레드팀 4종·정상 대조 회귀 | P0 | todo / not_run | integration/evaluation | 1 | P1-006 |
 | [P1-007](tasks/P1-007/task.yaml) | NemoClaw 지원 경로·교육 연결 설계 | P1 | todo / not_run | integration/evaluation | 0.5 | P0-014, P0-025 |
 | [P1-007A](tasks/P1-007A/task.yaml) | NemoClaw 운영 경로 실제 시연 | P1 | blocked / not_run | integration/evaluation | 0.5 | P1-007, P1-008B |

@@ -10,13 +10,11 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
 status: todo
-spec_state: draft
-unresolved:
-- P0-014의 RFA-EXTENDED 1.1 schema/fixture baseline을 수신하고 실제 digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: coordinator
-estimated_effort: 0.5
+estimated_effort: 2.0
 product_owner: 민섭
 execution_class: 이 저장소 구현
 product_mode: local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록
@@ -27,6 +25,12 @@ scope:
     소비하며 모델의 성공 문구를 관찰로 신뢰하지 않는다.
   - legacy emit 경로도 typed allowlist로 제한한다. 사용자 입력 ID/사유는 안전한 서버 발급 ID와 분리하고 API error/trace export canary를
     검증한다. mock/local 원본과 평가용 test sink를 구분한다.
+  - 실제 포트 decorator/신뢰된 recorder를 composition root에서 주입하여 순서·지연·호출·실패·coverage를 관찰한다. core graph에 SDK나
+    URL을 넣지 않고 아직 연결되지 않은 ToolPort는 uncollected로 표시한다.
+  - API 오류의 caller X-Request-Id/Pydantic input 반사를 제거한다. trace 식별자는 신뢰된 서버 mapping으로 연결하고 caller 문자열/해시를
+    익명화로 취급하지 않는다. 원본 identity·인증 header·query/body·첨부는 trace에 저장하지 않는다.
+  - P0-017 planned TRACE_RETENTION_DAYS를 실제 LocalJsonlTrace 소비 설정으로 승격한다. 소유한 trace 파일만 제한적으로 관리하고 타 파일/symlink는
+    읽거나 삭제하지 않는다. 작업 관리 evidence/Git 로그는 제품 trace 보존 대상이 아니다. 외부 backend는 미구현 상태를 명시한다.
   excluded:
   - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 .env 접근
   - 새 framework/관측 서버/메모리 엔진·core graph 재작성
@@ -49,6 +53,9 @@ scope:
   - docs/CONTRACT_CHANGELOG.md
   - src/rfa_mas/application/observations.py
   - fixtures/eval/observation_cases.json
+  - src/rfa_mas/settings.py
+  - .env.example
+  - tests/test_settings.py
   read_only_paths:
   - docs/EVALUATION_CONTEXT.md
   - src/rfa_mas/contracts/common.py
@@ -61,10 +68,18 @@ scope:
   - composition
   - sqlite-migrations
   - canonical-contracts
+  - dependencies-settings
 depends_on:
 - id: P0-014
   condition: integrated_done
   required_output: 동결 계약과 해당 task의 산출물·필수 검증이 대상 baseline에 통합된 done; 직접 handoff/evidence 확인
+- id: P0-016
+  condition: integrated_done
+  required_output: SQLite resume 서비스·현재 identity/승인 재조회 경계를 유지하며 실제 실행/재개 trace를 계측한다.
+- id: P0-017
+  condition: integrated_done
+  required_output: 공통 preflight와 planned 설정 catalog; trace retention의 실제 소비 및 unavailable/egress 표시를 중복
+    없이 연결한다.
 contract_refs:
 - id: RFA-DTO
   version: '1.0'
@@ -72,8 +87,8 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
-  role: consumer
+  digest: 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -103,9 +118,14 @@ context:
   - path: tests/test_security.py
     section: trace allowlist tests
     reason: 기존 redaction 보호를 유지하며 arbitrary metadata 보존 기대는 명시적 안전 필드 검증으로 강화
+  - path: src/rfa_mas/settings.py
+    section: configuration gates and planned settings catalog
+    reason: retention 실제 소비 승격, egress/키/ready 의미 재사용
   handoff: tasks/P1-006D/handoff.md
   dependency_results:
   - tasks/P0-014/handoff.md
+  - tasks/P0-016/handoff.md
+  - tasks/P0-017/handoff.md
 deliverables:
 - path: src/rfa_mas/adapters/local.py
   availability: existing
@@ -160,6 +180,15 @@ deliverables:
   availability: planned
   description: 신뢰된 observation record/coverage fixture; 본문·도구 인자 없이 deterministic verifier에 실제 경계 관찰을
     제공
+- path: src/rfa_mas/settings.py
+  availability: existing
+  description: trace retention의 실제 소비·비밀 없는 설정·공통 readiness 회귀; planned와 active 원본 중복 없음
+- path: .env.example
+  availability: existing
+  description: trace retention의 실제 소비·비밀 없는 설정·공통 readiness 회귀; planned와 active 원본 중복 없음
+- path: tests/test_settings.py
+  availability: existing
+  description: trace retention의 실제 소비·비밀 없는 설정·공통 readiness 회귀; planned와 active 원본 중복 없음
 acceptance_criteria:
 - id: AC1
   given: 합성 Run의 생성/검토/게시 각 단계
@@ -223,8 +252,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 6
-spec_revision: 6
+revision: 8
+spec_revision: 8
 claim_generation: 0
 claim: null
 attempts:
@@ -245,8 +274,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:22:30+00:00'
-concise_result: 'Specification changed: Read-only preflight found legacy service/API emits caller identifiers
-  and arbitrary metadata; extend coordinator-owned scope to secure the actual path and define observation
-  coverage for downstream evaluator. Remains draft until P0-016 contract publication.'
+updated_at: '2026-09-26T08:39:37+00:00'
+concise_result: 'Specification changed: Finalize inspected effort/shared settings ownership before any
+  claim; current task behavior remains unimplemented and tests planned.'
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
