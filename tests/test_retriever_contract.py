@@ -506,3 +506,47 @@ async def test_bootstrap_nemo_cli_wires_the_skill_tool_and_keeps_kb_local(tmp_pa
     with pytest.raises(ConfigurationError) as error:
         build_container(broken)
     assert KEY not in str(error.value)
+
+
+
+async def test_hosted_query_with_a_private_marker_never_leaves_the_pc(fake):
+    """The hosted embedding is a cloud model: the P1-005 content markers apply to the query."""
+    fake.mode(stdout="query_evidence_ok.txt")
+    tool = NemoRetrieverTool(hosted(fake), (index(),))
+    denied = await tool.execute(request(key="private", query=f"{GOAL} {CANARY}"))
+    assert (denied.status, denied.error.code) == (ResultStatus.DENIED, "egress_not_permitted")
+    assert fake.calls() == []
+    allowed = await tool.execute(request(key="public"))
+    assert allowed.status == ResultStatus.SUCCEEDED and len(fake.calls()) == 1
+    local = NemoRetrieverTool(
+        RetrieverConfig(
+            binary=fake.binary, embedding="local", embed_invoke_url="http://127.0.0.1:8000/v1"
+        ),
+        (index(),),
+    )
+    kept_local = await local.execute(request(key="local-private", query=f"{GOAL} {CANARY}"))
+    assert kept_local.status == ResultStatus.SUCCEEDED  # loopback embedding: stays on this PC
+
+
+def test_nemo_cli_readiness_names_invalid_settings_without_values(tmp_path, fake):
+    from rfa_mas.bootstrap import inspect_configuration
+
+    index_dir = tmp_path / "idx"
+    index_dir.mkdir()
+    (index_dir / "index_manifest.json").write_text(
+        (FIXTURES / "index_manifest.json").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    base = {"_env_file": None, "database_url": f"sqlite:///{tmp_path / 'r.db'}",
+            "retriever_backend": "nemo_cli", "nvidia_api_key": SecretStr(KEY)}
+    ok = inspect_configuration(Settings(**base, retriever_index_dir=index_dir,
+                                        retriever_cli_path=fake.binary))
+    assert ok.ready and "retriever:nemo_cli" not in ok.reserved
+    for changes, name in (
+        ({"retriever_index_dir": index_dir, "retriever_cli_path": Path("relative/retriever")},
+         "RETRIEVER_CLI_PATH"),
+        ({"retriever_index_dir": tmp_path / "absent", "retriever_cli_path": fake.binary},
+         "RETRIEVER_INDEX_DIR"),
+    ):
+        report = inspect_configuration(Settings(**base, **changes))
+        assert not report.ready and report.invalid == (name,)
+        assert KEY not in repr(report)

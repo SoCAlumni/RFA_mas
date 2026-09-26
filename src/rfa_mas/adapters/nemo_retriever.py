@@ -224,6 +224,17 @@ class NemoRetrieverTool:
             return True
         return index.audience == Audience.PUBLIC and index.synthetic
 
+    def query_permitted(self, query: str) -> bool:
+        """The hosted embedding is a cloud model: private markers never leave the PC.
+
+        Same deterministic markers as the P1-005 content screen (application.graphs.domain).
+        """
+        if self.config.embedding == "local":
+            return True
+        from rfa_mas.application.graphs.domain import SENSITIVE_MARKERS
+
+        return not any(pattern.search(query) for pattern in SENSITIVE_MARKERS)
+
     async def execute(self, request: ToolRequest) -> ToolResult:
         request = ToolRequest.model_validate_json(request.model_dump_json())
         fingerprint = _fingerprint(request)
@@ -275,7 +286,7 @@ class NemoRetrieverTool:
         index = self.indexes.get(args.index_id)
         if index is None or index.domain_id != request.domain_id:
             raise _ToolFailure(ResultStatus.DENIED, "unknown_index")
-        if not self.egress_permitted(index):
+        if not self.egress_permitted(index) or not self.query_permitted(args.query):
             # Decided before any subprocess: the query text never leaves the PC.
             raise _ToolFailure(ResultStatus.DENIED, "egress_not_permitted")
         stdout = await self._invoke(self._argv(index, args))

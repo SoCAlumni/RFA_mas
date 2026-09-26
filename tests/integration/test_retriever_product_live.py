@@ -298,7 +298,8 @@ def _write_evidence(run: ProductRun) -> None:
             sid.startswith("retriever:") for sid in r.get("draft_evidence", [])
         ),
         "not_run": [
-            "model answer over Skill evidence (P1-002 ModelPort not wired)",
+            "model answer over Skill evidence (this smoke keeps MODEL_PROVIDER=mock; "
+            "the NVIDIA model path is covered by the P1-002 product smoke)",
             "nemo_service path",
             "local embedding NIM",
         ],

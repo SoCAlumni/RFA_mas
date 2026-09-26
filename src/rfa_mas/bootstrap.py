@@ -231,6 +231,14 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
             invalid.extend(str(exc).split(","))
     if settings.retriever_backend not in {"local", "mock", "nemo_cli"}:
         reserved.append(f"retriever:{settings.retriever_backend}")
+    # P1-003: report an invalid nemo_cli selection by name instead of only failing at build.
+    if settings.retriever_backend == "nemo_cli" and not {
+        "RETRIEVER_CLI_PATH", "NVIDIA_API_KEY"
+    } & set(missing):
+        try:
+            _nemo_cli(settings)
+        except ConfigurationError as exc:
+            invalid.extend(exc.missing)
     # Installed metadata is not an import/compatibility check or product NAT integration.
     try:
         metadata.version("nvidia-nat-langchain")
@@ -352,11 +360,8 @@ def _load_documents(directory: Path) -> list[KnowledgeDocument]:
     return documents
 
 
-def _team_tools(settings: Settings, observer: Observations):
-    """Team role tools: local READ computations, plus the Skill tool for nemo_cli (P1-003)."""
-    local = ObservedPort(LocalAnalysisTools(), observer, "tool", mode="local")
-    if settings.retriever_backend != "nemo_cli":
-        return local, None
+def _nemo_cli(settings: Settings):
+    """P1-003: validated Skill CLI config and registered index, or the invalid setting name."""
     try:
         config = RetrieverConfig(
             binary=settings.retriever_cli_path or Path(),
@@ -364,13 +369,20 @@ def _team_tools(settings: Settings, observer: Observations):
             api_key=settings.nvidia_api_key,
         )
     except ValueError:
-        raise ConfigurationError(
-            ["RETRIEVER_CLI_PATH (absolute nemo-retriever 26.8.1 binary)"]
-        ) from None
+        raise ConfigurationError(["RETRIEVER_CLI_PATH"]) from None
     try:
         index = RetrieverIndex.from_manifest(settings.retriever_index_dir / "index_manifest.json")
     except (OSError, ValueError, KeyError):
-        raise ConfigurationError(["RETRIEVER_INDEX_DIR (valid index_manifest.json)"]) from None
+        raise ConfigurationError(["RETRIEVER_INDEX_DIR"]) from None
+    return config, index
+
+
+def _team_tools(settings: Settings, observer: Observations):
+    """Team role tools: local READ computations, plus the Skill tool for nemo_cli (P1-003)."""
+    local = ObservedPort(LocalAnalysisTools(), observer, "tool", mode="local")
+    if settings.retriever_backend != "nemo_cli":
+        return local, None
+    config, index = _nemo_cli(settings)
     skill = ObservedPort(NemoRetrieverTool(config, (index,)), observer, "tool", mode="real")
     binding = ExternalSearchBinding(SKILL_TOOL_NAME, index.index_id, index.audience)
     return RetrieverToolRouter(local, skill), binding
