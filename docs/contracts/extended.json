@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "272cead2257575f362a5470b0ff74a9505c42e0e9f7a16322d0431fe4ffec047",
+  "digest": "4705cbefe353df15510404192e18158a071089b319f1a729ae19c7e662678117",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -238,6 +238,16 @@
               "decision": {
                 "$ref": "#/components/schemas/IntentDecision"
               },
+              "feedback": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/FeedbackRecord"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "next_options": {
                 "default": [],
                 "items": {
@@ -286,7 +296,8 @@
                   "cancelled",
                   "partial",
                   "unsupported",
-                  "scheduled"
+                  "scheduled",
+                  "feedback_recorded"
                 ],
                 "title": "Status",
                 "type": "string"
@@ -944,6 +955,494 @@
             ],
             "title": "ExecutionMode",
             "type": "string"
+          },
+          "FeedbackApplication": {
+            "additionalProperties": false,
+            "description": "Which feedback revision a run's generation actually received.",
+            "properties": {
+              "applied_at": {
+                "format": "date-time",
+                "title": "Applied At",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "effect": {
+                "enum": [
+                  "style_guidance",
+                  "withhold_markers"
+                ],
+                "title": "Effect",
+                "type": "string"
+              },
+              "feedback_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Feedback Id",
+                "type": "string"
+              },
+              "feedback_revision": {
+                "minimum": 1.0,
+                "title": "Feedback Revision",
+                "type": "integer"
+              },
+              "run_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "target_audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "target_channel": {
+                "title": "Target Channel",
+                "type": "string"
+              }
+            },
+            "required": [
+              "feedback_id",
+              "feedback_revision",
+              "run_id",
+              "effect",
+              "domain_id",
+              "target_audience",
+              "target_channel",
+              "applied_at"
+            ],
+            "title": "FeedbackApplication",
+            "type": "object"
+          },
+          "FeedbackCategory": {
+            "enum": [
+              "style_preference",
+              "factual_correction",
+              "personal_disclosure_preference",
+              "official_policy_change_proposal"
+            ],
+            "title": "FeedbackCategory",
+            "type": "string"
+          },
+          "FeedbackClassification": {
+            "additionalProperties": false,
+            "description": "Classification preview; nothing is stored.",
+            "properties": {
+              "category": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/FeedbackCategory"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "classified_by": {
+                "enum": [
+                  "user",
+                  "rule"
+                ],
+                "title": "Classified By",
+                "type": "string"
+              },
+              "disposition": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "applied_in_scope",
+                      "narrowing_only",
+                      "pending_evidence_review",
+                      "proposal_only"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Disposition"
+              },
+              "rule": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Rule",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "withhold_markers": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Withhold Markers",
+                "type": "array"
+              }
+            },
+            "required": [
+              "category",
+              "classified_by",
+              "rule"
+            ],
+            "title": "FeedbackClassification",
+            "type": "object"
+          },
+          "FeedbackCreate": {
+            "additionalProperties": false,
+            "description": "Owner feedback. category=None asks the deterministic local classifier.",
+            "properties": {
+              "category": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/FeedbackCategory"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "scope": {
+                "$ref": "#/components/schemas/FeedbackScope"
+              },
+              "source": {
+                "$ref": "#/components/schemas/FeedbackSource"
+              },
+              "text": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              },
+              "withhold_markers": {
+                "default": [],
+                "items": {
+                  "maxLength": 200,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Withhold Markers",
+                "type": "array"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "FeedbackCreate",
+            "type": "object"
+          },
+          "FeedbackRecord": {
+            "additionalProperties": false,
+            "description": "Owner-scoped feedback memory item (revisioned; revocation is a new revision).\n\nOnly style (advisory model guidance) and personal disclosure (withhold markers that can\nonly narrow sharing) are ever applied. A factual correction stays tentative until an\nevidence review; an official-policy change is a proposal and never changes policy.",
+            "properties": {
+              "category": {
+                "$ref": "#/components/schemas/FeedbackCategory"
+              },
+              "classification_rule": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Classification Rule",
+                "type": "string"
+              },
+              "classified_by": {
+                "enum": [
+                  "user",
+                  "rule"
+                ],
+                "title": "Classified By",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "disposition": {
+                "enum": [
+                  "applied_in_scope",
+                  "narrowing_only",
+                  "pending_evidence_review",
+                  "proposal_only"
+                ],
+                "title": "Disposition",
+                "type": "string"
+              },
+              "epistemic_state": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "cited",
+                      "inferred",
+                      "simulated",
+                      "tentative",
+                      "conflicting"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Epistemic State"
+              },
+              "feedback_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Feedback Id",
+                "type": "string"
+              },
+              "history": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "History",
+                "type": "array"
+              },
+              "official_policy_changed": {
+                "const": false,
+                "default": false,
+                "title": "Official Policy Changed",
+                "type": "boolean"
+              },
+              "revision": {
+                "minimum": 1.0,
+                "title": "Revision",
+                "type": "integer"
+              },
+              "revoked_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Revoked Reason"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "scope": {
+                "$ref": "#/components/schemas/FeedbackScope"
+              },
+              "source": {
+                "$ref": "#/components/schemas/FeedbackSource"
+              },
+              "state": {
+                "default": "active",
+                "enum": [
+                  "active",
+                  "revoked"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "text": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              },
+              "withhold_markers": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Withhold Markers",
+                "type": "array"
+              }
+            },
+            "required": [
+              "feedback_id",
+              "revision",
+              "category",
+              "classified_by",
+              "classification_rule",
+              "text",
+              "scope",
+              "source",
+              "disposition",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "FeedbackRecord",
+            "type": "object"
+          },
+          "FeedbackRevoke": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_revision": {
+                "minimum": 1.0,
+                "title": "Expected Revision",
+                "type": "integer"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Reason"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expected_revision"
+            ],
+            "title": "FeedbackRevoke",
+            "type": "object"
+          },
+          "FeedbackScope": {
+            "additionalProperties": false,
+            "description": "Where a feedback item may apply. The user is always the authenticated caller.\n\nNone means \"any\" for that dimension. No field can name another user or widen access.",
+            "properties": {
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "target_audience": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Audience"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "target_channel": {
+                "anyOf": [
+                  {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Target Channel"
+              }
+            },
+            "title": "FeedbackScope",
+            "type": "object"
+          },
+          "FeedbackSource": {
+            "additionalProperties": false,
+            "description": "Provenance only. A referenced run/draft must belong to the caller.",
+            "properties": {
+              "draft_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Draft Id"
+              },
+              "draft_version": {
+                "anyOf": [
+                  {
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Draft Version"
+              },
+              "kind": {
+                "default": "user_statement",
+                "enum": [
+                  "user_statement",
+                  "draft_review"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "run_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Run Id"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "title": "FeedbackSource",
+            "type": "object"
           },
           "HTTPValidationError": {
             "properties": {
@@ -3793,6 +4292,477 @@
             ]
           }
         },
+        "/v1/feedback": {
+          "get": {
+            "operationId": "list_feedback_v1_feedback_get",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "domain_id",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DomainId"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Domain Id"
+                }
+              },
+              {
+                "in": "query",
+                "name": "state",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "active",
+                        "revoked"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "State"
+                }
+              },
+              {
+                "in": "query",
+                "name": "category",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FeedbackCategory"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Category"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/FeedbackRecord"
+                      },
+                      "title": "Response List Feedback V1 Feedback Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Feedback",
+            "tags": [
+              "feedback"
+            ]
+          },
+          "post": {
+            "operationId": "submit_feedback_v1_feedback_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FeedbackCreate"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FeedbackRecord"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Submit Feedback",
+            "tags": [
+              "feedback"
+            ]
+          }
+        },
+        "/v1/feedback/classify": {
+          "post": {
+            "operationId": "classify_feedback_v1_feedback_classify_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FeedbackCreate"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FeedbackClassification"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Classify Feedback",
+            "tags": [
+              "feedback"
+            ]
+          }
+        },
+        "/v1/feedback/{feedback_id}": {
+          "get": {
+            "operationId": "get_feedback_v1_feedback__feedback_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "feedback_id",
+                "required": true,
+                "schema": {
+                  "title": "Feedback Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FeedbackRecord"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Feedback",
+            "tags": [
+              "feedback"
+            ]
+          }
+        },
+        "/v1/feedback/{feedback_id}/applications": {
+          "get": {
+            "operationId": "feedback_item_applications_v1_feedback__feedback_id__applications_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "feedback_id",
+                "required": true,
+                "schema": {
+                  "title": "Feedback Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/FeedbackApplication"
+                      },
+                      "title": "Response Feedback Item Applications V1 Feedback  Feedback Id  Applications Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Feedback Item Applications",
+            "tags": [
+              "feedback"
+            ]
+          }
+        },
+        "/v1/feedback/{feedback_id}/revisions": {
+          "get": {
+            "operationId": "feedback_revisions_v1_feedback__feedback_id__revisions_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "feedback_id",
+                "required": true,
+                "schema": {
+                  "title": "Feedback Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/FeedbackRecord"
+                      },
+                      "title": "Response Feedback Revisions V1 Feedback  Feedback Id  Revisions Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Feedback Revisions",
+            "tags": [
+              "feedback"
+            ]
+          }
+        },
+        "/v1/feedback/{feedback_id}/revoke": {
+          "post": {
+            "operationId": "revoke_feedback_v1_feedback__feedback_id__revoke_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "feedback_id",
+                "required": true,
+                "schema": {
+                  "title": "Feedback Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FeedbackRevoke"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/FeedbackRecord"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Revoke Feedback",
+            "tags": [
+              "feedback"
+            ]
+          }
+        },
         "/v1/knowledge/derive": {
           "post": {
             "operationId": "derive_items_v1_knowledge_derive_post",
@@ -4604,6 +5574,68 @@
             "summary": "Request Draft Review",
             "tags": [
               "drafts"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/feedback": {
+          "get": {
+            "operationId": "run_feedback_applications_v1_runs__run_id__feedback_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/FeedbackApplication"
+                      },
+                      "title": "Response Run Feedback Applications V1 Runs  Run Id  Feedback Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Run Feedback Applications",
+            "tags": [
+              "feedback"
             ]
           }
         },
@@ -7303,6 +8335,17 @@
           "decision": {
             "$ref": "#/$defs/IntentDecision"
           },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/FeedbackRecord"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "next_options": {
             "default": [],
             "items": {
@@ -7353,7 +8396,8 @@
               "cancelled",
               "partial",
               "unsupported",
-              "scheduled"
+              "scheduled",
+              "feedback_recorded"
             ],
             "title": "Status",
             "type": "string"
@@ -9178,6 +10222,505 @@
           "status"
         ],
         "title": "ExperimentEvidence",
+        "type": "object"
+      },
+      "FeedbackApplication": {
+        "additionalProperties": false,
+        "description": "Which feedback revision a run's generation actually received.",
+        "properties": {
+          "applied_at": {
+            "format": "date-time",
+            "title": "Applied At",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "effect": {
+            "enum": [
+              "style_guidance",
+              "withhold_markers"
+            ],
+            "title": "Effect",
+            "type": "string"
+          },
+          "feedback_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Feedback Id",
+            "type": "string"
+          },
+          "feedback_revision": {
+            "minimum": 1,
+            "title": "Feedback Revision",
+            "type": "integer"
+          },
+          "run_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "target_audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "target_channel": {
+            "title": "Target Channel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feedback_id",
+          "feedback_revision",
+          "run_id",
+          "effect",
+          "domain_id",
+          "target_audience",
+          "target_channel",
+          "applied_at"
+        ],
+        "title": "FeedbackApplication",
+        "type": "object"
+      },
+      "FeedbackCategory": {
+        "enum": [
+          "style_preference",
+          "factual_correction",
+          "personal_disclosure_preference",
+          "official_policy_change_proposal"
+        ],
+        "title": "FeedbackCategory",
+        "type": "string"
+      },
+      "FeedbackClassification": {
+        "additionalProperties": false,
+        "description": "Classification preview; nothing is stored.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/FeedbackCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "classified_by": {
+            "enum": [
+              "user",
+              "rule"
+            ],
+            "title": "Classified By",
+            "type": "string"
+          },
+          "disposition": {
+            "anyOf": [
+              {
+                "enum": [
+                  "applied_in_scope",
+                  "narrowing_only",
+                  "pending_evidence_review",
+                  "proposal_only"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Disposition"
+          },
+          "rule": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Rule",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "withhold_markers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Withhold Markers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "category",
+          "classified_by",
+          "rule"
+        ],
+        "title": "FeedbackClassification",
+        "type": "object"
+      },
+      "FeedbackCreate": {
+        "additionalProperties": false,
+        "description": "Owner feedback. category=None asks the deterministic local classifier.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/FeedbackCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/$defs/FeedbackScope"
+          },
+          "source": {
+            "$ref": "#/$defs/FeedbackSource"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "withhold_markers": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "minLength": 2,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Withhold Markers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "FeedbackCreate",
+        "type": "object"
+      },
+      "FeedbackRecord": {
+        "additionalProperties": false,
+        "description": "Owner-scoped feedback memory item (revisioned; revocation is a new revision).\n\nOnly style (advisory model guidance) and personal disclosure (withhold markers that can\nonly narrow sharing) are ever applied. A factual correction stays tentative until an\nevidence review; an official-policy change is a proposal and never changes policy.",
+        "properties": {
+          "category": {
+            "$ref": "#/$defs/FeedbackCategory"
+          },
+          "classification_rule": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Classification Rule",
+            "type": "string"
+          },
+          "classified_by": {
+            "enum": [
+              "user",
+              "rule"
+            ],
+            "title": "Classified By",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "applied_in_scope",
+              "narrowing_only",
+              "pending_evidence_review",
+              "proposal_only"
+            ],
+            "title": "Disposition",
+            "type": "string"
+          },
+          "epistemic_state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "cited",
+                  "inferred",
+                  "simulated",
+                  "tentative",
+                  "conflicting"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Epistemic State"
+          },
+          "feedback_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Feedback Id",
+            "type": "string"
+          },
+          "history": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "official_policy_changed": {
+            "const": false,
+            "default": false,
+            "title": "Official Policy Changed",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "revoked_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Revoked Reason"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/$defs/FeedbackScope"
+          },
+          "source": {
+            "$ref": "#/$defs/FeedbackSource"
+          },
+          "state": {
+            "default": "active",
+            "enum": [
+              "active",
+              "revoked"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "withhold_markers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Withhold Markers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "feedback_id",
+          "revision",
+          "category",
+          "classified_by",
+          "classification_rule",
+          "text",
+          "scope",
+          "source",
+          "disposition",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "FeedbackRecord",
+        "type": "object"
+      },
+      "FeedbackRevoke": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "FeedbackRevoke",
+        "type": "object"
+      },
+      "FeedbackScope": {
+        "additionalProperties": false,
+        "description": "Where a feedback item may apply. The user is always the authenticated caller.\n\nNone means \"any\" for that dimension. No field can name another user or widen access.",
+        "properties": {
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "target_audience": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Audience"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "target_channel": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Channel"
+          }
+        },
+        "title": "FeedbackScope",
+        "type": "object"
+      },
+      "FeedbackSource": {
+        "additionalProperties": false,
+        "description": "Provenance only. A referenced run/draft must belong to the caller.",
+        "properties": {
+          "draft_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Draft Id"
+          },
+          "draft_version": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Draft Version"
+          },
+          "kind": {
+            "default": "user_statement",
+            "enum": [
+              "user_statement",
+              "draft_review"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "title": "FeedbackSource",
         "type": "object"
       },
       "IntentDecision": {
@@ -13706,6 +15249,13 @@
     }
   },
   "public_model_names": [
+    "FeedbackScope",
+    "FeedbackSource",
+    "FeedbackCreate",
+    "FeedbackClassification",
+    "FeedbackRevoke",
+    "FeedbackRecord",
+    "FeedbackApplication",
     "DraftEditRequest",
     "PublishRequest",
     "DraftState",
@@ -13784,11 +15334,11 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
-    "src/rfa_mas/api/app.py": "63d6713cdd80cb794c49b65a9769ce6a5bee241184728520915a88c3f4d443e6",
+    "src/rfa_mas/api/app.py": "a0e61cdd873c85f6402d06b458b092c0ef67a9011191ffc0cd4321f79be71ff6",
     "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
-    "src/rfa_mas/contracts/__init__.py": "355b3b3c298eac4cf2f0b5115db87d8ffefe037dd611b19d299139f310ac8acc",
+    "src/rfa_mas/contracts/__init__.py": "269a01e4abe4f4f694f6bc7f2d57d1b6bc394cfa90137802f5c11e1d175a2f18",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "9600fe31441910b37beef8fdce64bd6f745ca75aaf3c0c1dcf55e43efce9565d",
+    "src/rfa_mas/contracts/models.py": "555c606c7bf0ca8a02ccd34e8d383ce7ed8874765ee86791e98e7dcd09594d17",
     "src/rfa_mas/ports/interfaces.py": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
     "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a"
   },

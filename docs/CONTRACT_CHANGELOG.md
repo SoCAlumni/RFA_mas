@@ -1,5 +1,10 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P1-005B 피드백 메모리 1.1 (통합·발행 대기)
+
+- additive 1.1: `FeedbackCreate`/`FeedbackScope`/`FeedbackSource`/`FeedbackClassification`/`FeedbackRevoke`/`FeedbackRecord`/`FeedbackApplication`, `/v1/feedback*`와 `/v1/runs/{run_id}/feedback` route. migration12 `feedback_items`/`feedback_item_revisions`/`feedback_applications`. 정책 변경 제안은 `official_policy_changed=false` 고정.
+- P1-004 연결: `AssistantResponse.feedback`(`FeedbackRecord`)와 status `feedback_recorded`. `feedback` intent는 지원 intent가 되며 분류기 규칙으로만 저장한다. 해석된 도메인은 scope를 좁히기만 한다. 같은 문장 반복은 기존 활성 항목을 재사용하고 분류 불가는 `feedback_unclassified`로 응답한다.
+
 ## 2026-09-27 — P0-023/P0-024 단일 runner·변경 이벤트·알림 1.1 (통합·발행 대기)
 
 - P0-023(설정·실행, 계약 DTO 변경 없음): `rfa scheduler`만 APScheduler 3.11.3 `AsyncIOScheduler` + `SQLAlchemyJobStore`(별도 0600 SQLite)를 소유한다. flock 소유 lock으로 두 번째 runner 거절, FastAPI lifespan/worker는 시작하지 않음. job store에는 `rfa_mas.adapters.scheduler:dispatch_scheduled`와 schedule_id만 직렬화. 설정 `SCHEDULER_BACKEND`/`SCHEDULER_JOBSTORE_URL`/`DEFAULT_TIMEZONE`/`SCHEDULER_MISFIRE_POLICY`(빈 값=기본), `SCHEDULER_ENABLED`는 runner CLI 허용 gate.
