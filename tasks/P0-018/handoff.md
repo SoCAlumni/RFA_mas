@@ -42,3 +42,18 @@ Next first action: submit unchanged source and capture fresh post-knowledge-targ
 
 - 사유: Dependencies of P1-005C after RFA-EXTENDED republish (P1-005A)
 - 소스 변경 없이 현재 통합 HEAD cf05f47에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-021 (2026-09-26T18:01Z)
+
+- 사유: Direct/transitive dependencies of P0-021 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 2223a7f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-008 (2026-09-26T18:11Z)
+
+- 사유: Direct/transitive dependencies of P1-008 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3c5cb6f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-022 (2026-09-26T18:26Z)
+
+- 사유: Direct/transitive dependencies of P0-022 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3466bc5에서 계획된 검증을 worker/target 단계로 재실행한다.

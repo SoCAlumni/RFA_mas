@@ -8,9 +8,10 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
-spec_state: ready
-unresolved: []
+status: verifying
+spec_state: draft
+unresolved:
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 1.0
@@ -131,7 +132,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006E
 latest_evidence_file: .agent/evidence/P1-006E/target-0926175016/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 17
   spec_digest: c0475e8871cb31437d7d0ca1733c449f258fffe87b8aadf6dd54b70ce866cc6b
   contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
@@ -141,7 +142,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
@@ -163,8 +164,8 @@ integration:
       evidence: .agent/evidence/P1-006E/target-0926175016/result.json
     head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
   evidence: .agent/evidence/P1-006E/target-0926175016/result.json
-revision: 25
-spec_revision: 17
+revision: 29
+spec_revision: 20
 claim_generation: 1
 claim: null
 attempts:
@@ -186,6 +187,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:50:28+00:00'
+updated_at: '2026-09-26T18:41:31+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

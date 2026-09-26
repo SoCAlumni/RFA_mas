@@ -1,0 +1,131 @@
+schema_version: '1.0'
+id: P1-006F
+title: Langfuse 보존 정책 실제 적용(OSS 제약으로 blocked)
+objective: 내보낸 trace metadata의 보존 기간을 실제로 강제한다.
+kind: task
+source_tasks:
+- P1-006C
+requirement_refs:
+- docs/EVALUATION_CONTEXT.md
+priority: P1
+status: blocked
+spec_state: draft
+unresolved:
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 본인 LLMOps
+product_mode: real Langfuse(local self-host) 필요; not_run
+scope:
+  included:
+  - Enterprise data-retention 기능 또는 승인된 자체 ID 삭제 job
+  excluded:
+  - 라이선스 우회
+  - 로컬 trace 원본 삭제
+  owned_paths:
+  - src/rfa_mas/adapters/langfuse.py
+  - docs/evidence/llmops.md
+  read_only_paths: []
+  planned_paths:
+  - docs/evidence/llmops.md
+  shared_resources: []
+depends_on:
+- id: P1-006C
+  condition: integrated_done
+  required_output: Langfuse export와 ID 조회·삭제 증거
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: 4c43f3cf8e8bee0726fdad28bf721047f738929fe1bc07d989c1fa2da34e5e42
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/EVALUATION_CONTEXT.md
+    section: trace 보존
+    reason: 보존 요구
+  handoff: tasks/P1-006F/handoff.md
+  dependency_results:
+  - tasks/P1-006C/handoff.md
+deliverables:
+- path: docs/evidence/llmops.md
+  availability: planned
+  description: 보존 적용 증거
+acceptance_criteria:
+- id: AC1
+  given: Langfuse로 내보낸 관측 metadata
+  expect: 지정 보존 기간이 지나면 Langfuse 측에서 실제로 삭제됨을 확인하거나, 승인된 자체 삭제 job이 ID 기준으로 삭제하고 그 결과를 조회로 확인한다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  type: manual
+  availability: planned
+  prerequisites:
+  - 보존 기능 사용 가능 환경
+  cwd: .
+  argv: []
+  timeout_seconds: 600
+  procedure:
+  - 보존 기간 경과 후 조회
+  assertions:
+  - 지정 보존 기간이 지나면 Langfuse 측에서 실제로 삭제됨을 확인하거나, 승인된 자체 삭제 job이 ID 기준으로 삭제하고 그 결과를 조회로 확인한다.
+  runner: manual
+evidence_dir: .agent/evidence/P1-006F
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 3
+spec_revision: 3
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker:
+  cause: 'Langfuse 4.46.0(OSS, 공식 docker-compose)은 Enterprise data-retention 라이선스 기능이 없으면 LANGFUSE_INIT_PROJECT_RETENTION을
+    적용하지 않는다(실제 관찰: 컨테이너 값 7, DB retention_days NULL). 최소 보존 3일·야간 cleanup이라 한 세션에서 만료 검증 불가.'
+  evidence:
+  - docs/evidence/llmops.md
+  resolve_when: Enterprise 기능 사용 가능 또는 사용자가 자체 삭제 job(범위·주기) 승인
+  affects: []
+migration:
+  original_status: new_split
+  source_ref: 2026-09-27 P1-006C live 결과
+  prior_claim: 없음
+  implementation_facts: 미구현
+  previous_evidence: []
+  checks_this_migration:
+  - langfuse_worker live 관찰
+  judgment: P1-006C AC3의 보존 적용 부분을 외부 제약과 함께 분리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T18:41:31+00:00'
+concise_result: 'blocked: OSS Langfuse retention 미적용.'
+next_action: 사용자 결정 대기(Enterprise 또는 자체 삭제 job).

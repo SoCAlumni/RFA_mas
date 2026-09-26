@@ -1,0 +1,59 @@
+{
+  "attempt_id": "pre-P0-022-target-0926183812",
+  "contract_digest": "a1f40ac1daf3e6db7dbc7b9ccc26cac2dbf7ecee269315df35dfd33e338fdafd",
+  "mode": "domain keyword routing만 verified; intent missing/not_run. router local(false), model mock(true). NVIDIA/Skill/팀원 불필요.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_graph.py",
+          "tests/test_supervisor_boundaries.py"
+        ],
+        "assertions": [
+          "동일 입력은 같은 intent/domain, unsupported에는 제한과 다음 선택지",
+          "저장/검색은 task/team null이고 spawn 없음",
+          "연구·실험 intent는 기존 Task ref 또는 새 Task 후보로 연결, 외부 채널은 Supervisor 진입만 허용",
+          "budget/timeout/cancel/부분 실패를 안전한 응답에 반영하는 공통 결과 계약."
+        ],
+        "counts": {
+          "collected": 47,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 47,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 6.37,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T18:38:21.532129+00:00",
+        "id": "V1",
+        "log_excerpt": "47 passed, 11 warnings in 5.71s",
+        "result": "passed",
+        "started_at": "2026-09-26T18:38:15.161889+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "3466bc58ac5769ad71cf8f786ea4669384435f92",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-26T18:38:21.532181+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T18:38:15.161200+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "b2bf95efbe225b7287d20e8028e67bf79c617368f107b32e6b82c1bfc1645d64",
+  "source_manifest": ".agent/evidence/P1-004/pre-P0-022-target-0926183812/source.json",
+  "spec_digest": "6973122d042c46193d3113a86c6f7e4b27d9435ef61e1220cb91588f5220b003",
+  "spec_revision": 11,
+  "task_id": "P1-004"
+}

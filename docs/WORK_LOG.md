@@ -878,3 +878,29 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 보조 worker 결과: P0-021(effect ledger, migration 9, 47 passed), P1-008(reference 계약 suite 60 passed, HTTP publisher·callback verifier), P0-022/23/24(APScheduler 3.11.3 + SQLAlchemy 2.0.54 pin, migration 10/11, test_schedules 43 passed), P1-005B(피드백 4분류, migration 12, 16 passed), P1-006B(persona 24사례, mock 기준 security 4 fail은 P1-005 screen 이전 main 기준), P1-001D(Recall@5 small20 0.61→1.0, load1000 0.52→1.0, 같은 harness·seed), P0-020A(결정적 후속 비교), P0-020B(team/cancel HTTP). 모두 wip branch이며 ledger_worker가 선형 통합 stack(wip/stack)으로 충돌을 해소 중이다.
 - 설정 점검: main checkout에는 `.env`가 없고 NVIDIA 키는 명시 env 파일(`.env.dev`, 값 미열람)로만 live 테스트가 사용한다. doctor 기준 LANGFUSE_* 미설정 → P1-006C live는 로컬 self-host(colima) 시도 또는 not_run.
 
+
+## Coordinator — 2026-09-27 02:25~04:05 KST (17:25~19:05 UTC)
+
+- 통합·close: P1-006 재통합(5558842), P1-004(6f01052), P1-006E(fc82677/204d2b6), OPS-002 재close(18b3ea0), P0-021(3c5cb6f), P1-008(3466bc5), P0-022(8c99475), P0-023(bbd80e3). 매 발행 뒤 다음 claim의 stale 의존성 폐포만 재검증했다.
+- 오류와 조치:
+  1. P1-005 통합 뒤 P1-006 재검증 4 failed(retrieval spy 0회). P1-005C가 P1-005→P1-001A→P1-006 순환 의존으로 claim 불가.
+     - P1-006 재검증 claim을 discard하고 scope를 넓혀(bootstrap, 새 경계 테스트) 실제 변경으로 재통합했다(b58fb11).
+     - P1-005C는 claim된 적 없는 상태에서 superseded로 취소했다(관리 스크립트, 사유 기록).
+  2. P0-022 pin(APScheduler 3.11.3, SQLAlchemy 2.0.54) 병합 후 재검증 worktree venv가 옛 lock이라 pytest가 수집 0으로 실패(P0-014).
+     - `tc.finish`/FF 재시도에 `uv sync --locked`를 추가하고, intcoord는 병합 후 canonical venv도 동기화한다.
+     - 재시도 1회로 진행.
+  3. P1-002A: 다른 세션 claim(만료)의 worktree가 baseline 이후로 FF되어 submit 불가. 복구는 P1-003A stale 예약과 EDUCATION_MAPPING 겹침으로 거절.
+     - chain 종료 뒤 P1-003A live 재검증 → P1-002A 인수 순서로 처리 예정.
+     - live 계획의 `env RFA_*=…` 형식을 tc.run_plan이 받도록 했다(RFA_* 변수만, argv는 계획 그대로 기록).
+- 보조 worker 결과:
+  - P1-007: NemoClaw 공식 지원 agent는 3종이라 LangGraph 앱은 sandbox 밖 API로 설계. NemoClaw 실행은 not_run.
+  - P1-007C(등록): 실제 OpenShell v0.1.1 VM driver로 E2E-05 허용/차단 매트릭스 14행 기대 일치. n=3 sandbox/역할, run 0926181417.
+  - P1-006C: OTLP export, 로컬 Langfuse 4.46.0 live에서 ID 조회·삭제 확인. OSS가 보존 설정을 무시함을 확인 → P1-006F blocked 분리.
+  - P1-002: 제품 경로 NVIDIA 실제 호출 n=1, 29.8s. P1-003: 제품 Research→공식 Skill CLI 실제 n=1. 다른 세션 wip을 rebase·통합 준비.
+  - P0-026 harness v2: 64 passed/1 skip(real-model opt-in).
+- E2E harness가 찾은 결함과 배정:
+  - SQLite 두 번째 프로세스 SIGBUS(높음) → P0-005A.
+  - 추출 품질 → P1-004C.
+  - 근거 부족 답변 → P1-001E.
+  - 승인 전 게시의 영구 실패 receipt → P1-008E.
+

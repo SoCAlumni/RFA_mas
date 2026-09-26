@@ -25,6 +25,8 @@ scope:
   - TracePort adapter·export opt-in·보존 기간, 기존 TRACE_BACKEND/LANGFUSE_* 재사용.
   - 이미 선택한 Langfuse backend 하나를 사용; NAT 전용 관측 서버를 추가하지 않음. 실제 설치/기존 운영 OTel 발견 시 중복 구축 없이 mapping만; 원문
     필터는 exporter 전 적용.
+  - '2026-09-27 요구 분할: Langfuse 측 보존 정책 적용은 OSS 4.46이 Enterprise data-retention 라이선스 없이 LANGFUSE_INIT_PROJECT_RETENTION을
+    무시함을 실제로 확인해 P1-006F(blocked)로 분리. 이 task는 ID 기반 조회·삭제와 보존 설정 미적용 사실 기록까지.'
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -36,11 +38,13 @@ scope:
   - src/rfa_mas/adapters/langfuse.py
   - tests/integration/test_langfuse_live.py
   - docs/evidence/llmops.md
+  - .env.example
+  - tests/test_settings.py
+  - docs/INTEGRATION.md
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/contracts
   - src/rfa_mas/ports/interfaces.py
-  - docs/INTEGRATION.md
   - docs/EVALUATION_CONTEXT.md
   planned_paths:
   - src/rfa_mas/adapters/langfuse.py
@@ -119,20 +123,18 @@ acceptance_criteria:
   required: true
 - id: AC3
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: 지정 보존/삭제 정책과 ID 기반 조회 확인.
+  expect: ID 기반 조회와 ID 기반 삭제를 실제로 확인하고, Langfuse 측 보존 설정의 적용 여부를 실제로 관찰해 기록한다(미적용이면 P1-006F blocker로 연결,
+    만료 검증 주장 없음).
   required: true
 verification:
 - id: V1
   ac_ids:
   - AC1
   - AC2
-  - AC3
   type: command
-  availability: planned
+  availability: available
   prerequisites:
-  - mock transport payload canary 검사, 실제 self-host endpoint에서 합성 trace 조회·보존 설정 대조.
-  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
-    성공 아님.
+  - source worktree; 합성 fixture·in-process fake OTLP 서버만; .env 읽기 금지
   cwd: .
   argv:
   - .venv/bin/python
@@ -140,15 +142,30 @@ verification:
   - pytest
   - -q
   - tests/test_security.py
-  - tests/integration/test_langfuse_live.py
-  timeout_seconds: 120
+  - tests/test_settings.py
+  timeout_seconds: 300
   procedure: []
   assertions:
   - 전송 전 metadata allowlist/redaction, 본문/private context/secret 기본 미수집; endpoint별 egress 허가 필요, token
     미제공 null과 미수집 범위 유지
   - 연결 실패를 실제 trace 성공으로 보고하지 않음
-  - 지정 보존/삭제 정책과 ID 기반 조회 확인.
   runner: pytest
+- id: V2
+  ac_ids:
+  - AC3
+  type: manual
+  availability: available
+  prerequisites:
+  - 공식 docker-compose Langfuse 4.46.0 로컬 live 실행 결과(docs/evidence/llmops.md, evidence-final.json)
+  cwd: .
+  argv: []
+  timeout_seconds: 600
+  procedure:
+  - live 실행의 ID 조회·삭제 결과와 retention_days 관찰을 evidence 문서와 대조
+  assertions:
+  - ID 기반 조회와 ID 기반 삭제를 실제로 확인하고, Langfuse 측 보존 설정의 적용 여부를 실제로 관찰해 기록한다(미적용이면 P1-006F blocker로 연결, 만료
+    검증 주장 없음).
+  runner: manual
 evidence_dir: .agent/evidence/P1-006C
 latest_evidence_file: null
 verification_summary:
@@ -167,8 +184,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 3
-spec_revision: 3
+revision: 4
+spec_revision: 4
 claim_generation: 0
 claim: null
 attempts:
@@ -190,6 +207,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T03:49:30+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T18:24:31+00:00'
+concise_result: 'Specification changed: Split Langfuse-side retention (blocked: OSS 4.46 ignores LANGFUSE_INIT_PROJECT_RETENTION
+  without the Enterprise data-retention feature, observed live) into P1-006F; offline command check +
+  manual live review'
 next_action: mock transport payload canary 검사, 실제 self-host endpoint에서 합성 trace 조회·보존 설정 대조.

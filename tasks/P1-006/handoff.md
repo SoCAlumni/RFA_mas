@@ -65,3 +65,13 @@ Next first action: submit unchanged artifact and capture/repeat target exact V1/
 
 - 사유: Direct/transitive dependencies of P1-006E before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 6f01052에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-008 (2026-09-26T18:16Z)
+
+- 사유: Direct/transitive dependencies of P1-008 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3c5cb6f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-022 (2026-09-26T18:32Z)
+
+- 사유: Direct/transitive dependencies of P0-022 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3466bc5에서 계획된 검증을 worker/target 단계로 재실행한다.

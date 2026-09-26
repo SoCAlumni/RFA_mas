@@ -1,0 +1,181 @@
+{
+  "branch": "task/P0-022-int-0926184105",
+  "captured_at": "2026-09-26T18:41:18+00:00",
+  "contract_digest": "a1f40ac1daf3e6db7dbc7b9ccc26cac2dbf7ecee269315df35dfd33e338fdafd",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    "AGENTS.md": {
+      "index_blob": null,
+      "sha256": "cf27246f1382f1db8b62e468535c8c342e0812ce11038522863c576b78b32b0f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/CONTRACT_CHANGELOG.md": {
+      "index_blob": null,
+      "sha256": "422a0929dad4d571331046f356fbad1d27a90716b71f441afd2abee7b2531939",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/INTEGRATION.md": {
+      "index_blob": null,
+      "sha256": "159cd09dc8d6743b25b2cdb530594a01086a886bbf4bff2debbcced5aeb6e397",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/contracts/extended.json": {
+      "index_blob": null,
+      "sha256": "12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "3bb22977a8111ba62715a71ac77d00942f23ac292224e1af40ee728c5b390ee8",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "scripts/contract_baseline.py": {
+      "index_blob": null,
+      "sha256": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/adapters/local.py": {
+      "index_blob": null,
+      "sha256": "0c29aa23d52712305f7823f1049682769a0a495a3d4b672d71c99c02ed58d4b5",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/adapters/scheduler.py": {
+      "index_blob": null,
+      "sha256": "b9103fd517ad19210e69453097b82dffdb130d9f024c74a953d3f502589d72e8",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/api/app.py": {
+      "index_blob": null,
+      "sha256": "3be701f52fddc27d735867e2957e18a552f86d337cbdbdedb5235170bb4fed31",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/graphs/supervisor.py": {
+      "index_blob": null,
+      "sha256": "01c151f3f38a83b9ff5a5af762aa5e1c3e0fb346e3f6914ed401ad3f7c19825e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/scheduling.py": {
+      "index_blob": null,
+      "sha256": "d546284cae646a56579a6b01b4ab4bf9f0a31a39c69dc238c162f75d89948717",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/service.py": {
+      "index_blob": null,
+      "sha256": "d9209655065414445a2edd941d585d70ef956d23a272a73876d734bc0930c73e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/bootstrap.py": {
+      "index_blob": null,
+      "sha256": "1d72b5f9f88e2502ae8dba8e2054acf523c5290365679a75186a5f5539f366f3",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "355b3b3c298eac4cf2f0b5115db87d8ffefe037dd611b19d299139f310ac8acc",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "9600fe31441910b37beef8fdce64bd6f745ca75aaf3c0c1dcf55e43efce9565d",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "c1cf378035e4784a1094fa1721003f0202eefefd7f0b7cf53f7510f74c107d09",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_knowledge.py": {
+      "index_blob": null,
+      "sha256": "6ffbca4b5c14a49f05ab2ab1e2d55b2d18064639441935b2b233801352cf7ebe",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_schedules.py": {
+      "index_blob": null,
+      "sha256": "6dd7c45cc8585e7c730f559abb26af5ad1392e342c7ae197105ed34928e531fd",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_sessions.py": {
+      "index_blob": null,
+      "sha256": "5d28ac70536ad69b8e3ee1029bb9864761eb5da00569595ea8ba774fc71ba961",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_teams.py": {
+      "index_blob": null,
+      "sha256": "bde4469352bee7d6089385f6e22ad31236ef7368f375061a4249ed86f5c6e341",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "961647b38902b81e373ba64dd568bb6dd286d1841031b2b09fc9e567005d477f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "56d7f34f31329d99f1af863e53a5019b7f68e52e2a971f8a5717363f73841816",
+  "head": "8c99475319db97f2b4a125c81645e339d257f789",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-022-int-0926184105",
+  "spec_digest": "bd2f3c372c6e0751d80466e14a9b1e65de00ebfb84a268017dfc743af655f373",
+  "spec_revision": 16
+}

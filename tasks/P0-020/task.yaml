@@ -357,75 +357,78 @@ verification:
   - legacy1.0 schema/API/approval binding이 유지되고 additive1.1 입력/결과·usage는 유효성 검사를 통과함
   runner: pytest
 evidence_dir: .agent/evidence/P0-020
-latest_evidence_file: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
+latest_evidence_file: .agent/evidence/P0-020/pre-P0-022-target-0926183704/result.json
 verification_summary:
   state: stale
   spec_revision: 11
   spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
-  contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
-  source_fingerprint: bb627da54ef8e39450de860fb580b4bca90011fb7782cbd1d07f91aa8901cff6
-  evidence: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
+  contract_digest: a1f40ac1daf3e6db7dbc7b9ccc26cac2dbf7ecee269315df35dfd33e338fdafd
+  source_fingerprint: 55d9516a0e032a1b4af7b0f203123760bb7c99904adeb724c218e3ca90c9d632
+  evidence: .agent/evidence/P0-020/pre-P0-022-target-0926183704/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: true
-  submission_generation: 5
+  submission_generation: 8
   submission:
-    head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
-    baseline_head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+    head: 3466bc58ac5769ad71cf8f786ea4669384435f92
+    baseline_head: 3466bc58ac5769ad71cf8f786ea4669384435f92
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020
     branch: task/P0-020
-    evidence: .agent/evidence/P0-020/pre-P1-005-worker-0926171648/result.json
+    evidence: .agent/evidence/P0-020/pre-P0-022-worker-0926183614/result.json
     changed_files:
-      docs/CONTRACT_CHANGELOG.md: c89b37595dacc44ce1f43c3e00c0476b62d5a4f48b0a02bfe0cea954918b6392
-      docs/INTEGRATION.md: 528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013
-      docs/contracts/extended.json: 9455b302aaeb0b87f0c9fc4d80289bc1c79374d6d09b920e080019dc147e9c66
-      src/rfa_mas/adapters/local.py: e7784348f4df6500e90a8df5109323523d1b4f2ab898e4d61257d9795eacf101
-      src/rfa_mas/adapters/mock.py: beed366077642da0d95f81f27d0e5c45484aaa315033322bbbf8509988b029a0
-      src/rfa_mas/application/graphs/domain.py: ea28b21ccc9e74a05854cfe4290c25292326423c2c3347624c8e841654657d82
-      src/rfa_mas/application/graphs/supervisor.py: 510d4f99b147f7209961edd04e9a12fd488793232883b5b2b3406aa79898ad8f
-      src/rfa_mas/application/observations.py: f36cdc897c8dad5f2b4a15e37618ba08785316c029a5b134463344e89284ec3c
-      src/rfa_mas/application/service.py: 07c0b226eb45bcab7374b2b5c0929c946e503da57d5afc844ee6ddc682698d27
+      docs/CONTRACT_CHANGELOG.md: 9adbf716568610b6eaccd0ed9a38bad69df8b9a10e83495d5e27ea475368906d
+      docs/INTEGRATION.md: 159cd09dc8d6743b25b2cdb530594a01086a886bbf4bff2debbcced5aeb6e397
+      docs/contracts/extended.json: e987ca32d884fe61a83e690895bd60a38da04d27e93fc2a81e74c4486d211121
+      src/rfa_mas/adapters/local.py: 7f4f353b9bd032f66cafea4d616ec39bc5e8a4db9b780b6a47c6373b4cea6f46
+      src/rfa_mas/adapters/mock.py: 7d6aa8feb96cd8a465322d9e229dcb581776b32b7947fff014063c07ef688c07
+      src/rfa_mas/application/graphs/domain.py: 1080999c4e6a13fe1120a6bad8f5c3b7a66123865a0ad6a0daabb937f7055920
+      src/rfa_mas/application/graphs/supervisor.py: 798add67eac83e5d0d1cc246e823e0495b8a78967f4817151097d5ea8819b5ab
+      src/rfa_mas/application/observations.py: 7453543c43a77a993efd66c2f9f15494f3691df1dc10919482801da3310ef85f
+      src/rfa_mas/application/service.py: 5b18902860392fd4e87f619022d51989769191048c7d3bda512a1b2a358547a3
       src/rfa_mas/application/workers.py: cfd904d5ec8a60065f226d2e67362c33b406638467ca717ea8421cc778d8874c
-      src/rfa_mas/bootstrap.py: af627d98dcd4f0d7df5bda51589941f8fa7f8364e78e58dd7ff9dccae798da8b
-      src/rfa_mas/contracts/__init__.py: df35e5f94ef63bed8650b08d98b5c4326daf9484167131f5db498ddb67df23d3
-      src/rfa_mas/contracts/models.py: 0b7880146910a5ab38a45e309497dab8cabf943db0f136f3f8320be445c72c88
-      src/rfa_mas/ports/interfaces.py: f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e
+      src/rfa_mas/bootstrap.py: 0a36d35c74b9081a8f1dc4674f544fe02aad80aaba10a3ac36b022314320f13a
+      src/rfa_mas/contracts/__init__.py: c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa
+      src/rfa_mas/contracts/models.py: 3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a
+      src/rfa_mas/ports/interfaces.py: 65822ed6ebd4f1feada462dfb8e711ab40abce1ceca025ebdc61a2a97d35a915
       tests/test_contracts.py: 9af711c44c1078fc5bedb85e13c7006b99beffa969ea07fc2fe61c56e449f54f
-      tests/test_knowledge.py: ed9066edcc93025c5507064cf7f354f3c072d22d2ca42f859295ee4059b57d93
+      tests/test_knowledge.py: 1cb5ae51cd08268afc09dc37ba6807126fd154aef9685c2a11c3809cc96e2eed
       tests/test_local_adapters.py: 9678816b459b56b30c1dd3e6f27652a08b663d5e0bfde5384a4c615e0631e124
-      tests/test_resume.py: 0fa395ad0736205b525f33f770c6dd78366a1cd798336b9e724a179d60f548c3
-      tests/test_sessions.py: 126434ee617b911c330215b2ecf2d187c91becd12600de74349d2432c5cfd7ba
-      tests/test_supervisor_boundaries.py: fa5349793d8281c0bfc663564b00210c775a8340565bfd992c57a23318c721f7
+      tests/test_resume.py: b969f59bd999349f0a24e374881c69638be3a04b457c9f4621309db9dfe9d17f
+      tests/test_sessions.py: 047208b8e230f6f84316ec145ca876cb75f10a62921cdd8b84c27382b9ec233d
+      tests/test_supervisor_boundaries.py: b44d9e53d61bfec07efc57c880abdefc6f4d15504e7cac982c8906a2caef5703
       tests/test_team_execution.py: d2baeacf26f3ba0886d1536c2f75338416ff840acb276484fb5f8a1d89c26d72
-      tests/test_teams.py: 55a660e35d735128b2361abd9d1098316db1590de65b79ec3629cecd8986c7d6
+      tests/test_teams.py: af8199eea52fb37003e35bb64e86974f0e4d9d4586367cd1bf6454ef21635af6
       tests/test_trace_contract.py: c23435cc5795d51666e8f49ca6b19b831671a75a235c3d510b63fc567d6d5f88
   result:
     verification_summary:
       state: passed
       spec_revision: 11
       spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
-      contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
-      source_fingerprint: bb627da54ef8e39450de860fb580b4bca90011fb7782cbd1d07f91aa8901cff6
-      evidence: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
-    head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
-  evidence: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
-revision: 58
+      contract_digest: a1f40ac1daf3e6db7dbc7b9ccc26cac2dbf7ecee269315df35dfd33e338fdafd
+      source_fingerprint: 55d9516a0e032a1b4af7b0f203123760bb7c99904adeb724c218e3ca90c9d632
+      evidence: .agent/evidence/P0-020/pre-P0-022-target-0926183704/result.json
+    head: 3466bc58ac5769ad71cf8f786ea4669384435f92
+  evidence: .agent/evidence/P0-020/pre-P0-022-target-0926183704/result.json
+revision: 85
 spec_revision: 11
-claim_generation: 5
+claim_generation: 8
 claim: null
 attempts:
-  count: 10
+  count: 16
   cycles: 1
   no_progress_count: 0
-  latest_attempt: pre-P1-005-target-0926171731
+  latest_attempt: pre-P0-022-target-0926183704
   evidence_refs:
   - .agent/evidence/P0-020/team-worker-01/result.json
   - .agent/evidence/P0-020/post-ops005-worker-0926164109/result.json
   - .agent/evidence/P0-020/pre-P1-004B-worker-0926165529/result.json
   - .agent/evidence/P0-020/pre-P2-003-worker-0926170612/result.json
   - .agent/evidence/P0-020/pre-P1-005-worker-0926171648/result.json
+  - .agent/evidence/P0-020/pre-P0-021-worker-0926180551/result.json
+  - .agent/evidence/P0-020/pre-P1-008-worker-0926182133/result.json
+  - .agent/evidence/P0-020/pre-P0-022-worker-0926183614/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -669,6 +672,192 @@ attempts:
       source_fingerprint: 7bbdaeee188d54a5c38f693a8832a1a9437fbea9d4362af86add0672d9ec33dd
       evidence: .agent/evidence/P0-020/pre-P2-003-target-0926170650/result.json
     latest_evidence_file: .agent/evidence/P0-020/pre-P2-003-target-0926170650/result.json
+  - kind: integrated_revalidation
+    generation: 6
+    baseline_head: 2223a7f7e9e53cc8badcaabb841030d8fa0f5743
+    reason: Direct/transitive dependencies of P0-021 before claim (OPS-005)
+    at: '2026-09-26T18:05:50+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 5
+      submission:
+        head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+        baseline_head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020
+        branch: task/P0-020
+        evidence: .agent/evidence/P0-020/pre-P1-005-worker-0926171648/result.json
+        changed_files:
+          docs/CONTRACT_CHANGELOG.md: c89b37595dacc44ce1f43c3e00c0476b62d5a4f48b0a02bfe0cea954918b6392
+          docs/INTEGRATION.md: 528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013
+          docs/contracts/extended.json: 9455b302aaeb0b87f0c9fc4d80289bc1c79374d6d09b920e080019dc147e9c66
+          src/rfa_mas/adapters/local.py: e7784348f4df6500e90a8df5109323523d1b4f2ab898e4d61257d9795eacf101
+          src/rfa_mas/adapters/mock.py: beed366077642da0d95f81f27d0e5c45484aaa315033322bbbf8509988b029a0
+          src/rfa_mas/application/graphs/domain.py: ea28b21ccc9e74a05854cfe4290c25292326423c2c3347624c8e841654657d82
+          src/rfa_mas/application/graphs/supervisor.py: 510d4f99b147f7209961edd04e9a12fd488793232883b5b2b3406aa79898ad8f
+          src/rfa_mas/application/observations.py: f36cdc897c8dad5f2b4a15e37618ba08785316c029a5b134463344e89284ec3c
+          src/rfa_mas/application/service.py: 07c0b226eb45bcab7374b2b5c0929c946e503da57d5afc844ee6ddc682698d27
+          src/rfa_mas/application/workers.py: cfd904d5ec8a60065f226d2e67362c33b406638467ca717ea8421cc778d8874c
+          src/rfa_mas/bootstrap.py: af627d98dcd4f0d7df5bda51589941f8fa7f8364e78e58dd7ff9dccae798da8b
+          src/rfa_mas/contracts/__init__.py: df35e5f94ef63bed8650b08d98b5c4326daf9484167131f5db498ddb67df23d3
+          src/rfa_mas/contracts/models.py: 0b7880146910a5ab38a45e309497dab8cabf943db0f136f3f8320be445c72c88
+          src/rfa_mas/ports/interfaces.py: f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e
+          tests/test_contracts.py: 9af711c44c1078fc5bedb85e13c7006b99beffa969ea07fc2fe61c56e449f54f
+          tests/test_knowledge.py: ed9066edcc93025c5507064cf7f354f3c072d22d2ca42f859295ee4059b57d93
+          tests/test_local_adapters.py: 9678816b459b56b30c1dd3e6f27652a08b663d5e0bfde5384a4c615e0631e124
+          tests/test_resume.py: 0fa395ad0736205b525f33f770c6dd78366a1cd798336b9e724a179d60f548c3
+          tests/test_sessions.py: 126434ee617b911c330215b2ecf2d187c91becd12600de74349d2432c5cfd7ba
+          tests/test_supervisor_boundaries.py: fa5349793d8281c0bfc663564b00210c775a8340565bfd992c57a23318c721f7
+          tests/test_team_execution.py: d2baeacf26f3ba0886d1536c2f75338416ff840acb276484fb5f8a1d89c26d72
+          tests/test_teams.py: 55a660e35d735128b2361abd9d1098316db1590de65b79ec3629cecd8986c7d6
+          tests/test_trace_contract.py: c23435cc5795d51666e8f49ca6b19b831671a75a235c3d510b63fc567d6d5f88
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 11
+          spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+          contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+          source_fingerprint: bb627da54ef8e39450de860fb580b4bca90011fb7782cbd1d07f91aa8901cff6
+          evidence: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
+        head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+      evidence: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 11
+      spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+      contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+      source_fingerprint: bb627da54ef8e39450de860fb580b4bca90011fb7782cbd1d07f91aa8901cff6
+      evidence: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
+    latest_evidence_file: .agent/evidence/P0-020/pre-P1-005-target-0926171731/result.json
+  - kind: integrated_revalidation
+    generation: 7
+    baseline_head: 3c5cb6f807a8d0833842569f7a6d846409f25521
+    reason: Direct/transitive dependencies of P1-008 before claim (OPS-005)
+    at: '2026-09-26T18:21:31+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 6
+      submission:
+        head: 2223a7f7e9e53cc8badcaabb841030d8fa0f5743
+        baseline_head: 2223a7f7e9e53cc8badcaabb841030d8fa0f5743
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020
+        branch: task/P0-020
+        evidence: .agent/evidence/P0-020/pre-P0-021-worker-0926180551/result.json
+        changed_files:
+          docs/CONTRACT_CHANGELOG.md: 9adbf716568610b6eaccd0ed9a38bad69df8b9a10e83495d5e27ea475368906d
+          docs/INTEGRATION.md: 528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013
+          docs/contracts/extended.json: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+          src/rfa_mas/adapters/local.py: b468691a78f59e938158279da99b7ba68b1d4dc30f5a90f2cdf7f9b068f4ed52
+          src/rfa_mas/adapters/mock.py: 752b5ee73589ad89e57e61dc28f8907cf807324dcc32d2ca59b556a3b9f74023
+          src/rfa_mas/application/graphs/domain.py: 1080999c4e6a13fe1120a6bad8f5c3b7a66123865a0ad6a0daabb937f7055920
+          src/rfa_mas/application/graphs/supervisor.py: a254054b73a9dc32d881c43a3b0bd51eb537127d1a5a5e3a73c090fae9f552de
+          src/rfa_mas/application/observations.py: d577416c6c35c0efc41700accec1c49390c349925438bdc567fe59f200783b9a
+          src/rfa_mas/application/service.py: 6959de59c2795140747abfbebdb2e5422c76e6fb7f3768c992135b9947463bc2
+          src/rfa_mas/application/workers.py: cfd904d5ec8a60065f226d2e67362c33b406638467ca717ea8421cc778d8874c
+          src/rfa_mas/bootstrap.py: d312b45312587a66b562150bc5bea3dcd05549d8f99fd2a815afcb7ef190c5d6
+          src/rfa_mas/contracts/__init__.py: c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa
+          src/rfa_mas/contracts/models.py: 3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a
+          src/rfa_mas/ports/interfaces.py: f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e
+          tests/test_contracts.py: 9af711c44c1078fc5bedb85e13c7006b99beffa969ea07fc2fe61c56e449f54f
+          tests/test_knowledge.py: ed9066edcc93025c5507064cf7f354f3c072d22d2ca42f859295ee4059b57d93
+          tests/test_local_adapters.py: 9678816b459b56b30c1dd3e6f27652a08b663d5e0bfde5384a4c615e0631e124
+          tests/test_resume.py: 0fa395ad0736205b525f33f770c6dd78366a1cd798336b9e724a179d60f548c3
+          tests/test_sessions.py: 126434ee617b911c330215b2ecf2d187c91becd12600de74349d2432c5cfd7ba
+          tests/test_supervisor_boundaries.py: b44d9e53d61bfec07efc57c880abdefc6f4d15504e7cac982c8906a2caef5703
+          tests/test_team_execution.py: d2baeacf26f3ba0886d1536c2f75338416ff840acb276484fb5f8a1d89c26d72
+          tests/test_teams.py: 55a660e35d735128b2361abd9d1098316db1590de65b79ec3629cecd8986c7d6
+          tests/test_trace_contract.py: c23435cc5795d51666e8f49ca6b19b831671a75a235c3d510b63fc567d6d5f88
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 11
+          spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+          contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
+          source_fingerprint: 023d6462db09691540ecfa3a09785e6b253b27b9a116c9e3e2b0c9842aec5102
+          evidence: .agent/evidence/P0-020/pre-P0-021-target-0926180645/result.json
+        head: 2223a7f7e9e53cc8badcaabb841030d8fa0f5743
+      evidence: .agent/evidence/P0-020/pre-P0-021-target-0926180645/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 11
+      spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+      contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
+      source_fingerprint: 023d6462db09691540ecfa3a09785e6b253b27b9a116c9e3e2b0c9842aec5102
+      evidence: .agent/evidence/P0-020/pre-P0-021-target-0926180645/result.json
+    latest_evidence_file: .agent/evidence/P0-020/pre-P0-021-target-0926180645/result.json
+  - kind: integrated_revalidation
+    generation: 8
+    baseline_head: 3466bc58ac5769ad71cf8f786ea4669384435f92
+    reason: Direct/transitive dependencies of P0-022 before claim (OPS-005)
+    at: '2026-09-26T18:36:13+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 7
+      submission:
+        head: 3c5cb6f807a8d0833842569f7a6d846409f25521
+        baseline_head: 3c5cb6f807a8d0833842569f7a6d846409f25521
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020
+        branch: task/P0-020
+        evidence: .agent/evidence/P0-020/pre-P1-008-worker-0926182133/result.json
+        changed_files:
+          docs/CONTRACT_CHANGELOG.md: 9adbf716568610b6eaccd0ed9a38bad69df8b9a10e83495d5e27ea475368906d
+          docs/INTEGRATION.md: 528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013
+          docs/contracts/extended.json: 4c43f3cf8e8bee0726fdad28bf721047f738929fe1bc07d989c1fa2da34e5e42
+          src/rfa_mas/adapters/local.py: 7f4f353b9bd032f66cafea4d616ec39bc5e8a4db9b780b6a47c6373b4cea6f46
+          src/rfa_mas/adapters/mock.py: 752b5ee73589ad89e57e61dc28f8907cf807324dcc32d2ca59b556a3b9f74023
+          src/rfa_mas/application/graphs/domain.py: 1080999c4e6a13fe1120a6bad8f5c3b7a66123865a0ad6a0daabb937f7055920
+          src/rfa_mas/application/graphs/supervisor.py: 798add67eac83e5d0d1cc246e823e0495b8a78967f4817151097d5ea8819b5ab
+          src/rfa_mas/application/observations.py: 7453543c43a77a993efd66c2f9f15494f3691df1dc10919482801da3310ef85f
+          src/rfa_mas/application/service.py: 5b18902860392fd4e87f619022d51989769191048c7d3bda512a1b2a358547a3
+          src/rfa_mas/application/workers.py: cfd904d5ec8a60065f226d2e67362c33b406638467ca717ea8421cc778d8874c
+          src/rfa_mas/bootstrap.py: d312b45312587a66b562150bc5bea3dcd05549d8f99fd2a815afcb7ef190c5d6
+          src/rfa_mas/contracts/__init__.py: c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa
+          src/rfa_mas/contracts/models.py: 3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a
+          src/rfa_mas/ports/interfaces.py: 65822ed6ebd4f1feada462dfb8e711ab40abce1ceca025ebdc61a2a97d35a915
+          tests/test_contracts.py: 9af711c44c1078fc5bedb85e13c7006b99beffa969ea07fc2fe61c56e449f54f
+          tests/test_knowledge.py: 1cb5ae51cd08268afc09dc37ba6807126fd154aef9685c2a11c3809cc96e2eed
+          tests/test_local_adapters.py: 9678816b459b56b30c1dd3e6f27652a08b663d5e0bfde5384a4c615e0631e124
+          tests/test_resume.py: b969f59bd999349f0a24e374881c69638be3a04b457c9f4621309db9dfe9d17f
+          tests/test_sessions.py: 047208b8e230f6f84316ec145ca876cb75f10a62921cdd8b84c27382b9ec233d
+          tests/test_supervisor_boundaries.py: b44d9e53d61bfec07efc57c880abdefc6f4d15504e7cac982c8906a2caef5703
+          tests/test_team_execution.py: d2baeacf26f3ba0886d1536c2f75338416ff840acb276484fb5f8a1d89c26d72
+          tests/test_teams.py: af8199eea52fb37003e35bb64e86974f0e4d9d4586367cd1bf6454ef21635af6
+          tests/test_trace_contract.py: c23435cc5795d51666e8f49ca6b19b831671a75a235c3d510b63fc567d6d5f88
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 11
+          spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+          contract_digest: 43438129516cc2c284dd8bd69bc4ff21ba8a90ddfe09ea1c4b28b97aad891aff
+          source_fingerprint: 6c0d8fd98dca7302eb9a1a7d1f55ae523f61e5f6418b4318cd6848fc3e78fe4a
+          evidence: .agent/evidence/P0-020/pre-P1-008-target-0926182252/result.json
+        head: 3c5cb6f807a8d0833842569f7a6d846409f25521
+      evidence: .agent/evidence/P0-020/pre-P1-008-target-0926182252/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 11
+      spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
+      contract_digest: 43438129516cc2c284dd8bd69bc4ff21ba8a90ddfe09ea1c4b28b97aad891aff
+      source_fingerprint: 6c0d8fd98dca7302eb9a1a7d1f55ae523f61e5f6418b4318cd6848fc3e78fe4a
+      evidence: .agent/evidence/P0-020/pre-P1-008-target-0926182252/result.json
+    latest_evidence_file: .agent/evidence/P0-020/pre-P1-008-target-0926182252/result.json
 blocker: null
 migration:
   original_status: todo
@@ -681,7 +870,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:19:00+00:00'
+updated_at: '2026-09-26T18:41:30+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

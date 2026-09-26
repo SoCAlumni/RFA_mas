@@ -1,0 +1,125 @@
+{
+  "branch": "task/P0-017",
+  "captured_at": "2026-09-26T18:14:46+00:00",
+  "contract_digest": "43438129516cc2c284dd8bd69bc4ff21ba8a90ddfe09ea1c4b28b97aad891aff",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    ".env.example": {
+      "index_blob": null,
+      "sha256": "6b6116e707e91b7e7020c22a961ec00426b7eec8d9434db909de49779008ea1c",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "AGENTS.md": {
+      "index_blob": null,
+      "sha256": "cf27246f1382f1db8b62e468535c8c342e0812ce11038522863c576b78b32b0f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/EVALUATION_CONTEXT.md": {
+      "index_blob": null,
+      "sha256": "dc55eb4e1d5c45e5ffbca73f83961184dc2bce2c72ab17001dff4933c75e33ad",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/INTEGRATION.md": {
+      "index_blob": null,
+      "sha256": "528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/bootstrap.py": {
+      "index_blob": null,
+      "sha256": "d312b45312587a66b562150bc5bea3dcd05549d8f99fd2a815afcb7ef190c5d6",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/cli.py": {
+      "index_blob": null,
+      "sha256": "8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/dev_env.py": {
+      "index_blob": null,
+      "sha256": "8571fd97e72018f656de67aa538f9965e12134fb44a5ba0b415d2a60d72548fa",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "65822ed6ebd4f1feada462dfb8e711ab40abce1ceca025ebdc61a2a97d35a915",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_settings.py": {
+      "index_blob": null,
+      "sha256": "7f07230b65e790f5ae1ab1bfcde633f6b38d4ffbfaa8a6516c607051975253e0",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "bf55dc7573e94477535c279e4056a3ff3c4e6603989fec92bf9ace1495456849",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "5f3300c702d486a7d16ef1ad830cf42c6019a567dbb05f476f6c366911d4a9f4",
+  "head": "3c5cb6f807a8d0833842569f7a6d846409f25521",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-017",
+  "spec_digest": "5fb40f33c7ea1ba2f67457eeee0820a85b75f5243bb73fc515f8c48afac04dcf",
+  "spec_revision": 32
+}

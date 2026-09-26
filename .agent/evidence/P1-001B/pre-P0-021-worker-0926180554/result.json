@@ -1,0 +1,57 @@
+{
+  "attempt_id": "pre-P0-021-worker-0926180554",
+  "contract_digest": "934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_context_loading.py"
+        ],
+        "assertions": [
+          "read spy에서 선택한 L2만 읽고 전체 본문 주입 0회",
+          "multi-parent ACL/revision change는 cache 무효화, 제목/요약/관계 canary 포함 검사",
+          "지침/목표 보존·예산 부족 insufficient·실측 단위 확인"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 17,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.4,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T18:06:00.486158+00:00",
+        "id": "V1",
+        "log_excerpt": "17 passed in 0.29s",
+        "result": "passed",
+        "started_at": "2026-09-26T18:05:59.085550+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "2223a7f7e9e53cc8badcaabb841030d8fa0f5743",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001B-int-0926164313",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T18:06:00.486224+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T18:05:59.084791+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "29983e13282ff11f8f66bf5b24fd1af1337c42e377b8ea541c1471cefc219671",
+  "source_manifest": ".agent/evidence/P1-001B/pre-P0-021-worker-0926180554/source.json",
+  "spec_digest": "adb5755e8fd6cd4e7b3fa0836023d6e0193847dcaf3905e5da348a2cba291772",
+  "spec_revision": 19,
+  "task_id": "P1-001B"
+}

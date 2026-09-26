@@ -14,3 +14,7 @@
 
 - 예약·피드백 intent는 P0-022/P1-005B 구현 전까지 unsupported. LLM 의도 분류 없음(결정적 규칙).
 
+## 재검증 pre-P0-022 (2026-09-26T18:37Z)
+
+- 사유: Direct/transitive dependencies of P0-022 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3466bc5에서 계획된 검증을 worker/target 단계로 재실행한다.

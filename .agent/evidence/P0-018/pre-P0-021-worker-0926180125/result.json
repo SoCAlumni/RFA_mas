@@ -1,0 +1,57 @@
+{
+  "attempt_id": "pre-P0-021-worker-0926180125",
+  "contract_digest": "934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8",
+  "mode": "domain별 AgentSpec만 존재; template/selector missing/not_run. 선택 local(false), 입력 synthetic. 외부 의존 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_team_selector.py"
+        ],
+        "assertions": [
+          "목표/산출물/capability/권한/runtime/예산으로 후보를 먼저 제한",
+          "두 template 선택과 선택 이유가 결정적",
+          "Engineering·미승인 버전·실행 불가 후보는 선택 불가. LLM 선택은 P2-009에서 후보 내부로만 허용."
+        ],
+        "counts": {
+          "collected": 53,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 53,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.17,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T18:01:31.225939+00:00",
+        "id": "V1",
+        "log_excerpt": "53 passed in 0.07s",
+        "result": "passed",
+        "started_at": "2026-09-26T18:01:30.059970+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "2223a7f7e9e53cc8badcaabb841030d8fa0f5743",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T18:01:31.226039+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T18:01:30.059280+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "5059cbd8e6da90d8c827cf3d6bcc90f5eba549c3a6883270a0a9333a7b44a93a",
+  "source_manifest": ".agent/evidence/P0-018/pre-P0-021-worker-0926180125/source.json",
+  "spec_digest": "7f4c104111a4e43736f29efae4dca6190e6107c37e28e69041f63f740ce0b167",
+  "spec_revision": 26,
+  "task_id": "P0-018"
+}

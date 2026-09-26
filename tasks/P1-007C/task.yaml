@@ -59,7 +59,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: b2e601b8303cdcc172de1cebdf262d1b521a8cd0cd866669457bbcc79ef349fe
+  digest: 4c43f3cf8e8bee0726fdad28bf721047f738929fe1bc07d989c1fa2da34e5e42
   role: consumer
 context:
   global_refs:
@@ -114,21 +114,46 @@ verification:
 - id: V1
   ac_ids:
   - AC1
+  - AC3
+  - AC4
+  type: command
+  availability: available
+  prerequisites:
+  - source worktree; OpenShell 불필요한 결정적 분류 규칙·SupervisorBus 검사만
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/integration/test_openshell_live.py::test_network_deny_requires_policy_record_and_healthy_endpoint
+  - tests/integration/test_openshell_live.py::test_network_allow_requires_openshell_allowed_record
+  - tests/integration/test_openshell_live.py::test_filesystem_absence_or_unproven_permission_error_is_inconclusive
+  - tests/integration/test_openshell_live.py::test_supervisor_bus_boundary_is_measured_without_openshell
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 파일 부재·endpoint 다운·정책 기록 없는 일반 오류는 denied_by_policy가 아니라 inconclusive로 분류된다.
+  - SupervisorBus는 worker→worker를 direct_message_denied로 거절하고 worker→Supervisor를 전달한다(OpenShell 결과와 별도
+    판정).
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
   - AC2
   - AC3
   - AC4
   type: manual
-  availability: planned
+  availability: available
   prerequisites:
-  - openshell v0.1.1 VM driver 설치, 합성 fixture만, 비밀 없음
+  - openshell v0.1.1 VM driver 실제 실행 결과 report.json(run 0926181417)과 docs/evidence/openshell.md
   cwd: .
   argv: []
-  timeout_seconds: 1800
+  timeout_seconds: 600
   procedure:
-  - scripts/openshell_e2e05.py로 역할별 sandbox 실행
-  - OpenShell 정책 로그/감사 기록 수집
-  - SupervisorBus 결정 측정
-  - 결과를 docs/evidence/openshell.md에 기록
+  - ~/.cache/rfa-mas/openshell-e2e05/runs/<run>/report.json의 status·label·matrix(met/observed/evidence_line)·supervisor_bus·latency를
+    검토
+  - docs/evidence/openshell.md의 표와 report가 일치하는지 대조
   assertions:
   - 조사 worker 역할 sandbox에서 허용 endpoint 읽기는 성공하고, 비허용 endpoint·호스트 sentinel 경로 접근은 OpenShell 정책 로그/감사 기록과
     함께 거절된다. 파일 부재·endpoint 다운은 정책 거절로 집계하지 않고 inconclusive로 둔다.
@@ -157,8 +182,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 6
+spec_revision: 6
 claim_generation: 0
 claim: null
 attempts:
@@ -179,6 +204,8 @@ migration:
   - P1-007B는 P1-008B(teammate identity) 대기로 blocked 유지 확인
   judgment: P1-007B 실제 teammate gate를 대체하지 않는 별도 로컬 실제 OpenShell 증거 task.
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:45:17+00:00'
-concise_result: 등록; not_run.
+updated_at: '2026-09-26T18:41:31+00:00'
+concise_result: 'Specification changed: Split verification: deterministic classification/SupervisorBus
+  command check + manual review of the real OpenShell run report (live test is opt-in and cannot pass
+  in the isolated verifier)'
 next_action: worktree에서 스크립트·정책 작성 후 실제 실행.

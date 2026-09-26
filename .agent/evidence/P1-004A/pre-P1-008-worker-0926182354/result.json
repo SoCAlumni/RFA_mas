@@ -1,0 +1,57 @@
+{
+  "attempt_id": "pre-P1-008-worker-0926182354",
+  "contract_digest": "43438129516cc2c284dd8bd69bc4ff21ba8a90ddfe09ea1c4b28b97aad891aff",
+  "mode": "파생 모델 missing/not_run. persistence/review rules local(false), 추출 mock(true). 외부 의존 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_knowledge.py"
+        ],
+        "assertions": [
+          "Supervisor 검토 후만 축적",
+          "인용 사실/모델 inference·실험 simulated 구분",
+          "stale/restricted 부모의 항목은 검색/외부 evidence에서 제외하고 충돌은 미확정 상태로 남김. 다중 source 파생 요약의 모든 부모를 검사하고 공개용 요약은 허용된 source에서 별도 구성; 금지 제목/요약/관계의 재유입도 거절"
+        ],
+        "counts": {
+          "collected": 40,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 40,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.7,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T18:23:59.649279+00:00",
+        "id": "V1",
+        "log_excerpt": "40 passed, 1 warning in 1.33s",
+        "result": "passed",
+        "started_at": "2026-09-26T18:23:56.949155+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "3c5cb6f807a8d0833842569f7a6d846409f25521",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-004A-int-0926164557",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T18:23:59.649306+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T18:23:56.948149+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "d2c276f454ff0078e9525cb158cb9719bfede1c6d5ba7951b5ff1c992458ff99",
+  "source_manifest": ".agent/evidence/P1-004A/pre-P1-008-worker-0926182354/source.json",
+  "spec_digest": "a2ae27617e80b74db3232ddcfba289b773dbb5ccf608370b14e12505ec444bfb",
+  "spec_revision": 13,
+  "task_id": "P1-004A"
+}

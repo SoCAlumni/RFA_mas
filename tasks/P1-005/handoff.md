@@ -14,3 +14,17 @@
 
 - 개인 공개 선호 marker 저장은 P1-005B. BoundAccess는 owner/public local만 지원하므로 company/BU 대상은 retrieval 경로+screen.
 
+## 재검증 pre-P0-021 (2026-09-26T18:08Z)
+
+- 사유: Direct/transitive dependencies of P0-021 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 2223a7f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-008 (2026-09-26T18:24Z)
+
+- 사유: Direct/transitive dependencies of P1-008 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3c5cb6f에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-022 (2026-09-26T18:38Z)
+
+- 사유: Direct/transitive dependencies of P0-022 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 3466bc5에서 계획된 검증을 worker/target 단계로 재실행한다.

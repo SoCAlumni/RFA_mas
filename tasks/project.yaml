@@ -1,7 +1,7 @@
 schema_version: '1.0'
 repository_id: rfa-mas-2026-local
 control_root: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
-updated_at: '2026-09-26T17:45:17+00:00'
+updated_at: '2026-09-26T18:41:31+00:00'
 global_context:
 - AGENTS.md
 - docs/PROJECT_CONTEXT.md
@@ -84,7 +84,7 @@ contracts:
   RFA-EXTENDED:
     version: '1.1'
     path: docs/contracts/extended.json
-    digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+    digest: 12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b
     state: ready
     owner_task: P0-014
     provisional: true
@@ -673,4 +673,96 @@ contract_changes:
   - P1-008D
   version: '1.1'
   digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+  notice: Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- id: RFA-EXTENDED
+  at: '2026-09-26T18:10:06+00:00'
+  reason: P0-021 additive 1.1 models integrated at 3c5cb6f
+  compatibility: Additive optional 1.1 models/routes; frozen 1.0 baseline unchanged
+  migration: Consumers re-read and accept the new digest; affected done tasks re-verify
+  evidence: .agent/evidence/P0-021/contract-proof-0926181001.json
+  affected:
+  - OPS-003
+  - OPS-004
+  - OPS-005
+  - P0-017
+  - P0-018
+  - P0-020A
+  - P0-023
+  - P0-025A
+  - P0-026
+  - P0-028
+  - P1-001B
+  - P1-001C
+  - P1-001D
+  - P1-005
+  - P1-005C
+  - P1-006
+  - P1-006E
+  - P1-007C
+  - P1-008C
+  - P1-008D
+  version: '1.1'
+  digest: 4c43f3cf8e8bee0726fdad28bf721047f738929fe1bc07d989c1fa2da34e5e42
+  notice: Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- id: RFA-EXTENDED
+  at: '2026-09-26T18:26:20+00:00'
+  reason: P1-008 additive 1.1 models integrated at 3466bc5
+  compatibility: Additive optional 1.1 models/routes; frozen 1.0 baseline unchanged
+  migration: Consumers re-read and accept the new digest; affected done tasks re-verify
+  evidence: .agent/evidence/P1-008/contract-proof-0926182616.json
+  affected:
+  - OPS-003
+  - OPS-004
+  - OPS-005
+  - P0-017
+  - P0-018
+  - P0-020A
+  - P0-023
+  - P0-025A
+  - P0-026
+  - P0-028
+  - P1-001B
+  - P1-001C
+  - P1-001D
+  - P1-005
+  - P1-005C
+  - P1-006
+  - P1-006E
+  - P1-006F
+  - P1-007C
+  - P1-008C
+  - P1-008D
+  version: '1.1'
+  digest: e987ca32d884fe61a83e690895bd60a38da04d27e93fc2a81e74c4486d211121
+  notice: Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- id: RFA-EXTENDED
+  at: '2026-09-26T18:41:31+00:00'
+  reason: P0-022 additive 1.1 models integrated at 8c99475
+  compatibility: Additive optional 1.1 models/routes; frozen 1.0 baseline unchanged
+  migration: Consumers re-read and accept the new digest; affected done tasks re-verify
+  evidence: .agent/evidence/P0-022/contract-proof-0926184127.json
+  affected:
+  - OPS-003
+  - OPS-004
+  - OPS-005
+  - P0-017
+  - P0-018
+  - P0-020A
+  - P0-023
+  - P0-025A
+  - P0-026
+  - P0-028
+  - P1-001B
+  - P1-001C
+  - P1-001D
+  - P1-005
+  - P1-005C
+  - P1-006
+  - P1-006E
+  - P1-006F
+  - P1-007C
+  - P1-008C
+  - P1-008D
+  version: '1.1'
+  digest: 12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b
   notice: Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest

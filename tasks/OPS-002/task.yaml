@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -168,7 +168,7 @@ verification:
 evidence_dir: .agent/evidence/OPS-002
 latest_evidence_file: .agent/evidence/OPS-002/target-0926175442/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 4
   spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
@@ -178,7 +178,7 @@ integration:
   state: integrated
   target: canonical main
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 16
   submission:
     head: 18b3ea0e40b77c0426226429f6a98948f18f90a2
@@ -198,7 +198,7 @@ integration:
       evidence: .agent/evidence/OPS-002/target-0926175442/result.json
     head: 18b3ea0e40b77c0426226429f6a98948f18f90a2
   evidence: .agent/evidence/OPS-002/target-0926175442/result.json
-revision: 100
+revision: 101
 spec_revision: 4
 claim_generation: 16
 claim: null
@@ -667,7 +667,7 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T17:57:39+00:00'
+updated_at: '2026-09-26T18:10:04+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'
