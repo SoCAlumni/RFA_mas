@@ -284,6 +284,23 @@ created -> running -> waiting_approval -> completed
 
 P0 success의 `completed`는 mock 검토 흐름이 끝났다는 뜻이다. 외부 게시가 완료되었다는 뜻이 아니며 기본 `publication_status`는 `not_requested`다.
 
+### UI polling 상태·이벤트·readiness (P0-025, repository-local 1.1)
+
+UI는 HTTP GET polling만 쓴다. SSE와 알림 API는 없다. 모든 조회는 인증된 설치 소유자 범위이며 trace/request ID나 다른 외부 식별자로는 조회 권한을 얻지 못한다(없는 run과 다른 소유자의 run은 같은 404).
+
+| 경로 | 응답 | 내용 |
+| --- | --- | --- |
+| `GET /v1/runs/{run_id}/status` | `RunStatusView` | run 상태·`stop_reason`·오류 code, Task/Team 상태, worker(role·상태·오류 code·step/tool 수), 최신 draft version/hash, 같은 version/hash의 검토 mirror ref, publication receipt ref. 발생하지 않은 단계는 null. 현재 ACL/정책으로 표시할 수 없는 draft는 `draft_withheld=true`, draft/review null |
+| `GET /v1/tasks/{task_id}/status` | `TaskStatusView` | Task 상태와 Team lifecycle phase/reason |
+| `GET /v1/events?cursor=&limit=&run_id=` | `EventPage` | Run 연결 reference event: `run`, `context`(허용 source revision과 L0/L1/L2 stage 결과·문자 수), `policy`(허용/거부 결과·관측 ID), `draft`(version/hash/target/policy version), `review`(정확한 version/hash의 결정 mirror), `publication`(receipt ref), `team`/`role` |
+
+- cursor는 소유자별 gap 없는 순번(`ev1_<n>`)이다. 같은 cursor 재전송은 같은 event를 돌려주고, 새로 관측된 event는 이미 발급된 모든 cursor 뒤에 붙는다. 형식이 틀리면 400 `invalid_cursor`.
+- event에는 ID·revision·hash·상태/사유 code만 있다. 원문 근거·초안 본문·제목·요약·부모 관계·prompt·도구 인자는 없다. source ref는 조회할 때마다 현재 ACL로 다시 확인하고, 더는 읽을 수 없는 ref는 `withheld_sources` 개수로만 남긴다.
+- `occurred_at`은 원본 저장소에 자체 시각이 있을 때만 채운다. `recorded_at`은 feed가 그 event를 처음 기록한 시각이다. feed는 조회 시점에 관측한 상태를 기록하므로 두 조회 사이의 중간 상태는 원본이 따로 저장하지 않았다면 나타나지 않는다.
+- 저장: SQLite migration 13 `run_event_feed`(append-only). 새 event 출처(예: P0-024 예약 알림, kind `notification` 예약)는 `application/events.py`의 `EventSource.collect()` 구현 하나를 추가한다. 현재 `notification` 생산자는 없다.
+- `/healthz`는 프로세스 생존만 뜻한다. `/readyz`는 기존 `{"status"}`에 `ready`와 `checks`를 더한다. service 시작, 선택 mode 구성(`missing`/`invalid` 설정 이름과 `reserved` 미구현 기능 code, 값은 없음), 선택한 HTTP backend마다 `/healthz` 도달 여부를 본다. 하나라도 아니면 503 `ready=false`. 선택 구성으로 container를 만들 수 없으면(예: `MODEL_PROVIDER=nvidia`) `create_app`은 `/healthz`와 `/readyz`만 응답하는 앱을 만들고 나머지는 503 `configuration_error`다. mock으로 대체하지 않는다. CLI `api`는 기존대로 시작 전에 설정 누락을 거절한다.
+- `registry/service.json`은 기본(mock/local) 구성이 실제로 제공하는 capability만 endpoint 또는 adapter와 함께 적고 `tests/test_api.py`가 OpenAPI·기본 adapter와 대조한다.
+
 ## Provisional HTTP reference contract
 
 기준 구현은 `src/rfa_mas/reference/app.py`, client는 `src/rfa_mas/adapters/http.py`다. JSON body는 각 Pydantic 모델의 `model_dump(mode="json")` 형태다.

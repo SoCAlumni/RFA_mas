@@ -70,6 +70,9 @@ SAFE_ERROR_CODES = frozenset(
         # P1-005A DRAFT lifecycle (fixed codes).
         "approval_required",
         "publication_exists",
+        # P0-025 event feed polling (fixed codes).
+        "invalid_cursor",
+        "invalid_limit",
         # P0-021 effect ledger (fixed codes).
         "permission_revoked",
         "effect_in_progress",

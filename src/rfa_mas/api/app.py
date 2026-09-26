@@ -4,14 +4,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Literal, TypedDict
 
-from fastapi import Depends, FastAPI, Header, Request, status
+from fastapi import Depends, FastAPI, Header, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from rfa_mas.application.observations import safe_error_code
 from rfa_mas.application.candidates import CandidateService
 from rfa_mas.application.feedback import FeedbackService
-from rfa_mas.bootstrap import Container, build_container
+from rfa_mas.bootstrap import Container, build_container, unavailable_readiness
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
     AccumulationReport,
@@ -22,6 +22,7 @@ from rfa_mas.contracts import (
     DomainId,
     DraftEditRequest,
     DraftState,
+    EventPage,
     FeedbackApplication,
     FeedbackCategory,
     FeedbackClassification,
@@ -40,6 +41,7 @@ from rfa_mas.contracts import (
     ResumeRequest,
     RunRecord,
     RunResult,
+    RunStatusView,
     Schedule,
     ScheduleCreate,
     SessionCreate,
@@ -47,13 +49,14 @@ from rfa_mas.contracts import (
     SessionRecord,
     SourceMetadata,
     StructuredError,
+    TaskStatusView,
     TeamRunResult,
     TodoCandidate,
     TrustedPrincipal,
     WorkRequest,
     new_id,
 )
-from rfa_mas.errors import RfaError
+from rfa_mas.errors import BackendNotImplementedError, ConfigurationError, RfaError
 from rfa_mas.settings import Settings
 
 # Domain codes that are safe to echo in addition to the shared observation allowlist.
@@ -108,11 +111,46 @@ async def resolve_principal(
     return await container.service.sessions.local_principal()
 
 
+def _unavailable_app(settings: Settings) -> FastAPI:
+    """Liveness without readiness when the selected modes cannot be built (P0-025).
+
+    /healthz answers; /readyz reports the exact blocking setting NAMES/feature codes;
+    every other route is 503 configuration_error. No silent fallback to mock adapters.
+    """
+    report = unavailable_readiness(settings)
+    app = FastAPI(title="RFA MAS", summary="Not ready: selected configuration unavailable",
+                  version="0.1.0")
+
+    @app.get("/healthz", tags=["operations"])
+    async def health() -> dict[str, object]:
+        return {"status": "ok", "service": "rfa-mas", "schema_version": SCHEMA_VERSION}
+
+    @app.get("/readyz", tags=["operations"])
+    async def ready() -> JSONResponse:
+        return JSONResponse(status_code=503, content=report.model_dump(mode="json"))
+
+    @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+                   include_in_schema=False)
+    async def unavailable(path: str) -> JSONResponse:
+        error = StructuredError(code="configuration_error", retryable=False,
+                                message="선택한 구성이 준비되지 않았습니다.")
+        return JSONResponse(status_code=503, content=error.model_dump(mode="json"))
+
+    return app
+
+
 def create_app(
     settings: Settings | None = None,
     container: Container | None = None,
 ) -> FastAPI:
-    selected_container = container or build_container(settings)
+    if container is None:
+        settings = settings or Settings()
+        try:
+            selected_container = build_container(settings)
+        except (ConfigurationError, BackendNotImplementedError):
+            return _unavailable_app(settings)
+    else:
+        selected_container = container
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -185,12 +223,14 @@ def create_app(
             "schema_version": SCHEMA_VERSION,
         }
 
+    # Frozen 1.0 operation: OpenAPI unchanged; the body adds ready/checks (ReadinessReport)
+    # to the original {"status": "ready" | "not_ready"} with the same 200/503 codes.
     @app.get("/readyz", tags=["operations"])
     async def ready() -> JSONResponse:
-        is_ready = selected_container.ready
+        report = await selected_container.readiness()
         return JSONResponse(
-            status_code=200 if is_ready else 503,
-            content={"status": "ready" if is_ready else "not_ready"},
+            status_code=200 if report.ready else 503,
+            content=report.model_dump(mode="json"),
         )
 
     @app.post(
@@ -305,6 +345,38 @@ def create_app(
         # Terminal run -> invalid_state_transition (409); unsupported path -> 501.
         state = await selected_container.service.cancel(run_id, trusted_principal)
         return {"state": state}
+
+    # P0-025: owner polling views and the reference-only event feed (no SSE).
+    def _events():
+        if selected_container.events is None:
+            raise RfaError("not_implemented", "이벤트 조회가 구성되지 않았습니다.")
+        return selected_container.events
+
+    @app.get("/v1/runs/{run_id}/status", response_model=RunStatusView, tags=["status"])
+    async def get_run_status_view(
+        run_id: str,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> RunStatusView:
+        return await _events().run_status(run_id, trusted_principal)
+
+    @app.get("/v1/tasks/{task_id}/status", response_model=TaskStatusView, tags=["status"])
+    async def get_task_status_view(
+        task_id: str,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> TaskStatusView:
+        return await _events().task_status(task_id, trusted_principal)
+
+    @app.get("/v1/events", response_model=EventPage, tags=["status"])
+    async def list_events(
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        cursor: Annotated[str | None, Query(max_length=40)] = None,
+        limit: Annotated[int, Query(ge=1, le=200)] = 50,
+        run_id: Annotated[str | None, Query(max_length=160)] = None,
+    ) -> EventPage:
+        # Owner-scoped only. No trace/request ID lookup exists; unknown params are ignored.
+        return await _events().page(
+            trusted_principal, cursor=cursor, limit=limit, run_id=run_id
+        )
 
     @app.post(
         "/v1/knowledge/sources",

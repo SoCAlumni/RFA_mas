@@ -1,7 +1,7 @@
 {
-  "registry_schema_version": "provisional-1",
+  "registry_schema_version": "provisional-2",
   "status": "provisional",
-  "provisional_reason": "상위 저장소의 서비스 등록 형식과 팀원 endpoint 계약을 아직 확인하지 못했습니다.",
+  "provisional_reason": "상위 저장소의 서비스 등록 형식과 팀원 endpoint 계약을 아직 확인하지 못했습니다. 아래 항목은 이 저장소가 기본(mock/local) 구성에서 실제로 제공하는 것만 적습니다.",
   "service": {
     "name": "rfa-mas",
     "display_name": "RFA Multi-Agent Assistant",
@@ -13,20 +13,101 @@
     "readiness_url": "http://127.0.0.1:8000/readyz",
     "openapi_url": "http://127.0.0.1:8000/openapi.json",
     "contract_version": "1.0",
+    "extended_contract_version": "1.1",
     "domains": [
       "triv3",
       "quantization_research"
     ],
     "capabilities": [
+      "operations.health",
+      "operations.readiness",
+      "session.manage",
       "work.create",
       "work.read",
+      "work.resume",
+      "status.poll",
+      "events.poll",
+      "knowledge.manage",
+      "knowledge.derive",
+      "candidates.manage",
+      "draft.lifecycle",
+      "publication.mock",
       "domain.route",
-      "evidence.mock_search",
-      "draft.generate",
+      "evidence.local_search",
       "draft.mock_review",
       "policy.local_evaluate",
       "trace.local_metadata"
     ],
+    "capability_endpoints": {
+      "operations.health": [
+        "GET /healthz"
+      ],
+      "operations.readiness": [
+        "GET /readyz"
+      ],
+      "session.manage": [
+        "POST /v1/sessions",
+        "GET /v1/sessions",
+        "GET /v1/sessions/{session_id}"
+      ],
+      "work.create": [
+        "POST /v1/work",
+        "POST /v1/sessions/{session_id}/work"
+      ],
+      "work.read": [
+        "GET /v1/work/{run_id}",
+        "GET /v1/runs/{run_id}"
+      ],
+      "work.resume": [
+        "POST /v1/runs/{run_id}/resume"
+      ],
+      "status.poll": [
+        "GET /v1/runs/{run_id}/status",
+        "GET /v1/tasks/{task_id}/status"
+      ],
+      "events.poll": [
+        "GET /v1/events"
+      ],
+      "knowledge.manage": [
+        "POST /v1/knowledge/sources",
+        "GET /v1/knowledge/sources",
+        "GET /v1/knowledge/sources/{source_id}",
+        "PUT /v1/knowledge/sources/{source_id}",
+        "DELETE /v1/knowledge/sources/{source_id}",
+        "POST /v1/knowledge/imports"
+      ],
+      "knowledge.derive": [
+        "POST /v1/knowledge/derive",
+        "GET /v1/knowledge/derived"
+      ],
+      "candidates.manage": [
+        "POST /v1/candidates/discover",
+        "GET /v1/candidates",
+        "POST /v1/candidates/{candidate_id}/decision"
+      ],
+      "draft.lifecycle": [
+        "GET /v1/runs/{run_id}/draft",
+        "POST /v1/runs/{run_id}/draft/edits",
+        "POST /v1/runs/{run_id}/draft/review"
+      ],
+      "publication.mock": [
+        "POST /v1/runs/{run_id}/publication",
+        "GET /v1/runs/{run_id}/publication"
+      ]
+    },
+    "capability_adapters": {
+      "domain.route": "runtime:local-runtime",
+      "evidence.local_search": "retrieval:local-lexical-v1",
+      "draft.mock_review": "response:mock-response",
+      "policy.local_evaluate": "policy:local-policy-v1",
+      "trace.local_metadata": "trace:local-jsonl-trace"
+    },
+    "polling": {
+      "transport": "http_get_polling",
+      "server_sent_events": false,
+      "events_cursor_param": "cursor",
+      "notifications": "not_provided"
+    },
     "endpoints": [
       {
         "method": "POST",
@@ -38,11 +119,31 @@
         "method": "GET",
         "path": "/v1/work/{run_id}",
         "response_model": "RunResult"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/runs/{run_id}",
+        "response_model": "RunRecord"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/runs/{run_id}/status",
+        "response_model": "RunStatusView"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/tasks/{task_id}/status",
+        "response_model": "TaskStatusView"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/events",
+        "response_model": "EventPage"
       }
     ],
     "default_adapters": {
       "model": "mock-model",
-      "retrieval": "mock-retrieval",
+      "retrieval": "local-lexical-v1",
       "response": "mock-response",
       "tool": "mock-tool",
       "runtime": "local-runtime",

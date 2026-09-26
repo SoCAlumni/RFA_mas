@@ -36,6 +36,7 @@ from rfa_mas.adapters.mock import (
 )
 from rfa_mas.adapters.scheduler import ApschedulerTriggers, ManualClock, SchedulerRunner
 from rfa_mas.application.drafts import DraftLifecycle
+from rfa_mas.application.events import EventFeed
 from rfa_mas.application.feedback import FeedbackService
 from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
 from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
@@ -62,6 +63,8 @@ from rfa_mas.contracts import (
     DomainId,
     ExecutionMode,
     KnowledgeDocument,
+    ReadinessCheck,
+    ReadinessReport,
     TeamBudget,
     TrustedPrincipal,
 )
@@ -96,6 +99,40 @@ class ConfigurationInspection:
             raise ConfigurationError([*self.missing, *self.invalid])
         if self.reserved:
             raise BackendNotImplementedError(self.reserved[0])
+
+    def check(self) -> ReadinessCheck:
+        """Exact names/codes of what blocks the selected modes; never a value."""
+        code = (
+            "configuration_error"
+            if self.missing or self.invalid
+            else "not_implemented"
+            if self.reserved
+            else "ok"
+        )
+        return ReadinessCheck(
+            component="configuration",
+            selected="selected_modes",
+            ready=self.ready,
+            code=code,
+            missing=self.missing,
+            invalid=self.invalid,
+            reserved=self.reserved,
+        )
+
+
+def readiness_report(checks: list[ReadinessCheck]) -> ReadinessReport:
+    ready = bool(checks) and all(check.ready for check in checks)
+    return ReadinessReport(
+        status="ready" if ready else "not_ready", ready=ready, checks=tuple(checks)
+    )
+
+
+def unavailable_readiness(settings: Settings) -> ReadinessReport:
+    """Readiness of a process whose container could not be built for the selected modes."""
+    return readiness_report([
+        ReadinessCheck(component="service", selected="local", ready=False, code="not_started"),
+        inspect_configuration(settings).check(),
+    ])
 
 
 def inspect_configuration(settings: Settings) -> ConfigurationInspection:
@@ -196,6 +233,9 @@ class Container:
     # P0-022: owner schedule intent only. The API never starts or opens the scheduler runner.
     schedules: ScheduleService | None = None
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
+    # P0-025: selected reference HTTP backends probed by readiness, and the event feed.
+    readiness_probes: dict[str, ReferenceHttpClient] = field(default_factory=dict)
+    events: EventFeed | None = None
     ready: bool = False
 
     def context_reader(self, bound: BoundAccess) -> BoundContextReader:
@@ -231,6 +271,29 @@ class Container:
             await client.aclose()
         self.ready = False
 
+    async def readiness(self) -> ReadinessReport:
+        """Liveness is /healthz. Ready needs a started service, a complete configuration
+        for every selected mode and a reachable /healthz on each selected HTTP backend."""
+        checks = [
+            ReadinessCheck(component="service", selected="local", ready=self.ready,
+                           code="ok" if self.ready else "not_started"),
+            inspect_configuration(self.settings).check(),
+        ]
+        timeout = min(self.settings.http_timeout_seconds, 2.0)
+        for name, probe in sorted(self.readiness_probes.items()):
+            reachable = False
+            try:
+                # No credential is sent, nothing is retried, no response text is kept.
+                response = await probe.client.get("/healthz", timeout=timeout)
+                reachable = response.status_code == 200
+            except (httpx.HTTPError, OSError):
+                reachable = False
+            checks.append(ReadinessCheck(
+                component=name.removesuffix("_BASE_URL").lower(), selected="http",
+                ready=reachable, code="ok" if reachable else "unavailable",
+            ))
+        return readiness_report(checks)
+
 
 def _load_documents(directory: Path) -> list[KnowledgeDocument]:
     documents: list[KnowledgeDocument] = []
@@ -253,6 +316,7 @@ def _http_port(
     clients: list[httpx.AsyncClient],
     endpoint_name: str,
     transport: httpx.AsyncBaseTransport | None = None,
+    probes: dict[str, ReferenceHttpClient] | None = None,
 ) -> ReferenceHttpClient:
     require_loopback_reference_url(base_url, setting_name=endpoint_name)
     client = httpx.AsyncClient(
@@ -269,10 +333,13 @@ def _http_port(
         endpoint_name=endpoint_name,
     )
     clients.append(client)
+    if probes is not None:
+        probes[endpoint_name] = reference_client
     return reference_client
 
 
-def _staged_context(repository, policy, settings: Settings, observer: Observations):
+def _staged_context(repository, policy, settings: Settings, observer: Observations,
+                    on_context=None):
     """Trusted factory (P1-005): staged L0/L1/L2 context for owner/public local targets.
 
     Returns None when the target/endpoint is outside the bound reader's supported scope,
@@ -314,6 +381,9 @@ def _staged_context(repository, policy, settings: Settings, observer: Observatio
                               duration_ms=(perf_counter() - start) * 1000,
                               sources=tuple((i.source_id, i.source_revision) for i in items),
                               transport="returned")
+        if on_context is not None:
+            # P0-025: durable Run-linked stage outcomes/source refs (no text) for polling.
+            await on_context(principal, request.run_id, loaded)
         evidence = EvidenceBundle(
             request_id=request.request_id, trace_id=request.trace_id, run_id=request.run_id,
             agent_id=request.agent_id, domain_id=request.domain_id, items=items,
@@ -368,6 +438,7 @@ def build_container(
     repository = SqliteWorkRepository(settings.database_path, project_resolver=project_resolver)
     checkpoints = SqliteCheckpoints(settings.resolved_checkpoint_path)
     clients: list[httpx.AsyncClient] = []
+    probes: dict[str, ReferenceHttpClient] = {}
 
     model = MockModel()
 
@@ -382,6 +453,7 @@ def build_container(
                 clients=clients,
                 endpoint_name="POLICY_BASE_URL",
                 transport=http_transport,
+                probes=probes,
             )
         )
 
@@ -403,6 +475,7 @@ def build_container(
             clients=clients,
             endpoint_name="RESPONSE_BASE_URL",
             transport=http_transport,
+            probes=probes,
         )
         response = ResponseHttpAdapter(response_client)
 
@@ -417,6 +490,7 @@ def build_container(
                 clients=clients,
                 endpoint_name="TOOL_BASE_URL",
                 transport=http_transport,
+                probes=probes,
             )
         )
 
@@ -431,6 +505,7 @@ def build_container(
                 clients=clients,
                 endpoint_name="RUNTIME_BASE_URL",
                 transport=http_transport,
+                probes=probes,
             )
         )
 
@@ -507,9 +582,18 @@ def build_container(
         policy_version=lambda: policy.policy_version,
     )
 
+    # P0-025: owner event feed; present/validate are read at call time from the service.
+    events = EventFeed(
+        repository,
+        validate_draft=lambda: service._dependencies.validate_resume,
+        present_result=lambda result, principal: service.present_result(result, principal),
+    )
+
     if isinstance(runtime, LocalRuntime):
         staged_context = StagedContextBoundary(
-            _staged_context(repository, policy, settings, observer)
+            # P0-025: the same boundary also records Run-linked stage outcomes/source refs.
+            _staged_context(repository, policy, settings, observer,
+                            on_context=events.record_context)
         )
         # P1-005B: owner feedback memory. Markers only narrow; style is advisory model input.
         feedback = FeedbackService(repository)
@@ -607,6 +691,8 @@ def build_container(
         schedules=ScheduleService(repository, ApschedulerTriggers(),
                                   default_timezone=settings.default_timezone),
         http_clients=clients,
+        readiness_probes=probes,
+        events=events,
     )
 
 

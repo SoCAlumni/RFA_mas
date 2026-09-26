@@ -1407,6 +1407,175 @@ class PublishRequest(ExtendedContractModel):
     idempotency_key: OpaqueId
 
 
+# -- P0-025 owner status views, safe run events and readiness (polling; no SSE) ---------
+EventKind = Literal[
+    "run", "context", "policy", "draft", "review", "publication", "team", "role",
+    # Reserved for scheduler notifications (P0-024); no producer exists yet.
+    "notification",
+]
+SafeCode = Annotated[str, Field(min_length=1, max_length=80, pattern=r"^[a-z0-9_.:-]+$")]
+# Setting NAMES and reserved feature codes only; never a configured value.
+ConfigName = Annotated[str, Field(min_length=1, max_length=80, pattern=r"^[A-Z][A-Z0-9_/]*$")]
+FeatureCode = Annotated[str, Field(min_length=1, max_length=120, pattern=r"^[A-Za-z0-9_.:/-]+$")]
+
+
+class EventSourceRef(ExtendedContractModel):
+    """A source revision the requester may CURRENTLY read; never its title or content."""
+
+    source_id: OpaqueId
+    source_revision: OpaqueId
+    stage: ContextLevel | None = None
+
+
+class ContextStageOutcome(ExtendedContractModel):
+    stage: ContextLevel
+    outcome: SafeCode
+    characters: int = Field(ge=0)
+
+
+class EventDraftRef(ExtendedContractModel):
+    draft_id: OpaqueId
+    version: int = Field(ge=1)
+    content_hash: Digest
+    target_audience: Audience
+    policy_version: OpaqueId
+
+
+class EventReviewRef(ExtendedContractModel):
+    """Mirror of the review authority's decision for one exact draft version/hash."""
+
+    review_ref: str = Field(pattern=r"^review:[A-Za-z0-9_.:-]+@v[0-9]+:[0-9a-f]{64}$")
+    draft_id: OpaqueId
+    draft_version: int = Field(ge=1)
+    content_hash: Digest
+    decision: ReviewStatus
+
+
+class EventReceiptRef(ExtendedContractModel):
+    publication_id: OpaqueId
+    status: PublicationStatus
+    approval_id: OpaqueId
+    draft_version: int = Field(ge=1)
+    content_hash: Digest
+    mode: ExecutionMode
+    next_action: Literal["none", "query", "review"]
+
+
+class EventPolicyRef(ExtendedContractModel):
+    outcome: Literal["allowed", "denied", "error"]
+    observation_id: OpaqueId
+
+
+class EventRoleRef(ExtendedContractModel):
+    role: TeamRole
+    status: SafeCode
+    error_code: SafeCode | None = None
+
+
+class RunEvent(ExtendedContractModel):
+    """Owner-scoped, Run-linked reference event. IDs, revisions, hashes and codes only.
+
+    `occurred_at` is set only when the durable source has its own timestamp; `recorded_at`
+    is when this feed first recorded the event. Source refs are re-authorized on every read.
+    """
+
+    cursor: str = Field(pattern=r"^ev1_[0-9]+$")
+    event_id: OpaqueId
+    kind: EventKind
+    run_id: OpaqueId
+    session_id: OpaqueId | None = None
+    task_id: OpaqueId | None = None
+    team_id: OpaqueId | None = None
+    status: SafeCode
+    reason_code: SafeCode | None = None
+    occurred_at: AwareDatetime | None = None
+    recorded_at: AwareDatetime
+    sources: tuple[EventSourceRef, ...] = ()
+    withheld_sources: int = Field(default=0, ge=0)
+    stages: tuple[ContextStageOutcome, ...] = ()
+    policy: EventPolicyRef | None = None
+    draft: EventDraftRef | None = None
+    review: EventReviewRef | None = None
+    receipt: EventReceiptRef | None = None
+    role: EventRoleRef | None = None
+
+
+class EventPage(ExtendedContractModel):
+    events: tuple[RunEvent, ...] = ()
+    next_cursor: str = Field(pattern=r"^ev1_[0-9]+$")
+    has_more: bool
+
+
+class WorkerStatus(ExtendedContractModel):
+    role: TeamRole
+    status: SafeCode
+    error_code: SafeCode | None = None
+    steps: int = Field(ge=0)
+    tool_calls: int = Field(ge=0)
+
+
+class TeamStatusView(ExtendedContractModel):
+    team_id: OpaqueId
+    status: Literal["completed", "partial", "failed", "cancelled"] | None = None
+    stop_reason: SafeCode | None = None
+    lifecycle_phase: Literal["pending", "finished"] | None = None
+    lifecycle_reason: SafeCode | None = None
+
+
+class TaskStatusView(ExtendedContractModel):
+    task_id: OpaqueId
+    domain_id: DomainId
+    status: Literal["active", "paused", "completed", "cancelled"]
+    team: TeamStatusView | None = None
+
+
+class RunStatusView(ExtendedContractModel):
+    """Owner polling view. Stages that did not happen are null, never invented."""
+
+    run_id: OpaqueId
+    session_id: OpaqueId
+    domain_id: DomainId | None = None
+    status: WorkStatus
+    stop_reason: SafeCode | None = None
+    error_codes: tuple[SafeCode, ...] = ()
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    task: TaskStatusView | None = None
+    team: TeamStatusView | None = None
+    workers: tuple[WorkerStatus, ...] = ()
+    draft: EventDraftRef | None = None
+    draft_withheld: bool = False
+    review: EventReviewRef | None = None
+    receipt: EventReceiptRef | None = None
+
+
+class ReadinessCheck(ExtendedContractModel):
+    """Names and codes only: configuration VALUES are never reported."""
+
+    component: SafeCode
+    selected: SafeCode
+    ready: bool
+    code: Literal["ok", "not_started", "configuration_error", "not_implemented", "unavailable"]
+    missing: tuple[ConfigName, ...] = ()
+    invalid: tuple[ConfigName, ...] = ()
+    reserved: tuple[FeatureCode, ...] = ()
+
+
+class ReadinessReport(ExtendedContractModel):
+    status: Literal["ready", "not_ready"]
+    ready: bool
+    checks: tuple[ReadinessCheck, ...]
+
+    @model_validator(mode="after")
+    def all_checks_ready(self) -> ReadinessReport:
+        if self.ready != (bool(self.checks) and all(c.ready for c in self.checks)):
+            raise ValueError("readiness must equal the conjunction of its checks")
+        if (self.status == "ready") != self.ready:
+            raise ValueError("status must match readiness")
+        return self
+
+
+
 class DraftState(ExtendedContractModel):
     """Run-scoped DRAFT/review/publication mirror. Publication state is separate from run.
 

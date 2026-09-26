@@ -257,8 +257,8 @@ async def test_legacy_migration_is_versioned_idempotent_and_never_adopts_unknown
         versions = [row[0] for row in db.execute(
             "SELECT version FROM rfa_schema_migrations ORDER BY rowid"
         )]
-        # Versioned, idempotent, exactly consecutive 1..N; N >= 12 (P1-005B feedback).
-        assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 12
+        # Versioned, idempotent, exactly consecutive 1..N; N >= 13 (P0-025 event feed).
+        assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 13
 
 
 @pytest.mark.parametrize("final_status", ["running", "waiting_approval", "failed", "cancelled"])

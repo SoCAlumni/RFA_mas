@@ -620,6 +620,23 @@ class SqliteWorkRepository:
                         connection.execute(statement)
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (12, ?)",
                                        (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=13"
+                ).fetchone():
+                    # P0-025: owner-scoped append-only event feed for UI polling. Each
+                    # owner has its own gap-free sequence (the cursor). References only.
+                    # (After 9 P0-021, 10 P0-022, 11 P0-024 and 12 P1-005B.)
+                    for statement in (
+                        "CREATE TABLE run_event_feed (owner_id TEXT NOT NULL, "
+                        "seq INTEGER NOT NULL, event_key TEXT NOT NULL, "
+                        "run_id TEXT NOT NULL REFERENCES runs(run_id), kind TEXT NOT NULL, "
+                        "occurred_at TEXT, recorded_at TEXT NOT NULL, event_json TEXT NOT NULL, "
+                        "PRIMARY KEY(owner_id, seq), UNIQUE(owner_id, event_key))",
+                        "CREATE INDEX run_event_feed_run ON run_event_feed(owner_id, run_id, seq)",
+                    ):
+                        connection.execute(statement)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (13, ?)",
+                                       (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
                 connection.execute(
@@ -1775,6 +1792,77 @@ class SqliteWorkRepository:
 
         return await asyncio.to_thread(operation)
 
+    # -- P0-025 owner-scoped run event feed (polling cursor, append-only) ------------------
+    async def record_run_events(
+        self, principal: TrustedPrincipal, events: list[dict[str, Any]]
+    ) -> int:
+        """Append events not yet recorded, in the given order; returns how many were new.
+
+        Each owner has its own gap-free sequence, so a cursor reveals nothing about other
+        owners. Idempotent per (owner, event_key). A run not owned by the caller is skipped.
+        """
+        owner = self._authenticated(principal)
+        now = datetime.now(UTC).isoformat()
+
+        def operation() -> int:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                owned = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT run_id FROM runs WHERE owner_id = ?", (owner,)
+                    ).fetchall()
+                }
+                last = connection.execute(
+                    "SELECT coalesce(max(seq), 0) FROM run_event_feed WHERE owner_id = ?",
+                    (owner,),
+                ).fetchone()[0]
+                added = 0
+                for event in events:
+                    if event["run_id"] not in owned:
+                        continue
+                    if connection.execute(
+                        "SELECT 1 FROM run_event_feed WHERE owner_id = ? AND event_key = ?",
+                        (owner, event["event_key"]),
+                    ).fetchone():
+                        continue
+                    last += 1
+                    added += 1
+                    connection.execute(
+                        "INSERT INTO run_event_feed VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (owner, last, event["event_key"], event["run_id"], event["kind"],
+                         event.get("occurred_at"), now,
+                         json.dumps(event["payload"], sort_keys=True, ensure_ascii=False)),
+                    )
+                return added
+
+        return await asyncio.to_thread(operation)
+
+    async def list_run_events(
+        self,
+        principal: TrustedPrincipal,
+        *,
+        after: int,
+        limit: int,
+        run_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        owner = self._authenticated(principal)
+
+        def operation() -> list[dict[str, Any]]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT seq, event_key, run_id, kind, occurred_at, recorded_at, event_json "
+                    "FROM run_event_feed WHERE owner_id = ? AND seq > ? "
+                    "AND (? IS NULL OR run_id = ?) ORDER BY seq LIMIT ?",
+                    (owner, after, run_id, run_id, limit),
+                ).fetchall()
+                return [
+                    {"seq": r[0], "event_key": r[1], "run_id": r[2], "kind": r[3],
+                     "occurred_at": r[4], "recorded_at": r[5], "payload": json.loads(r[6])}
+                    for r in rows
+                ]
+
+        return await asyncio.to_thread(operation)
 
     # -- P1-005B owner feedback memory ---------------------------------------------------
     async def create_feedback(

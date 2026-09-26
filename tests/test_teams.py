@@ -234,8 +234,8 @@ async def test_restart_sessions_migration_preserve_owners_and_approved_template(
     await asyncio.gather(repo.initialize(), SqliteWorkRepository(repo.path).initialize())
     assert await repo.local_principal() == old_identity
     versions = [r[0] for r in rows(repo, "rfa_schema_migrations")]
-    # Exactly consecutive 1..N; N >= 12 (P1-005B feedback).
-    assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 12
+    # Exactly consecutive 1..N; N >= 13 (P0-025 event feed).
+    assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 13
     reopened = SqliteWorkRepository(repo.path)
     new_runtime = RuntimeSpy()
     new_factory = TeamFactory(reopened, new_runtime, authority.resolve, lambda: authority.support)
