@@ -29,6 +29,7 @@ from rfa_mas.contracts import (
     TaskRequest,
     TaskResult,
     TeamInstance,
+    TeamLifecycle,
     TeamSpec,
     ToolRequest,
     ToolResult,
@@ -122,6 +123,37 @@ class JudgePort(Protocol):
 
 
 class WorkRepositoryPort(Protocol):
+    # Trusted Factory-only mutations; product_task_owners remains owner source.
+    async def get_team_lifecycle(
+        self, task_id: str, principal: TrustedPrincipal
+    ) -> TeamLifecycle: ...
+
+    async def reserve_team(
+        self,
+        task: PersistentTask,
+        spec: TeamSpec,
+        principal: TrustedPrincipal,
+        *,
+        idempotency_key: str,
+        request_fingerprint: str,
+        mode: str,
+        existing_task_id: str | None,
+    ) -> tuple[TeamLifecycle, bool]: ...
+
+    async def finish_team_operation(
+        self,
+        task_id: str,
+        principal: TrustedPrincipal,
+        *,
+        generation: int,
+        instance: TeamInstance,
+        reason: str,
+    ) -> TeamLifecycle: ...
+
+    async def start_team_cleanup(
+        self, task_id: str, principal: TrustedPrincipal
+    ) -> tuple[TeamLifecycle, bool]: ...
+
     async def observation_context(
         self, run_id: str, principal: TrustedPrincipal
     ) -> ExecutionContext: ...

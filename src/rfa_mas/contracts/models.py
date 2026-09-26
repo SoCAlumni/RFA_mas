@@ -555,6 +555,9 @@ class TeamSpec(ExtendedContractModel):
     template: TeamTemplate
     members: tuple[TeamMember, ...]
     communication: Literal["supervisor_only"] = "supervisor_only"
+    # Optional for the original provisional 1.1 payload; Factory requires both.
+    definition_digest: Digest | None = None
+    execution_budget: TeamBudget | None = None
 
     @model_validator(mode="after")
     def bind_members(self) -> TeamSpec:
@@ -572,16 +575,43 @@ class TeamSpec(ExtendedContractModel):
             raise ValueError("agent IDs and memory namespaces must be unique")
         if any(member.spec.domain_id != self.domain_id for member in self.members):
             raise ValueError("team and member domains must match")
+        if self.execution_budget is not None and any(
+            getattr(self.execution_budget, name) > getattr(self.template.budget, name)
+            for name in (
+                "max_steps",
+                "max_tool_calls",
+                "max_tokens",
+                "timeout_seconds",
+                "concurrency",
+            )
+        ):
+            raise ValueError("execution budget exceeds approved template")
         return self
+
+
+class MemberLifecycle(ExtendedContractModel):
+    agent_id: OpaqueId
+    prepare: Literal["not_started", "prepared", "failed", "unknown"] = "not_started"
+    cleanup: Literal["not_requested", "cleaned", "failed", "unknown"] = "not_requested"
 
 
 class TeamInstance(ExtendedContractModel):
     spec: TeamSpec
-    state: Literal["provisioning", "ready", "running", "failed", "cancelled", "cleaned"]
+    state: Literal[
+        "provisioning",
+        "ready",
+        "running",
+        "failed",
+        "cancelled",
+        "cleaned",
+        "unknown",
+        "cleanup_pending",
+    ]
     runtime_ref: OpaqueId | None = None
     sandbox_id: OpaqueId | None = None
     mode: ExecutionMode
     failed_agent_ids: tuple[OpaqueId, ...] = ()
+    member_states: tuple[MemberLifecycle, ...] = ()
 
     @model_validator(mode="after")
     def sandbox_requires_real_runtime(self) -> TeamInstance:
@@ -589,6 +619,45 @@ class TeamInstance(ExtendedContractModel):
             self.mode != ExecutionMode.REAL or self.spec.template.runtime_kind != "openshell"
         ):
             raise ValueError("local/mock runtime is not a sandbox")
+        expected = {member.spec.agent_id for member in self.spec.members}
+        actual = [member.agent_id for member in self.member_states]
+        if self.member_states and (set(actual) != expected or len(actual) != len(expected)):
+            raise ValueError("lifecycle must bind each member exactly once")
+        if not set(self.failed_agent_ids) <= expected:
+            raise ValueError("failed member is not in team")
+        return self
+
+
+class TeamLifecycle(ExtendedContractModel):
+    """Core durable lifecycle receipt, not runtime authority or a trace span."""
+
+    task: PersistentTask
+    team: TeamInstance
+    generation: int = Field(ge=1)
+    operation: Literal["prepare", "cleanup"]
+    operation_key: OpaqueId
+    phase: Literal["pending", "finished"]
+    reason: Literal[
+        "reserved",
+        "ready",
+        "partial_failure",
+        "outcome_unknown",
+        "invalid_contract",
+        "cleanup_requested",
+        "cleaned",
+        "cleanup_failed",
+    ]
+    trace_collection: Literal["uncollected"] = "uncollected"
+
+    @model_validator(mode="after")
+    def bind_task(self) -> TeamLifecycle:
+        if (
+            self.task.task_id != self.team.spec.task_id
+            or self.task.team_id != self.team.spec.team_id
+            or self.task.owner_id != self.team.spec.owner_id
+            or self.task.domain_id != self.team.spec.domain_id
+        ):
+            raise ValueError("task and team binding mismatch")
         return self
 
 

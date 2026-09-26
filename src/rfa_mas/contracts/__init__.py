@@ -111,6 +111,7 @@ from rfa_mas.contracts.models import (
     EvaluationCaseV11,
     ExecutionContext,
     ExperimentEvidence,
+    MemberLifecycle,
     ObservationCoverage,
     ObservationLedger,
     ObservationRecord,
@@ -128,6 +129,7 @@ from rfa_mas.contracts.models import (
     SourceRevisionRef,
     TeamBudget,
     TeamInstance,
+    TeamLifecycle,
     TeamMember,
     TeamSpec,
     TeamTemplate,
@@ -137,6 +139,8 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "MemberLifecycle",
+    "TeamLifecycle",
     "ObservationRecord",
     "ObservationCoverage",
     "ObservationLedger",
@@ -175,6 +179,8 @@ EXTENDED_MODEL_NAMES = (
     "VersionReferences",
 )
 __all__ += [
+    "MemberLifecycle",
+    "TeamLifecycle",
     "ObservationRecord",
     "ObservationCoverage",
     "ObservationLedger",

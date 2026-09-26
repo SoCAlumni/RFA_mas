@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "215db7d2fec60c1efea6a7d3f0014143def3980f68423f2b4ebdaf0b9e1a533d",
+  "digest": "a57a5b651895c9275d4a5fbbc7b6d5eb2e9c8ac884e64f87b0f8fde22918f294",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -4664,6 +4664,51 @@
         "title": "JudgeDimensions",
         "type": "object"
       },
+      "MemberLifecycle": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "cleanup": {
+            "default": "not_requested",
+            "enum": [
+              "not_requested",
+              "cleaned",
+              "failed",
+              "unknown"
+            ],
+            "title": "Cleanup",
+            "type": "string"
+          },
+          "prepare": {
+            "default": "not_started",
+            "enum": [
+              "not_started",
+              "prepared",
+              "failed",
+              "unknown"
+            ],
+            "title": "Prepare",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_id"
+        ],
+        "title": "MemberLifecycle",
+        "type": "object"
+      },
       "ObservationCoverage": {
         "additionalProperties": false,
         "properties": {
@@ -6109,6 +6154,14 @@
             "title": "Failed Agent Ids",
             "type": "array"
           },
+          "member_states": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/MemberLifecycle"
+            },
+            "title": "Member States",
+            "type": "array"
+          },
           "mode": {
             "$ref": "#/$defs/ExecutionMode"
           },
@@ -6158,7 +6211,9 @@
               "running",
               "failed",
               "cancelled",
-              "cleaned"
+              "cleaned",
+              "unknown",
+              "cleanup_pending"
             ],
             "title": "State",
             "type": "string"
@@ -6170,6 +6225,83 @@
           "mode"
         ],
         "title": "TeamInstance",
+        "type": "object"
+      },
+      "TeamLifecycle": {
+        "additionalProperties": false,
+        "description": "Core durable lifecycle receipt, not runtime authority or a trace span.",
+        "properties": {
+          "generation": {
+            "minimum": 1,
+            "title": "Generation",
+            "type": "integer"
+          },
+          "operation": {
+            "enum": [
+              "prepare",
+              "cleanup"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "operation_key": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Operation Key",
+            "type": "string"
+          },
+          "phase": {
+            "enum": [
+              "pending",
+              "finished"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "reserved",
+              "ready",
+              "partial_failure",
+              "outcome_unknown",
+              "invalid_contract",
+              "cleanup_requested",
+              "cleaned",
+              "cleanup_failed"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "task": {
+            "$ref": "#/$defs/PersistentTask"
+          },
+          "team": {
+            "$ref": "#/$defs/TeamInstance"
+          },
+          "trace_collection": {
+            "const": "uncollected",
+            "default": "uncollected",
+            "title": "Trace Collection",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task",
+          "team",
+          "generation",
+          "operation",
+          "operation_key",
+          "phase",
+          "reason"
+        ],
+        "title": "TeamLifecycle",
         "type": "object"
       },
       "TeamMember": {
@@ -6235,8 +6367,32 @@
             "title": "Communication",
             "type": "string"
           },
+          "definition_digest": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Definition Digest"
+          },
           "domain_id": {
             "$ref": "#/$defs/DomainId"
+          },
+          "execution_budget": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TeamBudget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "members": {
             "items": {
@@ -6939,10 +7095,12 @@
       "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None) -> 'SessionRecord'",
       "create_run": "(self, request: 'WorkRequest') -> 'None'",
       "create_session": "(self, principal: 'TrustedPrincipal') -> 'SessionRecord'",
+      "finish_team_operation": "(self, task_id: 'str', principal: 'TrustedPrincipal', *, generation: 'int', instance: 'TeamInstance', reason: 'str') -> 'TeamLifecycle'",
       "get_observation": "(self, observation_id: 'str') -> 'ObservationRecord | None'",
       "get_owned_run": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'RunRecord'",
       "get_result": "(self, run_id: 'str') -> 'RunResult | None'",
       "get_session": "(self, session_id: 'str', principal: 'TrustedPrincipal') -> 'SessionDetail'",
+      "get_team_lifecycle": "(self, task_id: 'str', principal: 'TrustedPrincipal') -> 'TeamLifecycle'",
       "initialize": "(self) -> 'None'",
       "list_documents": "(self, domain_id: 'str') -> 'list[KnowledgeDocument]'",
       "list_observations": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[ObservationRecord, ...]'",
@@ -6951,14 +7109,18 @@
       "observation_alias": "(self, run_id: 'str', principal: 'TrustedPrincipal', kind: 'str', reference: 'str' = '') -> 'str'",
       "observation_context": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'ExecutionContext'",
       "register_task_owner": "(self, task: 'PersistentTask') -> 'None'",
+      "reserve_team": "(self, task: 'PersistentTask', spec: 'TeamSpec', principal: 'TrustedPrincipal', *, idempotency_key: 'str', request_fingerprint: 'str', mode: 'str', existing_task_id: 'str | None') -> 'tuple[TeamLifecycle, bool]'",
       "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
       "save_result": "(self, result: 'RunResult') -> 'None'",
       "seed_documents_once": "(self, documents: 'list[KnowledgeDocument]') -> 'None'",
+      "start_team_cleanup": "(self, task_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[TeamLifecycle, bool]'",
       "transition_run": "(self, run_id: 'str', status: 'WorkStatus') -> 'None'",
       "upsert_documents": "(self, documents: 'list[KnowledgeDocument]') -> 'None'"
     }
   },
   "public_model_names": [
+    "MemberLifecycle",
+    "TeamLifecycle",
     "ObservationRecord",
     "ObservationCoverage",
     "ObservationLedger",
@@ -7001,10 +7163,10 @@
     "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
     "src/rfa_mas/api/app.py": "d62bb50ad4e152ae515610229a419114314e3106ab3a7c4042886312e86d7dee",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "61e4a42f7079980f6a6b65072eeb52a34fd6eedd6e560651c27f0cfd7d9bbab5",
+    "src/rfa_mas/contracts/__init__.py": "da53981b4d88e7cc1ffc4db6a0bd3c29c7595c5fbc3c9c39ba43f45877898ce1",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "6a4b0ae66627925d079a31c4c0b0a25e327150182b345e609a873d7744b0b950",
-    "src/rfa_mas/ports/interfaces.py": "0076413ce66aea39ac486d6636652831b8cad3eec263e24e1e83aeea20e61331",
+    "src/rfa_mas/contracts/models.py": "512bd30312e42ae33634286b5223b14c5a157844432cca7ce74d08f542daa65e",
+    "src/rfa_mas/ports/interfaces.py": "82102aeea03942dc69767301bdab0839fcb8bed4b8286369781c4c6a6e0c85b1",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",

@@ -27,7 +27,16 @@ from rfa_mas.application.graphs import (
 from rfa_mas.application.observations import Observations, ObservedPort
 from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.service import WorkService
-from rfa_mas.contracts import AdapterInfo, KnowledgeDocument
+from rfa_mas.application.team_selector import APPROVED_PINS, TeamSelector, TemplateRegistry
+from rfa_mas.application.teams import RuntimeLifecycleSupport, TeamFactory
+from rfa_mas.contracts import (
+    AdapterInfo,
+    DomainId,
+    ExecutionMode,
+    KnowledgeDocument,
+    TeamBudget,
+    TrustedPrincipal,
+)
 from rfa_mas.errors import BackendNotImplementedError, ConfigurationError
 from rfa_mas.security import SecretRedactor, configure_logging
 from rfa_mas.settings import Settings
@@ -144,6 +153,7 @@ class Container:
     judge: object
     adapters: tuple[AdapterInfo, ...]
     checkpoints: SqliteCheckpoints
+    team_factory: TeamFactory
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
@@ -277,6 +287,42 @@ def build_container(settings: Settings | None = None) -> Container:
         retention_days=settings.trace_retention_days,
     )
     observer = Observations(repository, trace, policy=policy)
+    runtime_support = RuntimeLifecycleSupport(
+        supported=isinstance(runtime, LocalRuntime),
+        runtime_kind="local",
+        expected_mode=ExecutionMode.LOCAL,
+    )
+
+    async def resolve_team_selector(principal: TrustedPrincipal, domain: DomainId) -> TeamSelector:
+        # Server-owned installation identity, not role strings in user text.
+        # Reload approved definitions/pins and current limits for EVERY invocation.
+        local_owner = await repository.local_principal()
+        capabilities = frozenset(
+            {"evidence_search", "experiment_run", "result_analysis", "evidence_review"}
+        )
+        grants = {(local_owner.user_id, d): capabilities for d in DomainId}
+        return TeamSelector(
+            TemplateRegistry.from_file(
+                PROJECT_ROOT / "fixtures/teams/templates.json", approved_pins=APPROVED_PINS
+            ),
+            grants=grants,
+            available_capabilities=capabilities,
+            available_runtimes=frozenset({"local"}) if runtime_support.supported else frozenset(),
+            budget_ceiling=TeamBudget(
+                max_steps=settings.max_graph_steps,
+                max_tool_calls=settings.max_tool_calls,
+                timeout_seconds=settings.tool_timeout_seconds,
+            ),
+        )
+
+    # Lifecycle gets the configured port, NOT ObservedPort (whose methods do not
+    # prove inner capability). Lifecycle is durable DB evidence, trace uncollected.
+    team_factory = TeamFactory(
+        repository,
+        runtime,
+        resolve_team_selector,
+        lambda: runtime_support,
+    )
     observed_model = ObservedPort(model, observer, "model", mode="mock")
     observed_retrieval = ObservedPort(retrieval, observer, "retrieval", mode="mock")
     observed_policy = ObservedPort(
@@ -352,5 +398,6 @@ def build_container(settings: Settings | None = None) -> Container:
         judge=judge,
         adapters=adapters,
         checkpoints=checkpoints,
+        team_factory=team_factory,
         http_clients=clients,
     )
