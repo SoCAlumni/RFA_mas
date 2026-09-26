@@ -1,0 +1,34 @@
+{
+  "kind": "supplemental_repository_regression",
+  "reviewer": "rfa-coordinator",
+  "head": "9871f1de5a81137de689ff9eb5d9fc21f9500924",
+  "source_manifest": ".agent/evidence/OPS-002/full-regression-02/source.json",
+  "result": "passed",
+  "cwd": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+  "argv": [
+    ".venv/bin/python",
+    "-m",
+    "pytest",
+    "-q"
+  ],
+  "timeout_seconds": 600,
+  "started_at": "2026-09-26T11:57:45.043626+00:00",
+  "finished_at": "2026-09-26T12:00:50.772010+00:00",
+  "elapsed_seconds": 185.73946574982256,
+  "exit_code": 0,
+  "stdout": "........................................................................ [ 12%]\n........................................................................ [ 24%]\n........................................................................ [ 36%]\n........................................................................ [ 48%]\n........................................................................ [ 60%]\n........................................................................ [ 72%]\n........................................................................ [ 84%]\n........................................................................ [ 96%]\n.....................                                                    [100%]\n=============================== warnings summary ===============================\ntests/test_api.py: 2 warnings\ntests/test_contract_baseline.py: 4 warnings\ntests/test_evaluation.py: 3 warnings\ntests/test_graph.py: 9 warnings\ntests/test_nat_adapter.py: 14 warnings\ntests/test_nat_smoke.py: 2 warnings\ntests/test_resume.py: 17 warnings\ntests/test_sessions.py: 11 warnings\ntests/test_trace_contract.py: 14 warnings\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\ntests/test_nat_adapter.py::TestInstalledNatAdapter::test_native_equivalence_one_call_durable_ledger\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/langsmith/evaluation/_key_extraction.py:20: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    (ast.Str, ast.Constant) if hasattr(ast, \"Str\") else (ast.Constant,)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n597 passed, 77 warnings in 184.68s (0:03:04)\n",
+  "stderr": "",
+  "counts": {
+    "collected": 597,
+    "passed": 597,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "deselected": 0,
+    "warnings": 77
+  },
+  "failure_basis": ".agent/evidence/P0-019/full-regression-01.json",
+  "isolation": "env -i PATH plus canonical TASK_CONTROL_ROOT; normal pytest plugins, NAT1.8 installed, Python3.12.13/SQLite3.53.1",
+  "limits": "Main9871f1d only; P1-001 KB and P1-006 evaluation feature commits not merged. This passes collected repository regressions, not the ten final E2E scenarios or actual NVIDIA/Skill/NemoClaw/OpenShell/approval-publication integrations. Warnings are durability without subgraph checkpointer and dependency ast.Str deprecation; not suppressed."
+}

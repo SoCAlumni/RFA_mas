@@ -662,3 +662,13 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   KB 새 계약 발행 전까지 reference 계획이며 구현/통과를 주장하지 않는다.
 - 현재 main 전체 suite를 다시 실행할 예정이며 KB/평가 feature 검증과 별도로 기록한다.
   실제 NVIDIA/Skill/NemoClaw/OpenShell, 최종10개 E2E는 여전히 미실행 gate다.
+
+## 전체 회귀 복구 확인 — 2026-09-26 12:00 UTC
+
+- main `9871f1d`에서 새81개 source hash·67개 task spec digest를 검증 시작 전에
+  캡처한 뒤 `.venv/bin/python -m pytest -q`를 실제 실행했다.
+  **597 passed,77 warnings(184.68초), skip/fail/error0**이며 이전 일정 기대값 실패가
+  수정된 것을 확인했다. `OPS-002/full-regression-02/{source,result}.json`에 보존했다.
+- 기존 LangGraph subgraph durability 및 dependency ast.Str 경고는 숨기지 않았다.
+  아직 미통합인 KB/Persona feature나 최종10개 E2E, 실제 NVIDIA/Skill/NemoClaw/
+  OpenShell·승인/게시 gate를 이 전체 회귀 결과로 대신하지 않는다.
