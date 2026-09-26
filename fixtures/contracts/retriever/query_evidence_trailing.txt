@@ -1,0 +1,48 @@
+{
+  "coverage": {
+    "n_docs_seen": 3,
+    "strategies_used": [
+      "semantic"
+    ],
+    "thin_spots": []
+  },
+  "evidence": [
+    {
+      "citation": "triv_demo_paper_pa p.1",
+      "fidelity": "verbatim",
+      "locator": {
+        "kind": "page",
+        "value": 1
+      },
+      "modality": "text",
+      "score": 0.412,
+      "source": "triv_demo_paper_pa",
+      "text": "[합성] 가상 논문 P-A는 저정밀 가중치 양자화로 추론 지연을 줄일 수 있다고 주장한다. 한계: 합성 소형 모델 1종에서만 실험했다."
+    },
+    {
+      "citation": "triv_demo_paper_pb p.2",
+      "fidelity": "verbatim",
+      "locator": {
+        "kind": "page",
+        "value": 2
+      },
+      "modality": "text",
+      "score": 0.587,
+      "source": "triv_demo_paper_pb",
+      "text": "[합성] 가상 논문 P-B는 보정 데이터가 적으면 정확도가 떨어질 수 있다고 주장한다. 지연은 측정하지 않았다."
+    },
+    {
+      "citation": "unregistered_upload p.1",
+      "fidelity": "verbatim",
+      "locator": {
+        "kind": "page",
+        "value": 1
+      },
+      "modality": "text",
+      "score": 0.701,
+      "source": "unregistered_upload",
+      "text": "[합성] 등록되지 않은 업로드 SYNTHETIC_PRIVATE_CANARY_RETRIEVER_U1"
+    }
+  ]
+}
+WARNING trailing text after the evidence document

@@ -1,0 +1,12 @@
+{
+  "coverage": {
+    "n_docs_seen": 0,
+    "strategies_used": [
+      "semantic"
+    ],
+    "thin_spots": [
+      "no matches — likely out of corpus"
+    ]
+  },
+  "evidence": []
+}

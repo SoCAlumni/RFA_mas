@@ -22,6 +22,7 @@ from rfa_mas.application.teams import TeamFactory
 from rfa_mas.contracts import (
     Audience,
     DraftBundle,
+    EvidenceItem,
     EvidenceRef,
     ResultStatus,
     RetrievalRequest,
@@ -37,6 +38,7 @@ from rfa_mas.contracts import (
     TeamRunResult,
     ToolEffect,
     ToolRequest,
+    ToolResult,
     TrustedPrincipal,
     WorkRequest,
     sha256_text,
@@ -58,6 +60,8 @@ REQUIRED_ROLES = {
 ROLE_TOOLS: dict[str, frozenset[str]] = {
     "experiment_runner": frozenset({"benchmark_log_parse"}),
     "result_analyst": frozenset({"metric_compare"}),
+    # P1-003: used only when bootstrap binds an ExternalSearchBinding (off by default).
+    "source_scout": frozenset({"nemo_retriever_query"}),
 }
 ROLE_SEARCH = frozenset({"paper_scout", "source_scout", "experiment_runner"})
 TENTATIVE_TERMS = ("가설", "검증 전", "미검증", "잠정", "추정", "tentative", "unverified", "hypothesis")
@@ -70,6 +74,20 @@ class TeamStop(Exception):
     def __init__(self, code: str) -> None:
         super().__init__(code)
         self.code = code
+
+
+@dataclass(frozen=True)
+class ExternalSearchBinding:
+    """Trusted composition setting for one registered external evidence index (P1-003).
+
+    Built by bootstrap from operator configuration, never from request or model text.
+    The index audience must already be allowed for the Run before the tool is called.
+    """
+
+    tool_name: str
+    index_id: str
+    audience: Audience
+    top_k: int = 3
 
 
 @dataclass
@@ -192,6 +210,7 @@ class TeamRunner:
         tools: ToolPort,
         policy_version: Callable[[], str],
         role_hook: Callable[[str, RoleContext], Awaitable[None]] | None = None,
+        external_search: ExternalSearchBinding | None = None,
     ) -> None:
         self.repository = repository
         self.factory = factory
@@ -200,6 +219,7 @@ class TeamRunner:
         self.tools = tools
         self.policy_version = policy_version
         self.role_hook = role_hook
+        self.external_search = external_search
         self._contexts: dict[str, RoleContext] = {}
         self._budgets: dict[str, TeamBudgetState] = {}
         self._current: dict[str, str] = {}
@@ -499,6 +519,15 @@ class TeamRunner:
         return bundle
 
     async def tool(self, context: RoleContext, name: str, arguments: dict[str, Any]):
+        result = await self.tool_result(context, name, arguments)
+        if result.status != ResultStatus.SUCCEEDED:
+            raise RfaError("role_failed", "도구 실행이 완료되지 않았습니다.")
+        return result.output
+
+    async def tool_result(
+        self, context: RoleContext, name: str, arguments: dict[str, Any]
+    ) -> ToolResult:
+        """Run an allowlisted READ tool and return the receipt, success or not."""
         if name not in ROLE_TOOLS.get(context.member.role, frozenset()):
             raise RfaError("tool_not_allowed", "역할에 허용되지 않은 도구입니다.")
         context.budget.charge_tool()
@@ -519,10 +548,8 @@ class TeamRunner:
                 arguments=arguments,
             )
         )
-        if result.status != ResultStatus.SUCCEEDED:
-            raise RfaError("role_failed", "도구 실행이 완료되지 않았습니다.")
         context.budget.check()  # Cancellation/timeout barrier before using the result.
-        return result.output
+        return result
 
 
 async def _paper_scout(runner: TeamRunner, context: RoleContext) -> dict[str, Any]:
@@ -543,7 +570,70 @@ async def _source_scout(runner: TeamRunner, context: RoleContext) -> dict[str, A
          "audience": i.audience.value}
         for i in bundle.items
     ]
-    return {"sources": sources, "insufficient": not sources}
+    output: dict[str, Any] = {"sources": sources}
+    binding = runner.external_search
+    if binding is not None and binding.audience in context.audiences:
+        external, status = await _external_sources(runner, context, binding)
+        sources.extend(external)
+        output["external_search"] = status
+    output["insufficient"] = not sources
+    return output
+
+
+async def _external_sources(
+    runner: TeamRunner, context: RoleContext, binding: ExternalSearchBinding
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Query the bound external index through ToolPort; failures stay explicit (P1-003).
+
+    Items keep source/revision/page provenance in the role output. They are not added to
+    the DRAFT evidence binding: resume revalidation checks KB sources only, and binding
+    external evidence to a DRAFT is a P1-005 policy decision.
+    """
+    result = await runner.tool_result(
+        context,
+        binding.tool_name,
+        {"query": context.goal, "index_id": binding.index_id, "top_k": binding.top_k},
+    )
+    status: dict[str, Any] = {
+        "tool": binding.tool_name,
+        "index_id": binding.index_id,
+        "status": result.status.value,
+        "simulated": result.simulated,
+    }
+    if result.status != ResultStatus.SUCCEEDED:
+        status["error_code"] = result.error.code if result.error else result.status.value
+        return [], status
+    try:
+        items = [EvidenceItem.model_validate(raw) for raw in result.output.get("evidence", [])]
+    except (ValidationError, TypeError):
+        status.update(status="failed", error_code="malformed_evidence")
+        return [], status
+    citations = result.output.get("citations", [])
+    allowed = [
+        (item, citations[n] if n < len(citations) else {})
+        for n, item in enumerate(items)
+        if item.audience == binding.audience and item.audience in context.audiences
+    ]
+    status.update(
+        returned=len(items),
+        used=len(allowed),
+        unmapped=result.output.get("unmapped", 0),
+    )
+    return [
+        {
+            "source_id": item.source_id,
+            "source_revision": item.source_revision,
+            "title": str(cite.get("citation", item.source_id)),
+            "page": item.location.page,
+            "uri": item.location.uri,
+            "excerpt": _excerpt(item.excerpt),
+            "audience": item.audience.value,
+            "content_hash": item.content_hash,
+            "fidelity": cite.get("fidelity"),
+            "origin": result.adapter,
+        }
+        for item, cite in allowed
+    ], status
 
 
 def _label(title: str, source_id: str) -> str:

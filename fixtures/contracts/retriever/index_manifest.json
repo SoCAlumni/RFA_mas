@@ -1,0 +1,20 @@
+{
+  "index_id": "triv-demo-public-papers",
+  "lancedb_dir": "lancedb",
+  "table_name": "triv-demo-papers",
+  "domain_id": "triv3",
+  "audience": "public",
+  "synthetic": true,
+  "policy_version": "local-v1",
+  "sources": {
+    "triv_demo_paper_pa": {
+      "source_id": "retriever:triv-demo/paper-pa",
+      "source_revision": "pdf-sha256-5f1c0a7e9b3d2468"
+    },
+    "triv_demo_paper_pb": {
+      "source_id": "retriever:triv-demo/paper-pb",
+      "source_revision": "pdf-sha256-a93e61d04c7b8f25"
+    }
+  },
+  "note": "합성 공개 논문 2편을 operator가 retriever ingest로 색인했다고 가정한 등록 정보. 실제 LanceDB는 테스트가 만들지 않는다."
+}
