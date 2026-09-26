@@ -333,3 +333,5 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   pyproject/lock/.python-version 변경 없음, retry 없음. 상세 재현 명령/공식 출처는
   `/private/tmp/rfa-sqlite-qualification.IKbCas/QUALIFICATION.md`에 보존했다.
   root 환경 전환·전환 후 전체 회귀는 아직 미실행이며 활성 worker 검증 중 전환하지 않는다.
+  임시 경로가 만료되어도 실제 명령/출처/결과를 보존하도록 검토한 원문 보고서를
+  [환경 qualification 기록](ENVIRONMENT_QUALIFICATION.md)에 추가했다.
