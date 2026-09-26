@@ -11,3 +11,8 @@ Worker post-knowledge-worker-01 actual12:40:53.637520Z–12:41:21.410900Z: V1 57
 Actual installed CLI expected exit1: C01/C02/C06 fail; C03/C04/C05 pass; C07/C08/C09/C10/C12 unknown; C11 error. C11 past_result_scope remains unknown; ACL/past_result/source_revision variants all not_run after immutable KB rejects old same-revision mutation. Earlier response is NOT reported as post-change exposure. Canary absent; product_final and semantic not_run. This differs honestly from pre-KB C11 measured failure; no source/test change made.
 
 Next first action: submit unchanged artifact and capture/repeat target exact V1/V2 + safe CLI before integrate/close. Actual task.yaml/evidence owns later results. No real NVIDIA/Judge/NAT/runtime/publication/security-release/E2E claim. A supported Knowledge API mutation fixture transition requires a separately scoped future change, not a storage bypass.
+
+## 재검증 post-team (2026-09-26T15:43Z)
+
+- 사유: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED 1.1 888c3d6d
+- 소스 변경 없이 현재 통합 HEAD 11aedac에서 계획된 검증을 worker/target 단계로 재실행한다.

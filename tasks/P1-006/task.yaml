@@ -11,10 +11,9 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: verifying
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: done
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 2.0
@@ -103,7 +102,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 70f3416bd5113bbc1516104314971404ff84d9aa61b569542f5d503164a54a21
+  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
   role: consumer
 context:
   global_refs:
@@ -241,55 +240,56 @@ verification:
   - 기존trusted 관측/null-stage/coverage/재개/기밀경계와frozen1.0·extended schema/fixture·API회귀보존
   runner: pytest
 evidence_dir: .agent/evidence/P1-006
-latest_evidence_file: .agent/evidence/P1-006/post-knowledge-target-01/result.json
+latest_evidence_file: .agent/evidence/P1-006/post-team-target-0926154528/result.json
 verification_summary:
-  state: stale
-  spec_revision: 14
-  spec_digest: ab4b01c18d95cc3aad9d6b9febc173b7d21b9abddf8a176f16a15f09c052aab7
-  contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
-  source_fingerprint: c874069e7144b4b3745217b13f51e539f8cdc8f24dfc92ffbdff4d96efdd2ebb
-  evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
+  state: passed
+  spec_revision: 17
+  spec_digest: fd5453b90f2d0a9218db3659e44cbe53e358db3919050eb1328920d573221a2b
+  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+  source_fingerprint: e34cc7df4b3318d2d2bd02ce11c536c3ac9147dd90944e5b0ba9189fd682b1f4
+  evidence: .agent/evidence/P1-006/post-team-target-0926154528/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 2
+  reservation: false
+  submission_generation: 3
   submission:
-    head: 76b2186eb09035a46d10b1d652acd61b712b6b01
-    baseline_head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006
     branch: task/P1-006
-    evidence: .agent/evidence/P1-006/post-knowledge-worker-01/result.json
+    evidence: .agent/evidence/P1-006/post-team-worker-0926154359/result.json
     changed_files:
       fixtures/eval/persona_core_v1.jsonl: 9588cf28817bd396260f61988fc4991ff7e01505431f2da9ff2422b5faf3d538
-      src/rfa_mas/application/evaluation.py: 7f3c9563d77aa7bd528926292bcac1b6c0fdebbb9dbc3cf1ff212435fc2304d1
+      src/rfa_mas/application/evaluation.py: 10cd88fe7d6edef18e0dbe264f9c035f48b5426805a452796607f852d066550a
       src/rfa_mas/cli.py: 8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b
-      tests/test_behavior_verifier.py: 5de50bf9b9445f3eb5995e44e3b57f8f2e60f34226b88c77c34562344201b8d8
+      tests/test_behavior_verifier.py: 450893257a37b877c67e703926761af1859b60e78fb980552477e334b2bce5e6
       tests/test_evaluation.py: b3cbb8889eef66b78c0e72941242e3387b83131f8b058378bf9280b6510081e0
   result:
     verification_summary:
       state: passed
-      spec_revision: 14
-      spec_digest: ab4b01c18d95cc3aad9d6b9febc173b7d21b9abddf8a176f16a15f09c052aab7
-      contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
-      source_fingerprint: c874069e7144b4b3745217b13f51e539f8cdc8f24dfc92ffbdff4d96efdd2ebb
-      evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
-    head: 76b2186eb09035a46d10b1d652acd61b712b6b01
-  evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
-revision: 40
-spec_revision: 16
-claim_generation: 2
+      spec_revision: 17
+      spec_digest: fd5453b90f2d0a9218db3659e44cbe53e358db3919050eb1328920d573221a2b
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: e34cc7df4b3318d2d2bd02ce11c536c3ac9147dd90944e5b0ba9189fd682b1f4
+      evidence: .agent/evidence/P1-006/post-team-target-0926154528/result.json
+    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+  evidence: .agent/evidence/P1-006/post-team-target-0926154528/result.json
+revision: 49
+spec_revision: 17
+claim_generation: 3
 claim: null
 attempts:
-  count: 5
+  count: 7
   cycles: 1
   no_progress_count: 0
-  latest_attempt: post-knowledge-target-01
+  latest_attempt: post-team-target-0926154528
   evidence_refs:
   - .agent/evidence/P1-006/evaluation-worker-01/result.json
   - .agent/evidence/P1-006/evaluation-worker-02/result.json
   - .agent/evidence/P1-006/post-knowledge-worker-01/result.json
+  - .agent/evidence/P1-006/post-team-worker-0926154359/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -335,6 +335,51 @@ attempts:
       source_fingerprint: f32e2fd11051d6c7aa283dd455c00d4cb5b6418f0d97ea73b13a803fe84781bc
       evidence: .agent/evidence/P1-006/evaluation-target-02/result.json
     latest_evidence_file: .agent/evidence/P1-006/evaluation-target-02/result.json
+  - kind: integrated_revalidation
+    generation: 3
+    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+    reason: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED
+      1.1 888c3d6d
+    at: '2026-09-26T15:43:51+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 2
+      submission:
+        head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+        baseline_head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006
+        branch: task/P1-006
+        evidence: .agent/evidence/P1-006/post-knowledge-worker-01/result.json
+        changed_files:
+          fixtures/eval/persona_core_v1.jsonl: 9588cf28817bd396260f61988fc4991ff7e01505431f2da9ff2422b5faf3d538
+          src/rfa_mas/application/evaluation.py: 7f3c9563d77aa7bd528926292bcac1b6c0fdebbb9dbc3cf1ff212435fc2304d1
+          src/rfa_mas/cli.py: 8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b
+          tests/test_behavior_verifier.py: 5de50bf9b9445f3eb5995e44e3b57f8f2e60f34226b88c77c34562344201b8d8
+          tests/test_evaluation.py: b3cbb8889eef66b78c0e72941242e3387b83131f8b058378bf9280b6510081e0
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 14
+          spec_digest: ab4b01c18d95cc3aad9d6b9febc173b7d21b9abddf8a176f16a15f09c052aab7
+          contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
+          source_fingerprint: c874069e7144b4b3745217b13f51e539f8cdc8f24dfc92ffbdff4d96efdd2ebb
+          evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
+        head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+      evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 14
+      spec_digest: ab4b01c18d95cc3aad9d6b9febc173b7d21b9abddf8a176f16a15f09c052aab7
+      contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
+      source_fingerprint: c874069e7144b4b3745217b13f51e539f8cdc8f24dfc92ffbdff4d96efdd2ebb
+      evidence: .agent/evidence/P1-006/post-knowledge-target-01/result.json
+    latest_evidence_file: .agent/evidence/P1-006/post-knowledge-target-01/result.json
 blocker: null
 migration:
   original_status: todo
@@ -347,7 +392,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T14:49:46+00:00'
+updated_at: '2026-09-26T15:46:45+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

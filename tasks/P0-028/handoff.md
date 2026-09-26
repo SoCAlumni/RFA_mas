@@ -9,3 +9,8 @@ Preserve fixed synthetic harness/local mock lifecycle; native auth/checkpoint ru
 Worker post-knowledge-worker-01 actual12:38:19.248431Z–12:38:35.581241Z: V1 adapter22 passed4.55s (15 warnings), V2 actual EvaluationRun2 passed1.22s (3 warnings); separate current-source no-NAT adapter2 passed0.26s (1 warning). No skip/error/failure/retry; actual NAT core/langchain/eval1.8.0 recorded. Source capture completed first, normal pytest plugins/env-i,120/300s timeouts enforced. No-NAT success not substituted for installed NAT.
 
 Next first action: submit unchanged source and fresh canonical target capture/repeat exact checks before integrate/close. Current task.yaml owns later state. Current references override historical V1 prerequisite prose; no supported-scope expansion.
+
+## 재검증 post-team (2026-09-26T15:43Z)
+
+- 사유: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED 1.1 888c3d6d
+- 소스 변경 없이 현재 통합 HEAD 11aedac에서 계획된 검증을 worker/target 단계로 재실행한다.

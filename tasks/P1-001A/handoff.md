@@ -23,3 +23,8 @@
 - spec16(scope에 scripts/contract_baseline.py, tests/test_trace_contract.py, tests/test_nat_smoke.py 추가) 후 generation3 재claim, commit 66b2d49.
 - worker evidence retrieval-worker-03: V1 84 passed, V2 348 passed(fail/skip/deselect 0, env -i 격리).
 - 다음: submit → main 병합 → RFA-EXTENDED 1.1 새 digest 발행 → integration evidence → integrate/close → consumer(P0-017/P0-018/P0-028/P1-006) 계약 수락·재검증.
+
+## 재검증 post-team (2026-09-26T15:46Z)
+
+- 사유: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED 1.1 888c3d6d
+- 소스 변경 없이 현재 통합 HEAD 11aedac에서 계획된 검증을 worker/target 단계로 재실행한다.

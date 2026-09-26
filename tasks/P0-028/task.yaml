@@ -9,10 +9,9 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: verifying
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: done
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 1.5
@@ -91,7 +90,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
+  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
   role: consumer
 context:
   global_refs:
@@ -241,56 +240,57 @@ verification:
   - NAT raw 파일/오류 로그 canary 및 외부 network/tracer spy 검사; P1-006D allowlist export만 저장
   runner: pytest
 evidence_dir: .agent/evidence/P0-028
-latest_evidence_file: .agent/evidence/P0-028/post-knowledge-target-01/result.json
+latest_evidence_file: .agent/evidence/P0-028/post-team-target-0926154459/result.json
 verification_summary:
-  state: stale
-  spec_revision: 15
-  spec_digest: af23e233e04300cf810435e4f5880aff6ae98e8c2efada4052569cd1ffa2d150
-  contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
-  source_fingerprint: b3f04e9eb03a8551adf68019230c8f0dde5bbf0518a95f88df188c53a8961a9c
-  evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
+  state: passed
+  spec_revision: 19
+  spec_digest: 8cc3e75e72b76f9313019ceacb811d8b40691be9fcf77a4ee815f8a389e4d057
+  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+  source_fingerprint: 06b58cacd5cedb1f45caca89efa87ae6eb5ac74b6656fe5676a7462b6c53228b
+  evidence: .agent/evidence/P0-028/post-team-target-0926154459/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 3
+  reservation: false
+  submission_generation: 4
   submission:
-    head: 76b2186eb09035a46d10b1d652acd61b712b6b01
-    baseline_head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-028
     branch: task/P0-028
-    evidence: .agent/evidence/P0-028/post-knowledge-worker-01/result.json
+    evidence: .agent/evidence/P0-028/post-team-worker-0926154410/result.json
     changed_files:
       configs/nat/rfa_eval.yml: d80f19e184606058dfd98fb64b963c04d247872d0f856da17118e67885ab0aa4
       configs/nat/rfa_eval_cases.json: 5d615f55caf3c2b81481274882d22f547dfa71ef882c3859fcfd70070d15058f
       src/rfa_mas/adapters/nat_eval.py: 724aea91a60a9435dd13fd5590b075df11766887f1a178d37a107499a694676b
-      tests/test_nat_adapter.py: 2fbb31a13409d1059043af2755f299b819419694f22e69a88853ec6e9b1c9dd8
-      tests/test_nat_smoke.py: bbd3cd419519ba1e5415a194fc15dc1a49217fd171c310d968559fd59e9e6c32
+      tests/test_nat_adapter.py: 1cc8a9b1c44f03659e57d8a518c09fc1faa70989e85ec2f61fc7f6d17c50f7a5
+      tests/test_nat_smoke.py: 69cf60d5f1d68fd5ac51292c9fcd8ea602b1f75f9f521dbefb841b18eee62d61
   result:
     verification_summary:
       state: passed
-      spec_revision: 15
-      spec_digest: af23e233e04300cf810435e4f5880aff6ae98e8c2efada4052569cd1ffa2d150
-      contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
-      source_fingerprint: b3f04e9eb03a8551adf68019230c8f0dde5bbf0518a95f88df188c53a8961a9c
-      evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
-    head: 76b2186eb09035a46d10b1d652acd61b712b6b01
-  evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
-revision: 51
-spec_revision: 18
-claim_generation: 3
+      spec_revision: 19
+      spec_digest: 8cc3e75e72b76f9313019ceacb811d8b40691be9fcf77a4ee815f8a389e4d057
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: 06b58cacd5cedb1f45caca89efa87ae6eb5ac74b6656fe5676a7462b6c53228b
+      evidence: .agent/evidence/P0-028/post-team-target-0926154459/result.json
+    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+  evidence: .agent/evidence/P0-028/post-team-target-0926154459/result.json
+revision: 60
+spec_revision: 19
+claim_generation: 4
 claim: null
 attempts:
-  count: 7
+  count: 9
   cycles: 1
   no_progress_count: 0
-  latest_attempt: post-knowledge-target-01
+  latest_attempt: post-team-target-0926154459
   evidence_refs:
   - .agent/evidence/P0-028/nat-adapter-01/result.json
   - .agent/evidence/P0-028/nat-adapter-02/result.json
   - .agent/evidence/P0-028/post-teams-worker-01/result.json
   - .agent/evidence/P0-028/post-knowledge-worker-01/result.json
+  - .agent/evidence/P0-028/post-team-worker-0926154410/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -381,6 +381,51 @@ attempts:
       source_fingerprint: 11682ffc4027878b670ad1099e2b385bfc6aacfcf1e46aefef591591e5b2e7f3
       evidence: .agent/evidence/P0-028/post-teams-target-01/result.json
     latest_evidence_file: .agent/evidence/P0-028/post-teams-target-01/result.json
+  - kind: integrated_revalidation
+    generation: 4
+    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+    reason: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED
+      1.1 888c3d6d
+    at: '2026-09-26T15:44:01+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 3
+      submission:
+        head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+        baseline_head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-028
+        branch: task/P0-028
+        evidence: .agent/evidence/P0-028/post-knowledge-worker-01/result.json
+        changed_files:
+          configs/nat/rfa_eval.yml: d80f19e184606058dfd98fb64b963c04d247872d0f856da17118e67885ab0aa4
+          configs/nat/rfa_eval_cases.json: 5d615f55caf3c2b81481274882d22f547dfa71ef882c3859fcfd70070d15058f
+          src/rfa_mas/adapters/nat_eval.py: 724aea91a60a9435dd13fd5590b075df11766887f1a178d37a107499a694676b
+          tests/test_nat_adapter.py: 2fbb31a13409d1059043af2755f299b819419694f22e69a88853ec6e9b1c9dd8
+          tests/test_nat_smoke.py: bbd3cd419519ba1e5415a194fc15dc1a49217fd171c310d968559fd59e9e6c32
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 15
+          spec_digest: af23e233e04300cf810435e4f5880aff6ae98e8c2efada4052569cd1ffa2d150
+          contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
+          source_fingerprint: b3f04e9eb03a8551adf68019230c8f0dde5bbf0518a95f88df188c53a8961a9c
+          evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
+        head: 76b2186eb09035a46d10b1d652acd61b712b6b01
+      evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 15
+      spec_digest: af23e233e04300cf810435e4f5880aff6ae98e8c2efada4052569cd1ffa2d150
+      contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
+      source_fingerprint: b3f04e9eb03a8551adf68019230c8f0dde5bbf0518a95f88df188c53a8961a9c
+      evidence: .agent/evidence/P0-028/post-knowledge-target-01/result.json
+    latest_evidence_file: .agent/evidence/P0-028/post-knowledge-target-01/result.json
 blocker: null
 migration:
   original_status: new
@@ -392,8 +437,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:49:46+00:00'
-concise_result: 'Specification changed: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract
-  sources and published RFA-EXTENDED 1.1 f711bab8'
+updated_at: '2026-09-26T15:45:59+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

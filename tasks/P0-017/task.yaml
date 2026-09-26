@@ -10,10 +10,9 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: verifying
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: done
+spec_state: ready
+unresolved: []
 workstream: contracts/control
 execution_role: coordinator
 estimated_effort: 1.0
@@ -67,7 +66,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
+  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
   role: consumer
 context:
   global_refs:
@@ -178,29 +177,29 @@ verification:
   - 실측 SQLite 버전과 합성 patched/unpatched 경계가 올바르게 보고되며 자동 환경 교체/미실행 검사 성공 주장이 없다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-017
-latest_evidence_file: .agent/evidence/P0-017/post-retrieval-target/result.json
+latest_evidence_file: .agent/evidence/P0-017/post-team-target-0926152938/result.json
 verification_summary:
-  state: stale
-  spec_revision: 18
-  spec_digest: 68240927b2503a75a68373219110bc2844afadc01f1268b943f3ce3f23420ae5
-  contract_digest: 28b02f894b446b7234ccf01c8eefe156b30c2b377c1b734323439cb24e36d6b5
-  source_fingerprint: 7da386893253f4601b3de54743a45c05d3121dc8b161043b62633a8403b921a1
-  evidence: .agent/evidence/P0-017/post-retrieval-target/result.json
+  state: passed
+  spec_revision: 20
+  spec_digest: 338be8c431482d3db7326e3168baf4069fe7f0e667177f85002833bedbd27c4c
+  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+  source_fingerprint: af2ab6cbc302b063c80dc11524b87447e02fbd05e0cab888a7fd2f9c7c2ec2ba
+  evidence: .agent/evidence/P0-017/post-team-target-0926152938/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 5
+  reservation: false
+  submission_generation: 6
   submission:
-    head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
-    baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-017
     branch: task/P0-017
-    evidence: .agent/evidence/P0-017/post-retrieval-worker/result.json
+    evidence: .agent/evidence/P0-017/post-team-worker-0926152900/result.json
     changed_files:
       .env.example: 6b6116e707e91b7e7020c22a961ec00426b7eec8d9434db909de49779008ea1c
-      src/rfa_mas/bootstrap.py: de41996e42fbbceba707e0dfd50cba4db82b015b300622547241cdf8a4eb7e1e
+      src/rfa_mas/bootstrap.py: 72f7c7d5094d59287304bf03ac507af6181a3406977ab1e8dd24758f5fb20592
       src/rfa_mas/cli.py: 8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b
       src/rfa_mas/dev_env.py: 8571fd97e72018f656de67aa538f9965e12134fb44a5ba0b415d2a60d72548fa
       src/rfa_mas/settings.py: 97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e
@@ -208,22 +207,22 @@ integration:
   result:
     verification_summary:
       state: passed
-      spec_revision: 18
-      spec_digest: 68240927b2503a75a68373219110bc2844afadc01f1268b943f3ce3f23420ae5
-      contract_digest: 28b02f894b446b7234ccf01c8eefe156b30c2b377c1b734323439cb24e36d6b5
-      source_fingerprint: 7da386893253f4601b3de54743a45c05d3121dc8b161043b62633a8403b921a1
-      evidence: .agent/evidence/P0-017/post-retrieval-target/result.json
-    head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
-  evidence: .agent/evidence/P0-017/post-retrieval-target/result.json
-revision: 69
-spec_revision: 19
-claim_generation: 5
+      spec_revision: 20
+      spec_digest: 338be8c431482d3db7326e3168baf4069fe7f0e667177f85002833bedbd27c4c
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: af2ab6cbc302b063c80dc11524b87447e02fbd05e0cab888a7fd2f9c7c2ec2ba
+      evidence: .agent/evidence/P0-017/post-team-target-0926152938/result.json
+    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+  evidence: .agent/evidence/P0-017/post-team-target-0926152938/result.json
+revision: 78
+spec_revision: 20
+claim_generation: 6
 claim: null
 attempts:
-  count: 11
+  count: 13
   cycles: 1
   no_progress_count: 0
-  latest_attempt: post-retrieval-target
+  latest_attempt: post-team-target-0926152938
   evidence_refs:
   - .agent/evidence/P0-017/settings-01/result.json
   - .agent/evidence/P0-017/settings-02/result.json
@@ -231,6 +230,7 @@ attempts:
   - .agent/evidence/P0-017/post-teams-worker-01/result.json
   - .agent/evidence/P0-017/post-knowledge-worker-01/result.json
   - .agent/evidence/P0-017/post-retrieval-worker/result.json
+  - .agent/evidence/P0-017/post-team-worker-0926152900/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -415,6 +415,52 @@ attempts:
       source_fingerprint: b5b3e81ba010ceedb97ea39a2373aa84d42c276fd72e16e78cff10e20631a0f1
       evidence: .agent/evidence/P0-017/post-knowledge-target-01/result.json
     latest_evidence_file: .agent/evidence/P0-017/post-knowledge-target-01/result.json
+  - kind: integrated_revalidation
+    generation: 6
+    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+    reason: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED
+      1.1 888c3d6d
+    at: '2026-09-26T15:28:55+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 5
+      submission:
+        head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+        baseline_head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-017
+        branch: task/P0-017
+        evidence: .agent/evidence/P0-017/post-retrieval-worker/result.json
+        changed_files:
+          .env.example: 6b6116e707e91b7e7020c22a961ec00426b7eec8d9434db909de49779008ea1c
+          src/rfa_mas/bootstrap.py: de41996e42fbbceba707e0dfd50cba4db82b015b300622547241cdf8a4eb7e1e
+          src/rfa_mas/cli.py: 8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b
+          src/rfa_mas/dev_env.py: 8571fd97e72018f656de67aa538f9965e12134fb44a5ba0b415d2a60d72548fa
+          src/rfa_mas/settings.py: 97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e
+          tests/test_settings.py: 7f07230b65e790f5ae1ab1bfcde633f6b38d4ffbfaa8a6516c607051975253e0
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 18
+          spec_digest: 68240927b2503a75a68373219110bc2844afadc01f1268b943f3ce3f23420ae5
+          contract_digest: 28b02f894b446b7234ccf01c8eefe156b30c2b377c1b734323439cb24e36d6b5
+          source_fingerprint: 7da386893253f4601b3de54743a45c05d3121dc8b161043b62633a8403b921a1
+          evidence: .agent/evidence/P0-017/post-retrieval-target/result.json
+        head: 3a1a5ee55618b94b0c49d28495c05b0e29d037ed
+      evidence: .agent/evidence/P0-017/post-retrieval-target/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 18
+      spec_digest: 68240927b2503a75a68373219110bc2844afadc01f1268b943f3ce3f23420ae5
+      contract_digest: 28b02f894b446b7234ccf01c8eefe156b30c2b377c1b734323439cb24e36d6b5
+      source_fingerprint: 7da386893253f4601b3de54743a45c05d3121dc8b161043b62633a8403b921a1
+      evidence: .agent/evidence/P0-017/post-retrieval-target/result.json
+    latest_evidence_file: .agent/evidence/P0-017/post-retrieval-target/result.json
 blocker: null
 migration:
   original_status: todo
@@ -426,7 +472,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:49:46+00:00'
+updated_at: '2026-09-26T15:30:14+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'
