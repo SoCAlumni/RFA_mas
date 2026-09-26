@@ -59,7 +59,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-006A](tasks/P1-006A/task.yaml) | 실제 Judge adapter·품질 평가 | P1 | todo / not_run | integration/evaluation | 1.5 | P1-006, P1-002 |
 | [P1-006B](tasks/P1-006B/task.yaml) | Persona 시뮬레이션·버전 회귀 비교 | P1 | todo / not_run | integration/evaluation | 1 | P1-006 |
 | [P1-006C](tasks/P1-006C/task.yaml) | Langfuse 연결·redaction·보존 확인 | P1 | todo / not_run | integration/evaluation | 1 | P1-006, P1-006D |
-| [P1-006D](tasks/P1-006D/task.yaml) | 안전한 trace allowlist·평가 관찰 계약 연결 | P0 | todo / not_run | integration/evaluation | 2 | P0-014, P0-016, P0-017 |
+| [P1-006D](tasks/P1-006D/task.yaml) | 안전한 trace allowlist·평가 관찰 계약 연결 | P0 | in_progress / not_run | integration/evaluation | 2 | P0-014, P0-016, P0-017 |
 | [P1-006E](tasks/P1-006E/task.yaml) | Workflow 레드팀 4종·정상 대조 회귀 | P0 | todo / not_run | integration/evaluation | 1 | P1-006 |
 | [P1-007](tasks/P1-007/task.yaml) | NemoClaw 지원 경로·교육 연결 설계 | P1 | todo / not_run | integration/evaluation | 0.5 | P0-014, P0-025 |
 | [P1-007A](tasks/P1-007A/task.yaml) | NemoClaw 운영 경로 실제 시연 | P1 | blocked / not_run | integration/evaluation | 0.5 | P1-007, P1-008B |
@@ -80,9 +80,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
-- P0-019: planning ready; claim 가능
-- P1-001: planning ready; claim 가능
-- P1-006D: planning ready; claim 가능
+- P0-019: planning ready; reserved:P1-006D
+- P1-001: planning ready; reserved:P1-006D
 
 ## 최종 gate
 

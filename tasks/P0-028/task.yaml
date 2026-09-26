@@ -31,8 +31,14 @@ scope:
   - NAT cli entrypoint는 import 시 load_dotenv를 호출하므로 사용하지 않는다. config에는 workflow.env=null, general.telemetry.logging/tracing={},
     eval.general.output/profiler=null, max_concurrency=1, per_input_user_id=false, validate_llm_endpoints=false를
     명시한다. output=null은 write_output=false여도 가능한 cleanup을 막는 별도 조건이다.
+  - 빈 NAT telemetry 설정은 ambient LangSmith 환경변수를 끄지 않는다. EvaluationRun 전체를 public tracing_context(enabled=False,
+    parent=False)로 감싸 outer wrapper graph도 보호한다. 합성 ambient flags와 fake tracer/outbound spy로 검증하며 nat.cli.entrypoint
+    미import도 확인한다. P1-006D native guard만으로 outer graph 검증을 대신하지 않는다.
   - NAT 최종 message에는 안전한 상태/관찰 참조만 넣고 원문 DRAFT·prompt·tool 인자를 반환하지 않는다. 원래 결과는 테스트 내부 native/NAT 비교에만
     사용한다. 외부 telemetry 없이 P1-006D 실제 allowlist export만 저장한다.
+  - write_output=false는 FileEvalCallback 자동 등록만 막는다. adapter가 empty callback manager를 직접 소유하고 caller/plugin
+    callback 주입을 허용하지 않는다. native/NAT의 독립 DB alias 문자열 동일성 대신 실제 run-observation join 및 정책/본문 binding
+    동등성을 비교한다.
   - 설치 extra에는 profiler가 없고 framework wrapping이 no-op인 범위를 확인했다. 관찰된 outer/service 경계만 보고하며 내부 자동 node/tool은
     uncollected, provider token 미제공은 null이다. upstream의 UsageStats 기본 0을 실측으로 보고하지 않는다.
   - 결정적 local evaluator는 관찰 계약 회귀만 판정한다. evaluation_results에서 예상 evaluator/case 수, 오류, workflow_interrupted,
@@ -52,6 +58,8 @@ scope:
   - src/rfa_mas/ports/interfaces.py
   - docs/INTEGRATION.md
   - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/observations.py
+  - src/rfa_mas/bootstrap.py
   - src/rfa_mas/application/graphs
   - src/rfa_mas/adapters/local.py
   - docs/EVALUATION_CONTEXT.md
@@ -127,7 +135,7 @@ deliverables:
 - path: tests/test_nat_adapter.py
   availability: planned
   description: Native equivalence, one service call, approval/checkpoint preservation, missing-extra and
-    safe output/error boundary checks.
+    safe output/error checks; ambient tracing guard covers outer EvaluationRun and avoids CLI dotenv import.
 - path: tests/test_nat_smoke.py
   availability: planned
   description: Installed EvaluationRun.run_and_evaluate plus registered evaluator; counts/errors/interruption
@@ -221,8 +229,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 7
-spec_revision: 7
+revision: 9
+spec_revision: 9
 claim_generation: 0
 claim: null
 attempts:
@@ -243,8 +251,8 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T09:16:24+00:00'
-concise_result: 'Specification changed: Installed NAT1.8.0 source/registry/config probe verified programmatic
-  eval shape; avoid CLI dotenv and raw output, preserve true coverage/error gates. Actual product eval
-  remains not_run pending trace provider.'
+updated_at: '2026-09-26T09:49:36+00:00'
+concise_result: 'Specification changed: Installed EvaluationRun callbacks still receive raw data when
+  write_output is false; own empty callback boundary and fingerprint planned observation/composition API;
+  compare semantics not independently generated aliases.'
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.

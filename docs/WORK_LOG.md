@@ -447,3 +447,19 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 보존 commit 전 `git diff --check`는 CLI가 기록한 handoff 4개의 EOF 빈 줄을
   보고했다(exit2). 제품 source 오류는 아니며 완료된 운영 원본을 우회 편집하지 않고
   그대로 보존한다. YAML/schema/view 검증은 별도로 통과했다.
+
+## 다음 provider/consumer 구현 경계 확인 — 2026-09-26
+
+- P1-006D는 main56f289f의 별도 worktree에서 패치 Python/default lock으로 시작했다.
+  coordinator 소유 task에 worker session으로 claim한 첫 요청은 권한 오류로 거절됐다.
+  project 권한을 늘리지 않고 기존 coordinator 위임 session으로 독점 claim하도록
+  정정했다. 제품 소스 권한 변경이나 claim 우회는 하지 않았다.
+- P0-019 소스 점검에서 TeamInstance의 schema 검사만으로 owner/spec/budget/mode
+  binding이 보장되지 않음을 확인했다. 실제 저장 요청과 정확 비교, 변조 응답의
+  occupied/unknown 보존, 타인 응답 ID cleanup 금지, boot-time snapshot 대신
+  호출 시점 권한 resolver를 기존 scope/AC에 보강했다. 제품 구현·검증은 아직 아니다.
+- P0-028의 설치 소스는 empty telemetry와 write_output=false만으로 ambient
+  LangSmith 또는 임의 callback의 raw 수신을 막지 않는다. EvaluationRun 전체 guard,
+  adapter 소유 empty callback, CLI 미import를 명세에 추가했다. 독립 native/NAT
+  DB의 alias 문자열이 아니라 run-observation 연결과 정책/본문 의미를 비교한다.
+  이번 확인은 기존 설치 소스 읽기이며 workflow를 실행하거나 NAT 성공으로 세지 않았다.
