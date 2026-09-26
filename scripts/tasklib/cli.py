@@ -6,6 +6,7 @@ import json
 import os
 import re
 import stat
+import subprocess
 import sys
 from pathlib import Path
 
@@ -182,22 +183,41 @@ def integration_guard(store: Store, task: Task, args) -> None:
         raise ControlError("No reserved submission")
 
 
-def _captured_head_matches(source: dict, captured: str | None, recorded: str) -> bool:
+def _captured_head_matches(
+    source: dict, captured: str | None, recorded: str, manifest: dict | None = None
+) -> bool:
     """Exact binding, or a legacy record whose head advanced during the same attempt.
 
     Before OPS-003, integration results stored the target head at record time. When an
     unrelated commit landed between begin/record, that head descends from the captured
-    manifest head; fingerprint/file-hash/spec/contract equality is still checked by the
-    caller, so only that exact ancestry relation is tolerated.
+    manifest head. Tolerate only that relation, and only when every clean captured file
+    hash equals the blob at the captured head, so a rewritten manifest head is rejected.
+    Fingerprint/spec/contract equality is still checked by the caller.
     """
     if not captured:
         return False
     if captured == recorded:
         return True
+    worktree = Path(source["worktree"])
     try:
-        git(Path(source["worktree"]), "merge-base", "--is-ancestor", captured, recorded)
+        git(worktree, "merge-base", "--is-ancestor", captured, recorded)
     except ControlError:
         return False
+    files = (manifest or {}).get("files") or {}
+    if not files:
+        return False
+    for name, entry in files.items():
+        if entry.get("staged") or entry.get("unstaged") or entry.get("untracked"):
+            return False  # A dirty capture has no commit to compare against.
+        blob = subprocess.run(
+            ["git", "-C", str(worktree), "show", f"{captured}:{name}"],
+            capture_output=True,
+            timeout=15,
+            env={"PATH": os.environ.get("PATH", ""), "LANG": "C", "GIT_CONFIG_NOSYSTEM": "1"},
+        )
+        actual = hashlib.sha256(blob.stdout).hexdigest() if blob.returncode == 0 else None
+        if actual != entry.get("sha256"):
+            return False
     return True
 
 
@@ -228,7 +248,7 @@ def revalidation_baseline(store: Store, task: Task, source: dict) -> str:
         record.get("task_id") != task.id
         or record.get("result") != "passed"
         or before.get("repository_id") != store.project["repository_id"]
-        or not _captured_head_matches(source, before.get("head"), result["head"])
+        or not _captured_head_matches(source, before.get("head"), result["head"], before)
         or record.get("source_fingerprint") != summary.get("source_fingerprint")
         or before.get("fingerprint") != summary.get("source_fingerprint")
         or any(
