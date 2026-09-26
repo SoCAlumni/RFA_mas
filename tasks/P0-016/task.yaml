@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: execution
@@ -252,45 +252,75 @@ verification:
   - 같은 thread 동시 invoke 거절/직렬화, checkpoint에 credential·authorization header 저장 없음.
   runner: pytest
 evidence_dir: .agent/evidence/P0-016
-latest_evidence_file: .agent/evidence/P0-016/stable-main-worker-01/result.json
+latest_evidence_file: .agent/evidence/P0-016/wal-integrated-02/result.json
 verification_summary:
-  state: failed
+  state: passed
   spec_revision: 5
   spec_digest: e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31
   contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
-  source_fingerprint: 2c117a3e5f75bb733a5f852d01ba6d85ac3fdb9a20242c5d426405fd8b5c2bd8
-  evidence: .agent/evidence/P0-016/stable-main-worker-01/result.json
+  source_fingerprint: b42d53443ded04b6043a3a947aa65e6b73cac819fb69f37524fb73c51dd08fc8
+  evidence: .agent/evidence/P0-016/wal-integrated-02/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 27
+  submission_generation: 4
+  submission:
+    head: 4bac51672cb00b91fb600949ede7204f46389092
+    baseline_head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-016-r2
+    branch: task/P0-016-r2
+    evidence: .agent/evidence/P0-016/wal-startup-02/result.json
+    changed_files:
+      .env.example: 898aa39c235b56056fc0e578ca9783c089e4d2ca80835620d730908c7aa0f918
+      docs/CONTRACT_CHANGELOG.md: cf7220a16ad60277f08ac2d51a187e615c968b5a15f83f6ecda1c9cd6019145b
+      docs/INTEGRATION.md: 7080ba3ce57b9617f2ea5076b71cec78ce4e321009615c4a21247c65b76b28a7
+      docs/contracts/extended.json: 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65
+      pyproject.toml: 767555e89c26cd14d502864a4b8e7409534a8a21b1660fd13eaaacb1b4afd325
+      src/rfa_mas/adapters/checkpoints.py: a2e14db7d9830187d5afeccce4f72eff3bef00b40725601637260e98325f0400
+      src/rfa_mas/adapters/local.py: 15dce5dd13a40a1307585953504ee5208cca1fcc6d333fda8f60898505fe916f
+      src/rfa_mas/api/app.py: 082ebce1001728632d4249543800c02f2dfc1b944da73ea7f7744f1dacc13ee9
+      src/rfa_mas/application/graphs/__init__.py: 729040102397530f0e49e656533337eacecfe82f38381c5c9b0cc022beb4d540
+      src/rfa_mas/application/graphs/domain.py: 9642bf034038526c3ce20f533d1a3562e4142fee824c4cf890c73dce0a8bdd84
+      src/rfa_mas/application/graphs/supervisor.py: cfc82822622c6f0dee6db44915c8f3f914cb0c61709a4d1496768d0d9d4aa174
+      src/rfa_mas/application/resume_policy.py: c8e671f5dc502b65342c2516eaff18e5e571377eddb69679fdd1707d45cdc8f7
+      src/rfa_mas/application/service.py: 6208536965f1879fd5047f25aff83ac5015105cff8476b3f46f757c83aecc59a
+      src/rfa_mas/bootstrap.py: 50ad3538737097b11b68ef85e8e3489d5005a321bc84fc0af35cd438afa8c839
+      src/rfa_mas/contracts/__init__.py: a176557b4a69775d05924b6b657097dd1d42cc02760476cd36f5767282732f60
+      src/rfa_mas/contracts/models.py: e6ce3f0271ab0890149e42841adb084cf7d6b2ee2f5700ff993398a0881053a9
+      src/rfa_mas/ports/__init__.py: 00c7789b04fb6229bd55e006e801f795472f4a1adacddd8cf83b1639665a56bf
+      src/rfa_mas/ports/interfaces.py: c123e83a22933647374d441822e253ccb06ca0139472838d74674c5957edaad4
+      src/rfa_mas/settings.py: 30fbfa54b78f04bdf3c4f3cdda738a06ea737e6dc773e775988450540fdf9b3b
+      tests/test_api.py: 6f297fcf1920626f2a9182f8ca1f5d43143cd1a208ba2e4dbff21ac83b3d7434
+      tests/test_graph.py: d7b347b89037ccbc59eb6ea32563b920980de296742c0042f83d811864e1384d
+      tests/test_resume.py: d13276f3cda93e261ac17d35657c1c8d2ca2d84b1441860de02b320c1506ea68
+      tests/test_settings.py: e40d3946adec38514140ebc8075c0d751fdcdbb4662752d6f82d2da0675f2bff
+      tests/test_supervisor_boundaries.py: fa5349793d8281c0bfc663564b00210c775a8340565bfd992c57a23318c721f7
+      uv.lock: cbc662503129c4b6e550dbea9f7d932a7107494835507e911ab972edcf932b83
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 5
+      spec_digest: e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31
+      contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
+      source_fingerprint: b42d53443ded04b6043a3a947aa65e6b73cac819fb69f37524fb73c51dd08fc8
+      evidence: .agent/evidence/P0-016/wal-integrated-02/result.json
+    head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+  evidence: .agent/evidence/P0-016/wal-integrated-02/result.json
+revision: 34
 spec_revision: 5
 claim_generation: 4
-claim:
-  session_id: rfa-coordinator
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-016-r2
-  branch: task/P0-016-r2
-  generation: 4
-  claimed_at: '2026-09-26T08:36:26+00:00'
-  heartbeat_at: '2026-09-26T08:47:17+00:00'
-  lease_expires_at: '2026-09-26T09:02:17+00:00'
-  baseline_head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
-  recovery_required: false
-  context_digest: d1357bf4802a029aa6597bfd8923e7bf0b6348251bf0d31c9dd1b8fb140cd42a
+claim: null
 attempts:
-  count: 4
-  cycles: 1
+  count: 5
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: wal-startup-02
+  latest_attempt: wal-integrated-02
   evidence_refs:
   - .agent/evidence/P0-016/resume-01/result.json
   - .agent/evidence/P0-016/stable-main-worker-01/result.json
+  - .agent/evidence/P0-016/wal-startup-02/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -400,8 +430,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:49:07+00:00'
-concise_result: Authorized log-based WAL setup serialization implemented; initial failure sealed; formal
-  fixed-source tests not_run; root diff reviewed
-next_action: Fresh wal-startup-02 required V1 plus related regressions, then scoped commit and verifying
-  submit only on pass
+updated_at: '2026-09-26T08:58:06+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: Coordinator merge and fresh target verification before close; revalidate impacted P0-015
+  afterward

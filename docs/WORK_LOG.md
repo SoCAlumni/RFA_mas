@@ -335,3 +335,39 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   root 환경 전환·전환 후 전체 회귀는 아직 미실행이며 활성 worker 검증 중 전환하지 않는다.
   임시 경로가 만료되어도 실제 명령/출처/결과를 보존하도록 검토한 원문 보고서를
   [환경 qualification 기록](ENVIRONMENT_QUALIFICATION.md)에 추가했다.
+
+## WAL 보수·선행 재검증·일정 회귀 통합 — 2026-09-26
+
+- P0-016의 setup-only lock 보수 4bac516을 main 53d7068에 통합했다. 첫 실패를
+  보존한 두 번째 시도는 worker 31+164 passed(2.35/2.58초), 독립 target
+  31+164 passed(2.26/2.45초)였다. warning 17/26개는 그대로 기록했다.
+  async setup 실패·취소 시 connection drain/close 뒤 lock을 해제한다. 실제 두
+  프로세스 충돌·symlink/FIFO·timeout·취소 회귀가 포함되며 tool write 재시도는 없다.
+- 변경 영향을 받은 P0-015는 worker 26+4 passed(1.47/0.19초), target
+  26+4 passed(1.34/0.17초)로 재검증했다. P0-027은 설치된 NAT 경로 worker/target
+  각각 8 passed(0.42/0.43초), NAT 없는 별도 기본 환경은 2 passed(0.08/0.05초).
+  root에 NAT가 없다는 초기 추정은 실제 모듈 조회로 정정했다. 없는 테스트/읽기 경로
+  조회는 성공으로 처리하지 않았으며 정확한 경로·환경과 정정은 handoff/evidence에 남겼다.
+- OPS-002의 a8d2888은 이관 테스트와 설명 문서만 변경해 ff3c8288로 통합했다.
+  현재 34h와 초기 31.5h 이력을 분리하며 원문 checksum/ID/완료 이력/최종 gate는
+  유지했다. worker control 94 passed(117.50초), migration 17 passed(13.02초);
+  target 94 passed(119.73초), 17 passed(14.97초), skip=0이었다.
+  V1은 이전 112초 실측에 따라 명세 timeout을 180초로 명시하고 실제 적용했다.
+  target result를 쓰기 전 한 차례 조회한 missing 파일은 검증 성공 근거가 아니다.
+- 이 배치의 P0-014/015/016/018/027은 통합된 범위의 done이다. 전체 제품 E2E,
+  실제 NVIDIA ModelPort/Skill, OpenShell/NemoClaw, 실제 승인·게시 성공은 아직 아니다.
+  변경 원본과 신규 worker/target 증거를 별도 보존 commit으로 관리한다.
+
+## 패치 Python의 보존형 환경 전환 시작 — 2026-09-26
+
+- PBS20260807 CPython3.12.13/SQLite3.53.1을 `.local/toolchains/`에 별도 설치했다.
+  공식 pinned metadata와 앞서 확인한 artifact SHA256을 사용했으며 공유 Python,
+  PATH, `.python-version`, pyproject/lock 및 다른 worktree venv는 변경하지 않았다.
+  설치 완료를 기다리지 않은 최초 version 조회는 missing executable 오류였고,
+  설치 종료(exit0, 17.20초) 후 실제 버전 assertion을 확인했다. 설치 재시도는 없었다.
+- 모든 root 검증 프로세스가 종료된 뒤 기존 `.venv`를 삭제하지 않고
+  `.local/retained-envs/root-before-pbs20260807`로 이동했다. 새 `.venv`는 명시적인
+  durable interpreter와 기존 exact lock + NAT extra로 생성한다. 실제 env 파일은 읽지
+  않았다. 이전 환경의 Python 자체는 보존되지만 entrypoint shebang은 옛 위치이므로
+  복구 시 원래 `.venv` 위치를 복원해야 한다. 자동/활성 worker 전환은 하지 않는다.
+  전환 후 실제 버전과 전체 회귀 결과는 다음 기록에서 별도로 확인한다.

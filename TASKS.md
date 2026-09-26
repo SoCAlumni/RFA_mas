@@ -28,7 +28,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-013](tasks/P0-013/task.yaml) | P0 전체 검증과 근거 기록 | P0 | done / passed | contracts/control | 0 | P0-001, P0-002, P0-003, P0-004, P0-005, P0-006, P0-007, P0-008, P0-009, P0-010, P0-011, P0-012 |
 | [P0-014](tasks/P0-014/task.yaml) | 식별자·소유권·추적/평가 reference 계약 동결 | P0 | done / passed | contracts/control | 1 | P0-003, P0-010 |
 | [P0-015](tasks/P0-015/task.yaml) | 사용자 소유 세션·대화·run 조회 | P0 | done / passed | execution | 1.5 | P0-014, P0-005, P0-008 |
-| [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | in_progress / failed | execution | 1.5 | P0-015 |
+| [P0-016](tasks/P0-016/task.yaml) | LangGraph SQLite checkpointer·기본 재개 | P0 | done / passed | execution | 1.5 | P0-015 |
 | [P0-017](tasks/P0-017/task.yaml) | 후속 설정·readiness 기본값 정리 | P0 | todo / not_run | contracts/control | 1 | P0-014, P0-016 |
 | [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | done / passed | agents | 0.5 | P0-014 |
 | [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | todo / not_run | agents | 2 | P0-018, P0-015, P0-016 |
@@ -39,7 +39,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-024](tasks/P0-024/task.yaml) | 변경 이벤트·누락 실행·안전한 알림 | P0 | todo / not_run | execution | 1 | P0-023, P1-004B, P2-003, P1-005 |
 | [P0-025](tasks/P0-025/task.yaml) | UI polling 상태·안전한 이벤트·readiness·registry | P0 | todo / not_run | integration/evaluation | 0.5 | P0-015, P0-020, P0-024, P1-008 |
 | [P0-026](tasks/P0-026/task.yaml) | 합성 end-to-end 데모·D3 전달 패키지 | P0 | todo / not_run | integration/evaluation | 4 | P0-021, P0-024, P0-025, P1-006, P1-008, P1-001B, P1-006E, P1-005B |
-| [P0-027](tasks/P0-027/task.yaml) | NAT/LangGraph 호환성 spike·선택 extra 고정 | P0 | verifying / stale | integration/evaluation | 0.5 | P0-001, P0-007 |
+| [P0-027](tasks/P0-027/task.yaml) | NAT/LangGraph 호환성 spike·선택 extra 고정 | P0 | done / passed | integration/evaluation | 0.5 | P0-001, P0-007 |
 | [P0-028](tasks/P0-028/task.yaml) | NAT 평가 adapter·installed smoke와 native 동등성 | P0 | todo / not_run | integration/evaluation | 1.5 | P0-014, P0-027, P1-006D, P0-016 |
 | [P1-001](tasks/P1-001/task.yaml) | 노트·export 입력과 revision 저장 | P0 | todo / not_run | knowledge | 1 | P0-014, P0-015, P0-016 |
 | [P1-001A](tasks/P1-001A/task.yaml) | 권한 선필터·최신 lexical 검색·무효화 | P0 | todo / not_run | knowledge | 1.5 | P1-001, P0-016 |
@@ -80,6 +80,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
+- P0-017: planning ready; claim 가능
+- P0-019: planning ready; claim 가능
 
 ## 최종 gate
 

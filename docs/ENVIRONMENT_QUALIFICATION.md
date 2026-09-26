@@ -129,3 +129,38 @@ Before any coordinated permanent switch: stop affected running sessions, choose
 a durable isolated Python location, recreate qualified environments from the
 unchanged lock, check actual SQLite again, and run the required product regression.
 Do not overwrite the shared Python while other agents are executing tests.
+
+## Durable preparation and coordinated selection
+
+The coordinator subsequently approved a separate ignored install under
+`.local/toolchains/pbs20260807/pythons`, using the same pinned metadata and cache.
+Actual install command changed only `--install-dir` to this absolute repository
+path. One install completed successfully in 17.20s. A premature version query
+before installer completion returned a missing executable; it was not counted as
+success or retried as an installation. After completion, explicit assertions
+confirmed CPython3.12.13, arm64 and SQLite3.53.1 with the source ID above.
+
+The interpreter is now available at:
+
+```text
+/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.local/toolchains/pbs20260807/pythons/cpython-3.12.13-macos-aarch64-none/bin/python3.12
+```
+
+After all canonical test processes finished, the coordinator retained the old
+root `.venv` at `.local/retained-envs/root-before-pbs20260807` and invoked:
+
+```sh
+env -i PATH=/opt/homebrew/bin:/usr/bin:/bin \
+  uv sync --locked --extra nat --no-config --no-progress --no-python-downloads \
+  --python /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.local/toolchains/pbs20260807/pythons/cpython-3.12.13-macos-aarch64-none/bin/python3.12 \
+  --cache-dir /private/tmp/rfa-sqlite-qualification.IKbCas/cache \
+  --project /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
+```
+
+This deliberately recreates only the idle canonical virtual environment from
+the unchanged lock. Existing worktree environments and shared uv Python are not
+replaced. The retained environment is recoverable by restoring its original
+location; its executable entrypoints retain their original absolute shebangs.
+New worker environments should use the explicit durable `--python` path above.
+The coordinator records measured post-switch regression separately in WORK_LOG;
+selection of a patched version is not by itself a product acceptance result.

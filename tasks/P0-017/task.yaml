@@ -30,6 +30,8 @@ scope:
   - P0-016 CHECKPOINT_PATH와 기존 ENABLE_JUDGE/JUDGE_*/TRACE_*를 재사용한다. 미구현 scheduler/NAT/retention은 reserved/planned로
     명시하며 dependency 설치/키 보유를 실제 기능·egress 권한 증거로 취급하지 않는다. dev_env 생성 credential은 실제 서비스 등록이 아님을 표시하고
     기존 실제 프로필을 수정하지 않는다.
+  - 실측 SQLite 런타임의 WAL-reset 패치 상태를 부작용 없는 doctor 진단에 분리 표시한다. Python 패치 번호만으로 내장 SQLite를 추정하지 않는다. 같은
+    CPython3.12.13의 공식 PBS20260807/SQLite3.53.1 격리 qualification 기록을 참조하며 앱이 interpreter를 자동 교체하지 않는다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -89,6 +91,9 @@ context:
   - path: docs/EVALUATION_CONTEXT.md
     section: 설정과 일정
     reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  - path: docs/ENVIRONMENT_QUALIFICATION.md
+    section: Provenance / executed commands / preservation and limits
+    reason: 실제 내장 SQLite3.50.4와 패치된3.53.1 qualification 구분; version 공개 정보만 진단, key/환경 값 출력 금지
   handoff: tasks/P0-017/handoff.md
   dependency_results:
   - tasks/P0-014/handoff.md
@@ -135,6 +140,11 @@ acceptance_criteria:
   expect: 외부 write 기본 false, flag는 권한 아님, real 누락/미지원 명확한 오류. 외부 egress도 기본 비활성; NAT 선택+의존성 누락은 명시 오류,
     core 기본 mock은 extra/키 없이 부팅
   required: true
+- id: AC5
+  given: 합성 SQLite 버전(수정 전 및 공식 수정 계열)과 현재 실제 내장 런타임
+  expect: WAL 패치 상태/실측 버전을 configuration readiness·live provider 검사와 분리해 표시하고 지원되지 않는 버전은 명시 경고한다. doctor가
+    환경을 변경하거나 미실행 무결성 검사/전체 E2E를 통과로 표시하지 않는다.
+  required: true
 verification:
 - id: V1
   ac_ids:
@@ -142,6 +152,7 @@ verification:
   - AC2
   - AC3
   - AC4
+  - AC5
   type: command
   availability: planned
   prerequisites:
@@ -163,6 +174,7 @@ verification:
   - doctor/bootstrap 공통 판정은 configuration/implementation과 local lifecycle/provider probe not_run을 구분하며
     값과 credential을 출력하지 않는다.
   - 기본 mock 부팅·외부 write/egress 비활성, 선택한 미지원 real/NAT/scheduler는 명시 오류이며 fallback이 없다.
+  - 실측 SQLite 버전과 합성 patched/unpatched 경계가 올바르게 보고되며 자동 환경 교체/미실행 검사 성공 주장이 없다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-017
 latest_evidence_file: null
@@ -182,8 +194,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 9
-spec_revision: 9
+revision: 10
+spec_revision: 10
 claim_generation: 0
 claim: null
 attempts:
@@ -204,8 +216,9 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:39:32+00:00'
-concise_result: 'Specification changed: Finalize inspected effort/shared settings ownership before any
-  claim; current task behavior remains unimplemented and tests planned.'
+updated_at: '2026-09-26T09:01:48+00:00'
+concise_result: 'Specification changed: Add observed SQLite runtime safety diagnostic to existing settings/doctor
+  scope after official advisory and isolated same-Python patched-build qualification. No dependency pin
+  or automatic interpreter change.'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

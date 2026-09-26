@@ -1,0 +1,129 @@
+{
+  "attempt_id": "post-wal-worker-01",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "core pin 유지·actual installed versions·선택 근거가 있다",
+          "관측/재개 미지원 범위 및 실패 blocker가 명시되고 KB/eval에 NAT 선행을 추가하지 않았다"
+        ],
+        "id": "V1",
+        "observed": "Re-read NVIDIA v1.8.0 package metadata, wrapper implementation and guide. Installed module source checked: factory gets empty RunnableConfig; graph ainvoke receives model_dump without RFA thread config. Metadata Python<3.14,>=3.11 and LangGraph<2,>=1.0.5 match retained Python3.12.13/LangGraph1.2.12/checkpoint4.2.0. Actual feature uv sync --locked --extra nat resolved169, installed current locked saver3.1.1,aiosqlite0.22.1,sqlite-vec0.1.9/rebuilt editable RFA. No pins or source changed. uv lock --check passed. Existing clean P0-014 base venv verified nat absent, explicitly mapped to current feature src and ran fresh2core checks; this is an approved reused isolated environment, not new mktemp installation. Original fresh-install provenance remains historical nat-spike-01. Scope table retains unverified tool-profiler/exporter/streaming/HITL; P0-028 is actual product adapter, no NAT dependency added to KB/eval. See installed metadata and base command logs below.",
+        "procedure_performed": true,
+        "result": "passed",
+        "sources": [
+          "https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/v1.8.0/packages/nvidia_nat_langchain/pyproject.toml",
+          "https://raw.githubusercontent.com/NVIDIA/NeMo-Agent-Toolkit/refs/tags/v1.8.0/packages/nvidia_nat_langchain/src/nat/plugins/langchain/langgraph_workflow.py",
+          "https://raw.githubusercontent.com/NVIDIA/NeMo-Agent-Toolkit/refs/tags/v1.8.0/docs/source/run-workflows/existing-agents/langgraph.md"
+        ]
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "assertions": [
+          "실제 설치된 wrapper가 synthetic CompiledStateGraph를 한 번 실행하고 input/output shape를 확인",
+          "NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "duration_seconds": 1.0480064591392875,
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "........                                                                 [100%]\n8 passed in 0.42s\n",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T09:04:19.488106+00:00",
+    "limits": "Fresh worker proof at53d7068. Exact V2 argv in extra environment, timeout120. Extra8 synthetic tests block external network; base2 are core-only not NAT smoke. No .env, live NVIDIA, approval/publication, OpenShell/NemoClaw or full RFA E2E verified. Previous results retained. Missing read paths and earlier unverified NAT-absence assumption were corrected explicitly in handoff.",
+    "reviewer": "rfa-coordinator /root/sessions manual official+installed compatibility review",
+    "started_at": "2026-09-26T09:03:40+00:00",
+    "supplemental_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-c",
+          "import sys,json,sqlite3,importlib.metadata as m,inspect; from nat.plugins.langchain import langgraph_workflow as w; print(json.dumps({\"python\":sys.version.split()[0],\"sqlite\":sqlite3.sqlite_version,\"versions\":{k:m.version(k) for k in [\"nvidia-nat-core\",\"nvidia-nat-langchain\",\"nvidia-nat-eval\",\"nvidia-nat-opentelemetry\",\"langgraph\",\"langgraph-checkpoint\",\"langgraph-checkpoint-sqlite\",\"langchain-core\",\"pydantic\",\"fastapi\"]},\"requires_python\":m.metadata(\"nvidia-nat-langchain\")[\"Requires-Python\"],\"langgraph_requirement\":[r for r in m.requires(\"nvidia-nat-langchain\") if r.startswith(\"langgraph\")],\"wrapper\":w.__file__,\"factory_source_has_empty_config\":\"graph_def(RunnableConfig())\" in inspect.getsource(w.register),\"ainvoke_source_passes_dump\":\"ainvoke(value.model_dump())\" in inspect.getsource(w.LanggraphWrapperFunction._ainvoke)}))"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "installed-metadata",
+        "log_excerpt": "{\"python\": \"3.12.13\", \"sqlite\": \"3.50.4\", \"versions\": {\"nvidia-nat-core\": \"1.8.0\", \"nvidia-nat-langchain\": \"1.8.0\", \"nvidia-nat-eval\": \"1.8.0\", \"nvidia-nat-opentelemetry\": \"1.8.0\", \"langgraph\": \"1.2.12\", \"langgraph-checkpoint\": \"4.2.0\", \"langgraph-checkpoint-sqlite\": \"3.1.1\", \"langchain-core\": \"1.6.5\", \"pydantic\": \"2.13.5\", \"fastapi\": \"0.141.1\"}, \"requires_python\": \"<3.14,>=3.11\", \"langgraph_requirement\": [\"langgraph<2.0.0,>=1.0.5\"], \"wrapper\": \"/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027/.venv/lib/python3.12/site-packages/nat/plugins/langchain/langgraph_workflow.py\", \"factory_source_has_empty_config\": true, \"ainvoke_source_passes_dump\": true}\n"
+      },
+      {
+        "argv": [
+          "uv",
+          "lock",
+          "--check"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "lock-check",
+        "log_excerpt": "Resolved 169 packages in 23ms\n"
+      },
+      {
+        "argv": [
+          "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-014/.venv/bin/python",
+          "-c",
+          "import importlib.util,importlib.metadata,json,rfa_mas; print(json.dumps(dict(nat_spec=str(importlib.util.find_spec(\"nat\")),rfa_file=rfa_mas.__file__,checkpoint_sqlite=importlib.metadata.version(\"langgraph-checkpoint-sqlite\"))))"
+        ],
+        "duration_seconds": 0.05090108420699835,
+        "environment_override": {
+          "PYTHONPATH": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027/src"
+        },
+        "exit_code": 0,
+        "finished_at": "2026-09-26T09:04:18.726571+00:00",
+        "id": "base-metadata",
+        "output": "{\"nat_spec\": \"None\", \"rfa_file\": \"/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027/src/rfa_mas/__init__.py\", \"checkpoint_sqlite\": \"3.1.1\"}\n",
+        "started_at": "2026-09-26T09:04:18.675405+00:00"
+      },
+      {
+        "argv": [
+          "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-014/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "counts": {
+          "collected": 2,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 2,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "duration_seconds": 0.7614797498099506,
+        "environment_override": {
+          "PYTHONPATH": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027/src"
+        },
+        "exit_code": 0,
+        "finished_at": "2026-09-26T09:04:19.488106+00:00",
+        "id": "base-core-only",
+        "output": "..                                                                       [100%]\n2 passed in 0.08s\n",
+        "started_at": "2026-09-26T09:04:18.726650+00:00"
+      }
+    ]
+  },
+  "result": "passed",
+  "source_fingerprint": "23a3b5cd76886297dfcb2794313a071167d28736cf6b4c6233bfecb6f2e4dee2",
+  "source_manifest": ".agent/evidence/P0-027/post-wal-worker-01/source.json",
+  "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+  "spec_revision": 2,
+  "task_id": "P0-027"
+}
