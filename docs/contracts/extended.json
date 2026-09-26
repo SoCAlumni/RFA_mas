@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "f1edd7ec3ffd161a0aa95d4be854429dc976f29b3ba74fdc38bd24049f4232de",
+  "digest": "ff71279b5726550be469b5fb2a652b24144019c2923ab9c42662ec01aa5a65cf",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -155,6 +155,35 @@
               "simulated"
             ],
             "title": "AdapterInfo",
+            "type": "object"
+          },
+          "AttachmentRef": {
+            "additionalProperties": false,
+            "properties": {
+              "attachment_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Attachment Id",
+                "type": "string"
+              },
+              "content_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "attachment_id",
+              "content_hash"
+            ],
+            "title": "AttachmentRef",
             "type": "object"
           },
           "Audience": {
@@ -323,6 +352,67 @@
             "title": "DomainId",
             "type": "string"
           },
+          "DraftBinding": {
+            "additionalProperties": false,
+            "properties": {
+              "content_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "draft_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "payload_hash": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Payload Hash",
+                "type": "string"
+              },
+              "policy_version": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "sources": {
+                "items": {
+                  "$ref": "#/components/schemas/SourceRevisionRef"
+                },
+                "title": "Sources",
+                "type": "array"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "version": {
+                "minimum": 1.0,
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "draft_id",
+              "version",
+              "content_hash",
+              "payload_hash",
+              "target",
+              "policy_version",
+              "sources"
+            ],
+            "title": "DraftBinding",
+            "type": "object"
+          },
           "DraftBundle": {
             "additionalProperties": false,
             "properties": {
@@ -413,6 +503,160 @@
             "title": "DraftBundle",
             "type": "object"
           },
+          "DraftEditRequest": {
+            "additionalProperties": false,
+            "description": "Owner edit of the current DRAFT (P1-005A): always a new immutable version.",
+            "properties": {
+              "attachments": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/AttachmentRef"
+                },
+                "title": "Attachments",
+                "type": "array"
+              },
+              "content": {
+                "maxLength": 20000,
+                "minLength": 1,
+                "title": "Content",
+                "type": "string"
+              },
+              "expected_version": {
+                "minimum": 1.0,
+                "title": "Expected Version",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "target": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DraftTarget"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "expected_version",
+              "content"
+            ],
+            "title": "DraftEditRequest",
+            "type": "object"
+          },
+          "DraftState": {
+            "additionalProperties": false,
+            "description": "Run-scoped DRAFT/review/publication mirror. Publication state is separate from run.\n\n`draft` is withheld (None) when current source/ACL/policy no longer allow showing it.\n`review` is a mirror of the review authority's decision, never an approval itself.",
+            "properties": {
+              "approval_valid": {
+                "title": "Approval Valid",
+                "type": "boolean"
+              },
+              "attachments": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/AttachmentRef"
+                },
+                "title": "Attachments",
+                "type": "array"
+              },
+              "current_version": {
+                "minimum": 1.0,
+                "title": "Current Version",
+                "type": "integer"
+              },
+              "draft": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DraftBundle"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "invalid_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Invalid Reason"
+              },
+              "publication": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PublicationReceipt"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "publication_mode": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ExecutionMode"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "publication_status": {
+                "$ref": "#/components/schemas/PublicationStatus",
+                "default": "not_requested"
+              },
+              "review": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReviewDecision"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "versions": {
+                "items": {
+                  "type": "integer"
+                },
+                "title": "Versions",
+                "type": "array"
+              }
+            },
+            "required": [
+              "run_id",
+              "draft",
+              "current_version",
+              "versions",
+              "approval_valid"
+            ],
+            "title": "DraftState",
+            "type": "object"
+          },
           "DraftTarget": {
             "additionalProperties": false,
             "properties": {
@@ -479,6 +723,15 @@
             ],
             "title": "EvidenceRef",
             "type": "object"
+          },
+          "ExecutionMode": {
+            "enum": [
+              "mock",
+              "local",
+              "real"
+            ],
+            "title": "ExecutionMode",
+            "type": "string"
           },
           "HTTPValidationError": {
             "properties": {
@@ -1032,6 +1285,89 @@
             "title": "KnowledgeWrite",
             "type": "object"
           },
+          "PublicationReceipt": {
+            "additionalProperties": false,
+            "properties": {
+              "approval_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Approval Id",
+                "type": "string"
+              },
+              "binding": {
+                "$ref": "#/components/schemas/DraftBinding"
+              },
+              "external_result_ref": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "External Result Ref"
+              },
+              "idempotency_key": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Idempotency Key",
+                "type": "string"
+              },
+              "mode": {
+                "$ref": "#/components/schemas/ExecutionMode"
+              },
+              "next_action": {
+                "enum": [
+                  "none",
+                  "query",
+                  "review"
+                ],
+                "title": "Next Action",
+                "type": "string"
+              },
+              "publication_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Publication Id",
+                "type": "string"
+              },
+              "run_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/PublicationStatus"
+              }
+            },
+            "required": [
+              "publication_id",
+              "run_id",
+              "idempotency_key",
+              "binding",
+              "approval_id",
+              "status",
+              "mode",
+              "next_action"
+            ],
+            "title": "PublicationReceipt",
+            "type": "object"
+          },
           "PublicationStatus": {
             "enum": [
               "not_requested",
@@ -1042,6 +1378,29 @@
             ],
             "title": "PublicationStatus",
             "type": "string"
+          },
+          "PublishRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "idempotency_key": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Idempotency Key",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "idempotency_key"
+            ],
+            "title": "PublishRequest",
+            "type": "object"
           },
           "ResumeRequest": {
             "additionalProperties": false,
@@ -3017,6 +3376,314 @@
             "summary": "Get Run Status",
             "tags": [
               "work"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/draft": {
+          "get": {
+            "operationId": "get_draft_state_v1_runs__run_id__draft_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/DraftState"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Draft State",
+            "tags": [
+              "drafts"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/draft/edits": {
+          "post": {
+            "operationId": "edit_draft_v1_runs__run_id__draft_edits_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DraftEditRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/DraftState"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Edit Draft",
+            "tags": [
+              "drafts"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/draft/review": {
+          "post": {
+            "operationId": "request_draft_review_v1_runs__run_id__draft_review_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/DraftState"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Request Draft Review",
+            "tags": [
+              "drafts"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}/publication": {
+          "get": {
+            "operationId": "get_publication_v1_runs__run_id__publication_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/PublicationReceipt"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Publication",
+            "tags": [
+              "drafts"
+            ]
+          },
+          "post": {
+            "operationId": "publish_draft_v1_runs__run_id__publication_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PublishRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/PublicationReceipt"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Publish Draft",
+            "tags": [
+              "drafts"
             ]
           }
         },
@@ -6100,6 +6767,165 @@
         "title": "DraftBundleV11",
         "type": "object"
       },
+      "DraftEditRequest": {
+        "additionalProperties": false,
+        "description": "Owner edit of the current DRAFT (P1-005A): always a new immutable version.",
+        "properties": {
+          "attachments": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/AttachmentRef"
+            },
+            "title": "Attachments",
+            "type": "array"
+          },
+          "content": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DraftTarget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "expected_version",
+          "content"
+        ],
+        "title": "DraftEditRequest",
+        "type": "object"
+      },
+      "DraftState": {
+        "additionalProperties": false,
+        "description": "Run-scoped DRAFT/review/publication mirror. Publication state is separate from run.\n\n`draft` is withheld (None) when current source/ACL/policy no longer allow showing it.\n`review` is a mirror of the review authority's decision, never an approval itself.",
+        "properties": {
+          "approval_valid": {
+            "title": "Approval Valid",
+            "type": "boolean"
+          },
+          "attachments": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/AttachmentRef"
+            },
+            "title": "Attachments",
+            "type": "array"
+          },
+          "current_version": {
+            "minimum": 1,
+            "title": "Current Version",
+            "type": "integer"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DraftBundle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invalid_reason": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Invalid Reason"
+          },
+          "publication": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/PublicationReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "publication_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ExecutionMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "publication_status": {
+            "$ref": "#/$defs/PublicationStatus",
+            "default": "not_requested"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Versions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "draft",
+          "current_version",
+          "versions",
+          "approval_valid"
+        ],
+        "title": "DraftState",
+        "type": "object"
+      },
       "DraftTarget": {
         "additionalProperties": false,
         "properties": {
@@ -7856,6 +8682,29 @@
         ],
         "title": "PublicationStatus",
         "type": "string"
+      },
+      "PublishRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "idempotency_key": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotency_key"
+        ],
+        "title": "PublishRequest",
+        "type": "object"
       },
       "RankReason": {
         "additionalProperties": false,
@@ -10446,6 +11295,9 @@
     }
   },
   "public_model_names": [
+    "DraftEditRequest",
+    "PublishRequest",
+    "DraftState",
     "RankReason",
     "RankedCandidate",
     "TodoCandidate",
@@ -10510,11 +11362,11 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
-    "src/rfa_mas/api/app.py": "b6996fdc026fed7d8866221bede57d7fcde2a18ed78e02e486b1a05afb6df31d",
-    "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "df35e5f94ef63bed8650b08d98b5c4326daf9484167131f5db498ddb67df23d3",
+    "src/rfa_mas/api/app.py": "6065100fc61801b370e2e5b1454d0a54ecf16a774db660ff6551371e11293134",
+    "src/rfa_mas/application/state_machine.py": "fbc90e928ea5d04bc0d2d7af3dbad0ce392cbe7a1e49594356c3d22517ea22e3",
+    "src/rfa_mas/contracts/__init__.py": "9aecb3ad2b1215ffb05f7ad58ae336fbef2dbabea650297c618fd1bd676cf360",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "0b7880146910a5ab38a45e309497dab8cabf943db0f136f3f8320be445c72c88",
+    "src/rfa_mas/contracts/models.py": "a3bb2610e6abdb5ac6ab5426507f350be90ef8e9090b6969af3b2c41405f23fd",
     "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
