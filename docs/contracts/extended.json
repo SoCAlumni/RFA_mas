@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "895683c35d19dbb684f79151fba8efdfb78b3cf49d22ccb1d1b9a0eeacbf2c02",
+  "digest": "f1edd7ec3ffd161a0aa95d4be854429dc976f29b3ba74fdc38bd24049f4232de",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -7857,6 +7857,91 @@
         "title": "PublicationStatus",
         "type": "string"
       },
+      "RankReason": {
+        "additionalProperties": false,
+        "properties": {
+          "explanation": {
+            "maxLength": 300,
+            "title": "Explanation",
+            "type": "string"
+          },
+          "factor": {
+            "enum": [
+              "due",
+              "dependency",
+              "impact",
+              "certainty",
+              "state"
+            ],
+            "title": "Factor",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor",
+          "points",
+          "explanation"
+        ],
+        "title": "RankReason",
+        "type": "object"
+      },
+      "RankedCandidate": {
+        "additionalProperties": false,
+        "description": "Explainable recommendation order (P2-003). Never grants creation/approval authority.",
+        "properties": {
+          "candidate": {
+            "$ref": "#/$defs/TodoCandidate"
+          },
+          "rank": {
+            "minimum": 1,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/$defs/RankReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "rule_version": {
+            "default": "candidate-rank-v1",
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rank",
+          "score",
+          "candidate",
+          "reasons"
+        ],
+        "title": "RankedCandidate",
+        "type": "object"
+      },
       "ResumeRequest": {
         "additionalProperties": false,
         "description": "Wake a waiting run to QUERY its review source; never grants approval.",
@@ -10361,6 +10446,8 @@
     }
   },
   "public_model_names": [
+    "RankReason",
+    "RankedCandidate",
     "TodoCandidate",
     "CandidateDecision",
     "DerivedItemProposal",
@@ -10425,9 +10512,9 @@
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
     "src/rfa_mas/api/app.py": "b6996fdc026fed7d8866221bede57d7fcde2a18ed78e02e486b1a05afb6df31d",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "f0b5494851262b2fad9bb9beec1126fdf13aab70cfaafe86b2b19db39ecf720f",
+    "src/rfa_mas/contracts/__init__.py": "df35e5f94ef63bed8650b08d98b5c4326daf9484167131f5db498ddb67df23d3",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "92e97d2b1688945657fc01824c80df7cc5c88e06019b50641ad71f105b04e554",
+    "src/rfa_mas/contracts/models.py": "0b7880146910a5ab38a45e309497dab8cabf943db0f136f3f8320be445c72c88",
     "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
