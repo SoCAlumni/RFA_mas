@@ -25,9 +25,16 @@ from rfa_mas.errors import ResourceNotFoundError, RfaError
 ISSUE_REF = re.compile(r"(?:issue\s*)?#(\d+)", re.IGNORECASE)
 DATE_ISO = re.compile(r"(20\d\d)-(\d\d)-(\d\d)")
 DATE_KO = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")
-BLOCKER_TERMS = ("확인 필요", "선행", "blocker", "막힘", "blocked", "전에 확인")
+# P1-004C rule table (with knowledge.EXTRACTION_RULES_VERSION). A blocker is an open item
+# other work waits on: an explicit marker or a gate ("확인 전에는 ... 쓰지 않는다").
+BLOCKER_TERMS = ("확인 필요", "선행", "blocker", "막힘", "blocked", "전에 확인", "전에는",
+                 "전까지는", "선결")
 CLOSED_TERMS = ("closed", "완료", "해결됨", "resolved", "done")
 TENTATIVE_TERMS = ("가설", "검증 전", "미검증", "잠정", "추정", "tentative", "unverified")
+# An unverified hypothesis/idea with no action item in its source becomes a follow-up.
+FOLLOW_UP_CUES = ("가설", "아이디어", "idea", "hypothesis")
+# A mention quoting a tracked item's title (>= this many characters) refers to that item.
+MENTION_MIN_CHARS = 8
 
 
 def _normalized(text: str) -> str:
@@ -45,11 +52,79 @@ def explicit_due(text: str, year: int) -> str | None:
     return None
 
 
+def _due(proposal, year: int) -> str | None:
+    """Due date literally present in the item or in its source's attached due fields."""
+    for text in (proposal.content, *proposal.conditions):
+        if found := explicit_due(text, year):
+            return found
+    return None
+
+
 def fingerprint(kind: str, content: str, parent_ids: list[str]) -> str:
     """Same change -> same key. An issue reference dedups mentions across sources."""
     issue = ISSUE_REF.search(content)
     key = ["issue", issue.group(1)] if issue else [kind, _normalized(content), sorted(parent_ids)]
     return sha256_text(json.dumps(key, ensure_ascii=False))
+
+
+def tracked_key(source_id: str) -> str:
+    """Stable key of a tracked item (a source with a status field) across its revisions."""
+    return sha256_text(json.dumps(["tracked", source_id]))
+
+
+def _source_title(proposal) -> str:
+    return _normalized(proposal.title.rsplit(" — ", 1)[0]).lower()
+
+
+def _groups(proposals) -> list[list[tuple[str, object, str]]]:
+    """Union same-change entries: equal key, one tracked source, or a title mention.
+
+    Entries are (candidate_kind, proposal, key). Deterministic for a given proposal set.
+    """
+    actionable = [p for p in proposals if p.kind in {"todo", "issue"}]
+    with_actions = {p.parents[0].source_id for p in actionable if p.kind == "todo"}
+    entries = [("issue" if p.kind == "issue" else "todo", p) for p in actionable]
+    entries += [("follow_up", p) for p in proposals
+                if p.kind == "summary" and p.epistemic_state == "tentative"
+                and p.parents[0].source_id not in with_actions
+                and any(cue in p.content.lower() for cue in FOLLOW_UP_CUES)]
+    keyed = [(kind, p, tracked_key(p.parents[0].source_id) if kind == "issue"
+              else fingerprint(kind, p.content, [x.source_id for x in p.parents]))
+             for kind, p in entries]
+    parent = list(range(len(keyed)))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    def union(i: int, j: int) -> None:
+        a, b = find(i), find(j)
+        if a != b:
+            parent[max(a, b)] = min(a, b)
+
+    first: dict[str, int] = {}
+    tracked: dict[str, int] = {}
+    for index, (kind, proposal, key) in enumerate(keyed):
+        union(index, first.setdefault(key, index))
+        if kind == "issue":
+            tracked[proposal.parents[0].source_id] = index
+    titles = {source: _source_title(keyed[i][1]) for source, i in tracked.items()}
+    for index, (kind, proposal, _) in enumerate(keyed):
+        source = proposal.parents[0].source_id
+        if kind == "issue":
+            continue
+        if source in tracked:
+            union(index, tracked[source])  # an action of the tracked item itself
+        text = _normalized(proposal.content).lower()
+        for other, title in sorted(titles.items()):
+            if other != source and len(title) >= MENTION_MIN_CHARS and title in text:
+                union(index, tracked[other])  # a mention quoting the item's title
+    grouped: dict[int, list] = {}
+    for index, entry in enumerate(keyed):
+        grouped.setdefault(find(index), []).append(entry)
+    return [grouped[root] for root in sorted(grouped)]
 
 
 class CandidateService:
@@ -61,46 +136,68 @@ class CandidateService:
         proposals = await self.accumulator.extract(domain_id, principal, origin_ref="candidates")
         existing = {c.fingerprint: c for c in
                     await self.repository.list_candidates(principal, domain_id)}
-        # Group mentions of the same change first; keep the richest statement (explicit
-        # due date, then longest text) and the union of parents, independent of order.
-        grouped: dict[str, list] = {}
-        for proposal in proposals:
-            if proposal.kind in {"todo", "issue"}:
-                key = fingerprint(proposal.kind, proposal.content,
-                                  [p.source_id for p in proposal.parents])
-                grouped.setdefault(key, []).append(proposal)
-        merged = []
-        for key, group in sorted(grouped.items()):
-            best = sorted(group, key=lambda p: (explicit_due(p.content, now.year) is None,
-                                                -len(p.content), p.content))[0]
-            parents = {(p.source_id, p.source_revision): p for g in group for p in g.parents}
-            merged.append(best.model_copy(update={
-                "parents": tuple(parents[k] for k in sorted(parents))[:32],
-                "content": best.content,
-            }))
         seen: set[str] = set()
-        for proposal in merged:
-            text = proposal.content
-            closed = any(term in _normalized(text) for term in CLOSED_TERMS)
-            key = fingerprint(proposal.kind, text, [p.source_id for p in proposal.parents])
-            if key in seen:
-                continue  # Same change mentioned twice in one discovery.
-            seen.add(key)
+        order = {"accepted": 0, "rejected": 1, "deferred": 2, "proposed": 3, "superseded": 4}
+        for group in _groups(proposals):
+            keys = sorted({key for _, _, key in group})
+            tracked = sorted({p.parents[0].source_id for kind, p, _ in group if kind == "issue"})
+            statuses = [p.content for kind, p, _ in group if kind == "issue"]
+            # Continuity: reuse a stored candidate of any member key (decided ones first),
+            # so a later mention or a new revision never forks a second candidate.
+            matches = sorted((k for k in keys if k in existing),
+                             key=lambda k: (order[existing[k].state], k))
+            key = matches[0] if matches else (tracked_key(tracked[0]) if tracked else keys[0])
+            seen.update(keys)
+            for duplicate in matches[1:]:
+                other = existing[duplicate]
+                if other.state in {"proposed", "deferred"}:
+                    await self.repository.upsert_candidate(other.model_copy(update={
+                        "state": "superseded", "updated_at": now,
+                        "history": other.history + (f"{now.isoformat()} superseded:duplicate",),
+                    }), principal, expected_state=other.state)
+            content = [(kind, p) for kind, p, _ in group if kind != "issue"]
+            best_kind, best = sorted(content, key=lambda entry: (
+                bool(tracked) and entry[1].parents[0].source_id not in tracked,  # mentions last
+                entry[0] == "follow_up",
+                _due(entry[1], now.year) is None,
+                -len(entry[1].content),
+                entry[1].content,
+            ))[0] if content else (None, None)
+            text = best.content if best is not None else ""
+            # A tracked item's own status field decides closure; otherwise the text does.
+            closed = (any(term in _normalized(s) for s in statuses for term in CLOSED_TERMS)
+                      if statuses else any(term in _normalized(text) for term in CLOSED_TERMS))
             current = existing.get(key)
-            revisions = {(p.source_id, p.source_revision) for p in proposal.parents}
+            if best is None:
+                if current is not None and closed and current.state != "superseded":
+                    await self.repository.upsert_candidate(current.model_copy(update={
+                        "state": "superseded", "updated_at": now,
+                        "history": current.history + (f"{now.isoformat()} superseded:closed",),
+                    }), principal, expected_state=current.state)
+                continue
+            parents_by_revision = {(ref.source_id, ref.source_revision): ref
+                                   for _, p, _ in group for ref in p.parents}
+            parents = tuple(parents_by_revision[k] for k in sorted(parents_by_revision))[:32]
+            due = next((d for _, p in sorted(content, key=lambda e: e[1].content)
+                        if (d := _due(p, now.year))), None)
+            due = _due(best, now.year) or due
+            evidence = [_normalized(x).lower() for _, p, _ in group
+                        for x in (p.content, *p.conditions)]
+            blocker = any(term in x for x in evidence for term in BLOCKER_TERMS)
+            kind = "todo" if best_kind != "follow_up" else "follow_up"
+            revisions = set(parents_by_revision)
             if current is None:
                 if closed:
                     continue
                 await self.repository.upsert_candidate(TodoCandidate(
                     candidate_id=new_id("candidate"), domain_id=domain_id,
-                    owner_id=principal.user_id, kind=proposal.kind,
-                    title=proposal.title, content=text, fingerprint=key,
-                    parents=proposal.parents,
+                    owner_id=principal.user_id, kind=kind,
+                    title=best.title, content=text, fingerprint=key,
+                    parents=parents,
                     epistemic_state="tentative" if any(
                         term in _normalized(text) for term in TENTATIVE_TERMS
-                    ) else proposal.epistemic_state,
-                    due_date=explicit_due(text, now.year),
-                    blocker=any(t in _normalized(text) for t in BLOCKER_TERMS),
+                    ) else best.epistemic_state,
+                    due_date=due, blocker=blocker,
                     history=(f"{now.isoformat()} proposed",), created_at=now, updated_at=now,
                 ), principal)
                 continue
@@ -116,8 +213,8 @@ class CandidateService:
                           + (f"{now.isoformat()} resurfaced:new_revision",)}
             if update is not None or new_evidence:
                 changed = current.model_copy(update=(update or {}) | {
-                    "parents": proposal.parents, "content": text,
-                    "due_date": explicit_due(text, now.year), "updated_at": now,
+                    "parents": parents, "content": text, "due_date": due,
+                    "blocker": blocker, "updated_at": now,
                 })
                 await self.repository.upsert_candidate(changed, principal,
                                                        expected_state=current.state)
@@ -131,6 +228,7 @@ class CandidateService:
                         "history": current.history + (f"{now.isoformat()} superseded:source",),
                     }), principal, expected_state=current.state)
         return await self.list(domain_id, principal)
+
 
     async def _current_parents(self, domain_id, principal, candidate) -> bool:
         try:

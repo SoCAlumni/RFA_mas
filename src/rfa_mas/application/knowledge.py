@@ -127,14 +127,66 @@ class KnowledgeService:
         return KnowledgeImportResult(rows=tuple(receipts))
 
 # -- P1-004A reviewed knowledge accumulation -------------------------------------------
-DECISION_TERMS = ("결정", "decided", "decision:", "확정:")
-TODO_TERMS = ("todo", "해야 할", "해야함", "확인 필요", "마감", "action item")
+# P1-004C deterministic cue table (EXTRACTION_RULES_VERSION). Rules run per sentence of the
+# owner's current authorized sources; every extracted content is a verbatim sentence, so
+# "cited" still means quoted. No model is involved.
+EXTRACTION_RULES_VERSION = "extract-rules-v2"
+# Decision: an explicit label, a decided/confirmed predicate, or an official statement of a
+# dated fact. A bare noun such as "결정 기록" (decision records) is not a decision.
+DECISION_LABELS = ("결정:", "decision:", "확정:")
+DECISION_PREDICATE = re.compile(
+    r"(?:결정|확정)(?:했|하였|되었|됐|된다)|(?:으로|로|하기로)\s*(?:결정|확정)|하기로\s*했"
+    r"|\bdecided\b",
+    re.IGNORECASE,
+)
+OFFICIAL_DATED = re.compile(
+    r"공식[^.。]{0,40}?\d{4}-\d{2}-\d{2}\s*(?:이다|입니다|로\s*변경되었다|로\s*변경됐다)"
+)
+# Action: an explicit to-do marker or a Korean obligation/need ending.
+ACTION_CUES = ("todo", "action item", "해야 할", "해야할", "해야 한다", "해야한다", "해야 합니다",
+               "해야 함", "해야함", "확인 필요", "검토 필요", "처리 필요", "마감")
+# Field of a tracked item ("마감: 2026-10-02", "상태: open"): metadata, not an action.
+FIELD = re.compile(r"(?P<name>마감|기한|due|상태|status|완료)\s*[:：]\s*[^\s,;]+", re.IGNORECASE)
+DUE_FIELDS = frozenset({"마감", "기한", "due"})
+STATUS_FIELDS = frozenset({"상태", "status"})
+# Gate: a precondition that blocks other work ("확인 전에는 ... 쓰지 않는다").
+GATE_CUES = ("전에는", "전까지는", "선행 조건", "선결 조건", "하기 전에")
+SOURCE_TAG = re.compile(r"\[[^\]]{1,80}\]")
+SENTENCE_END = re.compile(r"(?<=[.!?。])\s+")
 TENTATIVE_TERMS = ("가설", "검증 전", "미검증", "잠정", "추정", "tentative", "unverified")
 URL_PATTERN = re.compile(r"https?://[^\s)>\]]+")
 
 
 def _normalized(text: str) -> str:
     return " ".join(text.split())
+
+
+def sentences(content: str) -> list[str]:
+    """Verbatim, whitespace-normalized sentences per line ("6.0ms" is not a boundary)."""
+    result = []
+    for raw in content.splitlines():
+        line = _normalized(raw)
+        result.extend(part for part in SENTENCE_END.split(line) if part)
+    return result
+
+
+def is_decision(sentence: str) -> bool:
+    lowered = sentence.lower()
+    return (any(label in lowered for label in DECISION_LABELS)
+            or bool(DECISION_PREDICATE.search(sentence)) or bool(OFFICIAL_DATED.search(sentence)))
+
+
+def is_field_only(sentence: str) -> bool:
+    """A sentence that is only tracked-item fields (plus an optional source tag)."""
+    if not FIELD.search(sentence):
+        return False
+    rest = SOURCE_TAG.sub("", FIELD.sub("", sentence))
+    return not rest.strip(" ,.;:·-")
+
+
+def is_action(sentence: str) -> bool:
+    lowered = sentence.lower()
+    return not is_field_only(sentence) and any(cue in lowered for cue in ACTION_CUES)
 
 
 class KnowledgeAccumulator:
@@ -238,7 +290,12 @@ class KnowledgeAccumulator:
 
     async def extract(self, domain_id: DomainId, principal: TrustedPrincipal,
                       *, origin_ref: str = "extract") -> list[DerivedItemProposal]:
-        """Line rules over the principal's current, authorized, non-derived sources."""
+        """Sentence rules (EXTRACTION_RULES_VERSION) over current, authorized originals.
+
+        A tracked item's due/status fields and gate sentences are attached as conditions
+        of that source's actions; its status becomes one "issue" proposal. Contents are
+        verbatim sentences or field snippets of the parent source.
+        """
         metadata = await self.repository.authorized_metadata(
             domain_id, principal, policy_version=self.policy.policy_version
         )
@@ -249,32 +306,44 @@ class KnowledgeAccumulator:
         proposals, seen = [], set()
         for read in reads:
             ref = read.metadata.reference
-            for raw in read.content.splitlines():
-                line = _normalized(raw)
-                if not line:
-                    continue
-                lowered = line.lower()
-                found = []
-                if any(t in lowered for t in DECISION_TERMS):
-                    found.append(("decision", "cited"))
-                if any(t in lowered for t in TODO_TERMS):
-                    found.append(("todo", "cited"))
+            parts = sentences(read.content)
+            fields = [(m.group("name").lower(), m.group(0)) for s in parts
+                      for m in FIELD.finditer(s)]
+            due = tuple(dict.fromkeys(text for name, text in fields if name in DUE_FIELDS))
+            status = next((text for name, text in fields if name in STATUS_FIELDS), None)
+            gates = tuple(dict.fromkeys(
+                s for s in parts if any(cue in s for cue in GATE_CUES) and not is_action(s)))
+            conditions = (*due, *gates)
+            has_action = any(is_action(s) for s in parts)
+            found: list[tuple[str, str, str, tuple[str, ...]]] = []
+            for s in parts:
+                lowered = s.lower()
+                if is_decision(s):
+                    found.append(("decision", "cited", s, ()))
+                if is_action(s):
+                    found.append(("todo", "cited", s, conditions))
+                elif not has_action and is_field_only(s) and any(
+                        m.group("name").lower() in DUE_FIELDS for m in FIELD.finditer(s)):
+                    # A lone due field with no action sentence stays a to-do (pre-v2 rule).
+                    found.append(("todo", "cited", s, ()))
                 if any(t in lowered for t in TENTATIVE_TERMS):
-                    found.append(("summary", "tentative"))
-                for url in URL_PATTERN.findall(line):
-                    found.append(("link", "cited"))
-                for kind, state in found:
-                    content = URL_PATTERN.findall(line)[0] if kind == "link" else line
-                    key = (kind, content)
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    proposals.append(DerivedItemProposal(
-                        kind=kind, title=f"{read.metadata.title[:80]} — {kind}",
-                        content=content[:5000], epistemic_state=state, parents=(ref,),
-                        uncertainty="검증 전 주장" if state == "tentative" else None,
-                        origin_ref=f"{origin_ref}:{ref.source_id}"[:160],
-                    ))
+                    found.append(("summary", "tentative", s, ()))
+                for url in URL_PATTERN.findall(s):
+                    found.append(("link", "cited", url, ()))
+            if status is not None:
+                found.append(("issue", "cited", status, conditions))
+            for kind, state, content, conds in found:
+                key = (kind, content, ref.source_id if kind == "issue" else "")
+                if key in seen:
+                    continue
+                seen.add(key)
+                proposals.append(DerivedItemProposal(
+                    kind=kind, title=f"{read.metadata.title[:80]} — {kind}",
+                    content=content[:5000], epistemic_state=state, parents=(ref,),
+                    conditions=tuple(c[:500] for c in conds[:8]),
+                    uncertainty="검증 전 주장" if state == "tentative" else None,
+                    origin_ref=f"{origin_ref}:{ref.source_id}"[:160],
+                ))
         return proposals
 
     async def team_proposals(self, domain_id: DomainId, principal: TrustedPrincipal, result):
