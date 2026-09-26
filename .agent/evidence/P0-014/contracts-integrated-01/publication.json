@@ -1,0 +1,7 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007",
+  "evidence": ".agent/evidence/P0-014/contracts-integrated-01/result.json",
+  "checks": "V1 14 passed; V2 50 passed; full suite 326 passed; repository-local provisional, not live integration"
+}

@@ -1,0 +1,124 @@
+{
+  "attempt_id": "nat-spike-01",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "core pin 유지·actual installed versions·선택 근거가 있다",
+          "관측/재개 미지원 범위 및 실패 blocker가 명시되고 KB/eval에 NAT 선행을 추가하지 않았다"
+        ],
+        "id": "V1",
+        "observed": "Python 3.12.13; LangGraph 1.2.12; checkpoint 4.2.0; NAT core/langchain/eval/opentelemetry 1.8.0 installed. Required registered wrapper smoke passed, custom DTOs become dict and require revalidation, factory receives empty RunnableConfig; missing thread configuration rejected. Default-only temp environment has no nat and 2 isolation tests passed in 0.06s. No live model call, product NAT adapter, checkpoint resume or exporter claimed.",
+        "procedure_performed": [
+          "Compared official v1.8.0 package metadata, released wrapper source and official conversion tests; inspected installed package metadata and registry.",
+          "Executed uv dry-run with existing direct pins, uv lock, uv sync --locked --extra nat in isolated feature environment; compared old/new lock versions (no existing version changed).",
+          "Created mktemp default-only venv, uv sync --locked without extra; confirmed nat absent; ran core isolation tests. Inspected nat eval --help and explicitly limited product adapter/checkpoint/streaming/tool trace claims."
+        ],
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "assertions": [
+          "실제 설치된 wrapper가 synthetic CompiledStateGraph를 한 번 실행하고 input/output shape를 확인",
+          "NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "8 passed in 0.68s. Actual installed NAT register(config, None) exercised compiled symbol and factory; each invocation one node/model call, native/wrapped output and policy result equal. Network connect denied. Default-only venv separately: 2 passed in 0.06s; not counted as NAT smoke.",
+        "result": "passed"
+      }
+    ],
+    "error_log": [
+      {
+        "correction": "v1.8.0 Git tree identified langgraph_workflow.py; corrected fetch succeeded; no repeat blind retries.",
+        "operation": "Initial guessed official source path",
+        "result": "HTTP 404 for langgraph_wrapper.py"
+      },
+      {
+        "correction": "Hoisted immutable SPIKE_PATH once at module initialization; next check passed.",
+        "operation": "Initial ruff check",
+        "result": "3 ASYNC240 Path.resolve in async tests and 1 E501"
+      },
+      {
+        "correction": "Reported to coordinator; preserve canonical-root guard; no repeat without environment/scope change.",
+        "operation": "Supplemental full regression from feature worktree",
+        "result": "9 canonical migration control-root errors"
+      },
+      {
+        "correction": "Verified isolated .venv metadata directly; no install state assumed from poll.",
+        "operation": "Parent session poll",
+        "result": "Inherited session 24471 was already unavailable"
+      }
+    ],
+    "finished_at": "2026-09-26T06:31:08+00:00",
+    "reviewer": "rfa-coordinator / delegated nat-spike worker",
+    "started_at": "2026-09-26T06:29:53+00:00",
+    "supplemental_runs": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "cwd": ".",
+        "exit_code": 1,
+        "result": "failed",
+        "summary": "9 failed, 255 passed in 28.21s. All nine failures are tests/test_task_migration.py calling Store(ROOT) in copied feature checkout; error: Copied/wrong control root; automatic local fallback is forbidden. No NAT or product test failed. Full suite is NOT reported passed. Coordinator must run canonical-root migration suite after integration; no guard bypass or out-of-scope fix."
+      },
+      {
+        "argv": [
+          ".venv/bin/ruff",
+          "check",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "exit_code": 0,
+        "result": "passed",
+        "summary": "All checks passed after hoisting Path.resolve out of async tests; initial lint errors retained below."
+      },
+      {
+        "argv": [
+          "uv",
+          "lock",
+          "--check"
+        ],
+        "exit_code": 0,
+        "result": "passed",
+        "summary": "Resolved 166 packages; prior package versions unchanged."
+      },
+      {
+        "argv": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "exit_code": 0,
+        "result": "passed"
+      }
+    ]
+  },
+  "result": "passed",
+  "source_fingerprint": "43faea1517dec921a5f5866a160fe3863affac54f7210f13730211cc5c088785",
+  "source_manifest": ".agent/evidence/P0-027/nat-spike-01/source.json",
+  "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+  "spec_revision": 2,
+  "task_id": "P0-027"
+}

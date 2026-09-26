@@ -1,195 +1,183 @@
-schema_version: "1.0"
-id: "P0-015"
-title: "사용자 소유 세션·대화·run 조회"
-objective: "대화를 이어가고 자신의 실행만 찾는다. 현재 run 조회의 소유권 누락을 먼저 해소한다."
-kind: "task"
+schema_version: '1.0'
+id: P0-015
+title: 사용자 소유 세션·대화·run 조회
+objective: 대화를 이어가고 자신의 실행만 찾는다. 현재 run 조회의 소유권 누락을 먼저 해소한다.
+kind: task
 source_tasks:
-  - "P0-015"
+- P0-015
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P0"
-status: "todo"
-spec_state: "draft"
-unresolved:
-  - "P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다."
-workstream: "execution"
-execution_role: "coordinator"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P0
+status: todo
+spec_state: ready
+unresolved: []
+workstream: execution
+execution_role: coordinator
 estimated_effort: 1.5
-product_owner: "민섭"
-execution_class: "이 저장소 구현"
-product_mode: "현재 get_result는 owner 인자를 받지 않음; 신규 기능 missing/not_run. 저장/권한 local(false), 응답 생성 mock(true). 외부 의존 없음; loopback 개발 identity는 production 인증 증거 아님."
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: 현재 get_result는 owner 인자를 받지 않음; 신규 기능 missing/not_run. 저장/권한 local(false), 응답 생성 mock(true).
+  외부 의존 없음; loopback 개발 identity는 production 인증 증거 아님.
 scope:
   included:
-    - "versioned SQLite migration으로 sessions/messages/run owner/session-task 연결 저장. 세션 목록·상세·이어하기와 실행 상태/결과 조회 API(예정). 고정 api-client/fixture 권한 대신 인증된 로컬 소유자와 서버 보유 membership 매핑을 사용하며 다사용자 로그인 제품은 추가하지 않는다. WorkRepositoryPort 재사용; 필요한 경우에만 별도 repository 경계 분리."
+  - versioned SQLite migration으로 sessions/messages/run owner/session-task 연결 저장. 세션 목록·상세·이어하기와 실행 상태/결과
+    조회 API(예정). 고정 api-client/fixture 권한 대신 인증된 로컬 소유자와 서버 보유 membership 매핑을 사용하며 다사용자 로그인 제품은 추가하지 않는다.
+    WorkRepositoryPort 재사용; 필요한 경우에만 별도 repository 경계 분리.
+  - P0-014 1.1 SessionRecord/DirectWorkRequest 의미를 수락. 기존 /v1/work HTTP wire와 DB 자료를 보존하고 owner 접근 검사
+    회귀는 tests/test_api.py에서 함께 검증. 새 공유 DTO/계약 export 변경이 필요하면 coordinator에게 이유·호환성·영향을 먼저 보고한다.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
   owned_paths:
-    - "src/rfa_mas/adapters/local.py"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "src/rfa_mas/application/service.py"
-    - "src/rfa_mas/api/app.py"
-    - "src/rfa_mas/application/sessions.py"
-    - "tests/test_sessions.py"
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/ports/interfaces.py
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/api/app.py
+  - src/rfa_mas/application/sessions.py
+  - tests/test_sessions.py
+  - tests/test_api.py
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/contracts"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - docs/INTEGRATION.md
   planned_paths:
-    - "src/rfa_mas/application/sessions.py"
-    - "tests/test_sessions.py"
+  - src/rfa_mas/application/sessions.py
+  - tests/test_sessions.py
   shared_resources:
-    - "canonical-contracts"
-    - "sqlite-migrations"
+  - canonical-contracts
+  - sqlite-migrations
 depends_on:
-  -
-    id: "P0-014"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
-  -
-    id: "P0-005"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
-  -
-    id: "P0-008"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-014
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-005
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-008
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
-  -
-    id: "RFA-EXTENDED"
-    version: "1.1"
-    digest: null
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P0-015 — 사용자 소유 세션·대화·run 조회"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "src/rfa_mas/adapters/local.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/ports/interfaces.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/application/service.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/api/app.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P0-015/handoff.md"
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-015 — 사용자 소유 세션·대화·run 조회
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/adapters/local.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/ports/interfaces.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/application/service.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/api/app.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  handoff: tasks/P0-015/handoff.md
   dependency_results:
-    - "tasks/P0-014/handoff.md"
-    - "tasks/P0-005/handoff.md"
-    - "tasks/P0-008/handoff.md"
+  - tasks/P0-014/handoff.md
+  - tasks/P0-005/handoff.md
+  - tasks/P0-008/handoff.md
 deliverables:
-  -
-    path: "src/rfa_mas/adapters/local.py"
-    availability: "existing"
-    description: "versioned SQLite migration으로 sessions/messages/run owner/session-task 연결 저장. 세션 목록·상세·이어하기와 실행 상태/결과 조회 API(예정). 고정 api-client/fixture 권한 대신 인증된 로컬 소유자와 서버 보유 membership 매핑을 사용하며 다사용자 로그인 제품은 추가하지 않는다. WorkRepositoryPort 재사용; 필요한 경우에만 별도 repository 경계 분리."
-  -
-    path: "src/rfa_mas/ports/interfaces.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/application/service.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/api/app.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/application/sessions.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "tests/test_sessions.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: versioned SQLite migration으로 sessions/messages/run owner/session-task 연결 저장. 세션 목록·상세·이어하기와
+    실행 상태/결과 조회 API(예정). 고정 api-client/fixture 권한 대신 인증된 로컬 소유자와 서버 보유 membership 매핑을 사용하며 다사용자 로그인 제품은
+    추가하지 않는다. WorkRepositoryPort 재사용; 필요한 경우에만 별도 repository 경계 분리.
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/application/service.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/api/app.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/application/sessions.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_sessions.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "body의 owner/thread/membership 주장을 신뢰하지 않고 서버 principal로 조회·쓰기 허가"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "한 세션의 여러 Task/Run, 같은 Task의 여러 세션 연결 허용"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "기존 DB 자료 보존, owner 미상 legacy run은 임의 귀속하지 않고 restricted 처리"
-    required: true
-  -
-    id: "AC4"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회."
-    required: true
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: body의 owner/thread/membership 주장을 신뢰하지 않고 서버 principal로 조회·쓰기 허가
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 한 세션의 여러 Task/Run, 같은 Task의 여러 세션 연결 허용
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 기존 DB 자료 보존, owner 미상 legacy run은 임의 귀속하지 않고 restricted 처리
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회.
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-      - "AC4"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "두 fixture principal의 create/list/get/continue 교차 접근, 기존 schema migration 재적용, DB close/reopen; `tests/test_api.py` 회귀. raw checkpointer 직접 노출 금지."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/test_sessions.py"
-    timeout_seconds: 120
-    procedure: []
-    assertions:
-      - "body의 owner/thread/membership 주장을 신뢰하지 않고 서버 principal로 조회·쓰기 허가"
-      - "한 세션의 여러 Task/Run, 같은 Task의 여러 세션 연결 허용"
-      - "기존 DB 자료 보존, owner 미상 legacy run은 임의 귀속하지 않고 restricted 처리"
-      - "다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P0-015"
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 두 fixture principal의 create/list/get/continue 교차 접근, 기존 schema migration 재적용, DB close/reopen; `tests/test_api.py`
+    회귀. raw checkpointer 직접 노출 금지.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_sessions.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - body의 owner/thread/membership 주장을 신뢰하지 않고 서버 principal로 조회·쓰기 허가
+  - 한 세션의 여러 Task/Run, 같은 Task의 여러 세션 연결 허용
+  - 기존 DB 자료 보존, owner 미상 legacy run은 임의 귀속하지 않고 restricted 처리
+  - 다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회.
+  runner: pytest
+evidence_dir: .agent/evidence/P0-015
 latest_evidence_file: null
 verification_summary:
-  state: "not_run"
+  state: not_run
   spec_revision: null
   spec_digest: null
   contract_digest: null
   source_fingerprint: null
   evidence: null
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: pending
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 4
+spec_revision: 4
 claim_generation: 0
 claim: null
 attempts:
@@ -198,17 +186,21 @@ attempts:
   no_progress_count: 0
   latest_attempt: null
   evidence_refs: []
+  approaches: []
 blocker: null
 migration:
-  initial_spec_revision: 2
-  original_status: "todo"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P0-015"
-  prior_claim: "현재 get_result는 owner 인자를 받지 않음; 신규 기능 missing/not_run. 저장/권한 local(false), 응답 생성 mock(true). 외부 의존 없음; loopback 개발 identity는 production 인증 증거 아님."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-015
+  prior_claim: 현재 get_result는 owner 인자를 받지 않음; 신규 기능 missing/not_run. 저장/권한 local(false), 응답 생성 mock(true).
+    외부 의존 없음; loopback 개발 identity는 production 인증 증거 아님.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T03:13:39.816Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T06:48:13+00:00'
+concise_result: 'Specification changed: 1.1 SessionRecord/DirectWorkRequest 및 owner/thread 신뢰 경계 검토 완료;
+  새 endpoint는 후속 구현, API 권한 회귀 소유 범위 포함'
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

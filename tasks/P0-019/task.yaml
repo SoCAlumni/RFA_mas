@@ -1,190 +1,175 @@
-schema_version: "1.0"
-id: "P0-019"
-title: "Task 전담 팀·TeamFactory·중복 provisioning 방지"
-objective: "같은 지속 업무의 후속 요청은 기존 팀을 쓰고 요청 재전송으로 팀이 늘어나지 않는다."
-kind: "task"
+schema_version: '1.0'
+id: P0-019
+title: Task 전담 팀·TeamFactory·중복 provisioning 방지
+objective: 같은 지속 업무의 후속 요청은 기존 팀을 쓰고 요청 재전송으로 팀이 늘어나지 않는다.
+kind: task
 source_tasks:
-  - "P0-019"
+- P0-019
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P0"
-status: "todo"
-spec_state: "draft"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P0
+status: todo
+spec_state: draft
 unresolved:
-  - "P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다."
-workstream: "agents"
-execution_role: "coordinator"
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+workstream: agents
+execution_role: coordinator
 estimated_effort: 1.5
-product_owner: "민섭"
-execution_class: "이 저장소 구현"
-product_mode: "Task/TeamInstance 테이블 없음; missing/not_run. registry·중복 방지 local(false), provisioning fixture mock(true). 외부 의존 없음; actual identity/lifecycle는 P1-008B."
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: Task/TeamInstance 테이블 없음; missing/not_run. registry·중복 방지 local(false), provisioning fixture
+  mock(true). 외부 의존 없음; actual identity/lifecycle는 P1-008B.
 scope:
   included:
-    - "tasks/team_instances/member 상태 migration, TeamFactory의 TeamSpec·멤버 AgentSpec, RuntimePort의 prepare/cleanup 보충 구현. 실행 시작은 기존 run 유지. RuntimeHttpAdapter의 실제 확장은 P1-008."
+  - tasks/team_instances/member 상태 migration, TeamFactory의 TeamSpec·멤버 AgentSpec, RuntimePort의 prepare/cleanup
+    보충 구현. 실행 시작은 기존 run 유지. RuntimeHttpAdapter의 실제 확장은 P1-008.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
   owned_paths:
-    - "src/rfa_mas/adapters/local.py"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "src/rfa_mas/contracts/models.py"
-    - "src/rfa_mas/bootstrap.py"
-    - "src/rfa_mas/application/teams.py"
-    - "tests/test_teams.py"
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/ports/interfaces.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/application/teams.py
+  - tests/test_teams.py
   read_only_paths:
-    - "AGENTS.md"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - docs/INTEGRATION.md
   planned_paths:
-    - "src/rfa_mas/application/teams.py"
-    - "tests/test_teams.py"
+  - src/rfa_mas/application/teams.py
+  - tests/test_teams.py
   shared_resources:
-    - "canonical-contracts"
-    - "composition"
-    - "sqlite-migrations"
+  - canonical-contracts
+  - composition
+  - sqlite-migrations
 depends_on:
-  -
-    id: "P0-018"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
-  -
-    id: "P0-015"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-018
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-015
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
-  -
-    id: "RFA-EXTENDED"
-    version: "1.1"
-    digest: null
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P0-019 — Task 전담 팀·TeamFactory·중복 provisioning 방지"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "src/rfa_mas/adapters/local.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/ports/interfaces.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/contracts/models.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/bootstrap.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P0-019/handoff.md"
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-019 — Task 전담 팀·TeamFactory·중복 provisioning 방지
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/adapters/local.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/ports/interfaces.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/contracts/models.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/bootstrap.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  handoff: tasks/P0-019/handoff.md
   dependency_results:
-    - "tasks/P0-018/handoff.md"
-    - "tasks/P0-015/handoff.md"
+  - tasks/P0-018/handoff.md
+  - tasks/P0-015/handoff.md
 deliverables:
-  -
-    path: "src/rfa_mas/adapters/local.py"
-    availability: "existing"
-    description: "tasks/team_instances/member 상태 migration, TeamFactory의 TeamSpec·멤버 AgentSpec, RuntimePort의 prepare/cleanup 보충 구현. 실행 시작은 기존 run 유지. RuntimeHttpAdapter의 실제 확장은 P1-008."
-  -
-    path: "src/rfa_mas/ports/interfaces.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/contracts/models.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/bootstrap.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/application/teams.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "tests/test_teams.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: tasks/team_instances/member 상태 migration, TeamFactory의 TeamSpec·멤버 AgentSpec, RuntimePort의
+    prepare/cleanup 보충 구현. 실행 시작은 기존 run 유지. RuntimeHttpAdapter의 실제 확장은 P1-008.
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/application/teams.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_teams.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "Task당 active/provisioning 팀 하나를 SQLite unique 제약·transaction으로 보장"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "동일 idempotency key/내용은 기존 Task/team 반환, 다른 내용은 conflict"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "같은 Task의 다른 session/run에서도 승인된 template 버전·팀 재사용"
-    required: true
-  -
-    id: "AC4"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "부분 provisioning 실패 시 멤버 상태·정리 대상 기록, 반쪽 팀 실행 금지·재시도 중복 방지."
-    required: true
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: Task당 active/provisioning 팀 하나를 SQLite unique 제약·transaction으로 보장
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 동일 idempotency key/내용은 기존 Task/team 반환, 다른 내용은 conflict
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 같은 Task의 다른 session/run에서도 승인된 template 버전·팀 재사용
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 부분 provisioning 실패 시 멤버 상태·정리 대상 기록, 반쪽 팀 실행 금지·재시도 중복 방지.
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-      - "AC4"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "동시 두 create, DB reopen 후 재사용, 두 번째 worker prepare 실패와 cleanup 실패 fixture; team/member 수·상태 검사."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/test_teams.py"
-    timeout_seconds: 120
-    procedure: []
-    assertions:
-      - "Task당 active/provisioning 팀 하나를 SQLite unique 제약·transaction으로 보장"
-      - "동일 idempotency key/내용은 기존 Task/team 반환, 다른 내용은 conflict"
-      - "같은 Task의 다른 session/run에서도 승인된 template 버전·팀 재사용"
-      - "부분 provisioning 실패 시 멤버 상태·정리 대상 기록, 반쪽 팀 실행 금지·재시도 중복 방지."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P0-019"
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 동시 두 create, DB reopen 후 재사용, 두 번째 worker prepare 실패와 cleanup 실패 fixture; team/member 수·상태 검사.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_teams.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - Task당 active/provisioning 팀 하나를 SQLite unique 제약·transaction으로 보장
+  - 동일 idempotency key/내용은 기존 Task/team 반환, 다른 내용은 conflict
+  - 같은 Task의 다른 session/run에서도 승인된 template 버전·팀 재사용
+  - 부분 provisioning 실패 시 멤버 상태·정리 대상 기록, 반쪽 팀 실행 금지·재시도 중복 방지.
+  runner: pytest
+evidence_dir: .agent/evidence/P0-019
 latest_evidence_file: null
 verification_summary:
-  state: "not_run"
+  state: not_run
   spec_revision: null
   spec_digest: null
   contract_digest: null
   source_fingerprint: null
   evidence: null
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: pending
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 3
+spec_revision: 3
 claim_generation: 0
 claim: null
 attempts:
@@ -193,17 +178,20 @@ attempts:
   no_progress_count: 0
   latest_attempt: null
   evidence_refs: []
+  approaches: []
 blocker: null
 migration:
-  initial_spec_revision: 2
-  original_status: "todo"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P0-019"
-  prior_claim: "Task/TeamInstance 테이블 없음; missing/not_run. registry·중복 방지 local(false), provisioning fixture mock(true). 외부 의존 없음; actual identity/lifecycle는 P1-008B."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-019
+  prior_claim: Task/TeamInstance 테이블 없음; missing/not_run. registry·중복 방지 local(false), provisioning fixture
+    mock(true). 외부 의존 없음; actual identity/lifecycle는 P1-008B.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T03:13:39.816Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T06:46:42+00:00'
+concise_result: 이관 완료; 제품 구현/검증 not_run.
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

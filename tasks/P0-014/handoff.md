@@ -1,17 +1,13 @@
-# P0-014 — 확장 계약 동결 재개
+# P0-014 — additive 1.1 contract handoff
 
-목표/관련 AC: 기존 Session/Task/TeamSpec/Schedule 계획에 Execution/Trace·Evidence/Context·Policy·Draft/Approval/Publish·Eval 최소 계약을 함께 동결한다(AC1~AC4, V1/V2).
+목표/AC1~4: Session/제품 Task/Team, 추적·정책·근거·정확한 승인/게시 binding, 선택 context, 평가 상태를 기존 1.0과 분리한 1.1 Pydantic 단일 원본으로 구현했다. 수정 범위는 계약/ports/exporter/문서/합성 fixture/계약 tests뿐이다. 새 HTTP route나 실제 팀원 서비스 지원을 주장하지 않는다.
 
-현재 구현 사실: schema 1.0의 WorkRequest/AgentSpec/EvidenceItem/Ref/Bundle, PolicyDecision.allowed/code, DraftBundle.version/content_hash/target, ReviewDecision, EvaluationCase/EvalResult가 있다. 새 entity·policy decision ID·stage-aware 조회·관측 allowlist는 없다. RuntimePort는 run/status/cancel만 있다. 기존 1.0 baseline과 9종 fixture의 과거 증거는 보존되어 있다.
+구현: 28개 additive DTO, version literal, Runtime prepare/cleanup·Retrieval load_context·Trace emit_event 선언. session↔task N:M, team role/memory binding, 승인 본문/첨부/대상/policy/ACL hash, null 단계 ID, unknown→조회, evaluator 규칙/Judge 상태 분리. 메서드의 제품 adapter 구현은 후속이다. 기존 1.0 JSON/fixture는 보존하며 source hash는 역사적 provenance, 현재 소스 hash는 extended.json에 있다.
 
-이번 변경 파일/범위: 이 task.yaml과 관련 설계/명세만 수정. 제품 src, DTO export, pyproject/lock, .env.example은 변경하지 않았다. 예정 trace_eval_cases.json/test_trace_eval_contract.py/extended.json은 아직 없다.
+검증: contracts-01은 14/34 테스트가 통과했으나 독립 리뷰에서 fixture ID/승인 상태·mutable draft hash 검사 공백이 재현되어 failed로 기록했다. 로그 기반 수정 후 contracts-02에서 V1 14 passed(0.03s), V2 50 passed(0.56s), 기존 계약 13 passed(0.29s). 리뷰 재실행 64 passed. lint 초기 포맷/exports/테스트 import 오류는 수정했고 최종 통과. serializer target 경고는 typed DraftTarget 생성으로 해소했다. 실패 원본은 덮어쓰지 않았다.
 
-결정/이유: 기존 Pydantic 단일 원본을 확장한다. session↔Task N:M, Task당 활성 팀 하나. 미래 단계 ID는 null. trace ID/LLM allow는 권한이 아니다. 읽기·공유·endpoint 전송은 별도 판단. 승인/게시 원본 승희, runtime 원본 다영, Policy 최종 소유 미확정. repository-local reference이며 상대 지원을 뜻하지 않는다.
+결정: ApprovalReference.matches는 model_copy/직접 할당 후에도 serialized DTO를 재검증하여 stale hash 승인을 거절한다. schema나 trace ID는 인증 증명이 아니며 transport/PolicyPort 원본 검증은 consumer에서 수행한다. local runtime은 sandbox가 아니다. 실험/trace의 NaN·Infinity를 거절한다.
 
-제공할 인터페이스: planned RFA-EXTENDED 1.1에 정상/deny/승인 없음/승인 후 변경/source ACL 변경/replay/unknown fixture, typed trace allowlist, 선택적 KB stage 조회 및 평가 관찰 결과를 연결한다. 기존 allowed/code와 상태 enum 호환성·migration을 먼저 기록하고 schema/fixture 검증 후 publish-contract한다. 미지원 version은 명시 거절. trace export 행위 검증은 P1-006D, consumer는 P1-008이 담당한다.
+증거: .agent/evidence/P0-014/contracts-01 및 contracts-02. 정상/오류 fixture 자체 EvalResult는 not_run이며 제품 실행 증거와 다르다. 제품 E2E/NVIDIA/팀원 live gate 미실행.
 
-검증/증거: 이번 조사·명세 정합성은 제품 AC 증거가 아니다. 새 AC는 전부 not_run, status=todo. 기존 P0-001~013 done/evidence를 재개방하지 않는다.
-
-Blocker: Git 초기화는 됐지만 HEAD 없음·프로젝트 untracked·integration baseline 미등록. OPS-000은 여전히 필요하다. 이 요청만으로 commit/stash하지 않는다.
-
-정확한 다음 첫 행동: taskctl status와 context-pack P0-014 → OPS-000의 승인된 baseline 확인 → 유효한 claim 획득 → docs/EVALUATION_CONTEXT.md A 및 contracts/models.py의 해당 DTO를 읽고 필드/optional/null/버전 migration 표를 확정 → 단일 DTO와 7종 fixture 구현. 새 digest를 발행한 뒤 consumer의 unresolved/spec_revision을 갱신한다. NAT 호환성 spike(P0-027)는 별도 결과이며 계약 작업을 막지 않는다.
+다음 첫 행동: coordinator가 scoped commit을 main에 통합 → 동일 V1/V2와 전체 회귀 → RFA-EXTENDED 1.1 digest publish-contract → 직접 consumer의 scope/선행/계약 수락. P0-015 세션과 독립 P1-006D trace를 우선하며 공통 local.py/config 소유권을 직렬 관리한다.

@@ -1,0 +1,80 @@
+{
+  "attempt_id": "contracts-01",
+  "contract_digest": "974dd27a8d627b410d4535ead9ae4682e7ea56fb36ad2a728c7314966053a0e6",
+  "mode": "schema 1.0 기반만 implemented/verified; 확장 missing, 검증 not_run. 계약 local, fixture simulated=true. 외부 의존 없음; 상대 스키마 미확인은 provisional 유지.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_contracts.py"
+        ],
+        "counts": {
+          "collected": 14,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 14,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "failure_reason": "Negative structural cases missing from fixture validator and tests; add exact linkage/status/mode checks then fresh attempt.",
+        "id": "V1",
+        "log_excerpt": "14 tests passed in 0.01s; independent review found missing cross-fixture ID/approval bindings, so full AC assertions are NOT satisfied.",
+        "result": "failed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_trace_eval_contract.py"
+        ],
+        "counts": {
+          "collected": 34,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 34,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "failure_reason": "Negative structural cases missing from fixture validator and tests; add exact linkage/status/mode checks then fresh attempt.",
+        "id": "V2",
+        "log_excerpt": "34 tests passed in 0.51s; review reproduced acceptance of different trace policy ID, draft request ID, evaluation trace ID, rejected approval with succeeded receipt and wrong timeout receipt status.",
+        "result": "failed"
+      }
+    ],
+    "finished_at": "2026-09-26T06:37:24+00:00",
+    "preflight_log": [
+      "First generation emitted typed-target serializer warning; changed fixture constructor to use DraftTarget instance, rerun clean.",
+      "First lint found 69 errors (2 auto-fixed); formatter and explicit __all__ resolved long lines/exports. Second lint found 2 test import issues; fixed both; third pass had zero remaining. No AC removal."
+    ],
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-26T06:36:52+00:00",
+    "supplemental_checks": [
+      {
+        "command": ".venv/bin/python -m pytest -q tests/test_contract_baseline.py",
+        "result": "13 passed in 0.33s"
+      },
+      {
+        "command": ".venv/bin/python scripts/contract_baseline.py check-extended",
+        "result": "7 fixture shapes valid, not sufficient to prove negative-case completeness"
+      }
+    ]
+  },
+  "result": "failed",
+  "source_fingerprint": "e294f027be625bf3a811fcadfdfa3ffa8937c24b46fe01f5e06672e3881f7c94",
+  "source_manifest": ".agent/evidence/P0-014/contracts-01/source.json",
+  "spec_digest": "89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e",
+  "spec_revision": 4,
+  "task_id": "P0-014"
+}

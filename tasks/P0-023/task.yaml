@@ -1,203 +1,189 @@
-schema_version: "1.0"
-id: "P0-023"
-title: "APScheduler 3.x 영속 job store·단일 runner"
-objective: "서버/PC 재시작 뒤에도 일정이 보존되고 API worker 수만큼 중복 실행되지 않는다."
-kind: "task"
+schema_version: '1.0'
+id: P0-023
+title: APScheduler 3.x 영속 job store·단일 runner
+objective: 서버/PC 재시작 뒤에도 일정이 보존되고 API worker 수만큼 중복 실행되지 않는다.
+kind: task
 source_tasks:
-  - "P0-023"
+- P0-023
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P0"
-status: "todo"
-spec_state: "draft"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P0
+status: todo
+spec_state: draft
 unresolved:
-  - "P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다."
-workstream: "execution"
-execution_role: "coordinator"
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+workstream: execution
+execution_role: coordinator
 estimated_effort: 1.5
-product_owner: "민섭"
-execution_class: "이 저장소 구현"
-product_mode: "공식 3.x API 확인, dependency 설치/호환 실행은 not_run, 코드 missing. scheduling local(false), test clock만 simulated. 자원은 로컬 SQLite; 외부 서비스 불필요."
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: 공식 3.x API 확인, dependency 설치/호환 실행은 not_run, 코드 missing. scheduling local(false), test clock만
+  simulated. 자원은 로컬 SQLite; 외부 서비스 불필요.
 scope:
   included:
-    - "APScheduler==3.11.3 및 호환 SQLAlchemy exact pin/lock, AsyncIOScheduler + SQLAlchemyJobStore(SQLite), 결정적 test adapter. `rfa scheduler`(예정)는 같은 package의 전용 단일 소유 프로세스; 신규 MSA 아님. API 명령 반영도 library job으로 처리."
+  - APScheduler==3.11.3 및 호환 SQLAlchemy exact pin/lock, AsyncIOScheduler + SQLAlchemyJobStore(SQLite),
+    결정적 test adapter. `rfa scheduler`(예정)는 같은 package의 전용 단일 소유 프로세스; 신규 MSA 아님. API 명령 반영도 library job으로
+    처리.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
   owned_paths:
-    - "pyproject.toml"
-    - "uv.lock"
-    - "src/rfa_mas/bootstrap.py"
-    - "src/rfa_mas/settings.py"
-    - "src/rfa_mas/cli.py"
-    - ".env.example"
-    - "src/rfa_mas/adapters/scheduler.py"
-    - "src/rfa_mas/application/scheduling.py"
-    - "tests/test_schedules.py"
+  - pyproject.toml
+  - uv.lock
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/cli.py
+  - .env.example
+  - src/rfa_mas/adapters/scheduler.py
+  - src/rfa_mas/application/scheduling.py
+  - tests/test_schedules.py
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/contracts"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
   planned_paths:
-    - ".env.example"
-    - "src/rfa_mas/adapters/scheduler.py"
-    - "src/rfa_mas/application/scheduling.py"
-    - "tests/test_schedules.py"
+  - .env.example
+  - src/rfa_mas/adapters/scheduler.py
+  - src/rfa_mas/application/scheduling.py
+  - tests/test_schedules.py
   shared_resources:
-    - "composition"
-    - "dependencies-settings"
+  - composition
+  - dependencies-settings
 depends_on:
-  -
-    id: "P0-022"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-022
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
-  -
-    id: "RFA-EXTENDED"
-    version: "1.1"
-    digest: null
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P0-023 — APScheduler 3.x 영속 job store·단일 runner"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "pyproject.toml"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "uv.lock"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/bootstrap.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "src/rfa_mas/settings.py"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P0-023/handoff.md"
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-023 — APScheduler 3.x 영속 job store·단일 runner
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: pyproject.toml
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: uv.lock
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/bootstrap.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/settings.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  handoff: tasks/P0-023/handoff.md
   dependency_results:
-    - "tasks/P0-022/handoff.md"
+  - tasks/P0-022/handoff.md
 deliverables:
-  -
-    path: "pyproject.toml"
-    availability: "existing"
-    description: "APScheduler==3.11.3 및 호환 SQLAlchemy exact pin/lock, AsyncIOScheduler + SQLAlchemyJobStore(SQLite), 결정적 test adapter. `rfa scheduler`(예정)는 같은 package의 전용 단일 소유 프로세스; 신규 MSA 아님. API 명령 반영도 library job으로 처리."
-  -
-    path: "uv.lock"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/bootstrap.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/settings.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/cli.py"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: ".env.example"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/adapters/scheduler.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "src/rfa_mas/application/scheduling.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "tests/test_schedules.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: pyproject.toml
+  availability: existing
+  description: APScheduler==3.11.3 및 호환 SQLAlchemy exact pin/lock, AsyncIOScheduler + SQLAlchemyJobStore(SQLite),
+    결정적 test adapter. `rfa scheduler`(예정)는 같은 package의 전용 단일 소유 프로세스; 신규 MSA 아님. API 명령 반영도 library job으로
+    처리.
+- path: uv.lock
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/settings.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/cli.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: .env.example
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/adapters/scheduler.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/application/scheduling.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_schedules.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "job ID는 owner/schedule에 안정적이고 의도한 upsert만 replace_existing 적용, 소유 lock으로 두 번째 runner 시작 거절"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "FastAPI lifecycle/worker에는 scheduler를 시작하지 않고 재기동 시 persisted next_run을 초기화하지 않음"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "3.x add_job/CronTrigger API만 사용, max_instances=1·coalesce·misfire 설정과 ledger 실행 key 연계"
-    required: true
-  -
-    id: "AC4"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "jobstore에는 고정 top-level dispatcher와 안전한 schedule ID만 직렬화, credential/본문/callable 입력 없음."
-    required: true
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: job ID는 owner/schedule에 안정적이고 의도한 upsert만 replace_existing 적용, 소유 lock으로 두 번째 runner 시작 거절
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: FastAPI lifecycle/worker에는 scheduler를 시작하지 않고 재기동 시 persisted next_run을 초기화하지 않음
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 3.x add_job/CronTrigger API만 사용, max_instances=1·coalesce·misfire 설정과 ledger 실행 key 연계
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: jobstore에는 고정 top-level dispatcher와 안전한 schedule ID만 직렬화, credential/본문/callable 입력 없음.
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-      - "AC4"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "실제 jobstore close/reopen, 반복 초기화의 job 수 불변, 두 runner 경쟁, trigger의 명시 now 기준 다음 시각. fake clock으로 dispatch 검증하며 긴 sleep 없음. SQLAlchemy/jobstore는 이 프로세스만 소유."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/test_schedules.py"
-    timeout_seconds: 120
-    procedure: []
-    assertions:
-      - "job ID는 owner/schedule에 안정적이고 의도한 upsert만 replace_existing 적용, 소유 lock으로 두 번째 runner 시작 거절"
-      - "FastAPI lifecycle/worker에는 scheduler를 시작하지 않고 재기동 시 persisted next_run을 초기화하지 않음"
-      - "3.x add_job/CronTrigger API만 사용, max_instances=1·coalesce·misfire 설정과 ledger 실행 key 연계"
-      - "jobstore에는 고정 top-level dispatcher와 안전한 schedule ID만 직렬화, credential/본문/callable 입력 없음."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P0-023"
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 실제 jobstore close/reopen, 반복 초기화의 job 수 불변, 두 runner 경쟁, trigger의 명시 now 기준 다음 시각. fake clock으로 dispatch
+    검증하며 긴 sleep 없음. SQLAlchemy/jobstore는 이 프로세스만 소유.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_schedules.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - job ID는 owner/schedule에 안정적이고 의도한 upsert만 replace_existing 적용, 소유 lock으로 두 번째 runner 시작 거절
+  - FastAPI lifecycle/worker에는 scheduler를 시작하지 않고 재기동 시 persisted next_run을 초기화하지 않음
+  - 3.x add_job/CronTrigger API만 사용, max_instances=1·coalesce·misfire 설정과 ledger 실행 key 연계
+  - jobstore에는 고정 top-level dispatcher와 안전한 schedule ID만 직렬화, credential/본문/callable 입력 없음.
+  runner: pytest
+evidence_dir: .agent/evidence/P0-023
 latest_evidence_file: null
 verification_summary:
-  state: "not_run"
+  state: not_run
   spec_revision: null
   spec_digest: null
   contract_digest: null
   source_fingerprint: null
   evidence: null
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: pending
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 1
-spec_revision: 1
+revision: 2
+spec_revision: 2
 claim_generation: 0
 claim: null
 attempts:
@@ -206,16 +192,20 @@ attempts:
   no_progress_count: 0
   latest_attempt: null
   evidence_refs: []
+  approaches: []
 blocker: null
 migration:
-  original_status: "todo"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P0-023"
-  prior_claim: "공식 3.x API 확인, dependency 설치/호환 실행은 not_run, 코드 missing. scheduling local(false), test clock만 simulated. 자원은 로컬 SQLite; 외부 서비스 불필요."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-023
+  prior_claim: 공식 3.x API 확인, dependency 설치/호환 실행은 not_run, 코드 missing. scheduling local(false), test
+    clock만 simulated. 자원은 로컬 SQLite; 외부 서비스 불필요.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T02:58:21.356Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T06:46:42+00:00'
+concise_result: 이관 완료; 제품 구현/검증 not_run.
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

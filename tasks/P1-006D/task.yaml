@@ -13,6 +13,7 @@ status: todo
 spec_state: draft
 unresolved:
 - P0-014의 RFA-EXTENDED 1.1 schema/fixture baseline을 수신하고 실제 digest를 고정해야 한다.
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
 workstream: integration/evaluation
 execution_role: coordinator
 estimated_effort: 0.5
@@ -149,8 +150,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 3
+spec_revision: 3
 claim_generation: 0
 claim: null
 attempts:
@@ -171,6 +172,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T03:49:36+00:00'
+updated_at: '2026-09-26T06:46:42+00:00'
 concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
 next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.

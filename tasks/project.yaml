@@ -1,7 +1,7 @@
 schema_version: '1.0'
 repository_id: rfa-mas-2026-local
 control_root: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
-updated_at: '2026-09-26T06:14:45+00:00'
+updated_at: '2026-09-26T06:46:42+00:00'
 global_context:
 - AGENTS.md
 - docs/PROJECT_CONTEXT.md
@@ -84,8 +84,8 @@ contracts:
   RFA-EXTENDED:
     version: '1.1'
     path: docs/contracts/extended.json
-    digest: null
-    state: planned
+    digest: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
+    state: ready
     owner_task: P0-014
     provisional: true
 milestones:
@@ -230,3 +230,39 @@ migration:
   - P2-008
   - P2-009
   mapping: docs/TASK_MIGRATION.md
+contract_changes:
+- id: RFA-EXTENDED
+  at: '2026-09-26T06:46:42+00:00'
+  reason: P0-014 통합 및 1.1 schema/fixture 검증 완료
+  compatibility: 1.0 wire 모델과 기존 HTTP route 유지; 1.1 DTO와 port 메서드는 명시 지원 필요; 팀원 API 합의 아님
+  migration: 새 entity 영속화/API는 후속 task. consumer별 직접 계약 검토 후 digest 수락; 기존 DB 자동 변경 없음
+  evidence: .agent/evidence/P0-014/contracts-integrated-01/publication.json
+  affected:
+  - P0-015
+  - P0-016
+  - P0-017
+  - P0-018
+  - P0-019
+  - P0-020
+  - P0-021
+  - P0-022
+  - P0-023
+  - P0-024
+  - P0-025
+  - P0-026
+  - P0-028
+  - P1-001
+  - P1-001A
+  - P1-001B
+  - P1-001C
+  - P1-004
+  - P1-004A
+  - P1-004B
+  - P1-005
+  - P1-005A
+  - P1-005B
+  - P1-006
+  - P1-006D
+  - P1-006E
+  - P1-008
+  - P2-003

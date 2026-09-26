@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -221,33 +221,60 @@ verification:
   - 합성 Run의 연결 및 raw metadata reject; exporter canary는 P1-006D에서 별도 확인
   runner: pytest
 evidence_dir: .agent/evidence/P0-014
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-014/contracts-integrated-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 4
+  spec_digest: 89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e
+  contract_digest: 5c6c52f8fbc1487e3b01378fcbc43ccfd6ec08a8b3de27deb2f49074dd80c19c
+  source_fingerprint: 0ba0aff0342cc1f32bcbb1a6346d2515ac8c10271e11f5f75bf0b5ba6a089b08
+  evidence: .agent/evidence/P0-014/contracts-integrated-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 4
+  submission_generation: 1
+  submission:
+    head: a865fac1b484bee1836c23f76eb9c689645ca546
+    baseline_head: 1df64542799cdd65bbf85f7e49fa571c860af78a
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-014
+    branch: task/P0-014
+    evidence: .agent/evidence/P0-014/contracts-02/result.json
+    changed_files:
+      docs/CONTRACT_CHANGELOG.md: 107260a1f715912adbd6c07cd1cd280f54e0e05bdbde2851bc89c9ce90962d0b
+      docs/INTEGRATION.md: b0413ff66d64d9e98822b9c6849834f69cbe54762627718257dde35551b8a6d5
+      docs/contracts/extended.json: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
+      fixtures/contracts/trace_eval_cases.json: 3b3e36ccd03ca9c69ff25a1be1b72b65932607a1c326597875d3c3e1ec450514
+      scripts/contract_baseline.py: 001b5ea3734ee16ed4c876a6879ae612189001035592f8393c692742fbc92aed
+      src/rfa_mas/contracts/__init__.py: aad9f40330630dd1a938b430d1f4125044b6c3731b75a2f6db5ad10a9f18aaf0
+      src/rfa_mas/contracts/common.py: 2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba
+      src/rfa_mas/contracts/models.py: 631918058d56f10c052f619620c15981a9f873d5f6203a1d23838b7c594249f8
+      src/rfa_mas/ports/interfaces.py: badaeefbdf53ea09c33ff4406be182450a8a29124e582272d543224097db04b2
+      tests/test_contracts.py: c6843f700f9d7bb2664e230a5e58b8bf065d4a7341ec73d060e43d97f51f278a
+      tests/test_trace_eval_contract.py: 806bea3f7f5ffdf15d6e2836edbf5a93f98d1b1f7f9f3ef21b6497592b3c31d8
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: 89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e
+      contract_digest: 5c6c52f8fbc1487e3b01378fcbc43ccfd6ec08a8b3de27deb2f49074dd80c19c
+      source_fingerprint: 0ba0aff0342cc1f32bcbb1a6346d2515ac8c10271e11f5f75bf0b5ba6a089b08
+      evidence: .agent/evidence/P0-014/contracts-integrated-01/result.json
+    head: c3f3212967353d6ae21c4e28f4c90f2e6aac0d79
+  evidence: .agent/evidence/P0-014/contracts-integrated-01/result.json
+revision: 15
 spec_revision: 4
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 3
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: contracts-integrated-01
+  evidence_refs:
+  - .agent/evidence/P0-014/contracts-01/result.json
+  - .agent/evidence/P0-014/contracts-02/result.json
   approaches: []
 blocker: null
 migration:
@@ -261,7 +288,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T03:49:23+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T06:44:41+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 기존 `tests/test_contracts.py`에 신규 DTO round-trip/unknown field/잘못된 binding 검사, 생성 OpenAPI와
   reference 예제 대조. 문서만의 새 테스트는 불필요.
