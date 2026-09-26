@@ -16,7 +16,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 상태·세션·장기 지식 분리 | P0-015/016/021, P1-001/001A | 기존 `application/service.py`, `adapters/local.py`; 신규 예정 `adapters/checkpoints.py`(모두 `src/rfa_mas/` 아래) | 기존 metadata 저장만 verified; durable resume not_run |
 | 역할 위임·도구·종료 예산 | P0-018/019/020 | 기존 `src/rfa_mas/application/graphs/`; 신규 예정 `application/teams.py`, `application/workers.py` | 단일 domain graph만 verified; 팀 실행 not_run |
 | NVIDIA 추론 API | P1-002/002A | `tests/integration/test_nvidia_live.py`(direct hosted smoke), `docs/evidence/nvidia-model.md`; 제품 adapter는 신규 예정 `src/rfa_mas/adapters/nvidia.py` | hosted Nemotron 3.5 Lightning 합성 호출 live verified(2026-09-26, P1-002A); 제품 ModelPort 경로 not_run |
-| 공식 NeMo Retriever Skill | P1-003/003A | 신규 예정 `src/rfa_mas/adapters/nemo_retriever.py`, `docs/evidence/nvidia-skill.md` | 26.8.1 SKILL.md 재확인; worker/실제 실행 not_run |
+| 공식 NeMo Retriever Skill | P1-003/003A | `tests/integration/test_retriever_live.py`(공식 Skill CLI direct smoke), `docs/evidence/nvidia-skill.md`; 제품 adapter는 신규 예정 `src/rfa_mas/adapters/nemo_retriever.py` | 26.8.1 CLI ingest/query·hosted embedding·근거 기반 답변 live verified(2026-09-26, P1-003A); 제품 Research worker not_run |
 | 지원 runtime의 NemoClaw 운영 | P1-007/007A | `docs/INTEGRATION.md`; 신규 예정 `docs/evidence/nemoclaw.md` | 지원 경로 계획; real not_run |
 | OpenShell 권한 강제 | P1-008B, P1-007B | 기존 `src/rfa_mas/adapters/http.py`; 신규 예정 `docs/evidence/openshell.md` | local runtime은 sandbox 아님; real allow/deny not_run |
 
@@ -27,7 +27,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 계층 | 이 프로젝트에서의 역할 | P0 경계 | 상태 |
 | --- | --- | --- | --- |
 | 모델 추론 API | 텍스트 또는 구조화 응답 생성 | `ModelPort` 뒤의 결정적 mock | 제품 경로는 모의(P0); hosted NVIDIA 직접 호출은 합성 요청으로 live 확인(P1-002A), 제품 연결은 계획(P1-002) |
-| Agent Skill | worker가 특정 기능을 사용하는 절차와 지침 | skill을 설치하거나 실행하지 않음 | NeMo Retriever worker 연결은 계획(P1) |
+| Agent Skill | worker가 특정 기능을 사용하는 절차와 지침 | skill을 설치하거나 실행하지 않음 | NeMo Retriever Skill 절차는 저장소 밖 pinned CLI로 실제 실행(P1-003A); 제품 worker 연결은 계획(P1-003) |
 | LangGraph | 상태, node, edge, routing, 종료 조건을 구성하는 orchestration | Supervisor와 공통 Domain TaskGraph | 실제(local), 검증 완료(P0) |
 | NemoClaw | 지원 agent runtime의 onboarding, lifecycle, 운영을 OpenShell과 묶는 reference stack | `RuntimePort`의 교체 지점만 제공 | 계획(P1), 이 서비스 지원 여부는 미검증 |
 | OpenShell | 파일, 네트워크, 프로세스 등 OS 수준 권한을 정책으로 제한하는 security runtime | P0 `LocalRuntime`/`LocalPolicy`가 대신하지 않음 | 계획(P1), 강제 증거 없음 |
@@ -58,7 +58,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 동일 TaskGraph를 prompt, 자료 scope, capability로 구분 | `src/rfa_mas/application/graphs/domain.py` | 실제(local), 검증 완료(P0) | two-domain template test — 통과 |
 | 검색 결과를 `EvidenceBundle`로 한정하는 `RetrievalPort` | `src/rfa_mas/ports/*` | 실제(local) 계약, 검증 완료(P0) | DTO/graph contract tests — 통과 |
 | 합성 fixture 검색, 근거 부족과 timeout | `src/rfa_mas/adapters/mock.py` | 모의(P0) | evidence/timeout tests와 scenario demo — 통과 |
-| 실제 NeMo Retriever, 병렬 fan-out, deep planning | 교체 adapter 및 worker 미구현 | 계획(P1) | 미실행 |
+| 제품 worker의 NeMo Retriever 연결, 병렬 fan-out, deep planning | 교체 adapter 및 worker 미구현 | 계획(P1) | 미실행. 공식 Skill CLI 자체는 P1-003A에서 direct live 확인 |
 
 P0의 단일 domain 위임이나 mock 검색을 병렬 multi-agent 또는 실제 RAG 서비스 검증으로 보고하지 않는다.
 
@@ -97,9 +97,10 @@ NemoClaw 공식 overview의 현재 예시는 OpenClaw, Hermes, LangChain Deep Ag
 | --- | --- | --- | --- |
 | 검색 입력/출력의 안정된 application 계약 | `src/rfa_mas/ports/*` | 실제(local) 계약, 검증 완료(P0) | contract/graph tests — 통과 |
 | 합성 근거를 반환하는 검색 backend | `src/rfa_mas/adapters/mock.py` | 모의(P0) | graph/evidence tests — 통과 |
+| 공식 Skill 절차의 CLI ingest/query 실제 실행 | `tests/integration/test_retriever_live.py`, 저장소 밖 pinned nemo-retriever==26.8.1 | 실제(hosted embedding), 검증 완료(P1-003A direct smoke) | [증거](evidence/nvidia-skill.md) — 합성 PDF 3질문 top-1 source/page 일치 |
 | Skill 지침을 따르는 worker와 제한된 CLI/service adapter | 미구현 | 계획(P1) | CLI/service 결과를 `EvidenceBundle`로 정규화하는 test 필요 |
 
-`SKILL.md`는 사용 절차이지 LangGraph node나 tool adapter 구현이 아니다. Skill 설치만으로 graph 연결, index 준비, service 배포, 권한 검증이 끝났다고 주장하지 않는다. `26.8.1`은 확인 시점의 공식 skill 값이므로 P1 착수 때 다시 확인하고 호환 버전을 고정한다.
+`SKILL.md`는 사용 절차이지 LangGraph node나 tool adapter 구현이 아니다. Skill 설치만으로 graph 연결, index 준비, service 배포, 권한 검증이 끝났다고 주장하지 않는다. `26.8.1`은 확인 시점의 공식 skill 값이므로 P1 착수 때 다시 확인하고 호환 버전을 고정한다. 2026-09-26 재확인 결과 여전히 26.8.1이며 build.nvidia.com Skills 카탈로그에 등재되어 있다.
 
 ## LangGraph
 
