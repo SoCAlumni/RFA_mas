@@ -233,6 +233,71 @@ def _http_port(
     return reference_client
 
 
+def _staged_context(repository, policy, settings: Settings, observer: Observations):
+    """Trusted factory (P1-005): staged L0/L1/L2 context for owner/public local targets.
+
+    Returns None when the target/endpoint is outside the bound reader's supported scope,
+    so the graph uses the ACL-bound retrieval path and the share/egress screen instead.
+    """
+    from time import perf_counter
+
+    from rfa_mas.application.context import ContextLoader
+    from rfa_mas.contracts import Audience, ContextRequest, DraftTarget, EvidenceBundle, EvidenceItem
+
+    async def load(principal, work, request):
+        target = work.target.audience
+        if target not in {Audience.OWNER, Audience.PUBLIC} or settings.policy_backend != "local":
+            return None
+        bound_target = DraftTarget(audience=target)
+        bound = BoundAccess(lambda: principal, request.agent_id, "supervisor",
+                            request.domain_id, bound_target, "mock-model")
+        loader = ContextLoader(repository, BoundContextReader(
+            repository, policy, bound, issuer_supported=True))
+        context_request = ContextRequest.model_validate(
+            request.model_dump(exclude={"schema_version"})
+            | {"goal": work.query, "role": "supervisor", "target": bound_target,
+               "endpoint_id": "mock-model"})
+        await observer.record("retrieval", "started", mode="local")
+        start = perf_counter()
+        try:
+            loaded = await loader.load(context_request)
+        except BaseException:
+            await observer.record("retrieval", "failed", mode="local", reason="provider_error",
+                                  duration_ms=(perf_counter() - start) * 1000, transport="raised")
+            raise
+        items = tuple(
+            EvidenceItem(source_id=i.source_id, source_revision=i.source_revision,
+                         location=i.location, audience=i.audience, excerpt=i.excerpt,
+                         content_hash=i.content_hash, policy_version=i.policy_version)
+            for i in loaded.bundle.items
+        )
+        await observer.record("retrieval", "succeeded", mode="local",
+                              duration_ms=(perf_counter() - start) * 1000,
+                              sources=tuple((i.source_id, i.source_revision) for i in items),
+                              transport="returned")
+        evidence = EvidenceBundle(
+            request_id=request.request_id, trace_id=request.trace_id, run_id=request.run_id,
+            agent_id=request.agent_id, domain_id=request.domain_id, items=items,
+            insufficient=loaded.insufficient, policy_version=policy.policy_version,
+            simulated=False, adapter="staged-context-v1",
+        )
+        stats = {
+            "loader": "staged-context-v1",
+            "budget_characters": loaded.budget_characters,
+            "mandatory_characters": loaded.mandatory_characters,
+            "loaded_characters": loaded.bundle.loaded_characters,
+            "summaries": loaded.summaries,
+            "reason": loaded.reason,
+            "records": [
+                {"stage": r.stage.value, "outcome": r.outcome, "characters": r.characters}
+                for r in loaded.records
+            ],
+        }
+        return evidence, stats
+
+    return load
+
+
 def build_container(settings: Settings | None = None, *, project_resolver: ProjectResolver = no_projects) -> Container:
     settings = settings or Settings()
     inspect_configuration(settings).require_available()
@@ -381,7 +446,11 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
             "domain_task",
             build_domain_task_handler(
                 DomainGraphDependencies(
-                    model=observed_model, retrieval=observed_retrieval, policy=observed_policy
+                    model=observed_model,
+                    retrieval=observed_retrieval,
+                    policy=observed_policy,
+                    context=_staged_context(repository, policy, settings, observer),
+                    model_endpoint="local" if settings.model_provider == "mock" else "cloud",
                 )
             ),
         )
