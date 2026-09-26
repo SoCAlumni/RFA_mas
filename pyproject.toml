@@ -17,6 +17,10 @@ dependencies = [
   "uvicorn==0.53.0",
 ]
 
+[project.optional-dependencies]
+# Official LangGraph wrapper; absent from the default/mock installation.
+nat = ["nvidia-nat-langchain==1.8.0"]
+
 [dependency-groups]
 dev = [
   "PyYAML==6.0.3",
