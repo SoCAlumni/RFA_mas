@@ -785,3 +785,223 @@ def test_checkpoint_default_isolated_per_application_database(tmp_path):
     assert first.resolved_checkpoint_path != second.resolved_checkpoint_path
     assert first.resolved_checkpoint_path.parent == first.database_path.parent
     assert offline_settings(tmp_path, checkpoint_path="").checkpoint_path is None
+
+
+# -- P0-021: resume after a stopped process without repeating effects -------------------
+# The LangGraph checkpoint (separate SQLite file) and the application DB are never
+# assumed atomic. Each case stops the process at a different point, then a FRESH
+# container resumes; the durable effect ledger decides what may (not) be called again.
+
+
+class Crash(BaseException):
+    """Simulated process death: not an Exception, so no handler records an outcome."""
+
+
+class CrashingAuthority(ReviewAuthority):
+    """Review ORIGINAL that outlives our process; optionally 'kills' us mid-call."""
+
+    def __init__(self, crash: str | None = None, decision=ReviewStatus.PENDING):
+        super().__init__()
+        self.crash = crash
+        self.next_decision = decision
+
+    async def submit_draft(self, draft, **kwargs):
+        if self.crash == "before_accept":
+            raise Crash()
+        decision = await super().submit_draft(draft, **kwargs)
+        self.decision = decision.model_copy(update={"decision": self.next_decision})
+        if self.crash == "after_accept":
+            raise Crash()
+        return self.decision
+
+
+async def fresh(tmp_path, authority):
+    instance = build_container(offline_settings(tmp_path))
+    await instance.startup()
+    authority.crash = None
+    install_authority(instance, authority)
+    return instance
+
+
+def ledger_state(effects, kind):
+    return [(item.state, item.next_action) for item in effects if item.kind == kind]
+
+
+async def crashed_run(tmp_path, authority):
+    first = build_container(offline_settings(tmp_path))
+    await first.startup()
+    install_authority(first, authority)
+    owner = await first.repository.local_principal()
+    request = work()
+    with pytest.raises(Crash):
+        await first.service.run(request, owner)
+    record = await first.repository.get_owned_run(request.run_id, owner)
+    assert record.status == WorkStatus.RUNNING and record.result is None
+    await first.shutdown()
+    return owner, request
+
+
+async def test_crash_after_review_accept_resumes_by_query_without_resubmission(tmp_path):
+    authority = CrashingAuthority("after_accept")
+    owner, request = await crashed_run(tmp_path, authority)
+    assert authority.submissions == 1
+    second = await fresh(tmp_path, authority)
+    try:
+        before = await second.service.effects(request.run_id, owner)
+        assert ledger_state(before, "review_submission") == [("outcome_unknown", "query")]
+        resumed = await second.service.resume(
+            request.run_id, ResumeRequest(event_id="after-crash"), owner
+        )
+        assert resumed.status == WorkStatus.WAITING_APPROVAL
+        assert authority.submissions == 1  # Reconciled by query, never re-submitted.
+        after = await second.service.effects(request.run_id, owner)
+        assert ledger_state(after, "review_submission") == [("completed", "none")]
+        authority.decision = authority.decision.model_copy(
+            update={"decision": ReviewStatus.APPROVED}
+        )
+        done = await second.service.resume(request.run_id, ResumeRequest(event_id="ok"), owner)
+        assert done.status == WorkStatus.COMPLETED and authority.submissions == 1
+    finally:
+        await second.shutdown()
+
+
+async def test_crash_before_review_accept_stays_unknown_and_retry_is_explicit(tmp_path):
+    authority = CrashingAuthority("before_accept")
+    owner, request = await crashed_run(tmp_path, authority)
+    second = await fresh(tmp_path, authority)
+    try:
+        resumed = await second.service.resume(
+            request.run_id, ResumeRequest(event_id="after-crash"), owner
+        )
+        assert resumed.status == WorkStatus.OUTCOME_UNKNOWN
+        assert authority.submissions == 0  # Unknown is never re-called automatically.
+        for event in ("again", "again"):
+            with pytest.raises(RfaError) as unavailable:
+                await second.service.resume(request.run_id, ResumeRequest(event_id=event), owner)
+            assert unavailable.value.code == "resume_unavailable"
+        [reconciled] = await second.service.reconcile(request.run_id, owner)
+        assert (reconciled.method, reconciled.found) == ("result_query", False)
+        assert authority.submissions == 0
+        # Only an explicit owner retry creates NEW effects, as a NEW linked run.
+        retried = await second.service.retry(request.run_id, owner, idempotency_key="retry-1")
+        assert retried.run_id != request.run_id
+        assert retried.status == WorkStatus.WAITING_APPROVAL and authority.submissions == 1
+        [link] = await second.service.retry_links(retried.run_id, owner)
+        assert (link.run_id, link.retry_of) == (retried.run_id, request.run_id)
+        source = await second.repository.get_owned_run(request.run_id, owner)
+        assert source.status == WorkStatus.OUTCOME_UNKNOWN
+        source_effects = await second.service.effects(request.run_id, owner)
+        assert ledger_state(source_effects, "review_submission") == [("outcome_unknown", "query")]
+    finally:
+        await second.shutdown()
+
+
+async def test_ledger_ahead_of_checkpoint_reuses_the_recorded_submission(tmp_path):
+    authority = CrashingAuthority()
+    first = build_container(offline_settings(tmp_path))
+    await first.startup()
+    install_authority(first, authority)
+    owner = await first.repository.local_principal()
+    original = first.repository.advance_effect
+
+    async def crash_after_commit(run_id, key, *, state, **kwargs):
+        record = await original(run_id, key, state=state, **kwargs)
+        if state == "completed" and record.kind == "review_submission":
+            raise Crash()  # Ledger committed; the review node checkpoint never is.
+        return record
+
+    first.repository.advance_effect = crash_after_commit
+    request = work()
+    with pytest.raises(Crash):
+        await first.service.run(request, owner)
+    await first.shutdown()
+    second = await fresh(tmp_path, authority)
+    try:
+        resumed = await second.service.resume(request.run_id, ResumeRequest(event_id="r"), owner)
+        assert resumed.status == WorkStatus.WAITING_APPROVAL
+        assert authority.submissions == 1
+    finally:
+        await second.shutdown()
+
+
+async def test_checkpoint_ahead_of_db_is_finalized_without_re_execution(tmp_path):
+    authority = CrashingAuthority(decision=ReviewStatus.APPROVED)
+    first = build_container(offline_settings(tmp_path))
+    await first.startup()
+    install_authority(first, authority)
+    owner = await first.repository.local_principal()
+    original = first.repository.transition_run
+
+    async def crash_on_final(run_id, status):
+        if status != WorkStatus.RUNNING:
+            raise Crash()  # Graph finished and checkpointed; DB never updated.
+        return await original(run_id, status)
+
+    first.repository.transition_run = crash_on_final
+    request = work()
+    with pytest.raises(Crash):
+        await first.service.run(request, owner)
+    await first.shutdown()
+    second = await fresh(tmp_path, authority)
+    try:
+        async def forbidden(*args, **kwargs):
+            raise AssertionError("no worker/model replay")
+
+        second.runtime.run = forbidden
+        second.model.generate = forbidden
+        resumed = await second.service.resume(request.run_id, ResumeRequest(event_id="r"), owner)
+        assert resumed.status == WorkStatus.COMPLETED and authority.submissions == 1
+        record = await second.repository.get_owned_run(request.run_id, owner)
+        assert record.status == WorkStatus.COMPLETED
+        replay = await second.service.resume(request.run_id, ResumeRequest(event_id="r"), owner)
+        assert replay == resumed
+    finally:
+        await second.shutdown()
+
+
+async def test_failed_and_cancelled_terminals_are_preserved_and_retry_links_new_run(container):
+    authority, owner, result, record = await pending(container)
+    authority.decision = authority.decision.model_copy(update={"decision": ReviewStatus.REJECTED})
+    failed = await container.service.resume(result.run_id, ResumeRequest(event_id="no"), owner)
+    assert failed.status == WorkStatus.FAILED
+    for action in (
+        container.service.resume(result.run_id, ResumeRequest(event_id="again"), owner),
+        container.service.get(result.run_id, owner),
+    ):
+        assert (await action) == failed  # Terminal result preserved as-is.
+    with pytest.raises(RfaError) as terminal:
+        await container.service.cancel(result.run_id, owner)
+    assert terminal.value.code == "invalid_state_transition"
+    retried = await container.service.retry(result.run_id, owner, idempotency_key="retry-a")
+    assert retried.run_id != result.run_id and retried.status == WorkStatus.WAITING_APPROVAL
+    assert authority.submissions == 2
+    retried_record = await container.repository.get_owned_run(retried.run_id, owner)
+    assert retried_record.session_id == record.session_id
+    with pytest.raises(RfaError) as again:
+        await container.service.retry(result.run_id, owner, idempotency_key="retry-b")
+    assert again.value.code == "retry_exists"
+    assert await container.service.cancel(retried.run_id, owner) == "cancelled"
+    cancelled = await container.repository.get_owned_run(retried.run_id, owner)
+    assert cancelled.status == WorkStatus.CANCELLED
+    assert (await container.repository.get_owned_run(result.run_id, owner)).status == (
+        WorkStatus.FAILED
+    )
+    completed_authority = ReviewAuthority()
+    install_authority(container, completed_authority)
+    completed_authority.submit_draft = _approve(completed_authority)
+    completed = await container.service.run(work(), owner)
+    assert completed.status == WorkStatus.COMPLETED
+    with pytest.raises(RfaError) as not_retryable:
+        await container.service.retry(completed.run_id, owner, idempotency_key="retry-c")
+    assert not_retryable.value.code == "invalid_state_transition"
+
+
+def _approve(authority):
+    original = authority.submit_draft
+
+    async def approve(draft, **kwargs):
+        decision = await original(draft, **kwargs)
+        authority.decision = decision.model_copy(update={"decision": ReviewStatus.APPROVED})
+        return authority.decision
+
+    return approve

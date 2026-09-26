@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol
+from datetime import datetime
+from typing import Any, Literal, Protocol
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from rfa_mas.contracts import (
     AgentSpec,
@@ -46,6 +49,103 @@ from rfa_mas.contracts import (
     WorkRequest,
     WorkStatus,
 )
+
+
+# -- P0-021 durable effect ledger (port-level DTOs) ------------------------------------
+# Internal records, not part of the published RFA-EXTENDED contract. Promoting them to
+# contracts/ is a coordinator contract change.
+EffectKind = Literal[
+    "team_prepare", "team_cleanup", "role_execution", "review_submission", "publication"
+]
+EffectState = Literal["intent", "inflight", "completed", "outcome_unknown"]
+BarrierReason = Literal["cancelled", "permission_revoked"]
+
+
+class _LedgerModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=False)
+
+
+class EffectRecord(_LedgerModel):
+    """One owner-scoped effectful call: state, payload fingerprint and a result reference.
+
+    The payload itself is never stored here; `result_ref` points at the durable
+    receipt that owns the details (publication, role receipt, team slot, review mirror).
+    `approval` is the approval/decision mirror bound to the call, never an approval.
+    """
+
+    operation_key: str = Field(min_length=1, max_length=512)
+    kind: EffectKind
+    run_id: str | None = None
+    payload_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    state: EffectState
+    outcome: str | None = None
+    result_ref: str | None = None
+    approval: dict[str, Any] | None = None
+    next_action: Literal["none", "query", "wait"]
+    created_at: datetime
+    updated_at: datetime
+
+
+class Reconciliation(_LedgerModel):
+    """Result of reconciling one unresolved effect by result query (never re-execution)."""
+
+    operation_key: str
+    kind: EffectKind
+    before: EffectState
+    after: EffectState
+    method: Literal["result_query", "unsupported"]
+    found: bool
+
+
+class RetryLink(_LedgerModel):
+    """Explicit owner retry: a NEW run that names the terminal run it retries."""
+
+    run_id: str
+    retry_of: str
+    created_at: datetime
+
+
+class EffectLedger(Protocol):
+    """Durable ledger boundary. Run-scoped effects resolve the owner from the stored run.
+
+    Deliberately not named *Port: it is part of the repository, not a teammate/provider
+    port, and must not alter the frozen 1.0 port surface.
+    """
+
+    async def begin_effect(
+        self,
+        run_id: str,
+        *,
+        operation_key: str,
+        kind: EffectKind,
+        payload_fingerprint: str,
+        result_ref: str | None = None,
+        approval: dict[str, Any] | None = None,
+    ) -> tuple[bool, EffectRecord]: ...
+
+    async def advance_effect(
+        self,
+        run_id: str,
+        operation_key: str,
+        *,
+        state: EffectState,
+        outcome: str | None = None,
+        approval: dict[str, Any] | None = None,
+    ) -> EffectRecord: ...
+
+    async def effects_by_ref(
+        self, run_id: str, *, kind: EffectKind, result_ref: str
+    ) -> tuple[EffectRecord, ...]: ...
+
+    async def run_effects(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[EffectRecord, ...]: ...
+
+    async def set_run_barrier(
+        self, run_id: str, principal: TrustedPrincipal, reason: BarrierReason
+    ) -> str: ...
+
+    async def run_barrier(self, run_id: str, principal: TrustedPrincipal) -> str | None: ...
 
 
 class ModelPort(Protocol):
@@ -207,9 +307,17 @@ class WorkRepositoryPort(Protocol):
         *,
         session_id: str | None,
         task_id: str | None = None,
+        retry_of: str | None = None,
     ) -> SessionRecord: ...
 
     async def get_owned_run(self, run_id: str, principal: TrustedPrincipal) -> RunRecord: ...
+
+    # P0-021: explicit retry lineage and the stored (owner-authorized) request.
+    async def owned_run_request(self, run_id: str, principal: TrustedPrincipal) -> dict: ...
+
+    async def retry_links(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[RetryLink, ...]: ...
 
     async def create_run(self, request: WorkRequest) -> None: ...
 

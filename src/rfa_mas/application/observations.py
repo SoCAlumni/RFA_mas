@@ -70,6 +70,10 @@ SAFE_ERROR_CODES = frozenset(
         # P1-005A DRAFT lifecycle (fixed codes).
         "approval_required",
         "publication_exists",
+        # P0-021 effect ledger (fixed codes).
+        "permission_revoked",
+        "effect_in_progress",
+        "retry_exists",
     }
 )
 TEAM_ROLES = frozenset(

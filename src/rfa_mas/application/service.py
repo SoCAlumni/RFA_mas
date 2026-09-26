@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from dataclasses import is_dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 
 from langgraph.types import Command
 
+from rfa_mas.application.effects import EffectGuardedResponse
 from rfa_mas.application.graphs.domain import InvocationContext
 from rfa_mas.application.graphs.supervisor import build_supervisor_graph
 from rfa_mas.application.observations import Observations, native_trace_guard, safe_error_code
@@ -15,8 +17,10 @@ from rfa_mas.application.sessions import SessionService
 from rfa_mas.contracts import (
     AdapterInfo,
     DirectWorkRequest,
+    DraftBundle,
     PublicationStatus,
     ResumeRequest,
+    RunRecord,
     RunResult,
     SessionDetail,
     StructuredError,
@@ -28,6 +32,12 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.errors import OutcomeUnknownError, PolicyDeniedError, ResourceNotFoundError, RfaError
 from rfa_mas.ports import TracePort, WorkRepositoryPort
+from rfa_mas.ports.interfaces import EffectRecord, Reconciliation, RetryLink
+
+_TERMINAL = frozenset(
+    {WorkStatus.COMPLETED, WorkStatus.FAILED, WorkStatus.CANCELLED, WorkStatus.OUTCOME_UNKNOWN}
+)
+_STOPPABLE = frozenset({WorkStatus.CREATED, WorkStatus.RUNNING, WorkStatus.WAITING_APPROVAL})
 
 
 class WorkService:
@@ -44,17 +54,33 @@ class WorkService:
         self._repository = repository
         self.sessions = SessionService(repository)
         self._trace = trace
-        self._dependencies = supervisor_dependencies
+        self._dependencies = self._with_effects(supervisor_dependencies)
         self._graph = None
         self._guard_thread = guard_thread
         self._adapters = adapters
         self.observations = observations
 
     def start(self, checkpointer: Any) -> None:
+        # Re-applied on start: a replaced Response port is guarded by the same ledger.
+        self._dependencies = self._with_effects(self._dependencies)
         self._graph = build_supervisor_graph(self._dependencies, checkpointer=checkpointer)
 
     def stop(self) -> None:
         self._graph = None
+
+    def _with_effects(self, deps: Any) -> Any:
+        """P0-021: every review submission passes the durable effect ledger.
+
+        Composition over the configured (observed) Response port. The graph reads only
+        the ledger's barrier; it never receives a URL, credential or SQL handle.
+        """
+        ledger = self._repository if hasattr(self._repository, "begin_effect") else None
+        if ledger is None or not is_dataclass(deps) or not hasattr(deps, "effects"):
+            return deps
+        response = deps.response
+        if not isinstance(response, EffectGuardedResponse):
+            response = EffectGuardedResponse(response, ledger)
+        return replace(deps, response=response, effects=ledger)
 
     @staticmethod
     def _config(thread_id: str) -> dict[str, Any]:
@@ -62,7 +88,9 @@ class WorkService:
         return {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
 
     @native_trace_guard
-    async def run(self, request: WorkRequest, principal: TrustedPrincipal) -> RunResult:
+    async def run(
+        self, request: WorkRequest, principal: TrustedPrincipal, *, retry_of: str | None = None
+    ) -> RunResult:
         created_at = datetime.now(UTC)
         if not principal.authenticated:
             # Preserve the legacy policy-denied result, without creating durable
@@ -72,15 +100,16 @@ class WorkService:
             raise RfaError("configuration_error", "checkpoint lifecycle 초기화가 필요합니다.")
         session_id = request.session_id if isinstance(request, DirectWorkRequest) else None
         task_id = request.task_id if isinstance(request, DirectWorkRequest) else None
+        lineage = {"retry_of": retry_of} if retry_of is not None else {}
         if session_id is not None:
             session = await self.sessions.get(session_id, principal)
             with self._guard_thread(session.thread_id):
                 await self._repository.create_owned_run(
-                    request, principal, session_id=session_id, task_id=task_id
+                    request, principal, session_id=session_id, task_id=task_id, **lineage
                 )
                 return await self._execute(request, principal, session.thread_id, created_at)
         session = await self._repository.create_owned_run(
-            request, principal, session_id=None, task_id=task_id
+            request, principal, session_id=None, task_id=task_id, **lineage
         )
         with self._guard_thread(session.thread_id):
             return await self._execute(request, principal, session.thread_id, created_at)
@@ -323,45 +352,53 @@ class WorkService:
                 if record.result is None:
                     raise RfaError("resume_unavailable", "재개 가능한 결과가 없습니다.")
                 return record.result
+            barrier = await self._barrier(run_id, principal)
+            if barrier is not None and record.status in _STOPPABLE:
+                # Recorded while no invocation could stop the run (e.g. before a restart).
+                return await self._stop_durably(record, principal, barrier)
             snapshot = await self._graph.aget_state(self._config(record.thread_id))
             work = snapshot.values.get("work")
             if (
                 not isinstance(work, WorkRequest)
                 or work.run_id != record.run_id
-                or snapshot.next != ("await_review",)
-                or not snapshot.interrupts
                 or record.status not in {WorkStatus.WAITING_APPROVAL, WorkStatus.RUNNING}
             ):
                 raise RfaError("resume_unavailable", "이 실행은 승인 대기 재개 대상이 아닙니다.")
-            try:
+            if snapshot.next == ("await_review",) and snapshot.interrupts:
                 # ID is already bound to this authorized run and its latest interrupt.
+                command: Command | None = Command(
+                    resume={snapshot.interrupts[0].id: wakeup.model_dump(mode="json")}
+                )
+            elif record.status == WorkStatus.RUNNING and snapshot.next:
+                # P0-021: the process stopped mid-graph. The checkpoint and the DB are not
+                # atomic, so continue from the last saved node; effects already recorded in
+                # the ledger are reused or reconciled by query there, never repeated.
+                command = None
+            elif record.status == WorkStatus.RUNNING and not snapshot.next:
+                # The graph finished but the DB result was never written: finalize only.
+                return await self._finalize(work, snapshot.values, record, principal)
+            else:
+                raise RfaError("resume_unavailable", "이 실행은 승인 대기 재개 대상이 아닙니다.")
+            try:
+                draft = snapshot.values.get("draft")
+                if command is None and isinstance(draft, DraftBundle):
+                    # Re-authorize the checkpointed draft before any later step.
+                    await self._dependencies.validate_resume(draft, principal)
                 state = await self._graph.ainvoke(
-                    Command(resume={snapshot.interrupts[0].id: wakeup.model_dump(mode="json")}),
+                    command,
                     config=self._config(record.thread_id),
                     context=InvocationContext(principal),
                     durability="sync",
                 )
-                error = state.get("error")
-                result = RunResult(
-                    request_id=work.request_id,
-                    trace_id=work.trace_id,
-                    run_id=work.run_id,
-                    agent_id=work.agent_id,
-                    domain_id=state.get("domain_id"),
-                    status=state["status"],
-                    draft=state.get("draft"),
-                    review=state.get("review"),
-                    publication_status=state.get(
-                        "publication_status", PublicationStatus.NOT_REQUESTED
-                    ),
-                    errors=(error,) if error else (),
-                    stop_reason=self._stop_reason(state["status"], error),
-                    simulated=any(item.simulated for item in self._adapters),
-                    adapters=self._adapters,
-                    created_at=record.created_at,
-                    updated_at=datetime.now(UTC),
+                result = self._state_result(work, state, record.created_at)
+            except OutcomeUnknownError as exc:
+                result = self._error_result(
+                    work, record.created_at, exc, status=WorkStatus.OUTCOME_UNKNOWN
                 )
             except RfaError as exc:
+                if exc.code in {"resume_review_required", "policy_denied"}:
+                    # Revoked access observed at resume: no later effect for this run.
+                    await self._repository.set_run_barrier(run_id, principal, "permission_revoked")
                 result = self._failed_result(work, record.created_at, exc)
             except Exception:
                 result = self._failed_result(
@@ -374,6 +411,85 @@ class WorkService:
                 await self._repository.transition_run(run_id, result.status)
             await self._repository.save_result(result)
             return result
+
+    def _state_result(
+        self, work: WorkRequest, state: dict[str, Any], created_at: datetime
+    ) -> RunResult:
+        status = state.get("status", WorkStatus.FAILED)
+        error = state.get("error")
+        return RunResult(
+            request_id=work.request_id,
+            trace_id=work.trace_id,
+            run_id=work.run_id,
+            agent_id=work.agent_id,
+            domain_id=state.get("domain_id"),
+            status=status,
+            draft=state.get("draft"),
+            review=state.get("review"),
+            publication_status=state.get("publication_status", PublicationStatus.NOT_REQUESTED),
+            errors=(error,) if error else (),
+            stop_reason=self._stop_reason(status, error),
+            simulated=any(item.simulated for item in self._adapters),
+            adapters=self._adapters,
+            created_at=created_at,
+            updated_at=datetime.now(UTC),
+        )
+
+    async def _finalize(
+        self, work: WorkRequest, values: dict[str, Any], record: RunRecord,
+        principal: TrustedPrincipal,
+    ) -> RunResult:
+        result = await self._project_error(
+            self._state_result(work, values, record.created_at), principal
+        )
+        if result.status != record.status:
+            await self._repository.transition_run(record.run_id, result.status)
+        await self._repository.save_result(result)
+        return result
+
+    async def _barrier(self, run_id: str, principal: TrustedPrincipal) -> str | None:
+        reader = getattr(self._repository, "run_barrier", None)
+        return await reader(run_id, principal) if reader is not None else None
+
+    async def _stop_durably(
+        self, record: RunRecord, principal: TrustedPrincipal, reason: str
+    ) -> RunResult:
+        """Terminal CANCELLED for a run that no invocation is executing (lock held)."""
+        code = "cancelled" if reason == "cancelled" else "permission_revoked"
+        error = StructuredError(
+            code=code,
+            retryable=False,
+            message="실행을 중단했습니다.",
+            request_id=record.request_id,
+            trace_id=record.trace_id,
+            run_id=record.run_id,
+        )
+        now = datetime.now(UTC)
+        if record.result is not None:
+            # Keep the historical draft/review mirror; only the lifecycle ends here.
+            result = record.result.model_copy(
+                update={"status": WorkStatus.CANCELLED, "errors": (error,),
+                        "stop_reason": code, "updated_at": now}
+            )
+        else:
+            result = RunResult(
+                request_id=record.request_id,
+                trace_id=record.trace_id,
+                run_id=record.run_id,
+                agent_id="assistant-supervisor",
+                domain_id=record.domain_id,
+                status=WorkStatus.CANCELLED,
+                errors=(error,),
+                stop_reason=code,
+                simulated=any(item.simulated for item in self._adapters),
+                adapters=self._adapters,
+                created_at=record.created_at,
+                updated_at=now,
+            )
+        result = await self._project_error(result, principal)
+        await self._repository.transition_run(record.run_id, WorkStatus.CANCELLED)
+        await self._repository.save_result(result)
+        return result
 
     async def get(self, run_id: str, principal: TrustedPrincipal) -> RunResult:
         record = await self._repository.get_owned_run(run_id, principal)
@@ -496,18 +612,109 @@ class WorkService:
         return result
 
     async def cancel(self, run_id: str, principal: TrustedPrincipal) -> str:
-        """Owner-authorized cancel barrier: stops the current role and blocks later ones.
+        """Owner-authorized cancel: a durable barrier, then stop the run.
 
-        Returns 'cancelling' when an in-process team run was signalled. Effects that
-        already happened are not undone, and a terminal run cannot be cancelled.
+        Returns 'cancelling' when a live invocation was signalled (it stops at its next
+        effect boundary) and 'cancelled' when the run was ended here. Effects that already
+        happened are not undone, and a terminal run cannot be cancelled.
+        """
+        return await self._halt(run_id, principal, "cancelled")
+
+    async def revoke(self, run_id: str, principal: TrustedPrincipal) -> str:
+        """Owner revokes this run's delegated permission; no later effect may start.
+
+        Works on terminal runs too: e.g. a completed run can no longer be published.
         """
         record = await self._repository.get_owned_run(run_id, principal)
-        if record.status in {WorkStatus.COMPLETED, WorkStatus.FAILED, WorkStatus.CANCELLED}:
+        if record.status in _TERMINAL:
+            await self._repository.set_run_barrier(run_id, principal, "permission_revoked")
+            return "revoked"
+        return await self._halt(run_id, principal, "permission_revoked")
+
+    async def _halt(self, run_id: str, principal: TrustedPrincipal, reason: str) -> str:
+        record = await self._repository.get_owned_run(run_id, principal)
+        if record.status in _TERMINAL:
             raise RfaError("invalid_state_transition", "이미 종료된 실행입니다.")
+        await self._repository.set_run_barrier(run_id, principal, reason)
         runner = getattr(self._dependencies, "team_runner", None)
         if runner is not None and await runner.cancel(run_id):
             return "cancelling"
-        raise RfaError("not_implemented", "이 실행 경로는 취소를 지원하지 않습니다.")
+        try:
+            with self._guard_thread(record.thread_id):
+                current = await self._repository.get_owned_run(run_id, principal)
+                if current.status in _STOPPABLE:
+                    await self._stop_durably(current, principal, reason)
+        except RfaError as exc:
+            if exc.code != "thread_busy":
+                raise
+            return "cancelling"  # The live invocation stops at its next effect boundary.
+        return "cancelled" if reason == "cancelled" else "revoked"
+
+    # -- P0-021 explicit retry, ledger view and reconciliation --------------------------
+    async def retry(
+        self, run_id: str, principal: TrustedPrincipal, *, idempotency_key: str
+    ) -> RunResult:
+        """Explicit owner retry of a FAILED/CANCELLED run: always a NEW run (retry_of).
+
+        Unknown effects of the source are first reconciled by result query only; any that
+        stay unknown remain visible on the source. Nothing is retried automatically: the
+        owner's explicit request creates new effects under new keys.
+        """
+        source = await self._repository.get_owned_run(run_id, principal)
+        if source.status not in {
+            WorkStatus.FAILED, WorkStatus.CANCELLED, WorkStatus.OUTCOME_UNKNOWN
+        }:
+            raise RfaError(
+                "invalid_state_transition", "종료된 실패·취소 실행만 재시도할 수 있습니다."
+            )
+        await self.reconcile(run_id, principal)
+        stored = await self._repository.owned_run_request(run_id, principal)
+        request = DirectWorkRequest(
+            query=stored["query"],
+            domain_id=stored.get("domain_id"),
+            target=stored.get("target") or {"audience": "owner"},
+            simulation_scenario=stored.get("simulation_scenario", "success"),
+            idempotency_key=idempotency_key,
+            session_id=source.session_id,
+            task_id=source.task_id,
+            team=stored.get("team"),
+        )
+        return await self.run(request, principal, retry_of=run_id)
+
+    async def effects(self, run_id: str, principal: TrustedPrincipal) -> tuple[EffectRecord, ...]:
+        return await self._repository.run_effects(run_id, principal)
+
+    async def retry_links(self, run_id: str, principal: TrustedPrincipal) -> tuple[RetryLink, ...]:
+        return await self._repository.retry_links(run_id, principal)
+
+    async def reconcile(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[Reconciliation, ...]:
+        """Resolve OUTCOME_UNKNOWN effects by result query only, never by re-execution.
+
+        Review submissions are queried at the review authority. Publications are
+        reconciled by DraftLifecycle.query (P1-005A). Local role/team operations have no
+        cross-process status to query and stay unknown (explicit retry = new run).
+        """
+        response = self._dependencies.response
+        results = []
+        for effect in await self._repository.run_effects(run_id, principal):
+            if effect.state != "outcome_unknown" or effect.kind == "publication":
+                continue
+            if effect.kind == "review_submission" and isinstance(response, EffectGuardedResponse):
+                results.append(await response.reconcile(effect))
+                continue
+            results.append(
+                Reconciliation(
+                    operation_key=effect.operation_key,
+                    kind=effect.kind,
+                    before=effect.state,
+                    after=effect.state,
+                    method="unsupported",
+                    found=False,
+                )
+            )
+        return tuple(results)
 
     def _failed_result(
         self, request: WorkRequest, created_at: datetime, error: RfaError

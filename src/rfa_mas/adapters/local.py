@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from rfa_mas.application.state_machine import ensure_transition
+from rfa_mas.application.state_machine import ensure_effect_transition, ensure_transition
 from rfa_mas.application.source_access import (
     LOCAL_ENDPOINTS, ProjectResolver, fresh_principal, no_projects, permitted, project_allowed,
 )
@@ -35,6 +35,7 @@ from rfa_mas.contracts import (
     PersistentTask,
     PolicyDecision,
     PolicyRequest,
+    PublicationStatus,
     PublicationReceipt,
     ResultStatus,
     RoleOutcome,
@@ -66,7 +67,16 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.errors import ResourceNotFoundError, RfaError
 from rfa_mas.ports import TaskHandler
+from rfa_mas.ports.interfaces import EffectRecord, RetryLink
 from rfa_mas.security import SecretRedactor
+
+# P0-021 ledger: next action shown for each durable effect state.
+_EFFECT_NEXT_ACTION = {
+    "intent": "wait",
+    "inflight": "wait",
+    "completed": "none",
+    "outcome_unknown": "query",
+}
 
 
 def _canonical_fingerprint(value: dict[str, Any]) -> str:
@@ -465,11 +475,43 @@ class SqliteWorkRepository:
                         connection.execute(statement)
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (8, ?)",
                                        (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=9"
+                ).fetchone():
+                    # P0-021: owner-scoped effect ledger (state, payload fingerprint, result
+                    # ref, approval mirror), cancel/revocation barriers and retry lineage.
+                    for statement in (
+                        "CREATE TABLE effect_ledger (owner_id TEXT NOT NULL, "
+                        "operation_key TEXT NOT NULL, kind TEXT NOT NULL, run_id TEXT, "
+                        "payload_fingerprint TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN "
+                        "('intent', 'inflight', 'completed', 'outcome_unknown')), outcome TEXT, "
+                        "result_ref TEXT, approval_json TEXT, next_action TEXT NOT NULL, "
+                        "created_at TEXT NOT NULL, updated_at TEXT NOT NULL, "
+                        "PRIMARY KEY(owner_id, operation_key))",
+                        "CREATE INDEX effect_ledger_run ON effect_ledger(run_id, kind)",
+                        "CREATE TABLE run_effect_barriers (run_id TEXT PRIMARY KEY REFERENCES "
+                        "runs(run_id), owner_id TEXT NOT NULL, reason TEXT NOT NULL CHECK "
+                        "(reason IN ('cancelled', 'permission_revoked')), "
+                        "created_at TEXT NOT NULL)",
+                        "CREATE TABLE run_lineage (run_id TEXT PRIMARY KEY REFERENCES "
+                        "runs(run_id), owner_id TEXT NOT NULL, retry_of TEXT NOT NULL UNIQUE "
+                        "REFERENCES runs(run_id), created_at TEXT NOT NULL)",
+                    ):
+                        connection.execute(statement)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (9, ?)",
+                                       (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
                 connection.execute(
                     "UPDATE role_executions SET status='unknown', finished_at=? "
                     "WHERE status='running'",
+                    (datetime.now(UTC).isoformat(),),
+                )
+                # Same rule for every ledgered effect: an intent/inflight left by a previous
+                # process may or may not have happened. Only a result query resolves it.
+                connection.execute(
+                    "UPDATE effect_ledger SET state='outcome_unknown', next_action='query', "
+                    "updated_at=? WHERE state IN ('intent', 'inflight')",
                     (datetime.now(UTC).isoformat(),),
                 )
                 # Credentials authenticate this installation's owner, not a fixture
@@ -655,6 +697,7 @@ class SqliteWorkRepository:
                 ).fetchone()
                 if run is None:
                     raise ResourceNotFoundError("run")
+                self._ensure_open(connection, run_id)
                 lifecycle = self._owned_team(connection, task_id, owner)
                 if (
                     lifecycle.team.spec.team_id != team_id
@@ -750,6 +793,312 @@ class SqliteWorkRepository:
         return await asyncio.to_thread(operation)
 
 
+    # -- P0-021 durable effect ledger -----------------------------------------------------
+    # Ledger rows are written in the SAME SQLite transaction as the receipt that owns the
+    # details (publication, role receipt, team slot), so the two never disagree. The
+    # LangGraph checkpoint is a separate store and is never assumed atomic with them.
+    @staticmethod
+    def _effect(row: sqlite3.Row) -> EffectRecord:
+        return EffectRecord(
+            operation_key=row["operation_key"],
+            kind=row["kind"],
+            run_id=row["run_id"],
+            payload_fingerprint=row["payload_fingerprint"],
+            state=row["state"],
+            outcome=row["outcome"],
+            result_ref=row["result_ref"],
+            approval=json.loads(row["approval_json"]) if row["approval_json"] else None,
+            next_action=row["next_action"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
+    @staticmethod
+    def _ensure_open(connection, run_id: str) -> None:
+        """Cancel/revocation barrier: no NEW effect may start for this run."""
+        row = connection.execute(
+            "SELECT reason FROM run_effect_barriers WHERE run_id = ?", (run_id,)
+        ).fetchone()
+        if row is not None:
+            raise RfaError(
+                row[0], "취소되었거나 권한이 회수된 실행은 새 작업을 시작할 수 없습니다."
+            )
+
+    @staticmethod
+    def _run_owner(connection, run_id: str) -> str:
+        row = connection.execute("SELECT owner_id FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+        if row is None or not row[0]:
+            raise ResourceNotFoundError("run")
+        return row[0]
+
+    def _ledger_row(self, connection, owner: str, operation_key: str):
+        return connection.execute(
+            "SELECT * FROM effect_ledger WHERE owner_id = ? AND operation_key = ?",
+            (owner, operation_key),
+        ).fetchone()
+
+    def _ledger_begin(
+        self,
+        connection,
+        owner: str,
+        *,
+        operation_key: str,
+        kind: str,
+        run_id: str | None,
+        fingerprint: str,
+        state: str = "intent",
+        result_ref: str | None = None,
+        approval: dict | None = None,
+    ) -> tuple[bool, EffectRecord]:
+        row = self._ledger_row(connection, owner, operation_key)
+        if row is not None:
+            if (
+                row["kind"] != kind
+                or row["run_id"] != run_id
+                or row["payload_fingerprint"] != fingerprint
+            ):
+                raise RfaError(
+                    "idempotency_conflict", "같은 작업 key로 다른 요청을 실행할 수 없습니다."
+                )
+            return False, self._effect(row)
+        now = datetime.now(UTC).isoformat()
+        connection.execute(
+            "INSERT INTO effect_ledger (owner_id, operation_key, kind, run_id, "
+            "payload_fingerprint, state, outcome, result_ref, approval_json, next_action, "
+            "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)",
+            (
+                owner,
+                operation_key,
+                kind,
+                run_id,
+                fingerprint,
+                state,
+                result_ref,
+                json.dumps(approval, sort_keys=True) if approval is not None else None,
+                _EFFECT_NEXT_ACTION[state],
+                now,
+                now,
+            ),
+        )
+        return True, self._effect(self._ledger_row(connection, owner, operation_key))
+
+    def _ledger_advance(
+        self,
+        connection,
+        owner: str,
+        operation_key: str,
+        *,
+        state: str,
+        outcome: str | None = None,
+        approval: dict | None = None,
+        missing_ok: bool = False,
+    ) -> EffectRecord | None:
+        row = self._ledger_row(connection, owner, operation_key)
+        if row is None:
+            if missing_ok:  # Receipt created before migration 9: nothing to mirror.
+                return None
+            raise ResourceNotFoundError("effect")
+        if row["state"] == state == "outcome_unknown":
+            return self._effect(row)
+        ensure_effect_transition(row["state"], state)
+        changed = connection.execute(
+            "UPDATE effect_ledger SET state = ?, outcome = COALESCE(?, outcome), "
+            "approval_json = COALESCE(?, approval_json), next_action = ?, updated_at = ? "
+            "WHERE owner_id = ? AND operation_key = ? AND state = ?",
+            (
+                state,
+                outcome,
+                json.dumps(approval, sort_keys=True) if approval is not None else None,
+                _EFFECT_NEXT_ACTION[state],
+                datetime.now(UTC).isoformat(),
+                owner,
+                operation_key,
+                row["state"],
+            ),
+        ).rowcount
+        if changed != 1:
+            raise RfaError("invalid_state_transition", "작업 기록 상태가 변경되었습니다.")
+        return self._effect(self._ledger_row(connection, owner, operation_key))
+
+    async def begin_effect(
+        self,
+        run_id: str,
+        *,
+        operation_key: str,
+        kind: str,
+        payload_fingerprint: str,
+        result_ref: str | None = None,
+        approval: dict | None = None,
+    ) -> tuple[bool, EffectRecord]:
+        """Durable INTENT before an effectful call; the owner comes from the stored run.
+
+        Returns (True, record) for a new intent, or (False, record) for the prior state
+        of the same key. A different payload under the same key is rejected. The barrier
+        blocks new intents only; replaying a completed result is not a new call.
+        """
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                owner = self._run_owner(connection, run_id)
+                if self._ledger_row(connection, owner, operation_key) is None:
+                    self._ensure_open(connection, run_id)
+                return self._ledger_begin(
+                    connection,
+                    owner,
+                    operation_key=operation_key,
+                    kind=kind,
+                    run_id=run_id,
+                    fingerprint=payload_fingerprint,
+                    result_ref=result_ref,
+                    approval=approval,
+                )
+
+        return await asyncio.to_thread(operation)
+
+    async def advance_effect(
+        self,
+        run_id: str,
+        operation_key: str,
+        *,
+        state: str,
+        outcome: str | None = None,
+        approval: dict | None = None,
+    ) -> EffectRecord:
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                owner = self._run_owner(connection, run_id)
+                return self._ledger_advance(
+                    connection, owner, operation_key, state=state, outcome=outcome,
+                    approval=approval,
+                )
+
+        return await asyncio.to_thread(operation)
+
+    async def effects_by_ref(
+        self, run_id: str, *, kind: str, result_ref: str
+    ) -> tuple[EffectRecord, ...]:
+        def operation():
+            with self._connect() as connection:
+                owner = self._run_owner(connection, run_id)
+                rows = connection.execute(
+                    "SELECT * FROM effect_ledger WHERE owner_id = ? AND run_id = ? AND kind = ? "
+                    "AND result_ref = ? ORDER BY created_at, operation_key",
+                    (owner, run_id, kind, result_ref),
+                ).fetchall()
+                return tuple(self._effect(row) for row in rows)
+
+        return await asyncio.to_thread(operation)
+
+    async def run_effects(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[EffectRecord, ...]:
+        """Owner-authorized ledger of one run, including its bound Task team operations."""
+        owner = self._authenticated(principal)
+        await self.get_owned_run(run_id, principal)
+
+        def operation():
+            with self._connect() as connection:
+                # Task teams reserved for this run: bound ones, and the run-keyed
+                # reservation even when a crash happened before binding (P0-020 key).
+                tasks = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT task_id FROM run_team_bindings WHERE run_id = ? AND owner_id = ? "
+                        "UNION SELECT task_id FROM task_creation_keys WHERE owner_id = ? "
+                        "AND key_hash = ?",
+                        (run_id, owner, owner,
+                         _canonical_fingerprint({"key": f"run-team:{run_id}"})),
+                    ).fetchall()
+                }
+                rows = connection.execute(
+                    "SELECT * FROM effect_ledger WHERE owner_id = ? AND run_id = ? "
+                    "ORDER BY created_at, operation_key",
+                    (owner, run_id),
+                ).fetchall()
+                for task_id in sorted(tasks):
+                    rows += connection.execute(
+                        "SELECT * FROM effect_ledger WHERE owner_id = ? AND run_id IS NULL "
+                        "AND result_ref LIKE ? ORDER BY created_at, operation_key",
+                        (owner, f"team:{task_id}@%"),
+                    ).fetchall()
+                return tuple(self._effect(row) for row in rows)
+
+        return await asyncio.to_thread(operation)
+
+    async def set_run_barrier(
+        self, run_id: str, principal: TrustedPrincipal, reason: str
+    ) -> str:
+        """Durable cancel/revocation barrier; the first recorded reason is kept."""
+        owner = self._authenticated(principal)
+        if reason not in {"cancelled", "permission_revoked"}:
+            raise RfaError("invalid_state_transition", "지원하지 않는 중단 사유입니다.")
+        await self.get_owned_run(run_id, principal)
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    "INSERT OR IGNORE INTO run_effect_barriers VALUES (?, ?, ?, ?)",
+                    (run_id, owner, reason, datetime.now(UTC).isoformat()),
+                )
+                return connection.execute(
+                    "SELECT reason FROM run_effect_barriers WHERE run_id = ?", (run_id,)
+                ).fetchone()[0]
+
+        return await asyncio.to_thread(operation)
+
+    async def run_barrier(self, run_id: str, principal: TrustedPrincipal) -> str | None:
+        owner = self._authenticated(principal)
+
+        def operation():
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT reason FROM run_effect_barriers WHERE run_id = ? AND owner_id = ?",
+                    (run_id, owner),
+                ).fetchone()
+                return row[0] if row else None
+
+        return await asyncio.to_thread(operation)
+
+    async def owned_run_request(self, run_id: str, principal: TrustedPrincipal) -> dict:
+        owner = self._authenticated(principal)
+        await self.get_owned_run(run_id, principal)
+
+        def operation():
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT request_json FROM runs WHERE run_id = ? AND owner_id = ?",
+                    (run_id, owner),
+                ).fetchone()
+                if row is None:
+                    raise ResourceNotFoundError("run")
+                return json.loads(row[0])
+
+        return await asyncio.to_thread(operation)
+
+    async def retry_links(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[RetryLink, ...]:
+        """Explicit retry lineage touching this run (as the retry or as its source)."""
+        owner = self._authenticated(principal)
+        await self.get_owned_run(run_id, principal)
+
+        def operation():
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT run_id, retry_of, created_at FROM run_lineage WHERE owner_id = ? "
+                    "AND (run_id = ? OR retry_of = ?) ORDER BY created_at",
+                    (owner, run_id, run_id),
+                ).fetchall()
+                return tuple(
+                    RetryLink(run_id=r[0], retry_of=r[1], created_at=r[2]) for r in rows
+                )
+
+        return await asyncio.to_thread(operation)
+
+
     # -- P1-005A immutable DRAFT versions and publication receipts ----------------------
     async def draft_versions(self, run_id: str, principal: TrustedPrincipal):
         """Owner-authorized versions (DraftBundle, attachments) ordered by version."""
@@ -836,14 +1185,51 @@ class SqliteWorkRepository:
                 ).fetchone()
                 if expected_status is None:
                     if same_key is not None:
-                        return PublicationReceipt.model_validate_json(same_key[0])
+                        stored = PublicationReceipt.model_validate_json(same_key[0])
+                        # P0-021: a same-key replay must be the SAME publication request;
+                        # another run/content/approval under that key is rejected.
+                        if (stored.run_id, stored.binding, stored.approval_id) != (
+                            receipt.run_id, receipt.binding, receipt.approval_id
+                        ):
+                            raise RfaError(
+                                "idempotency_conflict",
+                                "같은 게시 key로 다른 게시 내용을 요청할 수 없습니다.",
+                            )
+                        return stored
                     if existing is not None:
                         raise RfaError("publication_exists", "이미 게시 요청이 있습니다.")
+                    self._ensure_open(connection, receipt.run_id)
                     connection.execute(
                         "INSERT INTO publications VALUES (?, ?, ?, ?, ?, ?, ?)",
                         (receipt.publication_id, receipt.run_id, owner,
                          receipt.idempotency_key, receipt.status.value,
                          receipt.model_dump_json(), now),
+                    )
+                    binding = receipt.binding
+                    self._ledger_begin(
+                        connection,
+                        owner,
+                        operation_key="publication:" + receipt.idempotency_key,
+                        kind="publication",
+                        run_id=receipt.run_id,
+                        fingerprint=_canonical_fingerprint(
+                            {
+                                "run_id": receipt.run_id,
+                                "binding": binding.model_dump(mode="json"),
+                                "approval_id": receipt.approval_id,
+                            }
+                        ),
+                        result_ref="publication:" + receipt.publication_id,
+                        # Approval mirror bound to this publication (not an approval).
+                        approval={
+                            "approval_id": receipt.approval_id,
+                            "draft_id": binding.draft_id,
+                            "draft_version": binding.version,
+                            "content_hash": binding.content_hash,
+                            "payload_hash": binding.payload_hash,
+                            "target": binding.target.model_dump(mode="json"),
+                            "policy_version": binding.policy_version,
+                        },
                     )
                     return receipt
                 if existing is None or existing[0] != receipt.publication_id \
@@ -855,6 +1241,20 @@ class SqliteWorkRepository:
                     (receipt.status.value, receipt.model_dump_json(), now,
                      receipt.publication_id),
                 )
+                ledger_state = {
+                    PublicationStatus.SUCCEEDED: "completed",
+                    PublicationStatus.FAILED: "completed",
+                    PublicationStatus.OUTCOME_UNKNOWN: "outcome_unknown",
+                }.get(receipt.status)
+                if ledger_state is not None:
+                    self._ledger_advance(
+                        connection,
+                        owner,
+                        "publication:" + receipt.idempotency_key,
+                        state=ledger_state,
+                        outcome=receipt.status.value,
+                        missing_ok=True,
+                    )
                 return receipt
 
         return await asyncio.to_thread(operation)
@@ -903,9 +1303,23 @@ class SqliteWorkRepository:
                     (run_id, role),
                 ).fetchone()
                 if row is None:
+                    # Cancel/revocation blocks every later role before any receipt exists.
+                    self._ensure_open(connection, run_id)
                     connection.execute(
                         "INSERT INTO role_executions VALUES (?, ?, ?, ?, 'running', NULL, ?, NULL)",
                         (execution_key, run_id, role, agent_id, now),
+                    )
+                    self._ledger_begin(
+                        connection,
+                        owner,
+                        operation_key="role_execution:" + execution_key,
+                        kind="role_execution",
+                        run_id=run_id,
+                        fingerprint=_canonical_fingerprint(
+                            {"run_id": run_id, "role": role, "agent_id": agent_id}
+                        ),
+                        state="inflight",
+                        result_ref="role_execution:" + execution_key,
                     )
                     return "started", None
                 if row["execution_key"] != execution_key or row["agent_id"] != agent_id:
@@ -946,6 +1360,14 @@ class SqliteWorkRepository:
                 if updated != 1:
                     # Terminal receipts (including restart-unknown) are never overwritten.
                     raise RfaError("invalid_state_transition", "역할 실행 상태를 바꿀 수 없습니다.")
+                self._ledger_advance(
+                    connection,
+                    owner,
+                    "role_execution:" + outcome.execution_key,
+                    state="outcome_unknown" if outcome.status == "unknown" else "completed",
+                    outcome=outcome.status,
+                    missing_ok=True,
+                )
 
         await asyncio.to_thread(operation)
 
@@ -1083,6 +1505,18 @@ class SqliteWorkRepository:
                     )
                     self._team_event(connection, record)
                     created = True
+                    # The prepare call follows this reservation: durable intent first.
+                    self._ledger_begin(
+                        connection,
+                        owner,
+                        operation_key="team:" + record.operation_key,
+                        kind="team_prepare",
+                        run_id=None,
+                        fingerprint=_canonical_fingerprint(
+                            {"goal": task.goal, "spec": _team_definition(spec)}
+                        ),
+                        result_ref=f"team:{task.task_id}@{record.generation}",
+                    )
                 connection.execute(
                     "INSERT INTO task_creation_keys VALUES (?, ?, ?, ?)",
                     (owner, key_hash, request_fingerprint, record.task.task_id),
@@ -1129,6 +1563,16 @@ class SqliteWorkRepository:
                 if changed != 1:
                     raise RfaError("stale_team_operation", "이전 팀 작업 결과입니다.")
                 self._team_event(connection, record)
+                self._ledger_advance(
+                    connection,
+                    owner,
+                    "team:" + current.operation_key,
+                    state="outcome_unknown"
+                    if reason in {"outcome_unknown", "invalid_contract"}
+                    else "completed",
+                    outcome=reason,
+                    missing_ok=True,
+                )
                 return record
 
         return await asyncio.to_thread(operation)
@@ -1166,6 +1610,17 @@ class SqliteWorkRepository:
                     (record.generation, record.model_dump_json(), task_id, current.generation),
                 )
                 self._team_event(connection, record)
+                self._ledger_begin(
+                    connection,
+                    owner,
+                    operation_key="team:" + record.operation_key,
+                    kind="team_cleanup",
+                    run_id=None,
+                    fingerprint=_canonical_fingerprint(
+                        {"cleanup": record.team.spec.team_id, "task_id": task_id}
+                    ),
+                    result_ref=f"team:{task_id}@{record.generation}",
+                )
                 return record, True
 
         return await asyncio.to_thread(operation)
@@ -1177,6 +1632,7 @@ class SqliteWorkRepository:
         *,
         session_id: str | None,
         task_id: str | None = None,
+        retry_of: str | None = None,
     ) -> SessionRecord:
         owner = self._authenticated(principal)
         now = datetime.now(UTC).isoformat()
@@ -1199,10 +1655,28 @@ class SqliteWorkRepository:
                     (request.run_id, owned_key),
                 ).fetchone():
                     raise RfaError("idempotency_conflict", "중복 실행 요청입니다.")
+                if retry_of is not None:
+                    # P0-021: only an explicit owner retry links a NEW run to a terminal one.
+                    source = connection.execute(
+                        "SELECT status FROM runs WHERE run_id = ? AND owner_id = ?",
+                        (retry_of, owner),
+                    ).fetchone()
+                    if source is None:
+                        raise ResourceNotFoundError("run")
+                    if source[0] not in {"failed", "cancelled", "outcome_unknown"}:
+                        raise RfaError(
+                            "invalid_state_transition",
+                            "종료된 실패·취소 실행만 재시도할 수 있습니다.",
+                        )
+                    if connection.execute(
+                        "SELECT 1 FROM run_lineage WHERE retry_of = ?", (retry_of,)
+                    ).fetchone():
+                        raise RfaError("retry_exists", "이미 재시도된 실행입니다.")
                 if connection.execute(
                     "SELECT 1 FROM runs WHERE session_id = ? AND status IN "
-                    "('created', 'running', 'waiting_approval', 'outcome_unknown')",
-                    (selected_session,),
+                    "('created', 'running', 'waiting_approval', 'outcome_unknown') "
+                    "AND run_id != ?",
+                    (selected_session, retry_of or ""),
                 ).fetchone():
                     raise RfaError("thread_busy", "이 세션의 미완료 실행을 먼저 처리해야 합니다.")
                 if task_id is not None:
@@ -1237,6 +1711,11 @@ class SqliteWorkRepository:
                         task_id,
                     ),
                 )
+                if retry_of is not None:
+                    connection.execute(
+                        "INSERT INTO run_lineage VALUES (?, ?, ?, ?)",
+                        (request.run_id, owner, retry_of, now),
+                    )
                 connection.execute(
                     "INSERT INTO session_messages VALUES (?, ?, ?, 'user', ?, ?)",
                     (new_id("message"), selected_session, request.run_id, request.query, now),

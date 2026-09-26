@@ -257,8 +257,8 @@ async def test_legacy_migration_is_versioned_idempotent_and_never_adopts_unknown
         versions = [row[0] for row in db.execute(
             "SELECT version FROM rfa_schema_migrations ORDER BY rowid"
         )]
-        # Versioned, idempotent and gap-free; later tasks append migrations (>= 7 here).
-        assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 7
+        # Versioned, idempotent and gap-free; later tasks append migrations (>= 9 here).
+        assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 9
 
 
 @pytest.mark.parametrize("final_status", ["running", "waiting_approval", "failed", "cancelled"])

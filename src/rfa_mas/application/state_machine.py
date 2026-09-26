@@ -54,3 +54,19 @@ def ensure_publication_transition(
 ) -> None:
     if requested not in PUBLICATION_TRANSITIONS[current]:
         raise InvalidStateTransitionError(current.value, requested.value)
+
+
+# P0-021: durable effect ledger. INTENT is written before the call, INFLIGHT right before
+# dispatch. A process that dies in either state leaves OUTCOME_UNKNOWN (startup), which is
+# resolved only by a result query into COMPLETED, never back into INFLIGHT (re-execution).
+EFFECT_TRANSITIONS: dict[str, frozenset[str]] = {
+    "intent": frozenset({"inflight", "completed", "outcome_unknown"}),
+    "inflight": frozenset({"completed", "outcome_unknown"}),
+    "outcome_unknown": frozenset({"completed"}),
+    "completed": frozenset(),
+}
+
+
+def ensure_effect_transition(current: str, requested: str) -> None:
+    if requested not in EFFECT_TRANSITIONS.get(current, frozenset()):
+        raise InvalidStateTransitionError(current, requested)

@@ -43,6 +43,8 @@ class SupervisorDependencies:
     # P0-020 explicit team execution. None keeps the single-domain path only.
     team_runner: Any = None
     policy_version: Callable[[], str] | None = None
+    # P0-021 durable effect ledger (EffectLedger): cancel/revocation barrier reads.
+    effects: Any = None
 
 
 @dataclass(frozen=True)
@@ -264,6 +266,23 @@ def _domain_steps(result: TaskResult, *, required: bool, maximum: int) -> int:
 
 
 def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = None) -> Any:
+    async def barrier(work: WorkRequest, principal: TrustedPrincipal) -> dict[str, Any] | None:
+        """Durable cancel/revocation barrier, checked before every effectful step.
+
+        It is read from the ledger store on each step, so a barrier recorded by another
+        request or process (or before a restart) stops the next step here.
+        """
+        if deps.effects is None:
+            return None
+        reason = await deps.effects.run_barrier(work.run_id, principal)
+        if reason is None:
+            return None
+        code = "cancelled" if reason == "cancelled" else "permission_revoked"
+        return {
+            "error": _error(work, code, "실행이 중단되어 이후 작업을 시작하지 않았습니다."),
+            "status": WorkStatus.CANCELLED,
+        }
+
     async def route(state: SupervisorState) -> dict[str, Any]:
         work = state["work"]
         domain_id = _route_domain(work)
@@ -298,6 +317,9 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
         work = state["work"]
         work = work.model_copy(update={"domain_id": state["domain_id"]})
         steps = state["steps"] + 1
+        stopped = await barrier(work, runtime.context.principal)
+        if stopped is not None:
+            return stopped | {"steps": steps}
         if deps.team_runner is None or deps.policy_version is None:
             return {
                 "error": _error(work, "not_implemented", "팀 실행이 구성되지 않았습니다."),
@@ -364,6 +386,9 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
         work = state["work"]
         domain_id = state["domain_id"]
         config = DOMAIN_CONFIGS[domain_id]
+        stopped = await barrier(work, runtime.context.principal)
+        if stopped is not None:
+            return stopped | {"steps": state["steps"]}
         if state["steps"] >= deps.max_graph_steps:
             return {
                 "error": _error(
@@ -500,8 +525,13 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
     def after_delegate(state: SupervisorState) -> str:
         return "finish" if state.get("error") is not None else "review"
 
-    async def review(state: SupervisorState) -> dict[str, Any]:
+    async def review(
+        state: SupervisorState, runtime: Runtime[InvocationContext]
+    ) -> dict[str, Any]:
         work = state["work"]
+        stopped = await barrier(work, runtime.context.principal)
+        if stopped is not None:
+            return stopped | {"steps": state["steps"]}
         if state["steps"] >= deps.max_graph_steps:
             return {
                 "error": _error(
@@ -566,6 +596,9 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
             }
         )
         work, draft = state["work"], state["draft"]
+        stopped = await barrier(work, runtime.context.principal)
+        if stopped is not None:
+            return stopped | {"steps": state["steps"]}
         await deps.validate_resume(draft, runtime.context.principal)
         if state["steps"] >= deps.max_graph_steps:
             return {
