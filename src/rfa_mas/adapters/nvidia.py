@@ -39,6 +39,20 @@ from rfa_mas.errors import RfaError
 
 MAX_ATTEMPTS = 3
 RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+
+
+def is_transient_status(status: int, payload: bytes) -> bool:
+    """Retryable provider states.
+
+    Observed 2026-09-27 on integrate.api.nvidia.com: a hosted model that is in the
+    catalog answered a bare 404 with an EMPTY body after ~120 s while its backing
+    function was unavailable, then served normally minutes later. An unknown model
+    answers 404 immediately WITH a body ("404 page not found"). Only the empty-body
+    404 is treated as transient; a 404 with a body stays a rejected request.
+    """
+    return status in RETRYABLE_STATUS or (status == 404 and not payload.strip())
+
+
 SYSTEM_PROMPT = (
     "너는 사용자의 개인 비서다. 아래 근거만 사용해 한국어로 답한다. "
     "근거에 없는 내용은 추측하지 않고 '근거 부족'이라고 쓴다. "
@@ -250,7 +264,7 @@ class NvidiaChatModel:
                 raise _error("model_pending")
             if status in (401, 403):
                 raise _error("model_auth_failed")
-            if status not in RETRYABLE_STATUS:
+            if not is_transient_status(status, payload):
                 raise _error("model_request_rejected")
             last = "model_rate_limited" if status == 429 else "model_unavailable"
             if attempt == attempts:

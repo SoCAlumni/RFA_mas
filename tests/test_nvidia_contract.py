@@ -221,6 +221,19 @@ async def test_query_text_claiming_permission_is_not_permission():
     assert server.requests == []
 
 
+async def test_empty_body_404_is_transient_but_unknown_model_is_rejected():
+    server = Server(httpx.Response(404, content=b""), answer())
+    model, sleeper = adapter(server)
+    result = await model.generate(model_request())
+    assert result.content.startswith("공식 출시일은") and sleeper.slept == [1.0]
+    assert len(server.requests) == 2  # empty-body 404 = backing function unavailable
+    unknown = Server(httpx.Response(404, text="404 page not found\n"))
+    model, sleeper = adapter(unknown)
+    error = await failure(model)
+    assert error.code == "model_request_rejected" and error.retryable is False
+    assert len(unknown.requests) == 1 and sleeper.slept == []
+
+
 async def test_429_retry_after_then_success():
     server = Server(httpx.Response(429, headers={"Retry-After": "2"}), answer())
     model, sleeper = adapter(server)
@@ -425,7 +438,6 @@ def test_safe_endpoints_models_and_keys():
     assert KEY not in repr(NvidiaChatConfig(base_url=BASE, model=MODEL, api_key=SecretStr(KEY)))
 
 
-
 # -- P1-002 product wiring: trusted public-only gate, bootstrap selection, no fallback -------
 from rfa_mas.adapters.nvidia import PublicOnlyEgressGate  # noqa: E402
 from rfa_mas.bootstrap import build_container, inspect_configuration  # noqa: E402
@@ -443,20 +455,34 @@ PUBLIC_NOTE = "TRIV3 SDK 공개 FAQ: 공식 출시일은 2026-10-20이다."
 
 def _item(audience=Audience.PUBLIC, excerpt="공개 FAQ 발췌"):
     return EvidenceItem(
-        source_id=f"src-{audience.value}", source_revision="r1",
-        location=SourceLocation(uri="fixture://gate"), audience=audience, excerpt=excerpt,
-        content_hash="0" * 64, policy_version="local-v1",
+        source_id=f"src-{audience.value}",
+        source_revision="r1",
+        location=SourceLocation(uri="fixture://gate"),
+        audience=audience,
+        excerpt=excerpt,
+        content_hash="0" * 64,
+        policy_version="local-v1",
     )
 
 
 def _request(query="SDK 출시일 알려줘", *items):
     return ModelRequest(
-        request_id="req-gate", trace_id="trace-gate", run_id="run-gate", agent_id="agent",
-        domain_id=DomainId.TRIV3, query=query,
+        request_id="req-gate",
+        trace_id="trace-gate",
+        run_id="run-gate",
+        agent_id="agent",
+        domain_id=DomainId.TRIV3,
+        query=query,
         evidence=EvidenceBundle(
-            request_id="req-gate", trace_id="trace-gate", run_id="run-gate", agent_id="agent",
-            domain_id=DomainId.TRIV3, items=items, policy_version="local-v1",
-            simulated=False, adapter="fixture",
+            request_id="req-gate",
+            trace_id="trace-gate",
+            run_id="run-gate",
+            agent_id="agent",
+            domain_id=DomainId.TRIV3,
+            items=items,
+            policy_version="local-v1",
+            simulated=False,
+            adapter="fixture",
         ),
         target=DraftTarget(audience=Audience.OWNER),
     )
@@ -464,28 +490,34 @@ def _request(query="SDK 출시일 알려줘", *items):
 
 async def test_public_only_gate_grants_exact_endpoint_for_public_material_only():
     clock = Clock()
-    gate = PublicOnlyEgressGate(endpoint=ENDPOINT, model=MODEL, max_output_tokens=256,
-                                budget_seconds=30, clock=clock)
+    gate = PublicOnlyEgressGate(
+        endpoint=ENDPOINT, model=MODEL, max_output_tokens=256, budget_seconds=30, clock=clock
+    )
     grant = await gate.authorize(_request("질문", _item()), endpoint=ENDPOINT, model=MODEL)
     assert (grant.endpoint, grant.model, grant.max_output_tokens) == (ENDPOINT, MODEL, 256)
     assert grant.deadline == clock.now + 30
     denied = [
-        _request("질문", _item(), _item(Audience.OWNER)),              # non-public evidence
+        _request("질문", _item(), _item(Audience.OWNER)),  # non-public evidence
         _request("질문", _item(Audience.COMPANY)),
-        _request(QUERY, _item()),                                       # private marker in query
+        _request(QUERY, _item()),  # private marker in query
         _request("질문", _item(excerpt="공개 " + OWNER_NOTE_CANARY)),  # marker in an excerpt
     ]
     for request in denied:
         assert await gate.authorize(request, endpoint=ENDPOINT, model=MODEL) is None
     for endpoint, model in ((BASE + "/other", MODEL), (ENDPOINT, "other/model")):
-        assert await gate.authorize(
-            _request("질문", _item()), endpoint=endpoint, model=model) is None
+        assert (
+            await gate.authorize(_request("질문", _item()), endpoint=endpoint, model=model) is None
+        )
 
 
 def _settings(tmp_path, **values):
     base = tmp_path.resolve()
-    return Settings(_env_file=None, database_url=f"sqlite:///{base / 'rfa.db'}",
-                    trace_dir=base / "traces", **values)
+    return Settings(
+        _env_file=None,
+        database_url=f"sqlite:///{base / 'rfa.db'}",
+        trace_dir=base / "traces",
+        **values,
+    )
 
 
 async def test_mock_default_boots_without_keys_and_nvidia_without_key_fails_explicitly(tmp_path):
@@ -510,19 +542,31 @@ async def test_mock_default_boots_without_keys_and_nvidia_without_key_fails_expl
 
 async def _nvidia_container(tmp_path, handler):
     container = build_container(
-        _settings(tmp_path, model_provider="nvidia", nvidia_model=MODEL,
-                  nvidia_api_key=SecretStr(KEY)),
+        _settings(
+            tmp_path, model_provider="nvidia", nvidia_model=MODEL, nvidia_api_key=SecretStr(KEY)
+        ),
         model_transport=httpx.MockTransport(handler),
     )
     await container.startup()
     owner = await container.repository.local_principal()
-    for key, audience, text in (("faq", "public", PUBLIC_NOTE),
-                                ("plan", "owner", f"TRIV3 SDK 내부 계획 {OWNER_NOTE_CANARY}")):
-        await container.knowledge.write(KnowledgeWrite.model_validate({
-            "domain_id": "triv3",
-            "provenance": {"provider": "note", "namespace": "p1002", "external_id": key},
-            "provider_revision": "r1", "title": f"TRIV3 SDK {key}", "content": text,
-            "synthetic": True, "acl": {"audience": audience}}), owner)
+    for key, audience, text in (
+        ("faq", "public", PUBLIC_NOTE),
+        ("plan", "owner", f"TRIV3 SDK 내부 계획 {OWNER_NOTE_CANARY}"),
+    ):
+        await container.knowledge.write(
+            KnowledgeWrite.model_validate(
+                {
+                    "domain_id": "triv3",
+                    "provenance": {"provider": "note", "namespace": "p1002", "external_id": key},
+                    "provider_revision": "r1",
+                    "title": f"TRIV3 SDK {key}",
+                    "content": text,
+                    "synthetic": True,
+                    "acl": {"audience": audience},
+                }
+            ),
+            owner,
+        )
     return container, owner
 
 
@@ -536,9 +580,14 @@ async def test_product_path_sends_only_public_evidence_to_the_cloud_model(tmp_pa
 
     container, owner = await _nvidia_container(tmp_path, handler)
     try:
-        result = await container.service.run(DirectWorkRequest(
-            query="TRIV3 SDK 출시일 알려줘", domain_id=DomainId.TRIV3,
-            target=DraftTarget(audience=target)), owner)
+        result = await container.service.run(
+            DirectWorkRequest(
+                query="TRIV3 SDK 출시일 알려줘",
+                domain_id=DomainId.TRIV3,
+                target=DraftTarget(audience=target),
+            ),
+            owner,
+        )
         assert result.status == WorkStatus.COMPLETED, result.errors
         assert len(sent) == 1 and sent[0].url == httpx.URL(ENDPOINT)
         body = sent[0].content.decode()
@@ -565,9 +614,14 @@ async def test_private_marker_in_the_query_sends_nothing(tmp_path):
 
     container, owner = await _nvidia_container(tmp_path, handler)
     try:
-        result = await container.service.run(DirectWorkRequest(
-            query=f"TRIV3 SDK 출시일 {OWNER_NOTE_CANARY}", domain_id=DomainId.TRIV3,
-            target=DraftTarget(audience=Audience.OWNER)), owner)
+        result = await container.service.run(
+            DirectWorkRequest(
+                query=f"TRIV3 SDK 출시일 {OWNER_NOTE_CANARY}",
+                domain_id=DomainId.TRIV3,
+                target=DraftTarget(audience=Audience.OWNER),
+            ),
+            owner,
+        )
         assert result.status != WorkStatus.COMPLETED and result.draft is None
         assert sent == []  # denied by the trusted gate before any transport call
     finally:
@@ -594,9 +648,14 @@ async def test_truncated_answer_surfaces_model_truncated_on_the_run_not_internal
 
     container, owner = await _nvidia_container(tmp_path, handler)
     try:
-        result = await container.service.run(DirectWorkRequest(
-            query="TRIV3 SDK 출시일 알려줘", domain_id=DomainId.TRIV3,
-            target=DraftTarget(audience=Audience.OWNER)), owner)
+        result = await container.service.run(
+            DirectWorkRequest(
+                query="TRIV3 SDK 출시일 알려줘",
+                domain_id=DomainId.TRIV3,
+                target=DraftTarget(audience=Audience.OWNER),
+            ),
+            owner,
+        )
         assert len(sent) == 1  # a truncated answer is not retried
         assert result.status != WorkStatus.COMPLETED and result.draft is None
         assert [error.code for error in result.errors] == ["model_truncated"]
