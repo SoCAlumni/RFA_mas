@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 8741bf8537808544457be7c6f256d078d99a7102b7d44232422d8f2656303a9e
+source_digest: d7cfa8e645d99b16a3fbce8f6e695481ef805b5467c0ab1ccf382b28f06a5786
 source_revisions:
   OPS-000: 6
   OPS-001: 13
@@ -18,12 +18,12 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 61
-  P0-015: 77
-  P0-016: 62
-  P0-017: 48
-  P0-018: 62
-  P0-019: 21
+  P0-014: 69
+  P0-015: 85
+  P0-016: 70
+  P0-017: 56
+  P0-018: 70
+  P0-019: 29
   P0-020: 9
   P0-021: 8
   P0-022: 8
@@ -31,10 +31,10 @@ source_revisions:
   P0-024: 8
   P0-025: 10
   P0-026: 11
-  P0-027: 63
-  P0-028: 39
+  P0-027: 71
+  P0-028: 47
   P1-001: 22
-  P1-001A: 13
+  P1-001A: 15
   P1-001B: 8
   P1-001C: 8
   P1-002: 3
@@ -47,11 +47,11 @@ source_revisions:
   P1-005: 10
   P1-005A: 8
   P1-005B: 8
-  P1-006: 29
+  P1-006: 37
   P1-006A: 4
   P1-006B: 3
   P1-006C: 3
-  P1-006D: 39
+  P1-006D: 47
   P1-006E: 8
   P1-007: 2
   P1-007A: 1
@@ -69,7 +69,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T12:19:50+00:00'
+generated_at: '2026-09-26T12:43:30+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -325,6 +325,7 @@ tasks:
   depends_on:
   - P1-001
   - P0-016
+  - P1-006
   path: tasks/P1-001A/task.yaml
 - id: P1-001B
   title: KB L0/L1/L2 선택적 context loader

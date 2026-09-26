@@ -720,3 +720,53 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   검색과 GET/replay/session message의 안전한 projection, 평가 C11의 실제 KB API 사용이다.
 - 실제 NVIDIA/Skill/NemoClaw/OpenShell·승인/게시 및 최종10개 시나리오는 이 결과와
   별개의 미완료 gate다. 사용자 `.gitignore` 변경은 계속 보존하고 커밋에서 제외한다.
+
+## KB·평가 통합 후 전체 회귀 — 2026-09-26 12:28 UTC
+
+- main `76b2186`에서87개 source hash·67개 명세 digest를 실행 전에 캡처했다.
+  키/실제 env·생성 상태·증거·사용자 `.gitignore`는 fingerprint에 포함하지 않았다.
+  `env -i`의 명시 PATH/control root에서 정상 pytest plugin과 설치 NAT를 사용했다.
+- `.venv/bin/python -m pytest -q`: **687 passed,124 warnings(185.54초)**,
+  fail/error/skip0. 실행 종료 뒤 HEAD와87개 source 내용이 변하지 않았음을 재확인했다.
+  `OPS-002/full-regression-03/{source,result}.json`에 실제 명령·시각·결과를 보존한다.
+- 기존 subgraph durability/ast.Str 경고 및 인증 필드를 의도적으로 변조한 음성 fixture의
+  Pydantic 경고를 숨기지 않았다. 평가기 테스트 성공은 Persona 제품 사례 전부 통과,
+  최종10개 E2E 또는 실제 NVIDIA/Skill/NemoClaw/OpenShell·게시 성공을 의미하지 않는다.
+
+- P1-001A 시작 경계를 현재 source로 확정했다. BU와 별도인 trusted project resolver,
+  실제 단기 정책 receipt, 불변 부모 metadata, 기존 fingerprint 호환, outward만 제한하는
+  ACL 회수 처리와 C11의 정상 KnowledgeService CAS를 AC/검증에 연결했다. 기존 ID·AC와
+  1.0 계약을 유지했고 P1-006 직접 의존성을 추가했다. spec ready와 실제 실행 가능은
+  별개이며 선행/예약 해제 뒤 claim한다. 이 명세 검증은 새 제품 기능 검증이 아니다.
+
+- P1-001A source 준비는 `task/P1-001A`/별도 clean worktree와 기존 patched Python을 사용했다.
+  offline locked NAT extra 설치 뒤 Python3.12.13/SQLite3.53.1/NAT1.8.0을 실제 확인했다.
+  배포명을 `nvidia-nat`로 조회한 준비 오류는 실제 `nvidia-nat-core/langchain/eval`로
+  정정했다. V2의 과거 잘못된 `tests/test_baseline.py` 경로도 파일 조사로 발견해 실제
+  `tests/test_contract_baseline.py`로 claim 전에 정정했다. 이 준비를 제품 테스트로 집계하지 않는다.
+
+## post-knowledge 기반 재검증 완료 — 2026-09-26 12:43 UTC
+
+- main76b2186 고정, source 수정 없이 새 worker/target evidence를 각각 만들었다.
+  P0-014 15+50, P0-015 26(+API4), P0-016 31(+회귀82), P0-017 56,
+  P0-018 53(+보조78), P0-019 38+182, P1-006D 22+203가 통과했다.
+  P0-027은 실제 설치8/별도 NAT 미설치2, P0-028은 adapter22/실제 EvaluationRun2/
+  별도 미설치2가 각각 통과했다. P1-006은57+89로 평가기와 계약 회귀를 확인했다.
+- 모든 task를 새 target 증거로 integrate/close했고 claim을 반납했다. 과거 실패·통합
+  근거는 approaches/evidence와 Git에 보존했다. 이번 pytest 실패·재시도는 없었다.
+  NAT 배포명 조회 준비 오류는 실제 core/langchain 명칭으로 정정하고 handoff에 남겼다.
+- 실제 평가 CLI는 여전히 exit1: C01/02/06 fail, C03/04/05 pass,
+  C07/08/09/10/12 unknown, C11 error다. 불변 KB가 기존 변경을 거절했기 때문에
+  C11 past_result는 unknown/변형not_run이며 과거 결과를 새 누출 증거로 쓰지 않았다.
+  P1-001A가 합법적인 KB 변경과 현재 조회의 권한 검사를 연결할 차례다.
+
+## 사용자 추가 승인 — 교체 가능한 최소 로컬 모듈
+
+- 사용자가 승희/다영 모듈의 로컬 구현이 없다고 확인하고, 우선 아주 기본으로 만들되
+  나중에 교체 가능하게 모듈화하도록 승인했다. 기존 포트/reference 계약을 재사용하여
+  로컬 승인·게시 상태/MCP 경계, runtime 경계와 최소 UI를 준비한다.
+- 팀원의 최종 서비스 책임이나 기밀 검수 소유권을 임의 변경하지 않는다. stand-in의
+  DB/승인 상태와 core mirror를 구분한다. 실제 외부 게시·배포 권한으로 확대하지 않고,
+  기본 runtime을 OpenShell 격리로 주장하지 않는다. 실제 모듈/OS 강제 gate는 별도로 유지한다.
+- 해당 기존 task의 scope·분할/실제 gate를 확인하여 반영할 예정이며, 현재 검색 개발을
+  중단하지 않는다. 새 framework나 중복 MSA가 아닌 기존 adapter 교체 지점을 사용한다.

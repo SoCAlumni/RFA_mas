@@ -1,0 +1,33 @@
+{
+  "kind": "supplemental_repository_regression",
+  "reviewer": "rfa-coordinator",
+  "head": "76b2186eb09035a46d10b1d652acd61b712b6b01",
+  "source_manifest": ".agent/evidence/OPS-002/full-regression-03/source.json",
+  "result": "passed",
+  "cwd": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+  "argv": [
+    ".venv/bin/python",
+    "-m",
+    "pytest",
+    "-q"
+  ],
+  "timeout_seconds": 600,
+  "started_at": "2026-09-26T12:25:38.585174+00:00",
+  "finished_at": "2026-09-26T12:28:45.421989+00:00",
+  "elapsed_seconds": 186.73190725035965,
+  "exit_code": 0,
+  "stdout": "........................................................................ [ 10%]\n........................................................................ [ 20%]\n........................................................................ [ 31%]\n........................................................................ [ 41%]\n........................................................................ [ 52%]\n........................................................................ [ 62%]\n........................................................................ [ 73%]\n........................................................................ [ 83%]\n........................................................................ [ 94%]\n.......................................                                  [100%]\n=============================== warnings summary ===============================\ntests/test_api.py: 2 warnings\ntests/test_behavior_verifier.py: 44 warnings\ntests/test_contract_baseline.py: 4 warnings\ntests/test_evaluation.py: 5 warnings\ntests/test_graph.py: 9 warnings\ntests/test_nat_adapter.py: 14 warnings\ntests/test_nat_smoke.py: 2 warnings\ntests/test_resume.py: 17 warnings\ntests/test_sessions.py: 11 warnings\ntests/test_trace_contract.py: 14 warnings\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\ntests/test_knowledge.py::test_mutated_or_unauthenticated_principal_not_authority[bad1]\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/pydantic/main.py:475: UserWarning: Pydantic serializer warnings:\n    PydanticSerializationUnexpectedValue(Expected `bool` - serialized value may not be as expected [field_name='authenticated', input_value='yes', input_type=str])\n    return self.__pydantic_serializer__.to_python(\n\ntests/test_nat_adapter.py::TestInstalledNatAdapter::test_native_equivalence_one_call_durable_ledger\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/langsmith/evaluation/_key_extraction.py:20: DeprecationWarning: ast.Str is deprecated and will be removed in Python 3.14; use ast.Constant instead\n    (ast.Str, ast.Constant) if hasattr(ast, \"Str\") else (ast.Constant,)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n687 passed, 124 warnings in 185.54s (0:03:05)\n",
+  "stderr": "",
+  "counts": {
+    "collected": 687,
+    "passed": 687,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "deselected": 0,
+    "warnings": 124
+  },
+  "isolation": "env -i PATH and canonical TASK_CONTROL_ROOT; normal plugins; Python3.12.13/SQLite3.53.1/NAT1.8.0",
+  "limits": "Post-KB/evaluator main76b2186 repository regressions only; not final10E2E or actual NVIDIA/Skill/NemoClaw/OpenShell/approval-publication evidence. This includes evaluator correctness tests, not twelve passing product scenarios. All source hashes rechecked unchanged after execution. Warnings retained: subgraph durability, deliberate invalid-identity serialization negative fixture, dependency ast.Str."
+}

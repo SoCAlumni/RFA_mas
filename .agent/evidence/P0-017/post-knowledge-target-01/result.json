@@ -1,0 +1,58 @@
+{
+  "attempt_id": "post-knowledge-target-01",
+  "contract_digest": "a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912",
+  "mode": "기존 설정 검증 통과, 신규 항목 missing/not_run. local(false). 외부 의존 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_settings.py"
+        ],
+        "assertions": [
+          "현재 typed settings/example의 1대1 이름과 planned catalog 단일 소유·미적용 상태를 확인한다.",
+          "key/token 예제 값은 모두 빈칸이며 실제 env를 수정하지 않는다.",
+          "doctor/bootstrap 공통 판정은 configuration/implementation과 local lifecycle/provider probe not_run을 구분하며 값과 credential을 출력하지 않는다.",
+          "기본 mock 부팅·외부 write/egress 비활성, 선택한 미지원 real/NAT/scheduler는 명시 오류이며 fallback이 없다.",
+          "실측 SQLite 버전과 합성 patched/unpatched 경계가 올바르게 보고되며 자동 환경 교체/미실행 검사 성공 주장이 없다."
+        ],
+        "counts": {
+          "collected": 56,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 56,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "56 passed in0.18s. Fresh canonical execution; no skip/error/failure, same AC assertions with target NAT installed but disabled by default.",
+        "result": "passed",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "76b2186eb09035a46d10b1d652acd61b712b6b01",
+      "isolation": "env-i PATH; normal pytest plugins; timeout120; no actual dotenv/secret/network/source modifications.",
+      "nat": "installed1.8; default settings remain disabled",
+      "python": "3.12.13",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "sqlite": "3.53.1"
+    },
+    "finished_at": "2026-09-26T12:34:37.552906Z",
+    "limits": "No live provider/Judge/egress/scheduler/full E2E claim. Historical failures preserved; actual target still requires independent evidence.",
+    "reviewer": "rfa-coordinator delegated nat_spike; independent settings target",
+    "started_at": "2026-09-26T12:34:36.548021Z"
+  },
+  "result": "passed",
+  "source_fingerprint": "b5b3e81ba010ceedb97ea39a2373aa84d42c276fd72e16e78cff10e20631a0f1",
+  "source_manifest": ".agent/evidence/P0-017/post-knowledge-target-01/source.json",
+  "spec_digest": "598027ca8b2a65475be760b52bfc3a54ec3ea4f47008e1f40df565e7f446a56f",
+  "spec_revision": 16,
+  "task_id": "P0-017"
+}

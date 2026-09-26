@@ -1,0 +1,85 @@
+{
+  "attempt_id": "post-knowledge-target-01",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "counts": {
+          "collected": 2,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 2,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "exit_code": 0,
+        "observed": "Fresh actual no-NAT interpreter, current canonical src explicitly on PYTHONPATH and import path checked; Python3.12.13 SQLite3.53.1. Two passed0.05s, no skip/errors. Not installed NAT evidence."
+      }
+    ],
+    "checks": [
+      {
+        "assertions": [
+          "core pin 유지·actual installed versions·선택 근거가 있다",
+          "관측/재개 미지원 범위 및 실패 blocker가 명시되고 KB/eval에 NAT 선행을 추가하지 않았다"
+        ],
+        "id": "V1",
+        "observed": "Fresh target installed metadata/source review confirms Python3.12.13 SQLite3.53.1 LangGraph1.2.12/checkpoint4.2.0 and NAT core/langchain/eval1.8.0; offline lock check169. Released wrapper lines113/115 still serialize mappings without RFA thread config; no graph/auth/checkpoint ownership change. Versioned source docs remain valid historical selection basis; no new install claimed. No internal-tool/streaming/HITL/provider-token or live-model claim.",
+        "procedure_performed": true,
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "assertions": [
+          "실제 설치된 wrapper가 synthetic CompiledStateGraph를 한 번 실행하고 input/output shape를 확인",
+          "NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "8 passed in0.79s; exact installed wrapper command, no skip/errors, network guard and timeout120.",
+        "result": "passed",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "76b2186eb09035a46d10b1d652acd61b712b6b01",
+      "isolation": "env-i PATH only, no secrets/env-file, no source change.",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas"
+    },
+    "errors": "Initial read-only metadata probe used nonexistent distribution name nvidia-nat; actual installed nvidia-nat-core/langchain confirmed. No test retry or dependency failure.",
+    "finished_at": "2026-09-26T12:27:45.712847Z",
+    "limits": "No real model/Skill/runtime/publication or whole-product claim. Root unrelated .gitignore preserved.",
+    "reviewer": "rfa-coordinator delegated nat_spike; independent canonical target revalidation",
+    "started_at": "2026-09-26T12:27:33.895686Z"
+  },
+  "result": "passed",
+  "source_fingerprint": "ed1b935ea48e195d2b30a1cb455e365ca6c324fc842dfb1494b9c8875a808908",
+  "source_manifest": ".agent/evidence/P0-027/post-knowledge-target-01/source.json",
+  "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+  "spec_revision": 2,
+  "task_id": "P0-027"
+}

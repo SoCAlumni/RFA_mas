@@ -1,9 +1,9 @@
-# P0-018 — post-teams no-code revalidation
+# P0-018 — post-knowledge no-code revalidation
 
-Revalidate existing selector AC1–AC3 on frozen main85d747ee4c837566aa8d2cdc54878ee580ebfe69 and accepted RFA-EXTENDED1.1 digest32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77. Historical selector implementation, previous failures and worker/target evidence remain preserved; no new product implementation.
+Revalidate only existing deterministic selector AC1–3 against frozen76b2186 and accepted extended1.1 digest70f3416 (full authoritative digest in task.yaml). P0-014 direct prerequisite is fresh done/post-knowledge-target-01. Old integrated target85 and prior evidence remain; no source rewriting, no final product/live-provider claim.
 
-Clean task/P0-018 was ff-only advanced to current main. Historical integration binding/target ancestry passed the existing inactive_integrated_guard. No previous selector process, dirty source, unintegrated changes or pending external side effects were found. Default exact lock environment is Python3.12.13/SQLite3.53.1; old venv is recoverably retained in this worktree .local/retained-venv-post-teams-20260926. No real .env, credentials or provider calls.
+Feature task/P0-018 clean ff-only76b2186, old integration binding/ancestry reviewed. No old selector process/WIP/external side effect. Exact default/dev offline sync resolved169/checked55; Python3.12.13 SQLite3.53.1, actual NAT absent. No user env or credentials read; canonical unrelated .gitignore preserved.
 
-Worker post-teams-worker-01 actual window 2026-09-26T11:29:53.809505Z–11:30:00.999575Z: declared V1 selector53 passed0.04s; supplemental contract78 passed1.54s with4 existing durability warnings; frozen9/extended7 valid. No skips/errors/retries. Exact V1 assertions correspond to the pinned-template deterministic-selection and strict authorization/budget negative tests. All commands use bounded subprocess timeouts and minimal PATH-only environment with normal pytest plugins.
+Worker post-knowledge-worker-01 window12:29:21.021246Z–12:29:24.100157Z: exact V1 selector53 passed0.04s; supplemental contracts78 passed1.77s (4 existing durability warnings). No fail/skip/retry. Source capture completed before commands; env-i normal plugins, timeout120 enforced. Predicate/approved pin/runtime/strict budget and auth negatives correspond to AC1–3, no product flow expansion.
 
-Next: submit unchanged source and capture independent post-teams-target-01, then repeat declared V1 plus bounded supplemental checks on frozen canonical target before integrate/close. TeamFactory, live model, sandbox and final RFA E2E success are outside this selector revalidation. Current authoritative later status is task.yaml.
+Next first action: submit unchanged source and capture fresh post-knowledge-target-01; repeat exact V1/supplemental contract checks before integrate/close. Current task.yaml is authoritative, not a stale handoff step.

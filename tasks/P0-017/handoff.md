@@ -1,9 +1,9 @@
-# P0-017 — post-teams no-code revalidation
+# P0-017 — post-knowledge no-code settings revalidation
 
-Revalidate existing settings/doctor AC1–5 on frozen85d747ee4c837566aa8d2cdc54878ee580ebfe69 after approved additive TeamLifecycle baseline32b512. Prior settings implementation, original malformed-URL failure/fix and post-trace evidence remain preserved. No product source changes.
+Revalidate existing AC1–5 on frozen76b2186 after additive KB70f3416 baseline acceptance. Historical settings/WAL diagnostics and all malformed-input failures/previous evidence preserved. No source implementation.
 
-Clean task/P0-017 FF and exact locked default+dev sync completed. Python3.12.13/SQLite3.53.1; NAT absent in worker but installed in root. Historical integration/source/ancestry binding passed; current014/016 dependencies are integrated/verified done. No old process/dirty code/pending external side effects. Actual dotenv/credentials are not read.
+Clean feature task/P0-017 ff-only76b2186 and offline exact default/dev sync resolved169/checked55. Python3.12.13 SQLite3.53.1, NAT absent in feature and installed in root. Prior integrated target85/source/evidence binding reviewed; no old worker process/WIP/pending external side effect. Real env/credentials untouched. Root unrelated .gitignore preserved. Direct014/016 independently done; recover only after019 shared composition reservation is released.
 
-Worker actual11:35:36.130421Z–11:35:38.154186Z: V1 settings56 passed0.19s; supplemental frozen9/extended7 valid. No skip/product failures/source changes. After completed begin-evidence/source-file confirmation, an unnecessary JS-function store raised serialization error before any tests launched; removed it and ran tests once after valid capture. This orchestration error is preserved, not a hidden product retry.
+Worker post-knowledge-worker-01 actual12:33:58.769600Z–12:33:59.765115Z: exact settings V1 56 passed0.22s, no skip/error/failure/retry. Valid source capture finished before command; env-i PATH, normal plugins and timeout120. Assertions cover typed/example parity, secret blanks, reserved/backend errors, readiness distinctions and SQLite version diagnostics.
 
-Next: submit unchanged source and independently capture/reverify post-teams-target-01 before integrate/close. No live provider, scheduler, sandbox or full E2E claim; doctor readiness is not provider execution proof. Task original owns later completion state.
+Next first action: submit unchanged source and capture fresh target evidence, rerun exact V1 before integrate/close. Key presence/doctor readiness are not provider execution or authorization. No scheduler/NVIDIA/runtime/full E2E claim. Current task.yaml owns actual later status.

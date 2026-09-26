@@ -1,11 +1,9 @@
-# P0-014 — post-teams no-code revalidation
+# P0-014 — post-knowledge revalidation
 
-Goal: revalidate existing AC1–4 on frozen main 85d747ee4c837566aa8d2cdc54878ee580ebfe69 after additive TeamLifecycle/NAT integration. No product code, contract publication or new implementation claims.
+Existing AC1–4 are revalidated after integrated KB migration4/API/additive schemas and evaluator changes at frozen main76b2186eb09035a46d10b1d652acd61b712b6b01. No new feature or real-service claim.
 
-Inspection: feature task/P0-014 was clean at 35f4340 and fast-forwarded to the exact main baseline. No task claim or product test process remains; historical post-trace-target-01 evidence is retained. Runtime side effects are synthetic temporary test resources only. Locked default sync selected the approved durable Python3.12.13, SQLite3.53.1 and recreated only this feature's disposable .venv; canonical environment untouched. No real .env/credential reads. Source remains clean.
+Inspection: clean task/P0-014 fast-forwarded from85d747e to exact current target. Locked default own venv Python3.12.13/SQLite3.53.1; canonical environment untouched. Previous claim null and no old test process. Prior evidence retained. User .gitignore root edit is unrelated and left intact; no source/control commits or secrets read.
 
-Current status: new verification not yet run. Exact next action is capture post-teams-worker-01 then execute canonical V1 and V2 with subprocess timeout120s and minimal child environment. Original evidence is not reused. Fresh target evidence and close remain mandatory; authoritative latest state is task.yaml, not this worker handoff.
+Next: capture post-knowledge-worker-01 and run exact V1/V2 in minimal explicit environment with120s subprocess timeout. Then submit no-change artifact, independently rerun on frozen target with new target capture, integrate/close. Latest task.yaml owns target status; this handoff is not evidence of tests not yet executed.
 
-Operational diagnostic note: initial read-only history inspection requested nonexistent result JSON key 'state' and raised KeyError; the correct field is 'result'. This was not a product test or mutation and no source/evidence was changed.
-
-Worker actual result 2026-09-26T11:26:34Z–11:26:38Z: V1 15 passed (pytest0.02s, wall3.275s), V2 50 passed (pytest0.71s, wall1.229s); no skips/errors. Source unchanged and no commit required. Evidence .agent/evidence/P0-014/post-teams-worker-01/result.json. Next: target source capture and independent actual V1/V2 rerun on frozen main, then integrate/close. task.yaml owns later target status.
+Worker actual: post-knowledge-worker-01 V1=15 passed (wall0.883s), V2=50 passed (wall1.155s), zero skips/errors. Source remains clean76b2186. Evidence .agent/evidence/P0-014/post-knowledge-worker-01/result.json. Next actual target capture/rerun; task.yaml later integration evidence is authoritative.
