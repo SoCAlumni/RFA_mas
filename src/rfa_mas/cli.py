@@ -81,8 +81,25 @@ def _parser() -> argparse.ArgumentParser:
     )
 
     evaluation = subparsers.add_parser("evaluate", help="Run isolated synthetic rule evaluation")
-    evaluation.add_argument("--dataset", default="persona-core-v1")
+    evaluation.add_argument(
+        "--dataset", default="persona-core-v1", help="persona-core-v1 or persona-regression-v2"
+    )
     evaluation.add_argument("--judge", default="disabled", help="disabled or mock only")
+    evaluation.add_argument("--label", default="run", help="v2 run label, e.g. baseline")
+    evaluation.add_argument("--output", default=None, help="v2: write the run manifest (new file)")
+    evaluation.add_argument("--mode", default="simulated", choices=["simulated", "actual"])
+    evaluation.add_argument(
+        "--allow-actual",
+        action="store_true",
+        help="Explicit opt-in for actual-model mode; without a provider every case is not_run",
+    )
+
+    compare = subparsers.add_parser(
+        "evaluate-compare", help="Compare two recorded persona-regression-v2 run manifests"
+    )
+    compare.add_argument("--baseline", required=True)
+    compare.add_argument("--candidate", required=True)
+    compare.add_argument("--output", default=None, help="Write the comparison (new file)")
 
     openapi = subparsers.add_parser("openapi", help="Export the generated OpenAPI document")
     openapi.add_argument("--output", default="openapi.json")
@@ -221,15 +238,97 @@ def _doctor(settings: Settings) -> int:
     return 0 if payload["ready"] else 1
 
 
+_RELEASE_EXIT = {"pass": 0, "fail": 1, "incomplete": 2}
+
+
+def _reject(code: str) -> None:
+    print(json.dumps({"code": code}))
+    raise SystemExit(2)
+
+
+def _write_new(path_text: str | None, payload: str) -> None:
+    """Evaluation artifacts are new files only: never overwrite or follow a symlink."""
+    if path_text is None:
+        return
+    path = Path(path_text)
+    if path.is_symlink() or path.exists():
+        _reject("evaluation_output_exists")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8") as handle:
+        handle.write(payload + "\n")
+
+
+def _read_manifest(path_text: str):
+    from rfa_mas.application.evaluation import RegressionRun
+
+    path = Path(path_text)
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 5_000_000:
+        _reject("evaluation_manifest_invalid")
+    try:
+        return RegressionRun.model_validate_json(path.read_text(encoding="utf-8"))
+    except (ValidationError, ValueError, UnicodeDecodeError):
+        # Never echo manifest content or parser messages.
+        _reject("evaluation_manifest_invalid")
+
+
+def _evaluate_regression(args: argparse.Namespace) -> None:
+    from rfa_mas.application.evaluation import run_persona_regression
+
+    if args.judge != "disabled":
+        _reject("evaluation_configuration_rejected")
+    try:
+        run = asyncio.run(
+            run_persona_regression(
+                label=args.label, mode=args.mode, allow_actual=args.allow_actual
+            )
+        )
+    except ValueError as exc:
+        code = str(exc) if str(exc).startswith("evaluation_") else "evaluation_error"
+        print(json.dumps({"code": code, "product_final_gate": "not_run"}))
+        raise SystemExit(2) from None
+    except Exception:
+        print(json.dumps({"code": "evaluation_error", "product_final_gate": "not_run"}))
+        raise SystemExit(2) from None
+    payload = run.model_dump_json(indent=2)
+    _write_new(args.output, payload)
+    print(payload)
+    raise SystemExit(_RELEASE_EXIT[run.release_gate])
+
+
+def _evaluate_compare(args: argparse.Namespace) -> None:
+    from rfa_mas.application.evaluation import compare_regression_runs
+
+    comparison = compare_regression_runs(
+        _read_manifest(args.baseline), _read_manifest(args.candidate)
+    )
+    payload = comparison.model_dump_json(indent=2)
+    _write_new(args.output, payload)
+    print(payload)
+    raise SystemExit(_RELEASE_EXIT[comparison.release_gate])
+
+
 def main() -> None:
     parser = _parser()
     args = parser.parse_args()
+    if args.command == "evaluate-compare":
+        if args.env_file is not None:
+            _reject("evaluation_configuration_rejected")
+        _evaluate_compare(args)
+    if args.command == "evaluate" and args.dataset == "persona-regression-v2":
+        # Dispatch BEFORE Settings(), env-file inspection or provider construction.
+        if args.env_file is not None:
+            _reject("evaluation_configuration_rejected")
+        _evaluate_regression(args)
     if args.command == "evaluate":
         # Dispatch BEFORE Settings(), env-file inspection or provider construction.
         if (
             args.env_file is not None
             or args.dataset != "persona-core-v1"
             or args.judge not in {"disabled", "mock"}
+            or args.output is not None
+            or args.label != "run"
+            or args.mode != "simulated"
+            or args.allow_actual
         ):
             print(json.dumps({"code": "evaluation_configuration_rejected"}))
             raise SystemExit(2)
