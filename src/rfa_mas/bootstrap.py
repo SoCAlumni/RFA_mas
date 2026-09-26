@@ -33,6 +33,7 @@ from rfa_mas.adapters.mock import (
     MockRetrieval,
     MockTool,
 )
+from rfa_mas.adapters.scheduler import ApschedulerTriggers
 from rfa_mas.application.drafts import DraftLifecycle
 from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
 from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
@@ -44,6 +45,7 @@ from rfa_mas.application.graphs import (
 from rfa_mas.application.knowledge import KnowledgeService
 from rfa_mas.application.observations import Observations, ObservedPort
 from rfa_mas.application.resume_policy import ResumePolicy
+from rfa_mas.application.scheduling import DEFAULT_TIMEZONE, ScheduleService
 from rfa_mas.application.service import WorkService
 from rfa_mas.application.team_selector import APPROVED_PINS, TeamSelector, TemplateRegistry
 from rfa_mas.application.teams import RuntimeLifecycleSupport, TeamFactory
@@ -180,6 +182,8 @@ class Container:
     drafts: DraftLifecycle | None = None
     # P1-005C: staged-context retrieval boundary (None when the runtime is not local).
     context: StagedContextBoundary | None = None
+    # P0-022: owner schedule intent only. The API never starts or opens the scheduler runner.
+    schedules: ScheduleService | None = None
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
@@ -585,5 +589,7 @@ def build_container(
         team_runner=team_runner,
         drafts=drafts,
         context=staged_context,
+        schedules=ScheduleService(repository, ApschedulerTriggers(),
+                                  default_timezone=DEFAULT_TIMEZONE),
         http_clients=clients,
     )

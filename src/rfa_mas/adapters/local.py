@@ -25,6 +25,7 @@ from rfa_mas.contracts import (
     DraftBundle,
     ExecutionContext,
     ExecutionMode,
+    JobRun,
     KnowledgeDelete,
     KnowledgeDocument,
     KnowledgeDocumentV11,
@@ -41,6 +42,7 @@ from rfa_mas.contracts import (
     RoleOutcome,
     RunRecord,
     RunResult,
+    Schedule,
     SessionDetail,
     SessionMessage,
     SessionRecord,
@@ -500,6 +502,36 @@ class SqliteWorkRepository:
                         connection.execute(statement)
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (9, ?)",
                                        (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=10"
+                ).fetchone():
+                    # P0-022 (after P0-021's 9): owner schedule intent, append-only
+                    # history and the scheduled-run ledger. The runner alone owns the separate
+                    # APScheduler job store; these tables never hold callables or credentials.
+                    for statement in (
+                        "CREATE TABLE schedules (schedule_id TEXT PRIMARY KEY, "
+                        "owner_id TEXT NOT NULL, job_type TEXT NOT NULL CHECK (job_type IN "
+                        "('kb_refresh', 'candidate_scan', 'briefing')), domain_id TEXT NOT NULL, "
+                        "state TEXT NOT NULL CHECK (state IN ('active', 'disabled', 'cancelled')), "
+                        "revision INTEGER NOT NULL, schedule_json TEXT NOT NULL, "
+                        "updated_at TEXT NOT NULL)",
+                        "CREATE INDEX schedules_owner ON schedules(owner_id, schedule_id)",
+                        "CREATE TABLE schedule_history (schedule_id TEXT NOT NULL REFERENCES "
+                        "schedules(schedule_id), revision INTEGER NOT NULL, action TEXT NOT NULL, "
+                        "at TEXT NOT NULL, PRIMARY KEY(schedule_id, revision))",
+                        # Idempotency: one run per UTC fire time AND per local wall-clock
+                        # occurrence (a DST fall-back repeat maps to the same occurrence).
+                        "CREATE TABLE schedule_runs (run_key TEXT PRIMARY KEY, schedule_id TEXT "
+                        "NOT NULL REFERENCES schedules(schedule_id), owner_id TEXT NOT NULL, "
+                        "job_type TEXT NOT NULL, scheduled_fire_time TEXT NOT NULL, "
+                        "occurrence TEXT NOT NULL, status TEXT NOT NULL, reason TEXT, "
+                        "summary_json TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT, "
+                        "UNIQUE(schedule_id, scheduled_fire_time), "
+                        "UNIQUE(schedule_id, occurrence))",
+                    ):
+                        connection.execute(statement)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (10, ?)",
+                                       (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
                 connection.execute(
@@ -789,6 +821,230 @@ class SqliteWorkRepository:
                      domain_id.value if domain_id else None),
                 ).fetchall()
                 return [TodoCandidate.model_validate_json(r[0]) for r in rows]
+
+        return await asyncio.to_thread(operation)
+
+    # -- P0-022 owner schedules and the scheduled-run ledger ----------------------------
+    SCHEDULE_TRANSITIONS = {
+        ("active", "disabled"): "disabled",
+        ("disabled", "active"): "enabled",
+        ("active", "cancelled"): "cancelled",
+        ("disabled", "cancelled"): "cancelled",
+    }
+
+    @staticmethod
+    def _schedule_row(connection, row) -> Schedule:
+        history = connection.execute(
+            "SELECT revision, action, at FROM schedule_history WHERE schedule_id=? "
+            "ORDER BY revision",
+            (row["schedule_id"],),
+        ).fetchall()
+        return Schedule.model_validate(
+            json.loads(row["schedule_json"])
+            | {"state": row["state"], "revision": row["revision"],
+               "updated_at": row["updated_at"], "history": [dict(h) for h in history]}
+        )
+
+    @staticmethod
+    def _owned_schedule_row(connection, schedule_id: str, owner: str):
+        row = connection.execute(
+            "SELECT * FROM schedules WHERE schedule_id=? AND owner_id=?", (schedule_id, owner)
+        ).fetchone()
+        if row is None:
+            raise ResourceNotFoundError("schedule")  # Same answer for absent and not owned.
+        return row
+
+    async def create_schedule(self, schedule: Schedule, principal: TrustedPrincipal) -> Schedule:
+        owner = self._authenticated(principal)
+        schedule = Schedule.model_validate(schedule.model_dump())
+        if schedule.owner_id != owner or schedule.state != "active" or schedule.revision != 1:
+            raise RfaError("invalid_schedule", "예약 생성 요청이 올바르지 않습니다.")
+        definition = schedule.model_dump(
+            mode="json",
+            include={"schedule_id", "owner_id", "job_type", "domain_id", "task_ref", "cron",
+                     "timezone", "args", "created_at", "schema_version"},
+        )
+
+        def operation() -> Schedule:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    "INSERT INTO schedules VALUES (?, ?, ?, ?, 'active', 1, ?, ?)",
+                    (schedule.schedule_id, owner, schedule.job_type, schedule.domain_id.value,
+                     json.dumps(definition, sort_keys=True), schedule.created_at.isoformat()),
+                )
+                connection.execute(
+                    "INSERT INTO schedule_history VALUES (?, 1, 'created', ?)",
+                    (schedule.schedule_id, schedule.created_at.isoformat()),
+                )
+                row = self._owned_schedule_row(connection, schedule.schedule_id, owner)
+                return self._schedule_row(connection, row)
+
+        return await asyncio.to_thread(operation)
+
+    async def list_schedules(self, principal: TrustedPrincipal) -> list[Schedule]:
+        owner = self._authenticated(principal)
+
+        def operation() -> list[Schedule]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT * FROM schedules WHERE owner_id=? ORDER BY schedule_id", (owner,)
+                ).fetchall()
+                return [self._schedule_row(connection, row) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    async def get_schedule(self, schedule_id: str, principal: TrustedPrincipal) -> Schedule:
+        owner = self._authenticated(principal)
+
+        def operation() -> Schedule:
+            with self._connect() as connection:
+                row = self._owned_schedule_row(connection, schedule_id, owner)
+                return self._schedule_row(connection, row)
+
+        return await asyncio.to_thread(operation)
+
+    async def transition_schedule(
+        self, schedule_id: str, principal: TrustedPrincipal, *, to_state: str, at: datetime
+    ) -> Schedule:
+        """Owner-only state change with append-only history. Cancelled is terminal."""
+        owner = self._authenticated(principal)
+
+        def operation() -> Schedule:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                row = self._owned_schedule_row(connection, schedule_id, owner)
+                if row["state"] != to_state:
+                    action = self.SCHEDULE_TRANSITIONS.get((row["state"], to_state))
+                    if action is None:
+                        raise RfaError("invalid_state_transition", "예약 상태를 바꿀 수 없습니다.")
+                    revision = row["revision"] + 1
+                    updated = connection.execute(
+                        "UPDATE schedules SET state=?, revision=?, updated_at=? "
+                        "WHERE schedule_id=? AND revision=?",
+                        (to_state, revision, at.isoformat(), schedule_id, row["revision"]),
+                    ).rowcount
+                    if updated != 1:
+                        raise RfaError("idempotency_conflict", "예약이 변경되었습니다.")
+                    connection.execute(
+                        "INSERT INTO schedule_history VALUES (?, ?, ?, ?)",
+                        (schedule_id, revision, action, at.isoformat()),
+                    )
+                    row = self._owned_schedule_row(connection, schedule_id, owner)
+                return self._schedule_row(connection, row)
+
+        return await asyncio.to_thread(operation)
+
+    async def schedule_task_allowed(
+        self, task_id: str, domain_id: DomainId, principal: TrustedPrincipal
+    ) -> bool:
+        owner = self._authenticated(principal)
+
+        def operation() -> bool:
+            with self._connect() as connection:
+                return connection.execute(
+                    "SELECT 1 FROM product_task_owners WHERE task_id=? AND owner_id=? "
+                    "AND domain_id=?",
+                    (task_id, owner, domain_id.value),
+                ).fetchone() is not None
+
+        return await asyncio.to_thread(operation)
+
+    async def runner_schedules(self) -> list[Schedule]:
+        """Trusted runner-process read for job-store reconciliation (no user input)."""
+
+        def operation() -> list[Schedule]:
+            with self._connect() as connection:
+                rows = connection.execute("SELECT * FROM schedules ORDER BY schedule_id").fetchall()
+                return [self._schedule_row(connection, row) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    async def runner_schedule(self, schedule_id: str) -> Schedule | None:
+        def operation() -> Schedule | None:
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT * FROM schedules WHERE schedule_id=?", (schedule_id,)
+                ).fetchone()
+                return None if row is None else self._schedule_row(connection, row)
+
+        return await asyncio.to_thread(operation)
+
+    @staticmethod
+    def _job_run(row) -> JobRun:
+        data = dict(row)
+        return JobRun.model_validate(data | {"summary": json.loads(data.pop("summary_json"))})
+
+    async def claim_schedule_run(self, run: JobRun) -> tuple[JobRun, bool]:
+        """Insert once per (schedule, fire time) and (schedule, occurrence); else the original."""
+        run = JobRun.model_validate(run.model_dump())
+
+        def operation() -> tuple[JobRun, bool]:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                inserted = connection.execute(
+                    "INSERT OR IGNORE INTO schedule_runs VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    (run.run_key, run.schedule_id, run.owner_id, run.job_type,
+                     run.scheduled_fire_time.isoformat(), run.occurrence, run.status,
+                     run.reason, json.dumps(run.summary, sort_keys=True),
+                     run.started_at.isoformat(),
+                     run.finished_at.isoformat() if run.finished_at else None),
+                ).rowcount
+                row = connection.execute(
+                    "SELECT * FROM schedule_runs WHERE run_key=? OR (schedule_id=? AND "
+                    "(scheduled_fire_time=? OR occurrence=?)) ORDER BY started_at LIMIT 1",
+                    (run.run_key, run.schedule_id, run.scheduled_fire_time.isoformat(),
+                     run.occurrence),
+                ).fetchone()
+                return self._job_run(row), inserted == 1
+
+        return await asyncio.to_thread(operation)
+
+    async def finish_schedule_run(self, run: JobRun) -> JobRun:
+        """Only a still-running claim can finish; a recovered/finished row is never rewritten."""
+        run = JobRun.model_validate(run.model_dump())
+
+        def operation() -> JobRun:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    "UPDATE schedule_runs SET status=?, reason=?, summary_json=?, finished_at=? "
+                    "WHERE run_key=? AND status='running'",
+                    (run.status, run.reason, json.dumps(run.summary, sort_keys=True),
+                     run.finished_at.isoformat() if run.finished_at else None, run.run_key),
+                )
+                row = connection.execute(
+                    "SELECT * FROM schedule_runs WHERE run_key=?", (run.run_key,)
+                ).fetchone()
+                return self._job_run(row)
+
+        return await asyncio.to_thread(operation)
+
+    async def recover_interrupted_schedule_runs(self, at: datetime) -> int:
+        """Runner start only (it holds the owner lock): a run left running is unknown."""
+
+        def operation() -> int:
+            with self._connect() as connection:
+                return connection.execute(
+                    "UPDATE schedule_runs SET status='outcome_unknown', "
+                    "reason='runner_interrupted', finished_at=? WHERE status='running'",
+                    (at.isoformat(),),
+                ).rowcount
+
+        return await asyncio.to_thread(operation)
+
+    async def list_schedule_runs(self, schedule_id: str, principal: TrustedPrincipal):
+        owner = self._authenticated(principal)
+
+        def operation() -> list[JobRun]:
+            with self._connect() as connection:
+                self._owned_schedule_row(connection, schedule_id, owner)
+                rows = connection.execute(
+                    "SELECT * FROM schedule_runs WHERE schedule_id=? AND owner_id=? "
+                    "ORDER BY scheduled_fire_time",
+                    (schedule_id, owner),
+                ).fetchall()
+                return [self._job_run(row) for row in rows]
 
         return await asyncio.to_thread(operation)
 

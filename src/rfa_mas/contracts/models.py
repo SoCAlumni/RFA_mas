@@ -1099,6 +1099,134 @@ class RankedCandidate(ExtendedContractModel):
     rule_version: OpaqueId = "candidate-rank-v1"
 
 
+# -- P0-022 owner schedules (additive 1.1) ----------------------------------------------
+# A schedule is stored intent. Only the dedicated `rfa scheduler` process owns the APScheduler
+# job store. job_type is a closed allowlist of internal work; there is no command, callable,
+# URL or prompt field anywhere, so a schedule can never grant execution authority.
+ScheduleJobType = Literal["kb_refresh", "candidate_scan", "briefing"]
+ScheduleState = Literal["active", "disabled", "cancelled"]
+JobRunStatus = Literal["running", "succeeded", "skipped", "denied", "failed", "outcome_unknown"]
+
+
+def _utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("timezone-aware datetime required")
+    return value.astimezone(UTC)
+
+
+class ScheduleArgs(ExtendedContractModel):
+    """Bounded job arguments only."""
+
+    max_items: int = Field(default=10, ge=1, le=50)
+
+
+class ScheduleCreate(ExtendedContractModel):
+    """Owner request. Cron/timezone semantics are validated by APScheduler 3.x, not here."""
+
+    job_type: ScheduleJobType
+    domain_id: DomainId
+    # Five crontab fields; characters limited so nothing but a crontab can be expressed.
+    cron: str = Field(min_length=9, max_length=100, pattern=r"^[A-Za-z0-9*/,\- ]+$")
+    # IANA name; None stores the server default display zone (Asia/Seoul).
+    timezone: str | None = Field(default=None, min_length=1, max_length=64,
+                                 pattern=r"^[A-Za-z][A-Za-z0-9_+\-/]*$")
+    task_ref: OpaqueId | None = None
+    args: ScheduleArgs = Field(default_factory=ScheduleArgs)
+
+
+class ScheduleHistoryEntry(ExtendedContractModel):
+    revision: int = Field(ge=1)
+    action: Literal["created", "disabled", "enabled", "cancelled"]
+    at: AwareDatetime
+
+    @field_validator("at")
+    @classmethod
+    def as_utc(cls, value: datetime) -> datetime | None:
+        return _utc(value)
+
+
+class Schedule(ExtendedContractModel):
+    """Stored owner schedule. Internal times are UTC; *_local fields are display strings."""
+
+    schedule_id: OpaqueId
+    owner_id: OpaqueId
+    job_type: ScheduleJobType
+    domain_id: DomainId
+    task_ref: OpaqueId | None = None
+    cron: str = Field(min_length=9, max_length=100)
+    timezone: str = Field(min_length=1, max_length=64)
+    args: ScheduleArgs = Field(default_factory=ScheduleArgs)
+    state: ScheduleState = "active"
+    revision: int = Field(default=1, ge=1)
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    # Trigger preview from the API process; the runner's persisted next run is authoritative.
+    next_run_at: AwareDatetime | None = None
+    next_run_local: str | None = None
+    history: tuple[ScheduleHistoryEntry, ...] = ()
+
+    @field_validator("created_at", "updated_at", "next_run_at")
+    @classmethod
+    def as_utc(cls, value: datetime | None) -> datetime | None:
+        return _utc(value)
+
+
+class JobRun(ExtendedContractModel):
+    """Scheduled-run ledger row. One per (schedule, fire time) and per local occurrence."""
+
+    run_key: Digest
+    schedule_id: OpaqueId
+    owner_id: OpaqueId
+    job_type: ScheduleJobType
+    scheduled_fire_time: AwareDatetime
+    occurrence: str = Field(min_length=1, max_length=40)  # local wall-clock time
+    status: JobRunStatus
+    reason: OpaqueId | None = None
+    summary: dict[OpaqueId, int] = Field(default_factory=dict)  # counts only, never content
+    started_at: AwareDatetime
+    finished_at: AwareDatetime | None = None
+
+    @field_validator("scheduled_fire_time", "started_at", "finished_at")
+    @classmethod
+    def as_utc(cls, value: datetime | None) -> datetime | None:
+        return _utc(value)
+
+
+class NotificationItem(ExtendedContractModel):
+    """Reference to an owner candidate. Source text is not copied into notifications."""
+
+    candidate_id: OpaqueId
+    rank: int = Field(ge=1)
+    title: str = Field(min_length=1, max_length=300)
+    due_date: str | None = None
+    blocker: bool = False
+    reasons: tuple[str, ...] = Field(default=(), max_length=8)
+    source_refs: tuple[OpaqueId, ...] = Field(default=(), max_length=32)  # "source@revision"
+
+
+class Notification(ExtendedContractModel):
+    """Owner-only history entry. P0 has no push/external channel and never publishes."""
+
+    notification_id: OpaqueId
+    owner_id: OpaqueId
+    audience: Literal["owner"] = "owner"
+    schedule_id: OpaqueId
+    run_key: Digest
+    kind: Literal["briefing", "candidates"]
+    delivery: Literal["active", "held"] = "active"
+    items: tuple[NotificationItem, ...] = Field(default=(), max_length=50)
+    rule_version: OpaqueId = "candidate-rank-v1"
+    created_at: AwareDatetime
+    held_at: AwareDatetime | None = None
+    hold_reason: OpaqueId | None = None
+
+    @field_validator("created_at", "held_at")
+    @classmethod
+    def as_utc(cls, value: datetime | None) -> datetime | None:
+        return _utc(value)
+
 
 
 

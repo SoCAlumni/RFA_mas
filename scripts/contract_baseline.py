@@ -123,6 +123,8 @@ def build_baseline() -> dict[str, Any]:
             inspect.isclass(port)
             and name.endswith("Port")
             and port.__module__ == interfaces.__name__
+            # Additive 1.1 ports (e.g. SchedulerPort) belong to build_extended() only.
+            and name in recorded["ports"]
         )
     }
     with TemporaryDirectory(prefix="rfa-contract-baseline-") as temporary:

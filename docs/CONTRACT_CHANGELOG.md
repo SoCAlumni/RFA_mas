@@ -1,5 +1,13 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P0-022 사용자별 예약 1.1 (통합·발행 대기)
+
+- additive 1.1: `ScheduleCreate`(job_type은 kb_refresh/candidate_scan/briefing allowlist, 5-field cron, IANA timezone, 제한된 `ScheduleArgs.max_items`만; command/callable/prompt 필드 없음), `Schedule`(owner·domain·task_ref·state active/disabled/cancelled·revision·UTC 시각·next_run 미리보기·history), `ScheduleHistoryEntry`, `JobRun`(예약 실행 ledger), `NotificationItem`/`Notification`(owner 전용). 새 port `SchedulerPort`(APScheduler 3.x CronTrigger 위임), `ScheduleRepositoryPort`. migration10 `schedules`/`schedule_history`/`schedule_runs`(UNIQUE(schedule_id, scheduled_fire_time), UNIQUE(schedule_id, occurrence)).
+- 새 route: `POST/GET /v1/schedules`, `GET /v1/schedules/{id}`, `POST /v1/schedules/{id}/disable|enable|cancel`, `GET /v1/schedules/{id}/runs`. API는 의도만 저장하고 APScheduler job store를 열지 않는다. 다른 사용자 일정은 not_found.
+- 기존 P0-014 `ScheduleSpec`(job_type `organize`)은 변경하지 않았다. 구현 DTO는 카드 기준 `kb_refresh`를 사용한다. 통합 시 `ScheduleSpec` 폐기/별칭 여부는 coordinator 결정이 필요하다.
+- 도구: `scripts/contract_baseline.py`의 frozen 1.0 port 비교가 기록된 port만 보도록 고쳤다(새 1.1 port가 1.0 digest를 바꾸지 않음). 1.0 digest 불변.
+- 영향 consumer: P0-023(runner), P0-024(알림), P1-004 schedule intent(현재 unsupported 안내 유지).
+
 ## 2026-09-27 — P1-005A DRAFT 편집·승인 무효화·모의 게시 상태 1.1 (통합·발행 대기)
 
 - additive 1.1: `DraftEditRequest`(expected_version, content, target, attachments: 항상 새 불변 버전), `PublishRequest`(idempotency_key), `DraftState`(현재 버전, 버전 목록, 승인 mirror, approval_valid/invalid_reason, publication receipt/status/mode). 기존 `DraftBinding`·`PublicationReceipt`·`ApprovalReference`는 바꾸지 않고 재사용한다.

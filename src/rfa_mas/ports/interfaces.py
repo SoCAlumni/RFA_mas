@@ -16,6 +16,7 @@ from rfa_mas.contracts import (
     EvaluationCase,
     EvidenceBundle,
     ExecutionContext,
+    JobRun,
     JudgeAssessment,
     KnowledgeDelete,
     KnowledgeDocument,
@@ -34,6 +35,7 @@ from rfa_mas.contracts import (
     ReviewDecision,
     RunRecord,
     RunResult,
+    Schedule,
     SessionDetail,
     SessionRecord,
     SimulationScenario,
@@ -401,3 +403,50 @@ class TracePort(Protocol):
     async def emit_event(self, event: TraceEvent) -> None:
         """1.1 allowlist; no arbitrary metadata and no raw input copied into IDs."""
         ...
+
+
+class SchedulerPort(Protocol):
+    """P0-022: cron/timezone validation and next-fire preview.
+
+    Calendar math is delegated to APScheduler 3.x triggers; there is no local cron engine.
+    The API process never opens the runner's job store through this port.
+    """
+
+    adapter_name: str
+    simulated: bool
+
+    def validate(self, cron: str, timezone: str, *, now: datetime | None = None) -> None: ...
+
+    def next_fire_time(self, cron: str, timezone: str, *, after: datetime) -> datetime | None: ...
+
+
+class ScheduleRepositoryPort(Protocol):
+    """P0-022 owner-scoped schedule intent and the scheduled-run ledger."""
+
+    async def create_schedule(
+        self, schedule: Schedule, principal: TrustedPrincipal
+    ) -> Schedule: ...
+
+    async def list_schedules(self, principal: TrustedPrincipal) -> list[Schedule]: ...
+
+    async def get_schedule(self, schedule_id: str, principal: TrustedPrincipal) -> Schedule: ...
+
+    async def transition_schedule(
+        self, schedule_id: str, principal: TrustedPrincipal, *, to_state: str, at: datetime
+    ) -> Schedule: ...
+
+    async def schedule_task_allowed(
+        self, task_id: str, domain_id: DomainId, principal: TrustedPrincipal
+    ) -> bool: ...
+
+    async def runner_schedules(self) -> list[Schedule]:
+        """Trusted runner read; every fire still re-resolves and re-checks the owner."""
+        ...
+
+    async def claim_schedule_run(self, run: JobRun) -> tuple[JobRun, bool]: ...
+
+    async def finish_schedule_run(self, run: JobRun) -> JobRun: ...
+
+    async def list_schedule_runs(
+        self, schedule_id: str, principal: TrustedPrincipal
+    ) -> list[JobRun]: ...

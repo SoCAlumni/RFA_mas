@@ -234,8 +234,8 @@ async def test_restart_sessions_migration_preserve_owners_and_approved_template(
     await asyncio.gather(repo.initialize(), SqliteWorkRepository(repo.path).initialize())
     assert await repo.local_principal() == old_identity
     versions = [r[0] for r in rows(repo, "rfa_schema_migrations")]
-    # Gap-free; N >= 9 (P0-021 effect ledger).
-    assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 9
+    # Gap-free; N >= 10 (P0-022 schedules).
+    assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 10
     reopened = SqliteWorkRepository(repo.path)
     new_runtime = RuntimeSpy()
     new_factory = TeamFactory(reopened, new_runtime, authority.resolve, lambda: authority.support)

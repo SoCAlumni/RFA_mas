@@ -21,6 +21,7 @@ from rfa_mas.contracts import (
     DomainId,
     DraftEditRequest,
     DraftState,
+    JobRun,
     KnowledgeDelete,
     KnowledgeExport,
     KnowledgeImportResult,
@@ -31,6 +32,8 @@ from rfa_mas.contracts import (
     ResumeRequest,
     RunRecord,
     RunResult,
+    Schedule,
+    ScheduleCreate,
     SessionCreate,
     SessionDetail,
     SessionRecord,
@@ -43,6 +46,9 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.errors import RfaError
 from rfa_mas.settings import Settings
+
+# Domain codes that are safe to echo in addition to the shared observation allowlist.
+SCHEDULE_ERROR_CODES = frozenset({"invalid_schedule"})
 
 
 async def resolve_principal(
@@ -142,9 +148,10 @@ def create_app(
             "authentication_required": status.HTTP_401_UNAUTHORIZED,
             "thread_busy": status.HTTP_409_CONFLICT,
             "resume_unavailable": status.HTTP_409_CONFLICT,
+            "invalid_schedule": status.HTTP_422_UNPROCESSABLE_CONTENT,
         }.get(exc.code, status.HTTP_400_BAD_REQUEST)
         error = StructuredError(
-            code=safe_error_code(exc.code),
+            code=exc.code if exc.code in SCHEDULE_ERROR_CODES else safe_error_code(exc.code),
             retryable=False,
             message="요청을 안전하게 처리할 수 없습니다.",
         )
@@ -415,5 +422,63 @@ def create_app(
         principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> PublicationReceipt:
         return await _drafts().query(run_id, principal)
+
+    # P0-022: owner schedule intent. The API stores intent only; `rfa scheduler` executes.
+    def _schedules():
+        if selected_container.schedules is None:
+            raise RfaError("not_implemented", "예약 기능이 구성되지 않았습니다.")
+        return selected_container.schedules
+
+    @app.post("/v1/schedules", response_model=Schedule, status_code=201, tags=["schedules"])
+    async def create_schedule(
+        body: ScheduleCreate,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> Schedule:
+        return await _schedules().create(body, principal)
+
+    @app.get("/v1/schedules", response_model=list[Schedule], tags=["schedules"])
+    async def list_schedules(
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[Schedule]:
+        return await _schedules().list(principal)
+
+    @app.get("/v1/schedules/{schedule_id}", response_model=Schedule, tags=["schedules"])
+    async def get_schedule(
+        schedule_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> Schedule:
+        return await _schedules().get(schedule_id, principal)
+
+    @app.post(
+        "/v1/schedules/{schedule_id}/disable", response_model=Schedule, tags=["schedules"]
+    )
+    async def disable_schedule(
+        schedule_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> Schedule:
+        return await _schedules().disable(schedule_id, principal)
+
+    @app.post("/v1/schedules/{schedule_id}/enable", response_model=Schedule, tags=["schedules"])
+    async def enable_schedule(
+        schedule_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> Schedule:
+        return await _schedules().enable(schedule_id, principal)
+
+    @app.post("/v1/schedules/{schedule_id}/cancel", response_model=Schedule, tags=["schedules"])
+    async def cancel_schedule(
+        schedule_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> Schedule:
+        return await _schedules().cancel(schedule_id, principal)
+
+    @app.get(
+        "/v1/schedules/{schedule_id}/runs", response_model=list[JobRun], tags=["schedules"]
+    )
+    async def list_schedule_runs(
+        schedule_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[JobRun]:
+        return await _schedules().runs(schedule_id, principal)
 
     return app

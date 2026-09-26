@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "7d67fc7350f34152e5cded648c86212e64989b17cbbdb73d37b4b1c606380357",
+  "digest": "2a33195c9e7e900b019ca1fa4e393b5d1d4ed23ec4c63cb8eab7aa21043fcfa5",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -1040,6 +1040,125 @@
             "title": "IntentDecision",
             "type": "object"
           },
+          "JobRun": {
+            "additionalProperties": false,
+            "description": "Scheduled-run ledger row. One per (schedule, fire time) and per local occurrence.",
+            "properties": {
+              "finished_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Finished At"
+              },
+              "job_type": {
+                "enum": [
+                  "kb_refresh",
+                  "candidate_scan",
+                  "briefing"
+                ],
+                "title": "Job Type",
+                "type": "string"
+              },
+              "occurrence": {
+                "maxLength": 40,
+                "minLength": 1,
+                "title": "Occurrence",
+                "type": "string"
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Reason"
+              },
+              "run_key": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Run Key",
+                "type": "string"
+              },
+              "schedule_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Schedule Id",
+                "type": "string"
+              },
+              "scheduled_fire_time": {
+                "format": "date-time",
+                "title": "Scheduled Fire Time",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "started_at": {
+                "format": "date-time",
+                "title": "Started At",
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "running",
+                  "succeeded",
+                  "skipped",
+                  "denied",
+                  "failed",
+                  "outcome_unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "summary": {
+                "patternProperties": {
+                  "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$": {
+                    "type": "integer"
+                  }
+                },
+                "propertyNames": {
+                  "maxLength": 160,
+                  "minLength": 1
+                },
+                "title": "Summary",
+                "type": "object"
+              }
+            },
+            "required": [
+              "run_key",
+              "schedule_id",
+              "owner_id",
+              "job_type",
+              "scheduled_fire_time",
+              "occurrence",
+              "status",
+              "started_at"
+            ],
+            "title": "JobRun",
+            "type": "object"
+          },
           "KnowledgeAcl": {
             "additionalProperties": false,
             "properties": {
@@ -2029,6 +2148,270 @@
               "adapters"
             ],
             "title": "RunResult",
+            "type": "object"
+          },
+          "Schedule": {
+            "additionalProperties": false,
+            "description": "Stored owner schedule. Internal times are UTC; *_local fields are display strings.",
+            "properties": {
+              "args": {
+                "$ref": "#/components/schemas/ScheduleArgs"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "cron": {
+                "maxLength": 100,
+                "minLength": 9,
+                "title": "Cron",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "history": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/ScheduleHistoryEntry"
+                },
+                "title": "History",
+                "type": "array"
+              },
+              "job_type": {
+                "enum": [
+                  "kb_refresh",
+                  "candidate_scan",
+                  "briefing"
+                ],
+                "title": "Job Type",
+                "type": "string"
+              },
+              "next_run_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Run At"
+              },
+              "next_run_local": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Next Run Local"
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "revision": {
+                "default": 1,
+                "minimum": 1.0,
+                "title": "Revision",
+                "type": "integer"
+              },
+              "schedule_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Schedule Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "state": {
+                "default": "active",
+                "enum": [
+                  "active",
+                  "disabled",
+                  "cancelled"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "task_ref": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Ref"
+              },
+              "timezone": {
+                "maxLength": 64,
+                "minLength": 1,
+                "title": "Timezone",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schedule_id",
+              "owner_id",
+              "job_type",
+              "domain_id",
+              "cron",
+              "timezone",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "Schedule",
+            "type": "object"
+          },
+          "ScheduleArgs": {
+            "additionalProperties": false,
+            "description": "Bounded job arguments only.",
+            "properties": {
+              "max_items": {
+                "default": 10,
+                "maximum": 50.0,
+                "minimum": 1.0,
+                "title": "Max Items",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "title": "ScheduleArgs",
+            "type": "object"
+          },
+          "ScheduleCreate": {
+            "additionalProperties": false,
+            "description": "Owner request. Cron/timezone semantics are validated by APScheduler 3.x, not here.",
+            "properties": {
+              "args": {
+                "$ref": "#/components/schemas/ScheduleArgs"
+              },
+              "cron": {
+                "maxLength": 100,
+                "minLength": 9,
+                "pattern": "^[A-Za-z0-9*/,\\- ]+$",
+                "title": "Cron",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "job_type": {
+                "enum": [
+                  "kb_refresh",
+                  "candidate_scan",
+                  "briefing"
+                ],
+                "title": "Job Type",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "task_ref": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Ref"
+              },
+              "timezone": {
+                "anyOf": [
+                  {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z][A-Za-z0-9_+\\-/]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Timezone"
+              }
+            },
+            "required": [
+              "job_type",
+              "domain_id",
+              "cron"
+            ],
+            "title": "ScheduleCreate",
+            "type": "object"
+          },
+          "ScheduleHistoryEntry": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "created",
+                  "disabled",
+                  "enabled",
+                  "cancelled"
+                ],
+                "title": "Action",
+                "type": "string"
+              },
+              "at": {
+                "format": "date-time",
+                "title": "At",
+                "type": "string"
+              },
+              "revision": {
+                "minimum": 1.0,
+                "title": "Revision",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "revision",
+              "action",
+              "at"
+            ],
+            "title": "ScheduleHistoryEntry",
             "type": "object"
           },
           "SessionCreate": {
@@ -4136,6 +4519,410 @@
             "summary": "Resume Run",
             "tags": [
               "work"
+            ]
+          }
+        },
+        "/v1/schedules": {
+          "get": {
+            "operationId": "list_schedules_v1_schedules_get",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/Schedule"
+                      },
+                      "title": "Response List Schedules V1 Schedules Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Schedules",
+            "tags": [
+              "schedules"
+            ]
+          },
+          "post": {
+            "operationId": "create_schedule_v1_schedules_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ScheduleCreate"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Schedule"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Create Schedule",
+            "tags": [
+              "schedules"
+            ]
+          }
+        },
+        "/v1/schedules/{schedule_id}": {
+          "get": {
+            "operationId": "get_schedule_v1_schedules__schedule_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "schedule_id",
+                "required": true,
+                "schema": {
+                  "title": "Schedule Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Schedule"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Schedule",
+            "tags": [
+              "schedules"
+            ]
+          }
+        },
+        "/v1/schedules/{schedule_id}/cancel": {
+          "post": {
+            "operationId": "cancel_schedule_v1_schedules__schedule_id__cancel_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "schedule_id",
+                "required": true,
+                "schema": {
+                  "title": "Schedule Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Schedule"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Cancel Schedule",
+            "tags": [
+              "schedules"
+            ]
+          }
+        },
+        "/v1/schedules/{schedule_id}/disable": {
+          "post": {
+            "operationId": "disable_schedule_v1_schedules__schedule_id__disable_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "schedule_id",
+                "required": true,
+                "schema": {
+                  "title": "Schedule Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Schedule"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Disable Schedule",
+            "tags": [
+              "schedules"
+            ]
+          }
+        },
+        "/v1/schedules/{schedule_id}/enable": {
+          "post": {
+            "operationId": "enable_schedule_v1_schedules__schedule_id__enable_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "schedule_id",
+                "required": true,
+                "schema": {
+                  "title": "Schedule Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Schedule"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Enable Schedule",
+            "tags": [
+              "schedules"
+            ]
+          }
+        },
+        "/v1/schedules/{schedule_id}/runs": {
+          "get": {
+            "operationId": "list_schedule_runs_v1_schedules__schedule_id__runs_get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "schedule_id",
+                "required": true,
+                "schema": {
+                  "title": "Schedule Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/JobRun"
+                      },
+                      "title": "Response List Schedule Runs V1 Schedules  Schedule Id  Runs Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Schedule Runs",
+            "tags": [
+              "schedules"
             ]
           }
         },
@@ -8200,6 +8987,127 @@
         "title": "IntentDecision",
         "type": "object"
       },
+      "JobRun": {
+        "additionalProperties": false,
+        "description": "Scheduled-run ledger row. One per (schedule, fire time) and per local occurrence.",
+        "properties": {
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Finished At"
+          },
+          "job_type": {
+            "enum": [
+              "kb_refresh",
+              "candidate_scan",
+              "briefing"
+            ],
+            "title": "Job Type",
+            "type": "string"
+          },
+          "occurrence": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Occurrence",
+            "type": "string"
+          },
+          "owner_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "run_key": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Run Key",
+            "type": "string"
+          },
+          "schedule_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Schedule Id",
+            "type": "string"
+          },
+          "scheduled_fire_time": {
+            "format": "date-time",
+            "title": "Scheduled Fire Time",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "started_at": {
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "succeeded",
+              "skipped",
+              "denied",
+              "failed",
+              "outcome_unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "patternProperties": {
+              "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$": {
+                "type": "integer"
+              }
+            },
+            "propertyNames": {
+              "maxLength": 160,
+              "minLength": 1
+            },
+            "title": "Summary",
+            "type": "object"
+          }
+        },
+        "required": [
+          "run_key",
+          "schedule_id",
+          "owner_id",
+          "job_type",
+          "scheduled_fire_time",
+          "occurrence",
+          "status",
+          "started_at"
+        ],
+        "title": "JobRun",
+        "type": "object"
+      },
       "JudgeDimensions": {
         "additionalProperties": false,
         "description": "Auxiliary quality dimensions; never authorization or privacy decisions.",
@@ -8831,6 +9739,202 @@
           "agent_id"
         ],
         "title": "MemberLifecycle",
+        "type": "object"
+      },
+      "Notification": {
+        "additionalProperties": false,
+        "description": "Owner-only history entry. P0 has no push/external channel and never publishes.",
+        "properties": {
+          "audience": {
+            "const": "owner",
+            "default": "owner",
+            "title": "Audience",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "delivery": {
+            "default": "active",
+            "enum": [
+              "active",
+              "held"
+            ],
+            "title": "Delivery",
+            "type": "string"
+          },
+          "held_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Held At"
+          },
+          "hold_reason": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hold Reason"
+          },
+          "items": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/NotificationItem"
+            },
+            "maxItems": 50,
+            "title": "Items",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "briefing",
+              "candidates"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "notification_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Notification Id",
+            "type": "string"
+          },
+          "owner_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "default": "candidate-rank-v1",
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "run_key": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Run Key",
+            "type": "string"
+          },
+          "schedule_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Schedule Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notification_id",
+          "owner_id",
+          "schedule_id",
+          "run_key",
+          "kind",
+          "created_at"
+        ],
+        "title": "Notification",
+        "type": "object"
+      },
+      "NotificationItem": {
+        "additionalProperties": false,
+        "description": "Reference to an owner candidate. Source text is not copied into notifications.",
+        "properties": {
+          "blocker": {
+            "default": false,
+            "title": "Blocker",
+            "type": "boolean"
+          },
+          "candidate_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due Date"
+          },
+          "rank": {
+            "minimum": 1,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "reasons": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Reasons",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_refs": {
+            "default": [],
+            "items": {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "rank",
+          "title"
+        ],
+        "title": "NotificationItem",
         "type": "object"
       },
       "ObservationCoverage": {
@@ -9963,6 +11067,275 @@
           "adapters"
         ],
         "title": "RunResult",
+        "type": "object"
+      },
+      "Schedule": {
+        "additionalProperties": false,
+        "description": "Stored owner schedule. Internal times are UTC; *_local fields are display strings.",
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/ScheduleArgs"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "cron": {
+            "maxLength": 100,
+            "minLength": 9,
+            "title": "Cron",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "history": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/ScheduleHistoryEntry"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "job_type": {
+            "enum": [
+              "kb_refresh",
+              "candidate_scan",
+              "briefing"
+            ],
+            "title": "Job Type",
+            "type": "string"
+          },
+          "next_run_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Next Run At"
+          },
+          "next_run_local": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Next Run Local"
+          },
+          "owner_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "revision": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schedule_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Schedule Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "state": {
+            "default": "active",
+            "enum": [
+              "active",
+              "disabled",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "task_ref": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Ref"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schedule_id",
+          "owner_id",
+          "job_type",
+          "domain_id",
+          "cron",
+          "timezone",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Schedule",
+        "type": "object"
+      },
+      "ScheduleArgs": {
+        "additionalProperties": false,
+        "description": "Bounded job arguments only.",
+        "properties": {
+          "max_items": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Max Items",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "title": "ScheduleArgs",
+        "type": "object"
+      },
+      "ScheduleCreate": {
+        "additionalProperties": false,
+        "description": "Owner request. Cron/timezone semantics are validated by APScheduler 3.x, not here.",
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/ScheduleArgs"
+          },
+          "cron": {
+            "maxLength": 100,
+            "minLength": 9,
+            "pattern": "^[A-Za-z0-9*/,\\- ]+$",
+            "title": "Cron",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "job_type": {
+            "enum": [
+              "kb_refresh",
+              "candidate_scan",
+              "briefing"
+            ],
+            "title": "Job Type",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "task_ref": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Ref"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z][A-Za-z0-9_+\\-/]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Timezone"
+          }
+        },
+        "required": [
+          "job_type",
+          "domain_id",
+          "cron"
+        ],
+        "title": "ScheduleCreate",
+        "type": "object"
+      },
+      "ScheduleHistoryEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "created",
+              "disabled",
+              "enabled",
+              "cancelled"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "action",
+          "at"
+        ],
+        "title": "ScheduleHistoryEntry",
         "type": "object"
       },
       "ScheduleSpec": {
@@ -11972,6 +13345,21 @@
       "run": "(self, spec: 'AgentSpec', request: 'TaskRequest') -> 'TaskResult'",
       "status": "(self, run_id: 'str') -> 'TaskResult | None'"
     },
+    "ScheduleRepositoryPort": {
+      "claim_schedule_run": "(self, run: 'JobRun') -> 'tuple[JobRun, bool]'",
+      "create_schedule": "(self, schedule: 'Schedule', principal: 'TrustedPrincipal') -> 'Schedule'",
+      "finish_schedule_run": "(self, run: 'JobRun') -> 'JobRun'",
+      "get_schedule": "(self, schedule_id: 'str', principal: 'TrustedPrincipal') -> 'Schedule'",
+      "list_schedule_runs": "(self, schedule_id: 'str', principal: 'TrustedPrincipal') -> 'list[JobRun]'",
+      "list_schedules": "(self, principal: 'TrustedPrincipal') -> 'list[Schedule]'",
+      "runner_schedules": "(self) -> 'list[Schedule]'",
+      "schedule_task_allowed": "(self, task_id: 'str', domain_id: 'DomainId', principal: 'TrustedPrincipal') -> 'bool'",
+      "transition_schedule": "(self, schedule_id: 'str', principal: 'TrustedPrincipal', *, to_state: 'str', at: 'datetime') -> 'Schedule'"
+    },
+    "SchedulerPort": {
+      "next_fire_time": "(self, cron: 'str', timezone: 'str', *, after: 'datetime') -> 'datetime | None'",
+      "validate": "(self, cron: 'str', timezone: 'str', *, now: 'datetime | None' = None) -> 'None'"
+    },
     "ToolPort": {
       "execute": "(self, request: 'ToolRequest') -> 'ToolResult'"
     },
@@ -12032,6 +13420,13 @@
     "IntentDecision",
     "TaskCandidateRef",
     "AssistantResponse",
+    "ScheduleArgs",
+    "ScheduleCreate",
+    "ScheduleHistoryEntry",
+    "Schedule",
+    "JobRun",
+    "NotificationItem",
+    "Notification",
     "TeamExecutionRequest",
     "RoleOutcome",
     "TeamBudgetUsage",
@@ -12088,13 +13483,13 @@
   ],
   "schema_version": "1.1",
   "source_files": {
-    "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
-    "src/rfa_mas/api/app.py": "40c2f2f2ac7a40fdc445c6ca32b9af794d7df287ebd97a08efbd425a847c7cf6",
+    "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
+    "src/rfa_mas/api/app.py": "8b6655eff297fc139fad8b01565bd6320e621c241bb6ea7cd5ef3ad4beeb7e43",
     "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
-    "src/rfa_mas/contracts/__init__.py": "c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa",
+    "src/rfa_mas/contracts/__init__.py": "355b3b3c298eac4cf2f0b5115db87d8ffefe037dd611b19d299139f310ac8acc",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a",
-    "src/rfa_mas/ports/interfaces.py": "65822ed6ebd4f1feada462dfb8e711ab40abce1ceca025ebdc61a2a97d35a915",
+    "src/rfa_mas/contracts/models.py": "3d5da84ccf3517495b5c3233c6bf799a7fd961c194625f47efd194d82d81ea5b",
+    "src/rfa_mas/ports/interfaces.py": "c1cf378035e4784a1094fa1721003f0202eefefd7f0b7cf53f7510f74c107d09",
     "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",
