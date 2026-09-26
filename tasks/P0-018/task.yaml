@@ -121,26 +121,26 @@ verification:
   - Engineering·미승인 버전·실행 불가 후보는 선택 불가. LLM 선택은 P2-009에서 후보 내부로만 허용.
   runner: pytest
 evidence_dir: .agent/evidence/P0-018
-latest_evidence_file: .agent/evidence/P0-018/stable-main-target-01/result.json
+latest_evidence_file: .agent/evidence/P0-018/post-settings-target-01/result.json
 verification_summary:
   state: passed
   spec_revision: 6
   spec_digest: f4ff9c5516270ae55d49c6aaf25281e807c4b3d265b4567de31436661dd9dba1
   contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
-  source_fingerprint: 49b31a98d32a5161abbed51870d2796081736325908e72f0790febe938014df5
-  evidence: .agent/evidence/P0-018/stable-main-target-01/result.json
+  source_fingerprint: 2f3f9bafa438bbb6a0f02e2d9f0997e0c1e666810ef1088910db5edfac7f65bd
+  evidence: .agent/evidence/P0-018/post-settings-target-01/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: 2
+  submission_generation: 3
   submission:
-    head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
-    baseline_head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
+    head: 715db79142da1456a2fb1aae208d107d35b53a76
+    baseline_head: 715db79142da1456a2fb1aae208d107d35b53a76
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018
     branch: task/P0-018
-    evidence: .agent/evidence/P0-018/stable-main-worker-01/result.json
+    evidence: .agent/evidence/P0-018/post-settings-worker-01/result.json
     changed_files:
       fixtures/teams/templates.json: ed8950b9c00e2313f1e60e4e8e3527f75a1d165c6a749a895c1f71914cddeab6
       src/rfa_mas/application/team_selector.py: 45462aece673679b2901155ea75edf578934492b5513f70c2f6874332dacaf76
@@ -151,22 +151,23 @@ integration:
       spec_revision: 6
       spec_digest: f4ff9c5516270ae55d49c6aaf25281e807c4b3d265b4567de31436661dd9dba1
       contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
-      source_fingerprint: 49b31a98d32a5161abbed51870d2796081736325908e72f0790febe938014df5
-      evidence: .agent/evidence/P0-018/stable-main-target-01/result.json
-    head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
-  evidence: .agent/evidence/P0-018/stable-main-target-01/result.json
-revision: 28
+      source_fingerprint: 2f3f9bafa438bbb6a0f02e2d9f0997e0c1e666810ef1088910db5edfac7f65bd
+      evidence: .agent/evidence/P0-018/post-settings-target-01/result.json
+    head: 715db79142da1456a2fb1aae208d107d35b53a76
+  evidence: .agent/evidence/P0-018/post-settings-target-01/result.json
+revision: 37
 spec_revision: 6
-claim_generation: 2
+claim_generation: 3
 claim: null
 attempts:
-  count: 4
+  count: 6
   cycles: 1
   no_progress_count: 0
-  latest_attempt: stable-main-target-01
+  latest_attempt: post-settings-target-01
   evidence_refs:
   - .agent/evidence/P0-018/selector-01/result.json
   - .agent/evidence/P0-018/stable-main-worker-01/result.json
+  - .agent/evidence/P0-018/post-settings-worker-01/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -211,6 +212,49 @@ attempts:
       source_fingerprint: 3cd3ce3914feff66c7de4e063bc94581aca46716654142980a10d8bec05f9e73
       evidence: .agent/evidence/P0-018/selector-integrated-01/result.json
     latest_evidence_file: .agent/evidence/P0-018/selector-integrated-01/result.json
+  - kind: integrated_revalidation
+    generation: 3
+    baseline_head: 715db79142da1456a2fb1aae208d107d35b53a76
+    reason: Explicit no-code integrated revalidation on frozen main715db79 after P0-017 settings/bootstrap
+      fingerprint change; preserve historical selector integration and rerun worker plus target checks.
+    at: '2026-09-26T09:38:20+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 2
+      submission:
+        head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
+        baseline_head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018
+        branch: task/P0-018
+        evidence: .agent/evidence/P0-018/stable-main-worker-01/result.json
+        changed_files:
+          fixtures/teams/templates.json: ed8950b9c00e2313f1e60e4e8e3527f75a1d165c6a749a895c1f71914cddeab6
+          src/rfa_mas/application/team_selector.py: 45462aece673679b2901155ea75edf578934492b5513f70c2f6874332dacaf76
+          tests/test_team_selector.py: efc23b032b5b6b534b518779e018b6837d5e7515972b07db0a55b396d0a6105b
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 6
+          spec_digest: f4ff9c5516270ae55d49c6aaf25281e807c4b3d265b4567de31436661dd9dba1
+          contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
+          source_fingerprint: 49b31a98d32a5161abbed51870d2796081736325908e72f0790febe938014df5
+          evidence: .agent/evidence/P0-018/stable-main-target-01/result.json
+        head: 4f808b0da5ba0cb7f39c13d162a393d76a065dc9
+      evidence: .agent/evidence/P0-018/stable-main-target-01/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 6
+      spec_digest: f4ff9c5516270ae55d49c6aaf25281e807c4b3d265b4567de31436661dd9dba1
+      contract_digest: 658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235
+      source_fingerprint: 49b31a98d32a5161abbed51870d2796081736325908e72f0790febe938014df5
+      evidence: .agent/evidence/P0-018/stable-main-target-01/result.json
+    latest_evidence_file: .agent/evidence/P0-018/stable-main-target-01/result.json
 blocker: null
 migration:
   original_status: todo
@@ -224,7 +268,7 @@ migration:
   judgment: ID/AC 유지. 순수 selector를 신규 team_selector.py로 격리해 P1-004 의존 제거; graph 연결은 P0-020, 공통 DTO는 P0-014가
     소유. 공유 파일 동시 수정 금지.
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:50:25+00:00'
+updated_at: '2026-09-26T09:40:48+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

@@ -1,0 +1,102 @@
+{
+  "attempt_id": "post-settings-target-01",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-016-r2/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "counts": {
+          "collected": 2,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 2,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "environment_override": {
+          "PYTHONPATH": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/src"
+        },
+        "exit_code": 0,
+        "id": "actual-nat-absent",
+        "log_excerpt": "{'nat_spec': 'None', 'python': '3.12.13', 'sqlite': '3.53.1', 'rfa_module': '/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/src/rfa_mas/__init__.py'}\n..                                                                       [100%]\n2 passed in 0.05s\n",
+        "result": "passed",
+        "timeout_seconds": 120
+      },
+      {
+        "command": ".venv/bin/python -c 'import sys,sqlite3; from importlib.metadata import version,metadata; print({\"python\":sys.version.split()[0],\"sqlite\":sqlite3.sqlite_version}); print({n:version(n) for n in [\"nvidia-nat-core\", \"nvidia-nat-langchain\", \"nvidia-nat-eval\", \"nvidia-nat-opentelemetry\", \"langgraph\", \"langgraph-checkpoint\", \"langgraph-checkpoint-sqlite\"]}); print(metadata(\"nvidia-nat-langchain\").get(\"Requires-Python\")); print([x for x in metadata(\"nvidia-nat-langchain\").get_all(\"Requires-Dist\") if x.startswith(\"langgraph\")])'",
+        "exit_code": 0,
+        "id": "installed-metadata",
+        "log_excerpt": "{'python': '3.12.13', 'sqlite': '3.53.1'}\n{'nvidia-nat-core': '1.8.0', 'nvidia-nat-langchain': '1.8.0', 'nvidia-nat-eval': '1.8.0', 'nvidia-nat-opentelemetry': '1.8.0', 'langgraph': '1.2.12', 'langgraph-checkpoint': '4.2.0', 'langgraph-checkpoint-sqlite': '3.1.1'}\n<3.14,>=3.11\n['langgraph<2.0.0,>=1.0.5']\n"
+      }
+    ],
+    "checks": [
+      {
+        "assertions": [
+          "core pin 유지·actual installed versions·선택 근거가 있다",
+          "관측/재개 미지원 범위 및 실패 blocker가 명시되고 KB/eval에 NAT 선행을 추가하지 않았다"
+        ],
+        "id": "V1",
+        "observed": "Re-read v1.8.0 official package metadata, wrapper implementation and guide, and local installed module. Python>=3.11,<3.14 and LangGraph>=1.0.5,<2 match retained pins. Actual extra env has NAT core/langchain/eval/opentelemetry1.8.0, LangGraph1.2.12/checkpoint4.2.0/saver3.1.1. uv sync --locked --extra nat and lock --check succeeded (169 packages resolved); no source/pin edit. Factory gets empty RunnableConfig; message model_dump loses DTO class and wrapper does not forward RFA thread config. WorkService identity/checkpoint/approval remain authoritative. Profiler/exporter/internal tool/HITL/streaming/product adapter remain unverified; no new KB/eval dependency. Reused independently inspected default-only env has actual nat_spec None and mapped current source; original fresh-install provenance preserved in prior nat-spike-01. Independent canonical target metadata rechecked actual installed versions; inspect.getsource confirmed factory-empty-config and invoke-without-thread at canonical installed module, uv lock --check again resolved169. Official versioned references and current boundary table remain applicable. No sync/install performed on canonical target.",
+        "procedure_performed": true,
+        "result": "passed",
+        "sources": [
+          "https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/v1.8.0/packages/nvidia_nat_langchain/pyproject.toml",
+          "https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/v1.8.0/packages/nvidia_nat_langchain/src/nat/plugins/langchain/langgraph_workflow.py",
+          "https://github.com/NVIDIA/NeMo-Agent-Toolkit/blob/v1.8.0/docs/source/run-workflows/existing-agents/langgraph.md"
+        ]
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "assertions": [
+          "실제 설치된 wrapper가 synthetic CompiledStateGraph를 한 번 실행하고 input/output shape를 확인",
+          "NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "........                                                                 [100%]\n8 passed in 0.42s\n",
+        "result": "passed",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "base_only_sqlite": "3.53.1",
+      "source_head": "715db79142da1456a2fb1aae208d107d35b53a76",
+      "target_sqlite": "3.53.1",
+      "timeout_enforcement": "subprocess.run timeout120 check=True"
+    },
+    "finished_at": "2026-09-26T09:42:10+00:00",
+    "limits": "Installed8 are synthetic compatibility checks with network blocked; independent absence2 are core-only, not installed-NAT proof. No production NAT adapter, live NVIDIA/approval/OpenShell/NemoClaw or fullE2E. Preflight wrong distribution nvidia-nat PackageNotFoundError corrected once to actual nvidia-nat-core; no test retry/fallback.",
+    "reviewer": "session_review delegated coordinator, independent canonical target installed/manual and base-only checks",
+    "started_at": "2026-09-26T09:42:07+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "458fa5c7df403eee75eef3b2c8488bef70549503c1f3779177de326ce3a92a89",
+  "source_manifest": ".agent/evidence/P0-027/post-settings-target-01/source.json",
+  "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+  "spec_revision": 2,
+  "task_id": "P0-027"
+}

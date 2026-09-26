@@ -23,3 +23,13 @@ Fresh worker evidence: .agent/evidence/P0-016/wal-startup-02/result.json. Requir
 Source commit 4bac516 (P0-016: serialize SQLite WAL startup without replaying writes) changes only adapters/local.py, adapters/checkpoints.py, tests/test_resume.py. Source worktree clean after commit. This is worker-passed and awaiting coordinator integration, not current target verification/done. Canonical task.yaml latest integration/evidence are authoritative; this handoff's timestamped worker observations must not override them.
 
 Next first action: coordinator reviews/merges 4bac516, captures fresh target evidence and executes required V1 plus appropriate related checks, then closes only after valid integration binding. Revalidate impacted P0-015 afterward. P0-018 has independently closed at old stable product baseline; P0-027 remains later. This worker must not merge main, reuse earlier product results as fresh results, or declare final E2E/real-provider success. Separate SQLite engine qualification is tracked by root in docs/ENVIRONMENT_QUALIFICATION.md; this commit does not change dependency/Python pins.
+
+## Post-settings715db79 — current revalidation
+Canonical integration proof wal-integrated-02 is preserved; prior pending text above records its historical worker stage. Current task became stale after settings/bootstrap source changes. P0-015 now has fresh post-settings target evidence. Feature P0-016-r2 was clean and ff-only4bac516→715db79, with no unfinished task process, unintegrated source or external effects. No-code integrated_revalidation authorized by root.
+
+Environment: old feature .venv (Python3.12.13/SQLite3.50.4) preserved at .local/retained-envs/pre-post-settings-sqlite3504; exact uv sync --locked --python durable PBS20260807 created feature Python3.12.13/SQLite3.53.1. No shared Python or root env changed; actual .env untouched. Target also SQLite3.53.1, root has NAT1.8.0 (feature default extra absent).
+
+Next first action: new immutable worker source capture; required V1 resume tests and direct session/API/graph/boundary/contracts/settings regressions. Submit clean unchanged code, then independent target tests/integrate/close. Existing failures and fixes preserved; no fullE2E/write-crash/real-provider claim.
+
+Fresh worker result: V1 31 passed2.51s/17 known child durability warnings; related sessions/API/graph/boundaries/contracts/baseline/local/settings 201 passed2.72s/26 same warnings, zero skips/failures/errors. Both enforced timeout120. Evidence .agent/evidence/P0-016/post-settings-worker-01/result.json. Counts increased versus historical164 because P0-017 settings regressions are now present; not a reused result. Source remains clean/no commit. Next separate target verification; target is not_run at submission.
+

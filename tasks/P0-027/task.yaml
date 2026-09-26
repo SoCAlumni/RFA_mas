@@ -163,26 +163,26 @@ verification:
   - NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음
   runner: pytest
 evidence_dir: .agent/evidence/P0-027
-latest_evidence_file: .agent/evidence/P0-027/post-wal-target-01/result.json
+latest_evidence_file: .agent/evidence/P0-027/post-settings-target-01/result.json
 verification_summary:
   state: passed
   spec_revision: 2
   spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: 23a3b5cd76886297dfcb2794313a071167d28736cf6b4c6233bfecb6f2e4dee2
-  evidence: .agent/evidence/P0-027/post-wal-target-01/result.json
+  source_fingerprint: 458fa5c7df403eee75eef3b2c8488bef70549503c1f3779177de326ce3a92a89
+  evidence: .agent/evidence/P0-027/post-settings-target-01/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: 3
+  submission_generation: 4
   submission:
-    head: 53d7068246b91a25dc9286acf02923ee0713cd8b
-    baseline_head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+    head: 715db79142da1456a2fb1aae208d107d35b53a76
+    baseline_head: 715db79142da1456a2fb1aae208d107d35b53a76
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027
     branch: task/P0-027
-    evidence: .agent/evidence/P0-027/post-wal-worker-01/result.json
+    evidence: .agent/evidence/P0-027/post-settings-worker-01/result.json
     changed_files:
       docs/NAT_COMPATIBILITY.md: 136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897
       pyproject.toml: 767555e89c26cd14d502864a4b8e7409534a8a21b1660fd13eaaacb1b4afd325
@@ -194,23 +194,24 @@ integration:
       spec_revision: 2
       spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: 23a3b5cd76886297dfcb2794313a071167d28736cf6b4c6233bfecb6f2e4dee2
-      evidence: .agent/evidence/P0-027/post-wal-target-01/result.json
-    head: 53d7068246b91a25dc9286acf02923ee0713cd8b
-  evidence: .agent/evidence/P0-027/post-wal-target-01/result.json
-revision: 35
+      source_fingerprint: 458fa5c7df403eee75eef3b2c8488bef70549503c1f3779177de326ce3a92a89
+      evidence: .agent/evidence/P0-027/post-settings-target-01/result.json
+    head: 715db79142da1456a2fb1aae208d107d35b53a76
+  evidence: .agent/evidence/P0-027/post-settings-target-01/result.json
+revision: 44
 spec_revision: 2
-claim_generation: 3
+claim_generation: 4
 claim: null
 attempts:
-  count: 7
+  count: 9
   cycles: 1
   no_progress_count: 0
-  latest_attempt: post-wal-target-01
+  latest_attempt: post-settings-target-01
   evidence_refs:
   - .agent/evidence/P0-027/nat-spike-01/result.json
   - .agent/evidence/P0-027/post-sessions-01/result.json
   - .agent/evidence/P0-027/post-wal-worker-01/result.json
+  - .agent/evidence/P0-027/post-settings-worker-01/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -300,6 +301,50 @@ attempts:
       source_fingerprint: 0d325f09d42780ab10f2acd02b1dd3ece715c2ff0c4306f373591e08f0dc7763
       evidence: .agent/evidence/P0-027/post-sessions-integrated-01/result.json
     latest_evidence_file: .agent/evidence/P0-027/post-sessions-integrated-01/result.json
+  - kind: integrated_revalidation
+    generation: 4
+    baseline_head: 715db79142da1456a2fb1aae208d107d35b53a76
+    reason: No-code explicit integrated revalidation of optional NAT spike after settings readiness source
+      evolution
+    at: '2026-09-26T09:40:16+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 3
+      submission:
+        head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+        baseline_head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027
+        branch: task/P0-027
+        evidence: .agent/evidence/P0-027/post-wal-worker-01/result.json
+        changed_files:
+          docs/NAT_COMPATIBILITY.md: 136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897
+          pyproject.toml: 767555e89c26cd14d502864a4b8e7409534a8a21b1660fd13eaaacb1b4afd325
+          tests/spikes/test_nat_compatibility.py: baee7649f3aa5ef6021824719f42af1a4e0487db93249d2cf347c93e4f4ca41a
+          uv.lock: cbc662503129c4b6e550dbea9f7d932a7107494835507e911ab972edcf932b83
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 2
+          spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
+          contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+          source_fingerprint: 23a3b5cd76886297dfcb2794313a071167d28736cf6b4c6233bfecb6f2e4dee2
+          evidence: .agent/evidence/P0-027/post-wal-target-01/result.json
+        head: 53d7068246b91a25dc9286acf02923ee0713cd8b
+      evidence: .agent/evidence/P0-027/post-wal-target-01/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 2
+      spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 23a3b5cd76886297dfcb2794313a071167d28736cf6b4c6233bfecb6f2e4dee2
+      evidence: .agent/evidence/P0-027/post-wal-target-01/result.json
+    latest_evidence_file: .agent/evidence/P0-027/post-wal-target-01/result.json
 blocker: null
 migration:
   original_status: new
@@ -311,7 +356,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T09:06:24+00:00'
+updated_at: '2026-09-26T09:42:45+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

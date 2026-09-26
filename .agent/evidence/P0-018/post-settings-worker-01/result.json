@@ -1,0 +1,100 @@
+{
+  "attempt_id": "post-settings-worker-01",
+  "contract_digest": "658ff55112eca6a60378591481f509e9c564330334f84f605c2ef92bd0b94235",
+  "mode": "domain별 AgentSpec만 존재; template/selector missing/not_run. 선택 local(false), 입력 synthetic. 외부 의존 없음.",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_contracts.py",
+          "tests/test_trace_eval_contract.py"
+        ],
+        "counts": {
+          "collected": 64,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 64,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "................................................................ [100%]\n64 passed in 0.61s",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check-extended"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "extended contract: 7 fixture shapes valid",
+        "result": "passed"
+      }
+    ],
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_team_selector.py"
+        ],
+        "assertions": [
+          "목표/산출물/capability/권한/runtime/예산으로 후보를 먼저 제한",
+          "두 template 선택과 선택 이유가 결정적",
+          "Engineering·미승인 버전·실행 불가 후보는 선택 불가. LLM 선택은 P2-009에서 후보 내부로만 허용."
+        ],
+        "counts": {
+          "collected": 53,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 53,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "..................................................... [100%]\n53 passed in 0.07s",
+        "result": "passed"
+      }
+    ],
+    "environment": {
+      "python": "3.12.13",
+      "source_clean_after": true,
+      "source_head": "715db79142da1456a2fb1aae208d107d35b53a76",
+      "sqlite": "3.50.4"
+    },
+    "finished_at": "2026-09-26T09:38:43+00:00",
+    "limits": "Actual local pure selector/contract revalidation only. No code or package changes, actual env access, runtime/provider calls, SQLite concurrency claim or full E2E. Root target execution still not_run. Historical integration/evidence preserved. First attempt passed without retries.",
+    "reviewer": "nat_spike delegated coordinator; actual feature-worktree execution",
+    "started_at": "2026-09-26T09:38:40+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "2f3f9bafa438bbb6a0f02e2d9f0997e0c1e666810ef1088910db5edfac7f65bd",
+  "source_manifest": ".agent/evidence/P0-018/post-settings-worker-01/source.json",
+  "spec_digest": "f4ff9c5516270ae55d49c6aaf25281e807c4b3d265b4567de31436661dd9dba1",
+  "spec_revision": 6,
+  "task_id": "P0-018"
+}

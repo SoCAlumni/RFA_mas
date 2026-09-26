@@ -418,3 +418,32 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   null 처리, 오류 projection, trace TTL과 run metadata 분리를 구현 명세에 확정했다.
   이 trace 기능은 아직 not_run이며 다음 shared DTO/composition 작업으로 진행한다.
 - 앞선 후속 명세 변경 후 이관 회귀는 별도로 17 passed(14.36초)였다.
+
+## 설정 통합 후 재검증·추적 구현 전 점검 — 2026-09-26
+
+- source main `715db79142da1456a2fb1aae208d107d35b53a76`을 고정하고 필요한 범위만
+  worker/target에서 각각 재검증했다. P0-014는 14+50 passed, P0-015는 26+API4
+  passed, P0-016은 31+관련201 passed, P0-018은 53+계약64 passed,
+  P0-027은 실제 NAT 설치8+실제 NAT 미설치2 passed였다. 각 새
+  `post-settings-worker-01`/`post-settings-target-01` source/result를 보존한다.
+  frozen/extended fixture도 9+7개 valid다. 기존 durability 경고는 제거하거나
+  성공 숫자로 합치지 않았다. root Ruff 검사도 통과했다.
+- P0-016 worker와 모든 target은 SQLite3.53.1이며 다른 worker의 기존3.50.4
+  환경 차이는 증거에 남겼다. P0-027 미설치 검사는 실제 별도 no-NAT 환경에서
+  현재 source를 사용했다. 사전 package metadata 조회의 `nvidia-nat` 이름 오류는
+  `nvidia-nat-core`로 수정했고 handoff에 보존했다. 제품 테스트 실패는 없었다.
+  taskctl validate는 67개 원본/파생 view 정합성을 확인했다.
+- 추적 구현 전에 설치된 LangChain/LangSmith 소스를 확인했다. env-i의 합성
+  tracing flag/key와 fake tracer constructor만 사용한 첫 probe는 함수 내부 import를
+  모듈 속성으로 patch하려다 AttributeError였다. 실제 import 위치를 확인한 두 번째
+  probe는 guard 밖 constructor1회, public `tracing_context(enabled=False, parent=False)`
+  안0회를 관찰했다. 실제 tracer 생성·network·제품 workflow는 실행하지 않았다.
+  이 SDK probe는 현재 제품의 유출 또는 제품 guard 구현 성공 증거가 아니다.
+- P1-006D에 native run/resume 환경변수 기반 tracing 차단과 API validation의
+  attacker extra-key/loc canary 검사를 추가했다. 필요 시 이미 잠긴 LangSmith0.14.0을
+  direct dependency로만 선언한다. 새 관측 서버/SDK upgrade는 범위 밖이다.
+  공식 public API 근거: https://docs.langchain.com/langsmith/trace-without-env-vars
+  제품 전체 E2E·실제 NVIDIA/Skill/OpenShell/NemoClaw gate는 여전히 미실행이다.
+- 보존 commit 전 `git diff --check`는 CLI가 기록한 handoff 4개의 EOF 빈 줄을
+  보고했다(exit2). 제품 source 오류는 아니며 완료된 운영 원본을 우회 편집하지 않고
+  그대로 보존한다. YAML/schema/view 검증은 별도로 통과했다.

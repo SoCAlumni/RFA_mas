@@ -11,3 +11,11 @@ Inspection: feature task/P0-015 was clean and ff-only updated4f808b0→53d7068. 
 Fresh worker result: post-wal-worker-01 V1 tests/test_sessions.py 26 passed in1.47s, 11 existing durability warnings; supplemental tests/test_api.py 4 passed in0.19s, 2 same warnings. Zero skips/failures/errors. Both enforced timeout120. No product source edit or new commit. Evidence .agent/evidence/P0-015/post-wal-worker-01/result.json.
 
 Next first action: record/submit unchanged source, then independently capture/run post-wal-target-01 on canonical53d7068 and integrate/close only after pass. Target tests for this attempt remain not_run at submission. Current canonical task.yaml integration/result/latest_evidence_file is authoritative; this handoff cannot preclaim future target success. Root will append actual target facts to WORK_LOG after the batch.
+
+## Post-settings baseline715db79 revalidation
+Actual clean feature ff-only53d7068→715db79; exact default lock sync complete. No dirty source, running task process, unintegrated change or external side effect. Main configuration changes invalidate prior proof conservatively without removing implemented ownership/session functionality. Existing worker Python3.12.13/SQLite3.50.4 retained; independent canonical target is Python3.12.13/SQLite3.53.1 with NAT1.8.0. No .env/provider access.
+
+Next: capture worker source and rerun existing V1 plus API regression; unchanged-source submit; separately capture/execute target checks before close. Prior result files and actual failures remain preserved. Product E2E/real identity/approval/runtime remain outside this revalidation.
+
+Fresh worker result: V1 26 passed in1.45s (11 known durability warnings); API4 passed0.18s (2 same warnings), zero skips/failures/errors. Both bounded120sec. Evidence .agent/evidence/P0-015/post-settings-worker-01/result.json. Next target execution remains not_run at submission.
+
