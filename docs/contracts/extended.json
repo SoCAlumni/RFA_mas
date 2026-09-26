@@ -1,13 +1,132 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "d311c504fc80dbdfd49818438f653e1dee1b2c5e6a0bb00fc51636080375cf01",
+  "digest": "895683c35d19dbb684f79151fba8efdfb78b3cf49d22ccb1d1b9a0eeacbf2c02",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
     "core": {
       "components": {
         "schemas": {
+          "AccumulatedItem": {
+            "additionalProperties": false,
+            "properties": {
+              "epistemic_state": {
+                "enum": [
+                  "cited",
+                  "inferred",
+                  "simulated",
+                  "tentative",
+                  "conflicting"
+                ],
+                "title": "Epistemic State",
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "summary",
+                  "todo",
+                  "issue",
+                  "decision",
+                  "link"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "parents": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/SourceRevisionRef"
+                },
+                "title": "Parents",
+                "type": "array"
+              },
+              "reason": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Reason",
+                "type": "string"
+              },
+              "review_state": {
+                "enum": [
+                  "accepted",
+                  "rejected"
+                ],
+                "title": "Review State",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Id"
+              },
+              "source_revision": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Revision"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "title",
+              "review_state",
+              "epistemic_state",
+              "reason"
+            ],
+            "title": "AccumulatedItem",
+            "type": "object"
+          },
+          "AccumulationReport": {
+            "additionalProperties": false,
+            "description": "Supervisor review receipt for a batch of derived proposals.",
+            "properties": {
+              "items": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/AccumulatedItem"
+                },
+                "title": "Items",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "title": "AccumulationReport",
+            "type": "object"
+          },
           "AdapterInfo": {
             "additionalProperties": false,
             "properties": {
@@ -48,6 +167,42 @@
             ],
             "title": "Audience",
             "type": "string"
+          },
+          "CandidateDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "decision": {
+                "enum": [
+                  "accept",
+                  "defer",
+                  "reject"
+                ],
+                "title": "Decision",
+                "type": "string"
+              },
+              "reason": {
+                "default": "",
+                "maxLength": 500,
+                "title": "Reason",
+                "type": "string"
+              },
+              "resurface_on_new_evidence": {
+                "default": true,
+                "title": "Resurface On New Evidence",
+                "type": "boolean"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "decision"
+            ],
+            "title": "CandidateDecision",
+            "type": "object"
           },
           "DirectWorkRequest": {
             "additionalProperties": false,
@@ -1499,6 +1654,152 @@
             "title": "SourceLocation",
             "type": "object"
           },
+          "SourceMetadata": {
+            "additionalProperties": false,
+            "description": "Only returned after current ACL and every parent have been authorized.",
+            "properties": {
+              "character_count": {
+                "minimum": 0.0,
+                "title": "Character Count",
+                "type": "integer"
+              },
+              "company_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company Id"
+              },
+              "epistemic_state": {
+                "default": "cited",
+                "enum": [
+                  "cited",
+                  "inferred",
+                  "simulated",
+                  "tentative",
+                  "conflicting"
+                ],
+                "title": "Epistemic State",
+                "type": "string"
+              },
+              "owner_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Owner Id"
+              },
+              "parents": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/SourceRevisionRef"
+                },
+                "title": "Parents",
+                "type": "array"
+              },
+              "project_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Project Id"
+              },
+              "reference": {
+                "$ref": "#/components/schemas/SourceRevisionRef"
+              },
+              "required_memberships": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Required Memberships",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "reference",
+              "title",
+              "character_count"
+            ],
+            "title": "SourceMetadata",
+            "type": "object"
+          },
+          "SourceRevisionRef": {
+            "additionalProperties": false,
+            "properties": {
+              "acl_revision": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Acl Revision",
+                "type": "string"
+              },
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "location": {
+                "$ref": "#/components/schemas/SourceLocation"
+              },
+              "policy_version": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revision": {
+                "title": "Source Revision",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "source_revision",
+              "location",
+              "audience",
+              "content_hash",
+              "acl_revision",
+              "policy_version"
+            ],
+            "title": "SourceRevisionRef",
+            "type": "object"
+          },
           "StructuredError": {
             "additionalProperties": false,
             "properties": {
@@ -1618,6 +1919,159 @@
               "goal"
             ],
             "title": "TeamExecutionRequest",
+            "type": "object"
+          },
+          "TodoCandidate": {
+            "additionalProperties": false,
+            "description": "Discovered work candidate (P1-004B). Discovery never creates a Task or team.",
+            "properties": {
+              "blocker": {
+                "default": false,
+                "title": "Blocker",
+                "type": "boolean"
+              },
+              "candidate_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Candidate Id",
+                "type": "string"
+              },
+              "content": {
+                "maxLength": 5000,
+                "minLength": 1,
+                "title": "Content",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "decided_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Decided Reason"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "due_date": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Due Date"
+              },
+              "epistemic_state": {
+                "enum": [
+                  "cited",
+                  "inferred",
+                  "simulated",
+                  "tentative",
+                  "conflicting"
+                ],
+                "title": "Epistemic State",
+                "type": "string"
+              },
+              "fingerprint": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Fingerprint",
+                "type": "string"
+              },
+              "history": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "History",
+                "type": "array"
+              },
+              "kind": {
+                "enum": [
+                  "todo",
+                  "issue",
+                  "follow_up"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "parents": {
+                "items": {
+                  "$ref": "#/components/schemas/SourceRevisionRef"
+                },
+                "maxItems": 32,
+                "minItems": 1,
+                "title": "Parents",
+                "type": "array"
+              },
+              "resurface_on_new_evidence": {
+                "default": true,
+                "title": "Resurface On New Evidence",
+                "type": "boolean"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "state": {
+                "default": "proposed",
+                "enum": [
+                  "proposed",
+                  "accepted",
+                  "deferred",
+                  "rejected",
+                  "superseded"
+                ],
+                "title": "State",
+                "type": "string"
+              },
+              "title": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Title",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "candidate_id",
+              "domain_id",
+              "owner_id",
+              "kind",
+              "title",
+              "content",
+              "fingerprint",
+              "parents",
+              "epistemic_state",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "TodoCandidate",
             "type": "object"
           },
           "ValidationError": {
@@ -1788,6 +2242,332 @@
             "summary": "Ready",
             "tags": [
               "operations"
+            ]
+          }
+        },
+        "/v1/candidates": {
+          "get": {
+            "operationId": "list_candidates_v1_candidates_get",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "domain_id",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DomainId"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Domain Id"
+                }
+              },
+              {
+                "in": "query",
+                "name": "include_hidden",
+                "required": false,
+                "schema": {
+                  "default": false,
+                  "title": "Include Hidden",
+                  "type": "boolean"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/TodoCandidate"
+                      },
+                      "title": "Response List Candidates V1 Candidates Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Candidates",
+            "tags": [
+              "candidates"
+            ]
+          }
+        },
+        "/v1/candidates/discover": {
+          "post": {
+            "operationId": "discover_candidates_v1_candidates_discover_post",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "domain_id",
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/DomainId"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/TodoCandidate"
+                      },
+                      "title": "Response Discover Candidates V1 Candidates Discover Post",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Discover Candidates",
+            "tags": [
+              "candidates"
+            ]
+          }
+        },
+        "/v1/candidates/{candidate_id}/decision": {
+          "post": {
+            "operationId": "decide_candidate_v1_candidates__candidate_id__decision_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "candidate_id",
+                "required": true,
+                "schema": {
+                  "title": "Candidate Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CandidateDecision"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/TodoCandidate"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Decide Candidate",
+            "tags": [
+              "candidates"
+            ]
+          }
+        },
+        "/v1/knowledge/derive": {
+          "post": {
+            "operationId": "derive_items_v1_knowledge_derive_post",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "domain_id",
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/DomainId"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/AccumulationReport"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Derive Items",
+            "tags": [
+              "knowledge"
+            ]
+          }
+        },
+        "/v1/knowledge/derived": {
+          "get": {
+            "operationId": "list_derived_v1_knowledge_derived_get",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "domain_id",
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/DomainId"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/SourceMetadata"
+                      },
+                      "title": "Response List Derived V1 Knowledge Derived Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Derived",
+            "tags": [
+              "knowledge"
             ]
           }
         },
@@ -4363,6 +5143,42 @@
         ],
         "title": "Audience",
         "type": "string"
+      },
+      "CandidateDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "accept",
+              "defer",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          },
+          "resurface_on_new_evidence": {
+            "default": true,
+            "title": "Resurface On New Evidence",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "CandidateDecision",
+        "type": "object"
       },
       "ChannelWorkRequest": {
         "additionalProperties": false,
@@ -8777,6 +9593,161 @@
         "title": "TeamTemplate",
         "type": "object"
       },
+      "TodoCandidate": {
+        "additionalProperties": false,
+        "description": "Discovered work candidate (P1-004B). Discovery never creates a Task or team.",
+        "properties": {
+          "blocker": {
+            "default": false,
+            "title": "Blocker",
+            "type": "boolean"
+          },
+          "candidate_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "content": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_reason": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided Reason"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Due Date"
+          },
+          "epistemic_state": {
+            "enum": [
+              "cited",
+              "inferred",
+              "simulated",
+              "tentative",
+              "conflicting"
+            ],
+            "title": "Epistemic State",
+            "type": "string"
+          },
+          "fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "history": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "todo",
+              "issue",
+              "follow_up"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "owner_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "parents": {
+            "items": {
+              "$ref": "#/$defs/SourceRevisionRef"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Parents",
+            "type": "array"
+          },
+          "resurface_on_new_evidence": {
+            "default": true,
+            "title": "Resurface On New Evidence",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "state": {
+            "default": "proposed",
+            "enum": [
+              "proposed",
+              "accepted",
+              "deferred",
+              "rejected",
+              "superseded"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "domain_id",
+          "owner_id",
+          "kind",
+          "title",
+          "content",
+          "fingerprint",
+          "parents",
+          "epistemic_state",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TodoCandidate",
+        "type": "object"
+      },
       "ToolEffect": {
         "enum": [
           "read",
@@ -9390,6 +10361,8 @@
     }
   },
   "public_model_names": [
+    "TodoCandidate",
+    "CandidateDecision",
     "DerivedItemProposal",
     "AccumulatedItem",
     "AccumulationReport",
@@ -9450,11 +10423,11 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
-    "src/rfa_mas/api/app.py": "c501c81bb697b8a5b068014b38bfc3ea910add98c691d3e00c62c297a35cf94c",
+    "src/rfa_mas/api/app.py": "b6996fdc026fed7d8866221bede57d7fcde2a18ed78e02e486b1a05afb6df31d",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "a86ddd9a2c4840b5794fdff41ced45f6219f12f4f3e8869bbea80ac783a5be02",
+    "src/rfa_mas/contracts/__init__.py": "f0b5494851262b2fad9bb9beec1126fdf13aab70cfaafe86b2b19db39ecf720f",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "632629b2a1007b6ffd9b952827ae09d268708f8ce83b85380249cdf2e19cd685",
+    "src/rfa_mas/contracts/models.py": "92e97d2b1688945657fc01824c80df7cc5c88e06019b50641ad71f105b04e554",
     "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
