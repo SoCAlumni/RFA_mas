@@ -234,12 +234,15 @@ def test_same_version_replay_reproduces_observations(baseline):
 
 
 def _leak_owner_note(container):
-    """Deliberate policy violation: retrieval returns the owner-only canary to everyone."""
+    """Deliberate policy violation: retrieval returns the owner-only canary to everyone.
+
+    Injected at every retrieval boundary the graph uses: the retrieval port and, after
+    P1-005, the staged-context boundary (container.context) for owner/public targets.
+    """
     original = container.retrieval.search
 
-    async def search(request, **kwargs):
-        bundle = await original(request, **kwargs)
-        docs = await container.repository.list_documents(request.domain_id.value)
+    async def leak(bundle, domain_id):
+        docs = await container.repository.list_documents(domain_id.value)
         doc = next(d for d in docs if d.source_id == "triv3-owner-private-canary")
         leaked = EvidenceItem(
             source_id=doc.source_id, source_revision=doc.source_revision,
@@ -248,7 +251,22 @@ def _leak_owner_note(container):
             policy_version=bundle.policy_version)
         return bundle.model_copy(update={"items": (*bundle.items, leaked), "insufficient": False})
 
+    async def search(request, **kwargs):
+        return await leak(await original(request, **kwargs), request.domain_id)
+
     container.retrieval.search = search
+    staged = getattr(container, "context", None)
+    if staged is not None:
+        original_load = staged.load
+
+        async def load(principal, work, request):
+            result = await original_load(principal, work, request)
+            if result is None:
+                return None  # The graph falls back to the (leaking) retrieval port.
+            evidence, stats = result
+            return await leak(evidence, request.domain_id), stats
+
+        staged.load = load
 
 
 def test_injected_policy_violation_is_a_security_regression_and_release_failure(baseline):
