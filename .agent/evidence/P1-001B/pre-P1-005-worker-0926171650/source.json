@@ -1,0 +1,111 @@
+{
+  "branch": "task/P1-001B-int-0926164313",
+  "captured_at": "2026-09-26T17:16:53+00:00",
+  "contract_digest": "d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    "docs/EVALUATION_CONTEXT.md": {
+      "index_blob": null,
+      "sha256": "dc55eb4e1d5c45e5ffbca73f83961184dc2bce2c72ab17001dff4933c75e33ad",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/INTEGRATION.md": {
+      "index_blob": null,
+      "sha256": "528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/adapters/local.py": {
+      "index_blob": null,
+      "sha256": "e7784348f4df6500e90a8df5109323523d1b4f2ab898e4d61257d9795eacf101",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/adapters/retrieval.py": {
+      "index_blob": null,
+      "sha256": "8f588493d0909ae71569e80fd65c468a3f1909f8f38b28bbd373e7cdfbe05a1b",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/context.py": {
+      "index_blob": null,
+      "sha256": "db876e7a1045d6edc173e89bc5477f1fbcd9026285b1bb14dc24fac71e53b912",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "df35e5f94ef63bed8650b08d98b5c4326daf9484167131f5db498ddb67df23d3",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "0b7880146910a5ab38a45e309497dab8cabf943db0f136f3f8320be445c72c88",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_context_loading.py": {
+      "index_blob": null,
+      "sha256": "444d17824d375ead7320bbcf6ce3e80d20fd88783e76bbd30aac7b75fedf543d",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "bf55dc7573e94477535c279e4056a3ff3c4e6603989fec92bf9ace1495456849",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "e268eb909302cf5a45ae172b82a44758f63e3fd3d4aa02d9ff7f6417d959bcd6",
+  "head": "0161cc2f310ce643598fea5e8e631ab50feba2a1",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001B-int-0926164313",
+  "spec_digest": "e10d9c1463a832160335af5d51b197578224c1d061482899c6fb47fdc54a80cb",
+  "spec_revision": 16
+}

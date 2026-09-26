@@ -1,0 +1,57 @@
+{
+  "attempt_id": "worker-0926165656",
+  "contract_digest": "d4e778d6a5ed349fc905ac7d5c594d3f7669ed0c6e8b4a8ceb709fffb87d4fcc",
+  "mode": "후보 저장/이력 missing/not_run. 상태·중복 방지 local(false), 추출 mock(true). 외부 의존 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_candidates.py"
+        ],
+        "assertions": [
+          "동일 변화·기존 Task·이전 판단과 dedupe",
+          "기각 후보는 새 근거 revision/명시한 재제안 조건 없이는 재노출 금지",
+          "기본은 사용자 채택 후만 Task/team 생성, 자동 생성은 P0에서 비활성; 후속 opt-in은 사용자 범위·개수 제한 필수."
+        ],
+        "counts": {
+          "collected": 4,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.27,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T16:56:59.904732+00:00",
+        "id": "V1",
+        "log_excerpt": "4 passed in 0.17s",
+        "result": "passed",
+        "started_at": "2026-09-26T16:56:58.638378+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "d3cad28e030a86eb3843fa4488ce741fc44a7af1",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-004B-int-0926165646",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T16:56:59.904768+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T16:56:58.637024+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "b9c15ebe213a2d9a8c279a76fe5f17241237a1d97564444f5100b9c086db86b1",
+  "source_manifest": ".agent/evidence/P1-004B/worker-0926165656/source.json",
+  "spec_digest": "2885f25cfb88a33207ac5d5521c05c0f44293d38d877bcf6024e60d34cf23dc5",
+  "spec_revision": 11,
+  "task_id": "P1-004B"
+}

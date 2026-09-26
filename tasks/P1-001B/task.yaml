@@ -9,10 +9,9 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
+status: verifying
 spec_state: draft
 unresolved:
-- P0-014의 RFA-EXTENDED 1.1 schema/fixture baseline을 수신하고 실제 digest를 고정해야 한다.
 - Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
 workstream: knowledge
 execution_role: worker
@@ -55,7 +54,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: 9455b302aaeb0b87f0c9fc4d80289bc1c79374d6d09b920e080019dc147e9c66
   role: consumer
 context:
   global_refs:
@@ -135,34 +134,93 @@ verification:
   - 지침/목표 보존·예산 부족 insufficient·실측 단위 확인
   runner: pytest
 evidence_dir: .agent/evidence/P1-001B
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-001B/pre-P1-005-target-0926171700/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 16
+  spec_digest: e10d9c1463a832160335af5d51b197578224c1d061482899c6fb47fdc54a80cb
+  contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+  source_fingerprint: e268eb909302cf5a45ae172b82a44758f63e3fd3d4aa02d9ff7f6417d959bcd6
+  evidence: .agent/evidence/P1-001B/pre-P1-005-target-0926171700/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 10
-spec_revision: 10
-claim_generation: 0
+  reservation: true
+  submission_generation: 2
+  submission:
+    head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+    baseline_head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001B-int-0926164313
+    branch: task/P1-001B-int-0926164313
+    evidence: .agent/evidence/P1-001B/pre-P1-005-worker-0926171650/result.json
+    changed_files:
+      src/rfa_mas/application/context.py: db876e7a1045d6edc173e89bc5477f1fbcd9026285b1bb14dc24fac71e53b912
+      tests/test_context_loading.py: 444d17824d375ead7320bbcf6ce3e80d20fd88783e76bbd30aac7b75fedf543d
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 16
+      spec_digest: e10d9c1463a832160335af5d51b197578224c1d061482899c6fb47fdc54a80cb
+      contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+      source_fingerprint: e268eb909302cf5a45ae172b82a44758f63e3fd3d4aa02d9ff7f6417d959bcd6
+      evidence: .agent/evidence/P1-001B/pre-P1-005-target-0926171700/result.json
+    head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+  evidence: .agent/evidence/P1-001B/pre-P1-005-target-0926171700/result.json
+revision: 35
+spec_revision: 17
+claim_generation: 2
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 4
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
-  approaches: []
+  latest_attempt: pre-P1-005-target-0926171700
+  evidence_refs:
+  - .agent/evidence/P1-001B/worker-0926164316/result.json
+  - .agent/evidence/P1-001B/pre-P1-005-worker-0926171650/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+    reason: Direct/transitive dependencies of P1-005 before claim (OPS-005)
+    at: '2026-09-26T17:16:49+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: 559c366803bade4eb92d2bc03a8ff099cbe25aa0
+        baseline_head: 93366906b2a30f3d0388cdcea0da34e47c8f55f2
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001B-int-0926164313
+        branch: task/P1-001B-int-0926164313
+        evidence: .agent/evidence/P1-001B/worker-0926164316/result.json
+        changed_files:
+          src/rfa_mas/application/context.py: db876e7a1045d6edc173e89bc5477f1fbcd9026285b1bb14dc24fac71e53b912
+          tests/test_context_loading.py: 444d17824d375ead7320bbcf6ce3e80d20fd88783e76bbd30aac7b75fedf543d
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 12
+          spec_digest: f9d0717504798adf205e51700e9b9d92e9dfe2e5778f6a59ddc4d5a4f8b4745a
+          contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+          source_fingerprint: 4b97a79aad7782f157db7de963e87611d31c87d303023cb3116e4060f7d041b8
+          evidence: .agent/evidence/P1-001B/target-0926164326/result.json
+        head: 559c366803bade4eb92d2bc03a8ff099cbe25aa0
+      evidence: .agent/evidence/P1-001B/target-0926164326/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 12
+      spec_digest: f9d0717504798adf205e51700e9b9d92e9dfe2e5778f6a59ddc4d5a4f8b4745a
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: 4b97a79aad7782f157db7de963e87611d31c87d303023cb3116e4060f7d041b8
+      evidence: .agent/evidence/P1-001B/target-0926164326/result.json
+    latest_evidence_file: .agent/evidence/P1-001B/target-0926164326/result.json
 blocker: null
 migration:
   original_status: new
@@ -174,6 +232,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:49:46+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
-next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.
+updated_at: '2026-09-26T17:20:12+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

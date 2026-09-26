@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "25928d88dfb77dd6745cba78265b3afdea8f29024fc77d693b9a6b465f94742e",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "d3cad28e030a86eb3843fa4488ce741fc44a7af1",
+  "started_at": "2026-09-26T16:57:04.396286+00:00",
+  "finished_at": "2026-09-26T16:57:05.926163+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T16:57:04.396417+00:00",
+      "finished_at": "2026-09-26T16:57:05.224820+00:00",
+      "elapsed_seconds": 0.8284364580176771,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T16:57:05.224855+00:00",
+      "finished_at": "2026-09-26T16:57:05.910940+00:00",
+      "elapsed_seconds": 0.6861329171806574,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P1-004B additive 1.1: TodoCandidate/CandidateDecision, migration7 todo_candidates; frozen 1.0 baseline checked. No live provider claim."
+}

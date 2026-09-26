@@ -1,0 +1,170 @@
+schema_version: '1.0'
+id: P1-005C
+title: staged-context retrieval 경계의 관측 가능성(행위 검증 회귀 보수)
+objective: P1-005가 retrieval을 staged-context loader로 옮기면서 P1-006 행위 검증 spy가 그 경계를 보지 못해 retrieval 규칙이
+  unknown이 된 회귀를 보수한다.
+kind: task
+source_tasks:
+- P1-005
+- P1-006
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 0.5
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: local/mock 평가 harness 관측 경계; 제품 권한 변화 없음
+scope:
+  included:
+  - 'bootstrap: staged-context load를 container-owned StagedContextBoundary로 노출하고 graph는 late lookup으로
+    호출'
+  - 'evaluation.BoundarySpy: staged 경계를 retrieval로 관측(실제 서비스/실패한 호출만 계수)'
+  - test_behavior_verifier에 staged 경계 관측 회귀 추가
+  excluded:
+  - 정책/권한/capability 변경
+  - mock fallback 추가
+  - P1-006 평가 규칙 완화
+  owned_paths:
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/application/evaluation.py
+  - tests/test_behavior_verifier.py
+  read_only_paths:
+  - src/rfa_mas/application/graphs/domain.py
+  - src/rfa_mas/application/context.py
+  planned_paths: []
+  shared_resources:
+  - composition
+depends_on:
+- id: P1-005
+  condition: integrated_done
+  required_output: staged-context 경로가 통합된 main
+- id: P1-006
+  condition: integrated_done
+  required_output: 행위 검증 harness
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: 25928d88dfb77dd6745cba78265b3afdea8f29024fc77d693b9a6b465f94742e
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/application/evaluation.py
+    section: BoundarySpy, _observation_integrity
+    reason: spy와 ledger 계수 비교
+  - path: src/rfa_mas/bootstrap.py
+    section: _staged_context, domain_task 등록
+    reason: 경계 배선
+  handoff: tasks/P1-005C/handoff.md
+  dependency_results:
+  - tasks/P1-005/handoff.md
+  - tasks/P1-006/handoff.md
+deliverables:
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 경계 노출·spy·회귀
+- path: src/rfa_mas/application/evaluation.py
+  availability: existing
+  description: 경계 노출·spy·회귀
+- path: tests/test_behavior_verifier.py
+  availability: existing
+  description: 경계 노출·spy·회귀
+acceptance_criteria:
+- id: AC1
+  given: 공개/owner local 대상의 Run이 P1-005 staged-context 경로로 근거를 읽음
+  expect: 격리된 평가 harness가 같은 container에서 그 retrieval 경계를 관찰하고, spy 호출 수가 서버측 ledger의 retrieval 수와 같으며
+    source_scope/identity 규칙이 PASS/FAIL로 판정된다(unknown으로 떨어지지 않음).
+  required: true
+- id: AC2
+  given: staged loader가 지원하지 않는 대상(None)으로 retrieval port fallback
+  expect: staged 경계는 호출 수에 더하지 않고 기존 retrieval port spy가 관찰한다. 경계 추가는 권한·capability·fallback을 만들지 않는다.
+  required: true
+- id: AC3
+  given: 기존 P1-006 행위 검증·정책·그래프 회귀
+  expect: spy 호출 수 불일치/누락 관측은 여전히 ERROR/UNKNOWN이며 기존 테스트가 통과한다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - source worktree에서 실행. 실제 .env 읽기 금지; 합성 fixture/명시 설정만.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_behavior_verifier.py
+  - tests/test_evaluation.py
+  - tests/test_policy.py
+  - tests/test_graph.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 격리된 평가 harness가 같은 container에서 그 retrieval 경계를 관찰하고, spy 호출 수가 서버측 ledger의 retrieval 수와 같으며 source_scope/identity
+    규칙이 PASS/FAIL로 판정된다(unknown으로 떨어지지 않음).
+  - staged 경계는 호출 수에 더하지 않고 기존 retrieval port spy가 관찰한다. 경계 추가는 권한·capability·fallback을 만들지 않는다.
+  - spy 호출 수 불일치/누락 관측은 여전히 ERROR/UNKNOWN이며 기존 테스트가 통과한다.
+  runner: pytest
+evidence_dir: .agent/evidence/P1-005C
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 3
+spec_revision: 3
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new_coordinator_fix
+  source_ref: '2026-09-27 scheduler_worker/coordinator: test_behavior_verifier 4 failures at P1-005 chain
+    state'
+  prior_claim: 없음
+  implementation_facts: wip/P1-005C에 개발 커밋; 등록 시 공식 검증 not_run
+  previous_evidence: []
+  checks_this_migration:
+  - P1-005(16b8560) 상태에서 test_behavior_verifier 4 failed(retrieval spy 0회, KeyError retrieval) 재현
+  judgment: P1-005가 만든 경계 변화에 대한 관측 보수. 평가 규칙이나 권한은 바꾸지 않는다.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T17:20:12+00:00'
+concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
+next_action: P1-005 통합 뒤 claim, cherry-pick, worker/target 검증.

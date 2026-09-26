@@ -10,8 +10,9 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
 status: verifying
-spec_state: ready
-unresolved: []
+spec_state: draft
+unresolved:
+- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 2.0
@@ -143,26 +144,26 @@ verification:
     주장하지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-008C
-latest_evidence_file: .agent/evidence/P1-008C/target-0926161025/result.json
+latest_evidence_file: .agent/evidence/P1-008C/post-ops005-target-0926163312/result.json
 verification_summary:
   state: stale
   spec_revision: 3
   spec_digest: 42964f03ec3be8fe7374a52597dbb4d302f852da46867d8767e710d6d6e8e419
   contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
-  source_fingerprint: 1def2ddb7753eac734fe2d569c0b78fe9ccd0b7c52ab7c99a1ffaa5b361a25ef
-  evidence: .agent/evidence/P1-008C/target-0926161025/result.json
+  source_fingerprint: 5314310e640d20c0aa6194d897a6408dc7056b32b47bdf5ec8029bb5feab3319
+  evidence: .agent/evidence/P1-008C/post-ops005-target-0926163312/result.json
 integration:
   state: integrated
   target: main canonical control checkout
   reason: null
   reservation: true
-  submission_generation: 1
+  submission_generation: 2
   submission:
-    head: a0a9347cef39fab15b498d522ce7d681a530298b
-    baseline_head: 7553a205e5a3eb332b38214e261226c9be36fe35
+    head: d28731adafe16b2f597504f389865a125a894087
+    baseline_head: d28731adafe16b2f597504f389865a125a894087
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008C-int-0926161008
     branch: task/P1-008C-int-0926161008
-    evidence: .agent/evidence/P1-008C/worker-0926161012/result.json
+    evidence: .agent/evidence/P1-008C/post-ops005-worker-0926163305/result.json
     changed_files:
       src/rfa_mas/reference/local_response.py: f3f59fc51f8797eb2a4fd5317349e52f7bbdd6bdea4b271f7365a0d3fb59cd7d
       src/rfa_mas/reference/local_response_store.py: d02881318aeb26cd15753341a543e43fc47f5ec59b4eb4b02ad6419ca76c6354
@@ -174,22 +175,67 @@ integration:
       spec_revision: 3
       spec_digest: 42964f03ec3be8fe7374a52597dbb4d302f852da46867d8767e710d6d6e8e419
       contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
-      source_fingerprint: 1def2ddb7753eac734fe2d569c0b78fe9ccd0b7c52ab7c99a1ffaa5b361a25ef
-      evidence: .agent/evidence/P1-008C/target-0926161025/result.json
-    head: a0a9347cef39fab15b498d522ce7d681a530298b
-  evidence: .agent/evidence/P1-008C/target-0926161025/result.json
-revision: 12
-spec_revision: 3
-claim_generation: 1
+      source_fingerprint: 5314310e640d20c0aa6194d897a6408dc7056b32b47bdf5ec8029bb5feab3319
+      evidence: .agent/evidence/P1-008C/post-ops005-target-0926163312/result.json
+    head: d28731adafe16b2f597504f389865a125a894087
+  evidence: .agent/evidence/P1-008C/post-ops005-target-0926163312/result.json
+revision: 25
+spec_revision: 7
+claim_generation: 2
 claim: null
 attempts:
-  count: 2
+  count: 4
   cycles: 1
   no_progress_count: 0
-  latest_attempt: target-0926161025
+  latest_attempt: post-ops005-target-0926163312
   evidence_refs:
   - .agent/evidence/P1-008C/worker-0926161012/result.json
-  approaches: []
+  - .agent/evidence/P1-008C/post-ops005-worker-0926163305/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: d28731adafe16b2f597504f389865a125a894087
+    reason: OPS-005 changed TASK_EXECUTION_RULES.md (global context ref) at 4bf0ec9; direct dependencies
+      of P1-008D/P0-025A/P1-001B only
+    at: '2026-09-26T16:33:04+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: a0a9347cef39fab15b498d522ce7d681a530298b
+        baseline_head: 7553a205e5a3eb332b38214e261226c9be36fe35
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008C-int-0926161008
+        branch: task/P1-008C-int-0926161008
+        evidence: .agent/evidence/P1-008C/worker-0926161012/result.json
+        changed_files:
+          src/rfa_mas/reference/local_response.py: f3f59fc51f8797eb2a4fd5317349e52f7bbdd6bdea4b271f7365a0d3fb59cd7d
+          src/rfa_mas/reference/local_response_store.py: d02881318aeb26cd15753341a543e43fc47f5ec59b4eb4b02ad6419ca76c6354
+          src/rfa_mas/reference/local_security.py: 6eeced09dc796ab845b55c28aaa62fd0cd690f0be198da4417c5421745126987
+          tests/test_local_response.py: fc5ee72f4981c82f4e195a8faa7795c5bf51f423428edfef601ba1a8d0cb2e71
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 3
+          spec_digest: 42964f03ec3be8fe7374a52597dbb4d302f852da46867d8767e710d6d6e8e419
+          contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+          source_fingerprint: 1def2ddb7753eac734fe2d569c0b78fe9ccd0b7c52ab7c99a1ffaa5b361a25ef
+          evidence: .agent/evidence/P1-008C/target-0926161025/result.json
+        head: a0a9347cef39fab15b498d522ce7d681a530298b
+      evidence: .agent/evidence/P1-008C/target-0926161025/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 3
+      spec_digest: 42964f03ec3be8fe7374a52597dbb4d302f852da46867d8767e710d6d6e8e419
+      contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+      source_fingerprint: 1def2ddb7753eac734fe2d569c0b78fe9ccd0b7c52ab7c99a1ffaa5b361a25ef
+      evidence: .agent/evidence/P1-008C/target-0926161025/result.json
+    latest_evidence_file: .agent/evidence/P1-008C/target-0926161025/result.json
 blocker: null
 migration:
   original_status: new_user_authorized
@@ -201,7 +247,7 @@ migration:
   - 기존 DTO/port/reference app/API와 파일 소유권 확인
   judgment: 기존 ID/완료 근거/실제 연동 gate 보존. 새 사용자 승인 범위의 독립 2h task 추가.
   initial_spec_revision: 1
-updated_at: '2026-09-26T16:29:36+00:00'
+updated_at: '2026-09-26T17:20:12+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

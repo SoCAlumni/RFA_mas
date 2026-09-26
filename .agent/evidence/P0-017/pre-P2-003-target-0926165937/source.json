@@ -1,0 +1,125 @@
+{
+  "branch": "main",
+  "captured_at": "2026-09-26T16:59:38+00:00",
+  "contract_digest": "31893118d9810d6a5ca439e69b566ef7b21e1ca18f467e7a26f7e173220fd990",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    ".env.example": {
+      "index_blob": null,
+      "sha256": "6b6116e707e91b7e7020c22a961ec00426b7eec8d9434db909de49779008ea1c",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "AGENTS.md": {
+      "index_blob": null,
+      "sha256": "cf27246f1382f1db8b62e468535c8c342e0812ce11038522863c576b78b32b0f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/EVALUATION_CONTEXT.md": {
+      "index_blob": null,
+      "sha256": "dc55eb4e1d5c45e5ffbca73f83961184dc2bce2c72ab17001dff4933c75e33ad",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/INTEGRATION.md": {
+      "index_blob": null,
+      "sha256": "528b8238154d9951000f4faa5ef5b2eed10ba744da027834736cea2ddc6ae013",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "b77eb79deeba355feafc263e022f8686a4b2ecef39939e3af5bd119764a82b0d",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/bootstrap.py": {
+      "index_blob": null,
+      "sha256": "af627d98dcd4f0d7df5bda51589941f8fa7f8364e78e58dd7ff9dccae798da8b",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/cli.py": {
+      "index_blob": null,
+      "sha256": "8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "f0b5494851262b2fad9bb9beec1126fdf13aab70cfaafe86b2b19db39ecf720f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "92e97d2b1688945657fc01824c80df7cc5c88e06019b50641ad71f105b04e554",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/dev_env.py": {
+      "index_blob": null,
+      "sha256": "8571fd97e72018f656de67aa538f9965e12134fb44a5ba0b415d2a60d72548fa",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_settings.py": {
+      "index_blob": null,
+      "sha256": "7f07230b65e790f5ae1ab1bfcde633f6b38d4ffbfaa8a6516c607051975253e0",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "bf55dc7573e94477535c279e4056a3ff3c4e6603989fec92bf9ace1495456849",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "85c5b85e15021ed7b4460fc5f762ed4f1d676e77c34c4d7acf8527032b75e6be",
+  "head": "d3cad28e030a86eb3843fa4488ce741fc44a7af1",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+  "spec_digest": "35f832e602dc8ca8ee5a393c1c47a74f518d77668ac46d98b514457af316ea18",
+  "spec_revision": 24
+}

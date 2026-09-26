@@ -830,3 +830,37 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - worker v1-live-a1 7 passed 51.7s, target(main caf7bd2) v1-live-target-a1 7 passed 58.5s. 개발 실행에서
   Research 답변 1회 ReadTimeout 후 재시도 성공. integrate/close 완료.
 - 제품 Research worker→EvidenceBundle(audience/policy/source_revision) 경로는 not_run이며 P1-003 범위다.
+
+
+## Coordinator 세션 이어받기 — 2026-09-27 00:45~01:45 KST (15:45~16:45 UTC)
+
+- post-team 재검증 cascade 완료: P0-028, P1-001A, P1-006, P1-006D worker/target 재검증 후 close(2aba236 커밋).
+- **OPS-004 등록·완료**(7fa9823 → merge 7553a20): cProfile로 `taskctl ready` 22.2초 중 약 20초가 done task마다
+  같은 target에 git을 반복(1,551회)한 것임을 확인. `cli.main()` 호출 단위 git memo 추가. test_taskctl 100 passed,
+  같은 control 상태에서 ready 실측 2.0초(이전 22~26초). 규칙·fingerprint 비교 변경 없음.
+- **P1-008C 통합·완료**(8de4cc6 → merge a0a9347, worker/target 24 passed). stand-in 검토/모의 게시/READ tool 모듈.
+- 오류와 조치:
+  1. `nohup … &`로 띄운 재검증·통합 프로세스가 도구 셸 종료 시 함께 종료(로그 없음). 이후 유지 세션에서 실행.
+  2. OPS-002 재검증 중 P1-008C 통합으로 target 이동 → submit 거절, claim 중이라 revalidation recover도 불가.
+     소스 변경 없는 재검증이라 discard. 이 때문에 OPS-003 stale 예약과 OPS-005 claim이 순환 차단 → OPS-003도 discard.
+     두 task는 이후 실제 문서/회귀 변경으로 다시 완료한다(이력은 attempts.approaches 보존).
+  3. OPS-005 worker 단계 V2(view 정합성)는 규칙 변경이 파생 view를 바꾸기 때문에 기존 도구로는 통과 불가 →
+     worker 단계 evidence 명령만 후보 taskctl로 실행(`.agent/input/verify_with_candidate_tool.py`), submit·target·close는
+     정식 도구. target 103+17 passed.
+  4. OPS-005가 global context 문서(TASK_EXECUTION_RULES.md)를 바꿔 모든 통합 task가 stale(context digest). OPS-005
+     규칙대로 다음 claim의 직접(전이) 의존성만 재검증: P0-014, P0-015, P1-008C 완료, P1-001A는 P1-001 선행 필요 → 재시도.
+- **OPS-005 등록·완료**(7228c6e → merge 4bf0ec9): 활성 claim·미통합 제출 없는 stale 통합 예약은 새 claim을 막지
+  않음(의존성 gate·최종 전체 재검증 유지), 재검증 중 target 이동은 clean FF만 무변경 제출 허용. 새 테스트 3개, 각 보정을
+  되돌리면 실패함을 확인.
+- **P1-005A 개발**(wip/P1-005A 26f172c, 미통합): DraftLifecycle(불변 버전·승인 유효성·durable PENDING 영수증·
+  outcome_unknown은 조회로만 대사), MockPublisher, 게시 상태 전이표, migration 8, `/v1/runs/{id}/draft*`·
+  `/publication` API. tests/test_draft_lifecycle.py 15 + test_state_machine.py 76 passed.
+- E2E harness(P0-026 wip a4a57c6) 보고: 39 passed, 기능/보안 gate 통과 가능 범위 확인. 품질 gate 실패(Recall@5 0.52~0.61,
+  목표 0.9), 후속 비교 비결정성, team/cancel HTTP 경로 부재, identity provisioning 부재 → 보수 task(P1-001D, P0-020A,
+  P0-020B) 개발을 보조 worker에 배정.
+- 병렬 개발 배정(코드만, claim/evidence는 coordinator): ledger_worker(P0-021→P1-008), scheduler_worker(P0-022→P0-024,
+  APScheduler 3.11.3), quality_worker(P1-005B, P1-006B, P1-001D, P0-020A, P0-020B). migration 번호 9~12 예약.
+- 다른 세션이 wip/P1-003(nemo-retriever Skill CLI를 Research ToolPort로 연결, 914322c/6b79237)을 coordinator 검토용으로
+  남겼다. P1-005 통합 뒤 claim/통합 대상에 포함한다. 병렬 분담 질문에 대한 사용자 답은 아직 없고 기존 가정(NVIDIA 실제
+  연동은 다른 세션)을 유지한다.
+

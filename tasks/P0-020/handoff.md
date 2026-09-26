@@ -21,3 +21,22 @@
 - 병렬 역할 실행, HTTP 취소 API/UI, 실제 OpenShell/NVIDIA 모델 역할은 범위 밖(P0-025/P1-008/P1-007).
 - 다음: RFA-EXTENDED 새 digest 발행 → consumer 수락, P1-004(intent routing)·P1-004A.
 
+## 재검증 post-ops005 (2026-09-26T16:41Z)
+
+- 사유: OPS-005 changed TASK_EXECUTION_RULES.md (global context ref) at 4bf0ec9; direct dependencies (transitive) of next claims only
+- 소스 변경 없이 현재 통합 HEAD ab9cf68에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-004B (2026-09-26T16:55Z)
+
+- 사유: Direct/transitive dependencies of P1-004B before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 0bdef6a에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P2-003 (2026-09-26T17:06Z)
+
+- 사유: Direct/transitive dependencies of P2-003 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD d3cad28에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-005 (2026-09-26T17:16Z)
+
+- 사유: Direct/transitive dependencies of P1-005 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 0161cc2에서 계획된 검증을 worker/target 단계로 재실행한다.

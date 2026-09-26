@@ -9,11 +9,9 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: verifying
+spec_state: ready
+unresolved: []
 workstream: knowledge
 execution_role: coordinator
 estimated_effort: 0.5
@@ -31,6 +29,9 @@ scope:
   - src/rfa_mas/settings.py
   - src/rfa_mas/application/candidates.py
   - tests/test_candidates.py
+  - docs/CONTRACT_CHANGELOG.md
+  - src/rfa_mas/contracts/__init__.py
+  - docs/contracts/extended.json
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/ports/interfaces.py
@@ -52,8 +53,8 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
-  role: consumer
+  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -124,33 +125,54 @@ verification:
   - 순위는 추천일 뿐 생성/승인 권한을 바꾸지 않음.
   runner: pytest
 evidence_dir: .agent/evidence/P2-003
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P2-003/target-0926170816/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 11
+  spec_digest: aa728f7e9111e382b2c93253e79392372098ba95195f06fa692bcf3efd28bf80
+  contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+  source_fingerprint: 709538594afc53f1201146b76e8701a984265cbc2cc93c0edf123da81f768210
+  evidence: .agent/evidence/P2-003/target-0926170816/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 10
-spec_revision: 10
-claim_generation: 0
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+    baseline_head: d3cad28e030a86eb3843fa4488ce741fc44a7af1
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P2-003-int-0926170756
+    branch: task/P2-003-int-0926170756
+    evidence: .agent/evidence/P2-003/worker-0926170805/result.json
+    changed_files:
+      docs/CONTRACT_CHANGELOG.md: c89b37595dacc44ce1f43c3e00c0476b62d5a4f48b0a02bfe0cea954918b6392
+      docs/contracts/extended.json: 9455b302aaeb0b87f0c9fc4d80289bc1c79374d6d09b920e080019dc147e9c66
+      src/rfa_mas/application/candidates.py: a65623e834568846e3d16f3af6450951c8c206471663bad7f4aea1a2a345ebce
+      src/rfa_mas/contracts/__init__.py: df35e5f94ef63bed8650b08d98b5c4326daf9484167131f5db498ddb67df23d3
+      src/rfa_mas/contracts/models.py: 0b7880146910a5ab38a45e309497dab8cabf943db0f136f3f8320be445c72c88
+      tests/test_candidates.py: e68de29b8752f6b3cc37160053e06337a7d55eac4ce257527d638147d2da6189
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 11
+      spec_digest: aa728f7e9111e382b2c93253e79392372098ba95195f06fa692bcf3efd28bf80
+      contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+      source_fingerprint: 709538594afc53f1201146b76e8701a984265cbc2cc93c0edf123da81f768210
+      evidence: .agent/evidence/P2-003/target-0926170816/result.json
+    head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+  evidence: .agent/evidence/P2-003/target-0926170816/result.json
+revision: 20
+spec_revision: 11
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926170816
+  evidence_refs:
+  - .agent/evidence/P2-003/worker-0926170805/result.json
   approaches: []
 blocker: null
 migration:
@@ -163,7 +185,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T14:49:46+00:00'
-concise_result: 이관 완료; 제품 구현/검증 not_run.
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T17:20:11+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

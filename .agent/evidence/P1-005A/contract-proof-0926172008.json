@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "b2e601b8303cdcc172de1cebdf262d1b521a8cd0cd866669457bbcc79ef349fe",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "9178e2047a3b71e09be0ef5662fa5ed361cc3c73",
+  "started_at": "2026-09-26T17:20:08.719696+00:00",
+  "finished_at": "2026-09-26T17:20:10.431584+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T17:20:08.719858+00:00",
+      "finished_at": "2026-09-26T17:20:09.697035+00:00",
+      "elapsed_seconds": 0.9772063749842346,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T17:20:09.697064+00:00",
+      "finished_at": "2026-09-26T17:20:10.421647+00:00",
+      "elapsed_seconds": 0.7246107081882656,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P1-005A additive 1.1: DraftEditRequest/PublishRequest/DraftState, migration8; mock publication only. No live provider claim."
+}

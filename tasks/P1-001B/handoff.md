@@ -1,0 +1,18 @@
+# P1-001B — KB L0/L1/L2 선택적 context loader
+
+## 구현 사실 (wip/P1-001B 212cfb9, 보조 worker knowledge_worker)
+
+- src/rfa_mas/application/context.py ContextLoader.load(): bound identity/role/target/endpoint 확인 → 필수 지침·목표·권한 규칙(untrusted context 규칙 포함) 예산 선점 → L0 metadata manifest(본문 0회)와 정책 receipt → 기존 L1 요약 배치(없으면 none_available) → 남은 문자 예산 내 선택 L2 본문만 읽기. source별 stage와 실측 문자 수 기록, 이전 bundle은 현재 revision/ACL manifest와 hash가 맞을 때만 재사용. ranker hook은 인가 후 metadata만. 쓰기/요약/복제/모델 호출 없음.
+
+## 검증
+
+- tests/test_context_loading.py 17 passed(+관련 회귀 164). 의도적 결함 3종(예산 무시, 요약 coverage 제거, 재사용 hash 검사 해제)이 테스트로 탐지됨.
+
+## 제한
+
+- 전체 source 단위 L2(구간 읽기 없음), 문자 수 예산(token 아님), local endpoint/owner·public target만, graph 연결은 P1-005.
+
+## 재검증 pre-P1-005 (2026-09-26T17:16Z)
+
+- 사유: Direct/transitive dependencies of P1-005 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 0161cc2에서 계획된 검증을 worker/target 단계로 재실행한다.

@@ -10,10 +10,9 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
+status: verifying
 spec_state: draft
 unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
 - Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
 workstream: agents
 execution_role: coordinator
@@ -38,6 +37,7 @@ scope:
   - src/rfa_mas/ports/interfaces.py
   - tests/test_policy.py
   - tests/test_graph.py
+  - src/rfa_mas/bootstrap.py
   read_only_paths:
   - AGENTS.md
   - docs/INTEGRATION.md
@@ -65,7 +65,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
+  digest: 9455b302aaeb0b87f0c9fc4d80289bc1c79374d6d09b920e080019dc147e9c66
   role: consumer
 context:
   global_refs:
@@ -172,33 +172,51 @@ verification:
     위장으로 우회 불가
   runner: pytest
 evidence_dir: .agent/evidence/P1-005
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-005/target-0926171859/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 17
+  spec_digest: 2a1d6a58b7e547fb62b9f57bd3bd8386652bf68c6c149bdb2c1f300b83f30507
+  contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+  source_fingerprint: 8b7f5680759b8d72127316b572790e0e09486789aa0de7c9f04f5c71f236d140
+  evidence: .agent/evidence/P1-005/target-0926171859/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 12
-spec_revision: 12
-claim_generation: 0
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: d8c596def0f780ff5766edc1240dfc85a757b5c9
+    baseline_head: 0161cc2f310ce643598fea5e8e631ab50feba2a1
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-005-int-0926171838
+    branch: task/P1-005-int-0926171838
+    evidence: .agent/evidence/P1-005/worker-0926171846/result.json
+    changed_files:
+      src/rfa_mas/application/graphs/domain.py: 1080999c4e6a13fe1120a6bad8f5c3b7a66123865a0ad6a0daabb937f7055920
+      src/rfa_mas/bootstrap.py: 568b913cebe6a50911e427fd89f802844bdd855ee06974885bbde68f8ac53d1f
+      tests/test_policy.py: 3def8e749c2a813e0cf248875ed9b0189a4eb7a32bb79e2406ecb2767407efaa
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 17
+      spec_digest: 2a1d6a58b7e547fb62b9f57bd3bd8386652bf68c6c149bdb2c1f300b83f30507
+      contract_digest: d444f2a2eacdd2e87345402abe27daa05fe835d8985d065159b3bd628c02d30b
+      source_fingerprint: 8b7f5680759b8d72127316b572790e0e09486789aa0de7c9f04f5c71f236d140
+      evidence: .agent/evidence/P1-005/target-0926171859/result.json
+    head: d8c596def0f780ff5766edc1240dfc85a757b5c9
+  evidence: .agent/evidence/P1-005/target-0926171859/result.json
+revision: 27
+spec_revision: 18
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926171859
+  evidence_refs:
+  - .agent/evidence/P1-005/worker-0926171846/result.json
   approaches: []
 blocker: null
 migration:
@@ -212,7 +230,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T14:49:46+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T17:20:12+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

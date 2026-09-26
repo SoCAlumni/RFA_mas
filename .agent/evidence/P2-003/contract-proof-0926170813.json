@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "9455b302aaeb0b87f0c9fc4d80289bc1c79374d6d09b920e080019dc147e9c66",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "0161cc2f310ce643598fea5e8e631ab50feba2a1",
+  "started_at": "2026-09-26T17:08:13.545292+00:00",
+  "finished_at": "2026-09-26T17:08:14.887909+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T17:08:13.545408+00:00",
+      "finished_at": "2026-09-26T17:08:14.234142+00:00",
+      "elapsed_seconds": 0.6887688748538494,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T17:08:14.234180+00:00",
+      "finished_at": "2026-09-26T17:08:14.878139+00:00",
+      "elapsed_seconds": 0.6439800830557942,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P2-003 additive 1.1: RankReason/RankedCandidate (candidate-rank-v1); frozen 1.0 baseline checked. No live provider claim."
+}

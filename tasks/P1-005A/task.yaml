@@ -9,11 +9,9 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: done
+spec_state: ready
+unresolved: []
 workstream: agents
 execution_role: coordinator
 estimated_effort: 1.0
@@ -36,6 +34,13 @@ scope:
   - src/rfa_mas/api/app.py
   - tests/test_state_machine.py
   - tests/test_draft_lifecycle.py
+  - src/rfa_mas/application/drafts.py
+  - src/rfa_mas/application/observations.py
+  - src/rfa_mas/application/state_machine.py
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/contracts/__init__.py
+  - docs/contracts/extended.json
+  - docs/CONTRACT_CHANGELOG.md
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/ports/interfaces.py
@@ -59,8 +64,8 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
-  role: consumer
+  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -156,33 +161,61 @@ verification:
   - run 상태와 publication 상태 분리, simulated receipt와 실제 영수증 구분.
   runner: pytest
 evidence_dir: .agent/evidence/P1-005A
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-005A/target-0926172012/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 11
+  spec_digest: 5e34bc774f61faf6413f6279b5d23ef19ee995fcc03d665a53569b12f6d1e475
+  contract_digest: b5550e40561901231dc585f516d649ac14208b877c4c7c18656600a8762e1030
+  source_fingerprint: a3e87888b5bff3f57f7ed551334b7c51790231ca9a1ebecf131fd8ffd7c04d12
+  evidence: .agent/evidence/P1-005A/target-0926172012/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 10
-spec_revision: 10
-claim_generation: 0
+  submission_generation: 1
+  submission:
+    head: 9178e2047a3b71e09be0ef5662fa5ed361cc3c73
+    baseline_head: d8c596def0f780ff5766edc1240dfc85a757b5c9
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-005A-int-0926171947
+    branch: task/P1-005A-int-0926171947
+    evidence: .agent/evidence/P1-005A/worker-0926171956/result.json
+    changed_files:
+      docs/CONTRACT_CHANGELOG.md: a93d155677f8c3868624acb6cfee81f7faa737b7c8b12861f901c8f49c3df1a1
+      docs/contracts/extended.json: b2e601b8303cdcc172de1cebdf262d1b521a8cd0cd866669457bbcc79ef349fe
+      src/rfa_mas/adapters/local.py: b468691a78f59e938158279da99b7ba68b1d4dc30f5a90f2cdf7f9b068f4ed52
+      src/rfa_mas/adapters/mock.py: 752b5ee73589ad89e57e61dc28f8907cf807324dcc32d2ca59b556a3b9f74023
+      src/rfa_mas/api/app.py: 6065100fc61801b370e2e5b1454d0a54ecf16a774db660ff6551371e11293134
+      src/rfa_mas/application/drafts.py: 1bd818a9693999539f98f34118608bea062cd8ca8acabe337cf198d4946c58d9
+      src/rfa_mas/application/observations.py: d577416c6c35c0efc41700accec1c49390c349925438bdc567fe59f200783b9a
+      src/rfa_mas/application/state_machine.py: fbc90e928ea5d04bc0d2d7af3dbad0ce392cbe7a1e49594356c3d22517ea22e3
+      src/rfa_mas/bootstrap.py: e8f348d3f25c1f688888ca65f0fe0b0a42f3057ff8a3c84da93845fd36fd0b27
+      src/rfa_mas/contracts/__init__.py: 9aecb3ad2b1215ffb05f7ad58ae336fbef2dbabea650297c618fd1bd676cf360
+      src/rfa_mas/contracts/models.py: a3bb2610e6abdb5ac6ab5426507f350be90ef8e9090b6969af3b2c41405f23fd
+      tests/test_draft_lifecycle.py: f1c81f94a622966772ea1cb685ce17d1746cf39f2dd20a699ceb1919ddef0ae8
+      tests/test_state_machine.py: 642c66d2feab725ac6c24db0947c0fb808b8799b02765f538ba083dbb692d6aa
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 11
+      spec_digest: 5e34bc774f61faf6413f6279b5d23ef19ee995fcc03d665a53569b12f6d1e475
+      contract_digest: b5550e40561901231dc585f516d649ac14208b877c4c7c18656600a8762e1030
+      source_fingerprint: a3e87888b5bff3f57f7ed551334b7c51790231ca9a1ebecf131fd8ffd7c04d12
+      evidence: .agent/evidence/P1-005A/target-0926172012/result.json
+    head: 9178e2047a3b71e09be0ef5662fa5ed361cc3c73
+  evidence: .agent/evidence/P1-005A/target-0926172012/result.json
+revision: 19
+spec_revision: 11
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0926172012
+  evidence_refs:
+  - .agent/evidence/P1-005A/worker-0926171956/result.json
   approaches: []
 blocker: null
 migration:
@@ -196,7 +229,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T14:49:46+00:00'
-concise_result: 이관 완료; 제품 구현/검증 not_run.
+updated_at: '2026-09-26T17:20:22+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

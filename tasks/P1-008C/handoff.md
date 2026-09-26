@@ -14,3 +14,7 @@
 
 - bootstrap 조립·rfa local-stack(P1-008/P0-025)과 실제 승희 서비스 교체(P1-008A)는 별도.
 
+## 재검증 post-ops005 (2026-09-26T16:33Z)
+
+- 사유: OPS-005 changed TASK_EXECUTION_RULES.md (global context ref) at 4bf0ec9; direct dependencies of P1-008D/P0-025A/P1-001B only
+- 소스 변경 없이 현재 통합 HEAD d28731a에서 계획된 검증을 worker/target 단계로 재실행한다.
