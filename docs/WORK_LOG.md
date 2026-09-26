@@ -702,3 +702,21 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   새 KB 계약·직접 선행 결과 수락 전에는 draft이며 테스트는 planned다.
 - 발견한 별도 `.gitignore` 미커밋 변경은 사용자 변경으로 보존했고 우리 커밋에 넣지 않았다.
   아직 생성되지 않은 평가 handoff를 조회한 진단은 missing이었으며 실행 증거로 삼지 않았다.
+
+## P1-001 KB 통합·계약 발행 — 2026-09-26 12:20 UTC
+
+- source `09bdb65`를 main `30ad534`에 통합했다. owner 인증된 자료 CRUD/import,
+  불변 revision/current-head, 중복 입력·삭제 tombstone·legacy restricted 처리를 제공한다.
+  검색 권한 선필터와 과거 응답 무효화는 별도 P1-001A이며 아직 구현했다고 하지 않는다.
+- frozen DTO1.0은 그대로 두고 repository-local EXTENDED1.1 digest를
+  `70f3416bd5113bbc1516104314971404ff84d9aa61b569542f5d503164a54a21`로 발행했다.
+  main의 schema/OpenAPI·9 fixture 및 extended7 fixture 검사를 실제 실행했다.
+  이는 팀원 실제 API 합의나 연동 검증이 아니다.
+- 독립 target02는 **37 passed(0.35초)+176 passed(14.02초)+40 passed(6.46초)**,
+  fail/error/skip0이었다. 검증 전 source를 캡처했고 generation3/revision22에서 close했다.
+  실패 knowledge01과 worker02, target02 및 계약 발행 evidence를 연결해 보존한다.
+- P0-017/018/028/P1-006 consumer가 additive 계약을 검토·수락했다. 새 source로
+  관련 기반만 재검증하며 기존 구현을 다시 만들지 않는다. 현재 수정 대상은 ACL 기반
+  검색과 GET/replay/session message의 안전한 projection, 평가 C11의 실제 KB API 사용이다.
+- 실제 NVIDIA/Skill/NemoClaw/OpenShell·승인/게시 및 최종10개 시나리오는 이 결과와
+  별개의 미완료 gate다. 사용자 `.gitignore` 변경은 계속 보존하고 커밋에서 제외한다.

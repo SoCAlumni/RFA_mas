@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "70f3416bd5113bbc1516104314971404ff84d9aa61b569542f5d503164a54a21",
+  "reviewer": "rfa-coordinator",
+  "head": "30ad5348f655562639abc4dab83d0163db42e10c",
+  "started_at": "2026-09-26T12:14:14.166715+00:00",
+  "finished_at": "2026-09-26T12:14:15.605354+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T12:14:14.166715+00:00",
+      "finished_at": "2026-09-26T12:14:14.954052+00:00",
+      "elapsed_seconds": 0.7872165413573384,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T12:14:14.954154+00:00",
+      "finished_at": "2026-09-26T12:14:15.605354+00:00",
+      "elapsed_seconds": 0.6512040831148624,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "Additive repository-local 1.1 KB input/ACL/revision/partial receipts; frozen1.0/OpenAPI and9 plus extended7 fixture schemas checked after merge. No teammate API agreement, actual provider or full E2E claim."
+}

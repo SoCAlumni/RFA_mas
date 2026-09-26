@@ -11,7 +11,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -102,7 +102,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77
+  digest: 70f3416bd5113bbc1516104314971404ff84d9aa61b569542f5d503164a54a21
   role: consumer
 context:
   global_refs:
@@ -242,7 +242,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006
 latest_evidence_file: .agent/evidence/P1-006/evaluation-target-02/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 12
   spec_digest: 1ddb53a7c091623a24ce4063add21a618c2086b6e8838d55a5070100b238c5af
   contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
@@ -252,7 +252,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 72a66d4f2a9183d66b4f92351beff23d2c36f5e8
@@ -276,8 +276,8 @@ integration:
       evidence: .agent/evidence/P1-006/evaluation-target-02/result.json
     head: c7f7e4f70d4c5001afb090cf20bede60dddf63ac
   evidence: .agent/evidence/P1-006/evaluation-target-02/result.json
-revision: 26
-spec_revision: 12
+revision: 29
+spec_revision: 14
 claim_generation: 1
 claim: null
 attempts:
@@ -301,7 +301,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T12:12:41+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T12:19:49+00:00'
+concise_result: 'Specification changed: Reviewed additive KB1.1 schemas and actual merged provider checks;
+  accept70f3416 baseline for targeted consumer revalidation without changing AC or reusing prior evidence'
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

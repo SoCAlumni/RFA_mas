@@ -10,7 +10,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: knowledge
@@ -245,19 +245,19 @@ verification:
   - 기존 세션/재개·거절·동시 startup와 frozen/extended schema/fixture 회귀가 통과한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-001
-latest_evidence_file: .agent/evidence/P1-001/knowledge-02/result.json
+latest_evidence_file: .agent/evidence/P1-001/knowledge-target-02/result.json
 verification_summary:
   state: passed
   spec_revision: 9
   spec_digest: d49412b6eaf707b2ef3af02a355aeae0fa6ea353a67c6f2c943f028a5d1c9f81
-  contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
-  source_fingerprint: 4cff86185ce0ceb29ed72d1c9c2be0439f8a02691251a29e2fd46e276ca10861
-  evidence: .agent/evidence/P1-001/knowledge-02/result.json
+  contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
+  source_fingerprint: 0ed05266198db7f2c1372f7637e6ede6ffb4236857c61dbd57b7ba802f722744
+  evidence: .agent/evidence/P1-001/knowledge-target-02/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
+  reservation: false
   submission_generation: 3
   submission:
     head: 09bdb65a35566a4a471942daab57de07514f4043
@@ -282,17 +282,25 @@ integration:
       tests/test_resume.py: e345cab53927ab006b2fbb65738984becb2eccee3171b1668be16f5b471f62d5
       tests/test_sessions.py: 99899cce2ccacd33379671e4e62992cede09458ae2a0a6d4dac95f47e63914c9
       tests/test_teams.py: e5b78b5b0fabcfd285a9520ebd5f98a9afe72ff921aaf8d92baf7e46c7567e23
-  result: null
-  evidence: null
-revision: 18
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 9
+      spec_digest: d49412b6eaf707b2ef3af02a355aeae0fa6ea353a67c6f2c943f028a5d1c9f81
+      contract_digest: a272a9cbdb05dba48466797ebb72e291385f437614bc0acdc268f2b7ae36e912
+      source_fingerprint: 0ed05266198db7f2c1372f7637e6ede6ffb4236857c61dbd57b7ba802f722744
+      evidence: .agent/evidence/P1-001/knowledge-target-02/result.json
+    head: 30ad5348f655562639abc4dab83d0163db42e10c
+  evidence: .agent/evidence/P1-001/knowledge-target-02/result.json
+revision: 22
 spec_revision: 9
 claim_generation: 3
 claim: null
 attempts:
-  count: 2
+  count: 3
   cycles: 2
   no_progress_count: 0
-  latest_attempt: knowledge-02
+  latest_attempt: knowledge-target-02
   evidence_refs:
   - .agent/evidence/P1-001/knowledge-01/result.json
   - .agent/evidence/P1-001/knowledge-02/result.json
@@ -345,8 +353,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T11:58:55+00:00'
-concise_result: 'Specification changed: Observed migration3 expectation must include KB migration4; preserve
-  dirty owned implementation and all security assertions, add exact team regression to V2'
+updated_at: '2026-09-26T12:19:24+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

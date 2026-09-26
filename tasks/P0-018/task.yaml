@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -51,7 +51,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77
+  digest: 70f3416bd5113bbc1516104314971404ff84d9aa61b569542f5d503164a54a21
   role: consumer
 context:
   global_refs:
@@ -123,7 +123,7 @@ verification:
 evidence_dir: .agent/evidence/P0-018
 latest_evidence_file: .agent/evidence/P0-018/post-teams-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 10
   spec_digest: 975d7e8702de938dfe549785dfed0b118e75708cb32e3c50f03f3e35403319a7
   contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
@@ -133,7 +133,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 5
   submission:
     head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
@@ -155,8 +155,8 @@ integration:
       evidence: .agent/evidence/P0-018/post-teams-target-01/result.json
     head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
   evidence: .agent/evidence/P0-018/post-teams-target-01/result.json
-revision: 59
-spec_revision: 10
+revision: 62
+spec_revision: 12
 claim_generation: 5
 claim: null
 attempts:
@@ -356,7 +356,8 @@ migration:
   judgment: ID/AC 유지. 순수 selector를 신규 team_selector.py로 격리해 P1-004 의존 제거; graph 연결은 P0-020, 공통 DTO는 P0-014가
     소유. 공유 파일 동시 수정 금지.
   initial_spec_revision: 1
-updated_at: '2026-09-26T11:31:18+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T12:19:46+00:00'
+concise_result: 'Specification changed: Reviewed additive KB1.1 schemas and actual merged provider checks;
+  accept70f3416 baseline for targeted consumer revalidation without changing AC or reusing prior evidence'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

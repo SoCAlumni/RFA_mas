@@ -418,8 +418,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 12
-spec_revision: 12
+revision: 13
+spec_revision: 13
 claim_generation: 0
 claim: null
 attempts:
@@ -441,7 +441,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T12:09:17+00:00'
+updated_at: '2026-09-26T12:15:03+00:00'
 concise_result: 'Specification changed: Native C11 currently uses pre-KB legacy mutation; latest ACL task
   must use authenticated immutable update and distinguish safe restricted/deny from actual post-change
   disclosure while preserving verifier gates'

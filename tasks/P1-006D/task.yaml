@@ -9,7 +9,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -289,7 +289,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006D
 latest_evidence_file: .agent/evidence/P1-006D/post-teams-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 10
   spec_digest: f5cd80c60368647a46c8cb104c7fc6d8bb8fa3596e862ec4a9ddb980f81371d3
   contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
@@ -299,7 +299,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
@@ -341,7 +341,7 @@ integration:
       evidence: .agent/evidence/P1-006D/post-teams-target-01/result.json
     head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
   evidence: .agent/evidence/P1-006D/post-teams-target-01/result.json
-revision: 38
+revision: 39
 spec_revision: 10
 claim_generation: 2
 claim: null
@@ -427,7 +427,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T11:39:16+00:00'
+updated_at: '2026-09-26T12:14:02+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'
