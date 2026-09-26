@@ -15,7 +15,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | --- | --- | --- | --- |
 | 상태·세션·장기 지식 분리 | P0-015/016/021, P1-001/001A | 기존 `application/service.py`, `adapters/local.py`; 신규 예정 `adapters/checkpoints.py`(모두 `src/rfa_mas/` 아래) | 기존 metadata 저장만 verified; durable resume not_run |
 | 역할 위임·도구·종료 예산 | P0-018/019/020 | 기존 `src/rfa_mas/application/graphs/`; 신규 예정 `application/teams.py`, `application/workers.py` | 단일 domain graph만 verified; 팀 실행 not_run |
-| NVIDIA 추론 API | P1-002/002A | 신규 예정 `src/rfa_mas/adapters/nvidia.py`, `docs/evidence/nvidia-model.md` | mock만 verified; real not_run |
+| NVIDIA 추론 API | P1-002/002A | `tests/integration/test_nvidia_live.py`(direct hosted smoke), `docs/evidence/nvidia-model.md`; 제품 adapter는 신규 예정 `src/rfa_mas/adapters/nvidia.py` | hosted Nemotron 3.5 Lightning 합성 호출 live verified(2026-09-26, P1-002A); 제품 ModelPort 경로 not_run |
 | 공식 NeMo Retriever Skill | P1-003/003A | 신규 예정 `src/rfa_mas/adapters/nemo_retriever.py`, `docs/evidence/nvidia-skill.md` | 26.8.1 SKILL.md 재확인; worker/실제 실행 not_run |
 | 지원 runtime의 NemoClaw 운영 | P1-007/007A | `docs/INTEGRATION.md`; 신규 예정 `docs/evidence/nemoclaw.md` | 지원 경로 계획; real not_run |
 | OpenShell 권한 강제 | P1-008B, P1-007B | 기존 `src/rfa_mas/adapters/http.py`; 신규 예정 `docs/evidence/openshell.md` | local runtime은 sandbox 아님; real allow/deny not_run |
@@ -26,7 +26,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 
 | 계층 | 이 프로젝트에서의 역할 | P0 경계 | 상태 |
 | --- | --- | --- | --- |
-| 모델 추론 API | 텍스트 또는 구조화 응답 생성 | `ModelPort` 뒤의 결정적 mock | 모의(P0); NVIDIA 모델 호출은 계획(P1) |
+| 모델 추론 API | 텍스트 또는 구조화 응답 생성 | `ModelPort` 뒤의 결정적 mock | 제품 경로는 모의(P0); hosted NVIDIA 직접 호출은 합성 요청으로 live 확인(P1-002A), 제품 연결은 계획(P1-002) |
 | Agent Skill | worker가 특정 기능을 사용하는 절차와 지침 | skill을 설치하거나 실행하지 않음 | NeMo Retriever worker 연결은 계획(P1) |
 | LangGraph | 상태, node, edge, routing, 종료 조건을 구성하는 orchestration | Supervisor와 공통 Domain TaskGraph | 실제(local), 검증 완료(P0) |
 | NemoClaw | 지원 agent runtime의 onboarding, lifecycle, 운영을 OpenShell과 묶는 reference stack | `RuntimePort`의 교체 지점만 제공 | 계획(P1), 이 서비스 지원 여부는 미검증 |
@@ -46,7 +46,7 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | 모델 응답과 tool 결과 및 실패 시나리오 | `src/rfa_mas/adapters/mock.py` | 모의(P0) | success/근거 부족/거절/수정/timeout tests — 통과 |
 | step/tool/timeout 예산에 따른 종료 | `supervisor.py`, `domain.py` | 실제(local), 검증 완료(P0) | budget/partial-result/timeout tests — 통과 |
 
-실제 NVIDIA 모델의 tool calling 및 구조화 출력 지원은 선택한 모델의 공식 model card로 확인해야 한다. 모델 ID가 비어 있는 P0 mock 결과를 NVIDIA 호출 증거로 사용하지 않는다.
+실제 NVIDIA 모델의 tool calling 및 구조화 출력 지원은 선택한 모델의 공식 model card로 확인해야 한다. 2026-09-26 hosted `nvidia/nemotron-3.5-lightning-30b-a3b`에서 json_object 응답과 named tool_choice 호출 제안을 합성 요청으로 관측했다([증거](evidence/nvidia-model.md)). 이는 도구 실행이나 제품 graph 경로 검증이 아니다. 모델 ID가 비어 있는 P0 mock 결과를 NVIDIA 호출 증거로 사용하지 않는다.
 
 ### Module 2 — routing, 병렬 작업, 자체 자료 RAG, 계획
 
