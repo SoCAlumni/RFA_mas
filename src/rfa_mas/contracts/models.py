@@ -1,16 +1,31 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    ConfigDict,
+    Field,
+    SecretStr,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from rfa_mas.contracts.common import (
     AdapterInfo,
     Audience,
+    ContextLevel,
     ContractModel,
+    Digest,
     DomainId,
+    EvaluationStatus,
+    ExecutionMode,
+    ExtendedContractModel,
     FeedbackCategory,
+    OpaqueId,
     PublicationStatus,
     ResultStatus,
     ReviewStatus,
@@ -409,3 +424,518 @@ class AuthenticationConfig(ContractModel):
     @classmethod
     def empty_secret_is_none(cls, value: object) -> object:
         return None if value == "" else value
+
+
+# Repository-local 1.1 extensions. These schemas are not authentication or
+# evidence that another service implements the protocol. Legacy DTOs stay 1.0.
+class ExecutionContext(ExtendedContractModel):
+    request_id: OpaqueId
+    trace_id: OpaqueId
+    run_id: OpaqueId
+    agent_id: OpaqueId
+    session_id: OpaqueId | None = None
+    domain_id: DomainId | None = None
+    task_id: OpaqueId | None = None
+    team_id: OpaqueId | None = None
+
+    @model_validator(mode="after")
+    def coherent_links(self) -> ExecutionContext:
+        if self.team_id is not None and self.task_id is None:
+            raise ValueError("team requires task")
+        if self.task_id is not None and self.domain_id is None:
+            raise ValueError("task requires domain")
+        return self
+
+
+class SessionRecord(ExtendedContractModel):
+    session_id: OpaqueId
+    thread_id: OpaqueId
+    owner_id: OpaqueId
+    task_ids: tuple[OpaqueId, ...] = ()
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def utc_times(cls, value: datetime) -> datetime:
+        return value.astimezone(UTC)
+
+
+class PersistentTask(ExtendedContractModel):
+    task_id: OpaqueId
+    domain_id: DomainId
+    owner_id: OpaqueId
+    goal: str = Field(min_length=1, max_length=10000)
+    status: Literal["active", "paused", "completed", "cancelled"] = "active"
+    team_id: OpaqueId | None = None
+    revision: int = Field(default=1, ge=1)
+
+
+class TeamBudget(ExtendedContractModel):
+    max_steps: int = Field(default=30, ge=1, le=1000)
+    max_tool_calls: int = Field(default=10, ge=0, le=1000)
+    max_tokens: int = Field(default=16000, ge=1)
+    timeout_seconds: float = Field(default=180, gt=0, le=3600)
+    concurrency: int = Field(default=2, ge=1, le=16)
+
+
+class TeamTemplate(ExtendedContractModel):
+    template_id: OpaqueId
+    version: OpaqueId
+    pattern: Literal["benchmark", "research"]
+    approved: Literal[True]
+    required_capabilities: tuple[OpaqueId, ...]
+    runtime_kind: Literal["local", "openshell"]
+    budget: TeamBudget
+
+
+class TeamMember(ExtendedContractModel):
+    role: Literal[
+        "supervisor",
+        "paper_scout",
+        "experiment_runner",
+        "result_analyst",
+        "source_scout",
+        "evidence_reviewer",
+    ]
+    spec: AgentSpec
+    source_ids: tuple[OpaqueId, ...] = ()
+    tool_names: tuple[OpaqueId, ...] = ()
+    # Authenticated Runtime/Policy adapters must enforce these requested bounds.
+    # A caller-controlled capability list never grants authority.
+
+
+class TeamSpec(ExtendedContractModel):
+    task_id: OpaqueId
+    team_id: OpaqueId
+    domain_id: DomainId
+    owner_id: OpaqueId
+    template: TeamTemplate
+    members: tuple[TeamMember, ...]
+    communication: Literal["supervisor_only"] = "supervisor_only"
+
+    @model_validator(mode="after")
+    def bind_members(self) -> TeamSpec:
+        required = {
+            "benchmark": {"supervisor", "paper_scout", "experiment_runner", "result_analyst"},
+            "research": {"supervisor", "source_scout", "evidence_reviewer"},
+        }[self.template.pattern]
+        if {member.role for member in self.members} != required or len(self.members) != len(
+            required
+        ):
+            raise ValueError("team roles must match approved pattern exactly")
+        ids = [member.spec.agent_id for member in self.members]
+        memories = [member.spec.memory_namespace for member in self.members]
+        if len(set(ids)) != len(ids) or len(set(memories)) != len(memories):
+            raise ValueError("agent IDs and memory namespaces must be unique")
+        if any(member.spec.domain_id != self.domain_id for member in self.members):
+            raise ValueError("team and member domains must match")
+        return self
+
+
+class TeamInstance(ExtendedContractModel):
+    spec: TeamSpec
+    state: Literal["provisioning", "ready", "running", "failed", "cancelled", "cleaned"]
+    runtime_ref: OpaqueId | None = None
+    sandbox_id: OpaqueId | None = None
+    mode: ExecutionMode
+    failed_agent_ids: tuple[OpaqueId, ...] = ()
+
+    @model_validator(mode="after")
+    def sandbox_requires_real_runtime(self) -> TeamInstance:
+        if self.sandbox_id is not None and (
+            self.mode != ExecutionMode.REAL or self.spec.template.runtime_kind != "openshell"
+        ):
+            raise ValueError("local/mock runtime is not a sandbox")
+        return self
+
+
+class ScheduleSpec(ExtendedContractModel):
+    schedule_id: OpaqueId
+    owner_id: OpaqueId
+    job_type: Literal["briefing", "organize", "candidate_scan"]
+    domain_id: DomainId
+    task_id: OpaqueId | None = None
+    cron: str = Field(min_length=1, max_length=100)
+    timezone: str = "Asia/Seoul"
+    enabled: bool = True
+    misfire_policy: Literal["latest_once", "hold"] = "latest_once"
+    next_run_at: AwareDatetime | None = None
+
+
+class DirectWorkRequest(WorkRequest):
+    schema_version: Literal["1.1"] = "1.1"
+    ingress: Literal["direct"] = "direct"
+    session_id: OpaqueId | None = None
+    task_id: OpaqueId | None = None
+
+
+class ChannelWorkRequest(DirectWorkRequest):
+    ingress: Literal["internal", "public"]
+    channel_event_id: OpaqueId
+
+    @model_validator(mode="after")
+    def supervisor_only(self) -> ChannelWorkRequest:
+        if self.agent_id != "assistant-supervisor":
+            raise ValueError("channel requests must enter through assistant-supervisor")
+        if self.ingress == "public" and self.target.audience != Audience.PUBLIC:
+            raise ValueError("public ingress requires public target")
+        return self
+
+
+class SourceRevisionRef(EvidenceRef):
+    schema_version: Literal["1.1"] = "1.1"
+    acl_revision: OpaqueId
+    policy_version: OpaqueId
+
+
+class PolicyDecisionV11(PolicyDecision):
+    schema_version: Literal["1.1"] = "1.1"
+    decision_id: OpaqueId
+    decision: Literal["allow", "deny", "review"]
+    action: Literal["read", "share", "egress", "tool", "publish"]
+    subject_id: OpaqueId
+    resource_id: OpaqueId
+    recipient: OpaqueId
+    issued_at: AwareDatetime
+    expires_at: AwareDatetime
+    source_refs: tuple[SourceRevisionRef, ...] = ()
+
+    @model_validator(mode="after")
+    def valid_decision(self) -> PolicyDecisionV11:
+        if self.allowed != (self.decision == "allow"):
+            raise ValueError("review/deny is not allow")
+        if self.expires_at <= self.issued_at:
+            raise ValueError("policy validity must have a positive duration")
+        return self
+
+
+class PolicyBindings(ExtendedContractModel):
+    read_decision_id: OpaqueId
+    share_decision_id: OpaqueId | None = None
+    egress_decision_id: OpaqueId | None = None
+
+
+class ContextRequest(RetrievalRequest):
+    schema_version: Literal["1.1"] = "1.1"
+    level: ContextLevel = ContextLevel.L0
+    goal: str = Field(min_length=1, max_length=10000)
+    role: OpaqueId
+    target: DraftTarget
+    endpoint_id: OpaqueId
+    selected_sources: tuple[SourceRevisionRef, ...] = ()
+    max_characters: int = Field(default=12000, ge=1)
+
+    @model_validator(mode="after")
+    def explicit_fulltext_selection(self) -> ContextRequest:
+        if self.level == ContextLevel.L2 and not self.selected_sources:
+            raise ValueError("L2 requires explicit sources and current revisions")
+        return self
+
+
+class ContextItem(EvidenceItem):
+    schema_version: Literal["1.1"] = "1.1"
+    level: ContextLevel
+    parents: tuple[SourceRevisionRef, ...] = Field(min_length=1)
+    policies: PolicyBindings
+    epistemic_state: Literal["cited", "inferred", "tentative", "conflicting"] = "cited"
+    state: Literal["current", "stale", "restricted"] = "current"
+
+
+class ContextBundle(EvidenceBundle):
+    schema_version: Literal["1.1"] = "1.1"
+    items: tuple[ContextItem, ...] = ()
+    loaded_characters: int = Field(ge=0)
+    measured_tokens: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def exact_loading_measurement(self) -> ContextBundle:
+        if self.loaded_characters != sum(len(item.excerpt) for item in self.items):
+            raise ValueError("loaded_characters must be the measured excerpt length")
+        return self
+
+
+class ExperimentEvidence(ExtendedContractModel):
+    status: Literal["mock", "not_run", "measured"]
+    metrics: dict[OpaqueId, float] = Field(default_factory=dict)
+    units: dict[OpaqueId, OpaqueId] = Field(default_factory=dict)
+    evidence_ref: OpaqueId | None = None
+    conditions_ref: OpaqueId | None = None
+
+    @model_validator(mode="after")
+    def no_fabricated_measurement(self) -> ExperimentEvidence:
+        if self.status == "not_run" and self.metrics:
+            raise ValueError("not_run cannot contain measured metrics")
+        if set(self.metrics) != set(self.units):
+            raise ValueError("metrics require explicit matching units")
+        if self.status == "measured" and not (self.evidence_ref and self.conditions_ref):
+            raise ValueError("measured experiments require evidence and conditions")
+        return self
+
+
+class AttachmentRef(ExtendedContractModel):
+    attachment_id: OpaqueId
+    content_hash: Digest
+
+
+class DraftBinding(ExtendedContractModel):
+    draft_id: OpaqueId
+    version: int = Field(ge=1)
+    content_hash: Digest
+    payload_hash: Digest
+    target: DraftTarget
+    policy_version: OpaqueId
+    sources: tuple[SourceRevisionRef, ...]
+
+
+class DraftBundleV11(DraftBundle):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    schema_version: Literal["1.1"] = "1.1"
+    attachments: tuple[AttachmentRef, ...] = ()
+    sources: tuple[SourceRevisionRef, ...] = ()
+    policy_decision_id: OpaqueId
+    payload_hash: Digest
+
+    def calculated_payload_hash(self) -> str:
+        # Hash binds exact content, attachment digests, target and policy/source
+        # revisions. It neither anonymizes content nor authenticates an approver.
+        data = self.model_dump(
+            mode="json",
+            include={
+                "draft_id",
+                "version",
+                "content",
+                "content_hash",
+                "attachments",
+                "target",
+                "policy_version",
+                "policy_decision_id",
+                "sources",
+            },
+        )
+        return sha256_text(
+            json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+        )
+
+    @model_validator(mode="after")
+    def exact_payload_binding(self) -> DraftBundleV11:
+        if self.payload_hash != self.calculated_payload_hash():
+            raise ValueError("payload_hash must bind exact draft, attachments, target and policies")
+        if {ref.source_id for ref in self.allowed_evidence} != {
+            ref.source_id for ref in self.sources
+        }:
+            raise ValueError("all draft evidence requires a current source/ACL reference")
+        for evidence in self.allowed_evidence:
+            if not any(
+                all(
+                    getattr(evidence, k) == getattr(source, k)
+                    for k in (
+                        "source_id",
+                        "source_revision",
+                        "location",
+                        "audience",
+                        "content_hash",
+                    )
+                )
+                for source in self.sources
+            ):
+                raise ValueError("evidence and source revision binding mismatch")
+        return self
+
+    def binding(self) -> DraftBinding:
+        return DraftBinding(
+            **self.model_dump(
+                include={
+                    "draft_id",
+                    "version",
+                    "content_hash",
+                    "payload_hash",
+                    "target",
+                    "policy_version",
+                    "sources",
+                }
+            )
+        )
+
+
+class ApprovalReference(ExtendedContractModel):
+    """Mirror only. Transport authentication and server-owned lookup are mandatory."""
+
+    approval_id: OpaqueId
+    approver_id: OpaqueId
+    binding: DraftBinding
+    decision: ReviewStatus
+    issued_at: AwareDatetime
+    expires_at: AwareDatetime
+    mode: ExecutionMode
+    authority: Literal["response_service", "reference_mock"]
+
+    @model_validator(mode="after")
+    def consistent_authority(self) -> ApprovalReference:
+        if (self.authority == "reference_mock") != (self.mode == ExecutionMode.MOCK):
+            raise ValueError("mock authority must be explicitly mock")
+        if self.expires_at <= self.issued_at:
+            raise ValueError("approval must have valid expiry")
+        return self
+
+    def matches(self, draft: DraftBundleV11, at: datetime) -> bool:
+        if at.tzinfo is None:
+            raise ValueError("approval evaluation time must be timezone aware")
+        # Assignment/model_copy can bypass Pydantic construction validation.
+        # Reparse dictionaries (not existing instances) at this safety boundary.
+        try:
+            current = DraftBundleV11.model_validate(draft.model_dump())
+            approval = ApprovalReference.model_validate(self.model_dump())
+        except (ValidationError, ValueError, TypeError):
+            return False
+        return (
+            approval.decision == ReviewStatus.APPROVED
+            and approval.issued_at <= at < approval.expires_at
+            and approval.binding == current.binding()
+        )
+
+
+class PublicationReceipt(ExtendedContractModel):
+    publication_id: OpaqueId
+    run_id: OpaqueId
+    idempotency_key: OpaqueId
+    binding: DraftBinding
+    approval_id: OpaqueId
+    status: PublicationStatus
+    external_result_ref: OpaqueId | None = None
+    mode: ExecutionMode
+    next_action: Literal["none", "query", "review"]
+
+    @model_validator(mode="after")
+    def unknown_requires_query(self) -> PublicationReceipt:
+        if self.status == PublicationStatus.OUTCOME_UNKNOWN and self.next_action != "query":
+            raise ValueError("unknown publication requires query, never automatic republish")
+        if self.status == PublicationStatus.SUCCEEDED and self.external_result_ref is None:
+            raise ValueError("successful publication requires result reference")
+        return self
+
+
+class ToolInvocation(ToolRequest):
+    schema_version: Literal["1.1"] = "1.1"
+    principal: TrustedPrincipal
+    capabilities: tuple[OpaqueId, ...]
+    task_id: OpaqueId | None = None
+    policy_decision_id: OpaqueId
+    approval_id: OpaqueId | None = None
+
+
+class VersionReferences(ExtendedContractModel):
+    code: OpaqueId
+    contract: Literal["1.1"] = "1.1"
+    policy: OpaqueId
+    dataset: OpaqueId | None = None
+    evaluator: OpaqueId | None = None
+    model: OpaqueId | None = None
+    prompt: OpaqueId | None = None
+    template: OpaqueId | None = None
+    sources: tuple[OpaqueId, ...] = ()
+
+
+class TraceEvent(ExtendedContractModel):
+    """Allowlist only. IDs must be minted/mapped by trusted code, never raw inputs."""
+
+    execution: ExecutionContext
+    event: Literal[
+        "request",
+        "retrieval",
+        "policy",
+        "model",
+        "tool",
+        "draft",
+        "approval",
+        "publish",
+        "runtime",
+        "evaluation",
+        "stop",
+    ]
+    status: Literal[
+        "started", "succeeded", "failed", "denied", "waiting", "cancelled", "outcome_unknown"
+    ]
+    mode: ExecutionMode
+    versions: VersionReferences
+    timestamp: AwareDatetime
+    duration_ms: float | None = Field(default=None, ge=0)
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    call_count: int = Field(default=0, ge=0)
+    reason_code: (
+        Literal[
+            "ok",
+            "denied",
+            "insufficient",
+            "timeout",
+            "budget",
+            "cancelled",
+            "provider_error",
+            "invalid_contract",
+        ]
+        | None
+    ) = None
+    policy_decision_id: OpaqueId | None = None
+    sandbox_id: OpaqueId | None = None
+    draft_id: OpaqueId | None = None
+    approval_id: OpaqueId | None = None
+    publication_id: OpaqueId | None = None
+    evidence_ref: OpaqueId | None = None
+
+    @model_validator(mode="after")
+    def stage_links(self) -> TraceEvent:
+        if self.approval_id is not None and self.draft_id is None:
+            raise ValueError("approval trace requires draft reference")
+        if self.publication_id is not None and self.approval_id is None:
+            raise ValueError("publication trace requires approval reference")
+        if self.sandbox_id is not None and self.mode != ExecutionMode.REAL:
+            raise ValueError("mock/local trace must not claim sandbox execution")
+        return self
+
+
+class EvaluationCaseV11(EvaluationCase):
+    schema_version: Literal["1.1"] = "1.1"
+    scenario_id: OpaqueId
+    identity_fixture_id: OpaqueId
+    fixture_ref: OpaqueId
+    dataset_version: OpaqueId
+    seed: int
+    synthetic: Literal[True] = True
+    expected_observations: tuple[OpaqueId, ...] = Field(min_length=1)
+
+
+class EvalResultV11(EvalResult):
+    schema_version: Literal["1.1"] = "1.1"
+    rule_status: EvaluationStatus
+    judge_status: EvaluationStatus
+    evaluator: Literal["rules", "judge", "combined"]
+    versions: VersionReferences
+    evidence_refs: tuple[OpaqueId, ...] = ()
+    mode: ExecutionMode
+
+    @model_validator(mode="after")
+    def independent_gates(self) -> EvalResultV11:
+        if self.rule_status == EvaluationStatus.PASS and (
+            not self.rule_checks or not all(self.rule_checks.values())
+        ):
+            raise ValueError("rule pass requires all observed checks to pass")
+        if self.rule_status == EvaluationStatus.NOT_RUN and self.rule_checks:
+            raise ValueError("not_run rules cannot contain observations")
+        if (
+            self.judge_status in {EvaluationStatus.PASS, EvaluationStatus.FAIL}
+            and self.judge_kind == "not_run"
+        ):
+            raise ValueError("judge pass/fail requires an executed assessment")
+        if (
+            self.judge_status
+            in {EvaluationStatus.ERROR, EvaluationStatus.NOT_RUN, EvaluationStatus.UNKNOWN}
+            and self.judge_kind != "not_run"
+        ):
+            raise ValueError("unavailable judge cannot provide a scored assessment")
+        if (
+            self.rule_status in {EvaluationStatus.PASS, EvaluationStatus.FAIL}
+            and not self.evidence_refs
+        ):
+            raise ValueError("rule outcome requires observation evidence")
+        return self

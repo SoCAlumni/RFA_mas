@@ -3,12 +3,39 @@ from __future__ import annotations
 import hashlib
 import uuid
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA_VERSION = "1.0"
 SchemaVersion = Literal["1.0"]
+
+# The 1.0 wire contract remains frozen. New DTOs explicitly opt into 1.1.
+EXTENDED_SCHEMA_VERSION = "1.1"
+OpaqueId = Annotated[
+    str, Field(min_length=1, max_length=160, pattern=r"^[A-Za-z0-9][A-Za-z0-9_.:/-]*$")
+]
+Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+
+
+class ExecutionMode(StrEnum):
+    MOCK = "mock"
+    LOCAL = "local"
+    REAL = "real"
+
+
+class ContextLevel(StrEnum):
+    L0 = "L0"
+    L1 = "L1"
+    L2 = "L2"
+
+
+class EvaluationStatus(StrEnum):
+    PASS = "pass"
+    FAIL = "fail"
+    ERROR = "error"
+    NOT_RUN = "not_run"
+    UNKNOWN = "unknown"
 
 
 def new_id(prefix: str) -> str:
@@ -23,6 +50,13 @@ class ContractModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     schema_version: SchemaVersion = SCHEMA_VERSION
+
+
+class ExtendedContractModel(ContractModel):
+    """Explicit 1.1 opt-in; do not strip the bytes to which approval is bound."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False, allow_inf_nan=False)
+    schema_version: Literal["1.1"] = EXTENDED_SCHEMA_VERSION
 
 
 class Audience(StrEnum):

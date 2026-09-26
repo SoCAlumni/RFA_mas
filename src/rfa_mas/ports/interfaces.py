@@ -5,6 +5,8 @@ from typing import Any, Protocol
 
 from rfa_mas.contracts import (
     AgentSpec,
+    ContextBundle,
+    ContextRequest,
     DraftBundle,
     EvaluationCase,
     EvidenceBundle,
@@ -20,8 +22,11 @@ from rfa_mas.contracts import (
     SimulationScenario,
     TaskRequest,
     TaskResult,
+    TeamInstance,
+    TeamSpec,
     ToolRequest,
     ToolResult,
+    TraceEvent,
     WorkRequest,
     WorkStatus,
 )
@@ -39,6 +44,14 @@ class RetrievalPort(Protocol):
     simulated: bool
 
     async def search(self, request: RetrievalRequest) -> EvidenceBundle: ...
+
+    async def load_context(self, request: ContextRequest) -> ContextBundle:
+        """1.1: authorize read/share/endpoint BEFORE ranking or loading each stage.
+
+        Revalidate every parent revision/ACL; even metadata requires authorization.
+        Existing 1.0 adapters require explicit capability checks until upgraded.
+        """
+        ...
 
 
 class ResponsePort(Protocol):
@@ -72,6 +85,12 @@ class RuntimePort(Protocol):
     async def status(self, run_id: str) -> TaskResult | None: ...
 
     async def cancel(self, run_id: str) -> TaskResult: ...
+
+    async def prepare(self, spec: TeamSpec, *, idempotency_key: str) -> TeamInstance:
+        """1.1: idempotently prepare one Task's team; clean partial provisioning."""
+        ...
+
+    async def cleanup(self, team_id: str, *, idempotency_key: str) -> TeamInstance: ...
 
 
 TaskHandler = Callable[[AgentSpec, TaskRequest], Awaitable[TaskResult]]
@@ -127,3 +146,7 @@ class TracePort(Protocol):
         status: str,
         metadata: dict[str, Any] | None = None,
     ) -> None: ...
+
+    async def emit_event(self, event: TraceEvent) -> None:
+        """1.1 allowlist; no arbitrary metadata and no raw input copied into IDs."""
+        ...

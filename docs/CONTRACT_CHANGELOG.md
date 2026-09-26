@@ -1,5 +1,13 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P0-014 additive 1.1 구현
+
+- 기존 1.0 wire 모델과 HTTP route를 유지한 채 version literal 1.1인 entity/DTO를 추가했다. 상세 필드·소유권·null/migration 경계는 INTEGRATION.md의 1.1 표와 단일 Pydantic 원본을 따른다. 새 endpoint 구현이나 팀원 합의를 주장하지 않는다.
+- RuntimePort에 prepare/cleanup, RetrievalPort에 load_context, TracePort에 emit_event를 선언했다. 기존 adapter의 1.0 메서드는 유지되며 새 메서드 구현/지원 확인은 후속 task다. 기존 DB migration은 아직 없고 additive entity 테이블은 P0-015/019/023에서 담당한다.
+- 1.0 baseline/fixture는 변경하지 않는다. baseline의 source hash는 최초 구현 provenance이며 호환성 검사에서 현재 wire schema/기존 메서드/OpenAPI를 다시 대조한다. 현재 소스 해시는 새 extended export가 기록한다. 이는 과거 검증을 새 기능의 검증으로 바꾸는 작업이 아니다.
+- 정상/정책 거절/미승인/본문 변경/ACL 변경/중복/결과 불명 fixture는 구조 검증용이며 Eval 상태는 not_run이다. 실제 실행 ledger·HTTP callback·trace exporter 보안 검증은 후속 consumer 작업이다.
+- 생성: `scripts/contract_baseline.py write-extended`; 검사: `check`, `check-extended`, `tests/test_contracts.py`, `tests/test_trace_eval_contract.py`. 실제 결과는 task evidence에 기록한다. coordinator 통합 후 publish-contract로 digest를 발행하고 각 consumer가 명시 수락한다.
+
 ## 2026-09-26 — 기술 고도화 명세 보강(미발행)
 
 - P0-014의 **planned RFA-EXTENDED 1.1**에 실행/정책/근거/승인 연결, stage-aware context, typed trace allowlist, evaluator별 결과/버전 및 7종 fixture 요구를 보강했다. DTO/schema 파일이나 기존 RFA-DTO 1.0 digest는 이번에 변경하지 않았다. publish-contract를 실행하지 않았으며 팀원 합의도 주장하지 않는다.
