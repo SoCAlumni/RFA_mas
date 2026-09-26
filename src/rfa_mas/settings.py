@@ -128,6 +128,9 @@ class Settings(BaseSettings):
     langfuse_base_url: str | None = None
     langfuse_public_key: SecretStr | None = None
     langfuse_secret_key: SecretStr | None = None
+    # P1-006C per-endpoint egress permission for the loopback Langfuse exporter.
+    # Keys and TRACE_BACKEND alone grant nothing; non-loopback endpoints stay reserved.
+    langfuse_export_enabled: bool = False
 
     enable_judge: bool = False
     judge_provider: Literal["mock", "nvidia"] = "mock"
@@ -302,7 +305,14 @@ class Settings(BaseSettings):
             if backend == "http":
                 required.update({base_name, token_name})
         if self.trace_backend == "langfuse":
-            required.update({"LANGFUSE_BASE_URL", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"})
+            required.update(
+                {
+                    "LANGFUSE_BASE_URL",
+                    "LANGFUSE_PUBLIC_KEY",
+                    "LANGFUSE_SECRET_KEY",
+                    "LANGFUSE_EXPORT_ENABLED",
+                }
+            )
         if self.enable_judge and self.judge_provider == "nvidia":
             required.update({"JUDGE_MODEL", "NVIDIA_API_KEY"})
         return required
@@ -370,6 +380,7 @@ class Settings(BaseSettings):
             "LANGFUSE_BASE_URL": bool(self.langfuse_base_url),
             "LANGFUSE_PUBLIC_KEY": self.langfuse_public_key is not None,
             "LANGFUSE_SECRET_KEY": self.langfuse_secret_key is not None,
+            "LANGFUSE_EXPORT_ENABLED": self.langfuse_export_enabled,
             "JUDGE_MODEL": bool(self.judge_model),
         }
         return tuple(

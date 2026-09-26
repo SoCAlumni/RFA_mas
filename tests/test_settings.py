@@ -101,7 +101,13 @@ def test_default_mock_local_modes_are_ready_without_keys() -> None:
         ),
         (
             {"trace_backend": "langfuse"},
-            {"LANGFUSE_BASE_URL", "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY"},
+            # P1-006C: keys are not egress permission; the explicit gate is required too.
+            {
+                "LANGFUSE_BASE_URL",
+                "LANGFUSE_PUBLIC_KEY",
+                "LANGFUSE_SECRET_KEY",
+                "LANGFUSE_EXPORT_ENABLED",
+            },
         ),
         (
             {"enable_judge": True, "judge_provider": "nvidia"},
@@ -152,8 +158,10 @@ def test_external_bind_requires_authentication_key() -> None:
                 "langfuse_base_url": "https://reference.invalid",
                 "langfuse_public_key": "known-fake-public-key",
                 "langfuse_secret_key": "known-fake-secret-key",
+                "langfuse_export_enabled": True,
             },
-            "trace:langfuse",
+            # P1-006C implements loopback export only; a remote endpoint stays reserved.
+            "endpoint:LANGFUSE_BASE_URL:non_loopback",
         ),
         (
             {

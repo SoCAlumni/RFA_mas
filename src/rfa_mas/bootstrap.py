@@ -19,6 +19,7 @@ from rfa_mas.adapters.http import (
     ToolHttpAdapter,
     require_loopback_reference_url,
 )
+from rfa_mas.adapters.langfuse import LangfuseEgress, LangfuseExportTrace, LangfuseOtlpExporter
 from rfa_mas.adapters.local import (
     LocalAnalysisTools,
     LocalJsonlTrace,
@@ -190,6 +191,12 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
         ("TOOL_BASE_URL", settings.tool_backend, settings.tool_base_url),
         ("RUNTIME_BASE_URL", settings.runtime_backend, settings.runtime_base_url),
         ("POLICY_BASE_URL", settings.policy_backend, settings.policy_base_url),
+        # P1-006C: same URL-shape and loopback gate for the Langfuse trace exporter.
+        (
+            "LANGFUSE_BASE_URL",
+            "http" if settings.trace_backend == "langfuse" else "off",
+            settings.langfuse_base_url,
+        ),
     ):
         if mode != "http" or not url:
             continue
@@ -216,7 +223,6 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
         except BackendNotImplementedError:
             reserved.append(f"endpoint:{name}:non_loopback")
     for port, selected, default in (
-        ("trace", settings.trace_backend, "local"),
         ("judge", settings.judge_provider if settings.enable_judge else "mock", "mock"),
     ):
         if selected != default:
@@ -418,6 +424,41 @@ def _http_port(
     return reference_client
 
 
+def _langfuse_trace(
+    local_trace: LocalJsonlTrace,
+    settings: Settings,
+    redactor: SecretRedactor,
+    clients: list[httpx.AsyncClient],
+    transport: httpx.AsyncBaseTransport | None,
+) -> LangfuseExportTrace:
+    """P1-006C: local JSONL stays the source of truth; Langfuse export is additive.
+
+    Readiness already requires the keys, LANGFUSE_EXPORT_ENABLED=true and a loopback
+    URL. The exporter re-checks the same egress permission before every request.
+    """
+    base_url = settings.langfuse_base_url or ""
+    require_loopback_reference_url(base_url, setting_name="LANGFUSE_BASE_URL")
+    timeout = min(settings.http_timeout_seconds, 5.0)
+    client = httpx.AsyncClient(
+        base_url=base_url.rstrip("/"),
+        timeout=httpx.Timeout(timeout),
+        # Optional injected transport (MockTransport in tests). The loopback gate above
+        # and the per-request egress check still apply; no redirects are followed.
+        transport=transport,
+        follow_redirects=False,
+    )
+    clients.append(client)
+    exporter = LangfuseOtlpExporter(
+        client=client,
+        egress=LangfuseEgress(base_url, settings.langfuse_export_enabled),
+        public_key=settings.langfuse_public_key,
+        secret_key=settings.langfuse_secret_key,
+        redactor=redactor,
+        timeout_seconds=timeout,
+    )
+    return LangfuseExportTrace(local_trace, exporter)
+
+
 def _staged_context(repository, policy, settings: Settings, observer: Observations,
                     on_context=None):
     """Trusted factory (P1-005): staged L0/L1/L2 context for owner/public local targets.
@@ -511,6 +552,7 @@ def build_container(
     project_resolver: ProjectResolver = no_projects,
     http_transport: httpx.AsyncBaseTransport | None = None,
     model_transport: httpx.AsyncBaseTransport | None = None,
+    trace_transport: httpx.AsyncBaseTransport | None = None,
 ) -> Container:
     settings = settings or Settings()
     inspect_configuration(settings).require_available()
@@ -609,12 +651,15 @@ def build_container(
             )
         )
 
-    trace = LocalJsonlTrace(
+    local_trace = LocalJsonlTrace(
         settings.trace_dir,
         redactor,
         repository=repository,
         retention_days=settings.trace_retention_days,
     )
+    trace: LocalJsonlTrace | LangfuseExportTrace = local_trace
+    if settings.trace_backend == "langfuse":
+        trace = _langfuse_trace(local_trace, settings, redactor, clients, trace_transport)
     observer = Observations(repository, trace, policy=policy)
     runtime_support = RuntimeLifecycleSupport(
         supported=isinstance(runtime, LocalRuntime),
