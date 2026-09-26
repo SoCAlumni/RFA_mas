@@ -84,7 +84,7 @@ def body_spy(repo, monkeypatch):
 # -- rule units ------------------------------------------------------------------------------
 def test_rules_are_versioned_and_distinctive_words_skip_request_and_question_words():
     assert RELEVANCE_RULES_VERSION == "relevance-gate-v1"
-    words = {w: d for w, _, d in query_words("오늘 경쟁사 SDK 출시일이 언제야? 요약해줘 a")}
+    words = {w: d for w, _, d, _ in query_words("오늘 경쟁사 SDK 출시일이 언제야? 요약해줘 a")}
     assert words["경쟁사"] and words["sdk"] and words["출시일"]
     assert not words["오늘"] and not words["a"] and not words.get("언제야", False)
 
@@ -102,6 +102,16 @@ def test_r2_unknown_korean_qualifier_before_a_known_latin_subject_is_insufficien
     assert not gate("SDK launch 출시일", docs)
     # A Hangul word counts as covered through its bigrams (the P1-001D matching rule).
     assert not gate("출시일정 SDK", docs)
+
+
+def test_r2_needs_a_modifier_link_and_a_conjunction_ends_the_phrase():
+    docs = ["TRIV-DEMO SDK 출시 benchmark 결과"]
+    assert gate("경쟁사 benchmark 결과", docs)  # bare modifier
+    assert gate("경쟁사의 benchmark 결과", docs)  # genitive modifier
+    # "일정과 benchmark": "과" joins two subjects, so the known "benchmark" still answers even
+    # when this reader has no document about "일정" (a same-team reader without the 1:1 note).
+    assert not gate("SDK 일정과 benchmark 진행 상황을 알려줘.", docs)
+    assert not gate("일정을 benchmark 기준으로", docs)
 
 
 def test_terms_the_ranker_did_not_count_are_treated_as_covered():

@@ -75,10 +75,12 @@ def lexical_terms(query: str) -> tuple[tuple[str, bool], ...]:
 # terms are not covered by the caller's AUTHORIZED documents (never by documents the caller
 # cannot read). Rules (RELEVANCE_RULES_VERSION):
 #   R1 none covered: the query has distinctive terms and not one of them is covered.
-#   R2 unknown qualifier: an uncovered Hangul word directly precedes a covered Latin entity
-#      token ("경쟁사 SDK", "방식의 GPU"): the query narrows a known named subject to something
-#      the KB never mentions. Uncovered Latin words are exempt (English synonyms such as
-#      "latency" for "지연"), and a following Korean word may be a verb-like noun ("공개").
+#   R2 unknown qualifier: an uncovered Hangul word that MODIFIES the covered Latin entity token
+#      right after it ("경쟁사 SDK", "방식의 GPU"): the query narrows a known named subject to
+#      something the KB never mentions. Only a bare word or a genitive "의" modifies the next
+#      token; any other particle ("일정과 benchmark", "일정을 SDK") ends the phrase. Uncovered
+#      Latin words are exempt (English synonyms such as "latency" for "지연"), and a following
+#      Korean word may be a verb-like noun ("공개").
 # Distinctive: Latin/digit tokens of 3+ characters; particle-stripped Hangul words of 2+
 # characters that are not request, relational or deictic words and do not end in a
 # predicate/connective ending. Covered: the word, or for a 3+ character Hangul word any of
@@ -93,10 +95,11 @@ _GENERIC = frozenset({
     "언제", "누가", "뭐가",
 })
 _PREDICATE_ENDINGS = tuple("어아야요다니까지해돼줘고게면한된할될는은던인나냐래네죠며서혀도하")
+_MODIFIER_SUFFIXES = ("", "의")  # bare noun or genitive: attached to the following token
 
 
-def query_words(query: str) -> tuple[tuple[str, bool, bool], ...]:
-    """(word, is_hangul, distinctive) per query token, in query order."""
+def query_words(query: str) -> tuple[tuple[str, bool, bool, bool], ...]:
+    """(word, is_hangul, distinctive, modifies_next) per query token, in query order."""
     words = []
     for token in _TOKEN.findall(query.lower()):
         if "가" <= token[0] <= "힣":
@@ -104,9 +107,9 @@ def query_words(query: str) -> tuple[tuple[str, bool, bool], ...]:
             distinctive = (len(word) >= 2 and word not in _STOPWORDS and word not in _GENERIC
                            and word not in _PARTICLE_SET
                            and not word.endswith(_PREDICATE_ENDINGS))
-            words.append((word, True, distinctive))
+            words.append((word, True, distinctive, token[len(word):] in _MODIFIER_SUFFIXES))
         else:
-            words.append((token, False, len(token) >= 3 and token not in _STOPWORDS))
+            words.append((token, False, len(token) >= 3 and token not in _STOPWORDS, False))
     return tuple(words)
 
 
@@ -125,14 +128,15 @@ def relevance_insufficient(query: str, document_frequency: dict[str, int]) -> bo
             document_frequency.get(word[i:i + 2], 1) > 0 for i in range(len(word) - 1))
 
     words = query_words(query)
-    marks = [(word, hangul, distinctive and covered(word, hangul), distinctive)
-             for word, hangul, distinctive in words]
+    marks = [(word, hangul, distinctive and covered(word, hangul), distinctive, modifies)
+             for word, hangul, distinctive, modifies in words]
     distinctive = [m for m in marks if m[3]]
     if distinctive and not any(m[2] for m in distinctive):
         return True  # R1
     return any(  # R2
-        hangul and is_distinctive and not is_covered and not after[1] and after[2]
-        for (_, hangul, is_covered, is_distinctive), after in zip(marks, marks[1:], strict=False)
+        hangul and is_distinctive and modifies and not is_covered and not after[1] and after[2]
+        for (_, hangul, is_covered, is_distinctive, modifies), after
+        in zip(marks, marks[1:], strict=False)
     )
 
 
