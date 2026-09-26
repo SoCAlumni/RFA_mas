@@ -1,0 +1,16 @@
+body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 960px; padding: 1rem; color: #1b1b1b; }
+header { border-bottom: 1px solid #ccc; margin-bottom: 1rem; }
+section { border: 1px solid #ddd; border-radius: 6px; margin: 1rem 0; padding: 0.75rem 1rem; }
+label { display: block; margin: 0.4rem 0; }
+textarea, input, select { display: block; width: 100%; box-sizing: border-box; margin-top: 0.2rem; }
+button { margin: 0.2rem 0.3rem 0.2rem 0; }
+pre { white-space: pre-wrap; background: #f6f6f6; padding: 0.5rem; }
+.notice { background: #fff6d6; padding: 0.5rem; }
+.badge { display: inline-block; border-radius: 4px; padding: 0.1rem 0.4rem; margin: 0.1rem; font-size: 0.85rem; background: #eee; }
+.badge.mock { background: #ffe1c4; }
+.badge.notrun { background: #e3e3ff; }
+.badge.ok { background: #d8f5d8; }
+.badge.bad, .error { background: #ffd9d9; }
+.warning { color: #8a4b00; font-weight: 600; }
+.muted { color: #666; }
+.review { border-top: 1px solid #eee; padding-top: 0.5rem; }

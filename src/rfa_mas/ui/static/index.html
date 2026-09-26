@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>RFA 로컬 UI (local/mock)</title>
+  <link rel="stylesheet" href="/ui/static/app.css">
+  <script src="/ui/static/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>RFA 로컬 UI</h1>
+    <p class="notice">교체 가능한 로컬 대체 UI입니다. 검토·게시는 로컬 mock이며 실제 외부 게시, OpenShell, 팀원 UI 통합은 실행되지 않았습니다(not_run).</p>
+    <div id="status" aria-live="polite"></div>
+  </header>
+
+  <main>
+    <section aria-labelledby="sessions-title">
+      <h2 id="sessions-title">세션</h2>
+      <button type="button" id="create-session">새 세션</button>
+      <button type="button" id="reload-sessions">목록 새로고침</button>
+      <ul id="sessions"></ul>
+      <div id="session-detail"></div>
+    </section>
+
+    <section aria-labelledby="work-title">
+      <h2 id="work-title">질의</h2>
+      <p id="work-session" class="muted">세션을 먼저 선택하세요.</p>
+      <label>질의 <textarea id="work-query" rows="3" maxlength="10000"></textarea></label>
+      <label>도메인
+        <select id="work-domain">
+          <option value="">자동</option>
+          <option value="triv3">triv3</option>
+          <option value="quantization_research">quantization_research</option>
+        </select>
+      </label>
+      <label>공개 대상
+        <select id="work-audience">
+          <option value="owner">owner</option>
+          <option value="public">public</option>
+        </select>
+      </label>
+      <button type="button" id="submit-work" disabled>질의 실행</button>
+      <div id="work-result"></div>
+    </section>
+
+    <section aria-labelledby="notes-title">
+      <h2 id="notes-title">노트</h2>
+      <label>도메인
+        <select id="note-domain">
+          <option value="triv3">triv3</option>
+          <option value="quantization_research">quantization_research</option>
+        </select>
+      </label>
+      <label>제목 <input id="note-title" maxlength="200"></label>
+      <label>내용 (기본 비공개) <textarea id="note-content" rows="3" maxlength="50000"></textarea></label>
+      <button type="button" id="create-note">노트 저장</button>
+      <div id="note-result"></div>
+      <ul id="notes"></ul>
+    </section>
+
+    <section aria-labelledby="reviews-title">
+      <h2 id="reviews-title">수동 검토 (로컬 mock 승인 원본)</h2>
+      <button type="button" id="reload-reviews">검토 목록 새로고침</button>
+      <div id="reviews"></div>
+    </section>
+
+    <section aria-labelledby="unsupported-title">
+      <h2 id="unsupported-title">미지원 기능</h2>
+      <ul id="unsupported"></ul>
+    </section>
+  </main>
+</body>
+</html>
