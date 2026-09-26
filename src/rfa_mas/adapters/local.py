@@ -303,6 +303,20 @@ class SqliteWorkRepository:
                         (selected_session, new_id("thread"), owner, now, now),
                     )
                 self._session(connection, selected_session, owner)
+                owned_key = "owned:" + _canonical_fingerprint(
+                    {"owner": owner, "key": request.idempotency_key}
+                )
+                if connection.execute(
+                    "SELECT 1 FROM runs WHERE run_id = ? OR idempotency_key = ?",
+                    (request.run_id, owned_key),
+                ).fetchone():
+                    raise RfaError("idempotency_conflict", "중복 실행 요청입니다.")
+                if connection.execute(
+                    "SELECT 1 FROM runs WHERE session_id = ? AND status IN "
+                    "('created', 'running', 'waiting_approval', 'outcome_unknown')",
+                    (selected_session,),
+                ).fetchone():
+                    raise RfaError("thread_busy", "이 세션의 미완료 실행을 먼저 처리해야 합니다.")
                 if task_id is not None:
                     task = connection.execute(
                         "SELECT domain_id FROM product_task_owners "
@@ -325,8 +339,7 @@ class SqliteWorkRepository:
                         request.run_id,
                         request.request_id,
                         request.trace_id,
-                        "owned:"
-                        + _canonical_fingerprint({"owner": owner, "key": request.idempotency_key}),
+                        owned_key,
                         WorkStatus.CREATED.value,
                         request.model_dump_json(),
                         now,
@@ -538,6 +551,41 @@ class SqliteWorkRepository:
                         json.dumps(metadata, ensure_ascii=False, sort_keys=True),
                         datetime.now(UTC).isoformat(),
                     ),
+                )
+
+        await asyncio.to_thread(operation)
+
+    async def seed_documents_once(self, documents: list[KnowledgeDocument]) -> None:
+        def operation() -> None:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS installation_seeds "
+                    "(seed_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+                )
+                if connection.execute(
+                    "SELECT 1 FROM installation_seeds WHERE seed_id = 'synthetic-fixtures-v1'"
+                ).fetchone():
+                    return
+                now = datetime.now(UTC).isoformat()
+                # Existing installations are never backfilled from fixtures. This
+                # preserves earlier edits/deletions even before the marker existed.
+                if not connection.execute("SELECT 1 FROM kb_documents LIMIT 1").fetchone():
+                    connection.executemany(
+                        "INSERT INTO kb_documents VALUES (?, ?, ?, ?, ?)",
+                        [
+                            (
+                                d.source_id,
+                                d.source_revision,
+                                d.domain_id.value,
+                                d.model_dump_json(),
+                                now,
+                            )
+                            for d in documents
+                        ],
+                    )
+                connection.execute(
+                    "INSERT INTO installation_seeds VALUES ('synthetic-fixtures-v1', ?)", (now,)
                 )
 
         await asyncio.to_thread(operation)

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8000, ge=1, le=65535)
     app_api_key: SecretStr | None = None
     database_url: str = "sqlite:///./.local/rfa.db"
+    checkpoint_path: Path | None = None
 
     model_provider: Literal["mock", "nvidia"] = "mock"
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
@@ -117,6 +118,17 @@ class Settings(BaseSettings):
         if raw_path.startswith("//"):
             return Path(raw_path[1:])
         return Path(raw_path)
+
+    @property
+    def resolved_checkpoint_path(self) -> Path:
+        return self.checkpoint_path or self.database_path.with_name(
+            self.database_path.name + ".checkpoints.sqlite"
+        )
+
+    @field_validator("checkpoint_path", mode="before")
+    @classmethod
+    def empty_checkpoint_path_is_none(cls, value: object) -> object:
+        return None if value == "" else value
 
     @property
     def is_loopback_bind(self) -> bool:

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.runtime import Runtime
 
 from rfa_mas.contracts import (
     AgentSpec,
@@ -50,11 +51,17 @@ class DomainGraphDependencies:
     policy: PolicyPort
 
 
+@dataclass(frozen=True)
+class InvocationContext:
+    """Fresh authenticated identity, not persisted conversation state."""
+
+    principal: TrustedPrincipal
+
+
 class DomainState(TypedDict, total=False):
     spec: AgentSpec
     task: TaskRequest
     work: WorkRequest
-    principal: TrustedPrincipal
     policy_decision: PolicyDecision
     evidence: Any
     draft: DraftBundle
@@ -80,7 +87,7 @@ def _error(
 
 
 def build_domain_graph(deps: DomainGraphDependencies) -> Any:
-    async def authorize(state: DomainState) -> dict[str, Any]:
+    async def authorize(state: DomainState, runtime: Runtime[InvocationContext]) -> dict[str, Any]:
         task = state["task"]
         work = state["work"]
         spec = state["spec"]
@@ -104,7 +111,7 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
                 action=action,
                 resource_audience=Audience.PUBLIC,
                 target_audience=work.target.audience,
-                principal=state["principal"],
+                principal=runtime.context.principal,
             )
         )
         update: dict[str, Any] = {
@@ -118,7 +125,7 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
     def after_authorize(state: DomainState) -> str:
         return "finish" if "error" in state else "retrieve"
 
-    async def retrieve(state: DomainState) -> dict[str, Any]:
+    async def retrieve(state: DomainState, runtime: Runtime[InvocationContext]) -> dict[str, Any]:
         task = state["task"]
         work = state["work"]
         if state["steps"] >= state["spec"].max_steps:
@@ -140,7 +147,7 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
                     domain_id=task.domain_id,
                     query=work.query,
                     allowed_audiences=state["policy_decision"].allowed_audiences,
-                    principal=state["principal"],
+                    principal=runtime.context.principal,
                     simulation_scenario=work.simulation_scenario,
                 )
             )
@@ -204,7 +211,7 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
         )
         return {"draft": draft, "steps": state["steps"] + 1}
 
-    builder = StateGraph(DomainState)
+    builder = StateGraph(DomainState, context_schema=InvocationContext)
     builder.add_node("authorize", authorize)
     builder.add_node("retrieve", retrieve)
     builder.add_node("generate", generate)
@@ -216,7 +223,9 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
         "retrieve", after_retrieve, {"generate": "generate", "finish": END}
     )
     builder.add_edge("generate", END)
-    return builder.compile()
+    # The supervisor checkpoints completed delegation. Mid-worker durable replay
+    # is not claimed here; do not accidentally inherit its saver across RuntimePort.
+    return builder.compile(checkpointer=False)
 
 
 def build_domain_task_handler(deps: DomainGraphDependencies) -> Any:
@@ -230,9 +239,9 @@ def build_domain_task_handler(deps: DomainGraphDependencies) -> Any:
                 spec=spec,
                 task=task,
                 work=work,
-                principal=principal,
                 steps=0,
-            )
+            ),
+            context=InvocationContext(principal),
         )
         if error := final.get("error"):
             status = ResultStatus.DENIED if error.code == "policy_denied" else ResultStatus.FAILED

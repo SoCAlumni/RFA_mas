@@ -155,6 +155,10 @@ class WorkRepositoryPort(Protocol):
 
     async def upsert_documents(self, documents: list[KnowledgeDocument]) -> None: ...
 
+    async def seed_documents_once(self, documents: list[KnowledgeDocument]) -> None:
+        """Atomic installation fixture seed; never resurrect removed/changed sources."""
+        ...
+
     async def list_documents(self, domain_id: str) -> list[KnowledgeDocument]: ...
 
 

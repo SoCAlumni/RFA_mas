@@ -11,6 +11,7 @@ from rfa_mas.bootstrap import Container, build_container
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
     DirectWorkRequest,
+    ResumeRequest,
     RunRecord,
     RunResult,
     SessionCreate,
@@ -96,6 +97,8 @@ def create_app(
             "idempotency_conflict": status.HTTP_409_CONFLICT,
             "draft_version_conflict": status.HTTP_409_CONFLICT,
             "authentication_required": status.HTTP_401_UNAUTHORIZED,
+            "thread_busy": status.HTTP_409_CONFLICT,
+            "resume_unavailable": status.HTTP_409_CONFLICT,
         }.get(exc.code, status.HTTP_400_BAD_REQUEST)
         error = StructuredError(
             code=exc.code,
@@ -190,5 +193,13 @@ def create_app(
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunRecord:
         return await selected_container.service.sessions.get_run(run_id, trusted_principal)
+
+    @app.post("/v1/runs/{run_id}/resume", response_model=RunResult, tags=["work"])
+    async def resume_run(
+        run_id: str,
+        wakeup: ResumeRequest,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> RunResult:
+        return await selected_container.service.resume(run_id, wakeup, trusted_principal)
 
     return app

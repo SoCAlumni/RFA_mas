@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.runtime import Runtime
+from langgraph.types import interrupt
 from pydantic import ValidationError
 
 from rfa_mas.contracts import (
@@ -23,6 +26,7 @@ from rfa_mas.contracts import (
     WorkStatus,
 )
 from rfa_mas.ports import ResponsePort, RuntimePort
+from rfa_mas.application.graphs.domain import InvocationContext
 
 
 @dataclass(frozen=True)
@@ -31,6 +35,7 @@ class SupervisorDependencies:
     response: ResponsePort
     max_graph_steps: int
     max_tool_calls: int
+    validate_resume: Callable[[DraftBundle, TrustedPrincipal], Awaitable[None]]
 
 
 @dataclass(frozen=True)
@@ -59,7 +64,6 @@ DOMAIN_CONFIGS: dict[DomainId, DomainConfiguration] = {
 
 class SupervisorState(TypedDict, total=False):
     work: WorkRequest
-    principal: TrustedPrincipal
     domain_id: DomainId
     draft: DraftBundle
     review: ReviewDecision
@@ -183,7 +187,7 @@ def _domain_steps(result: TaskResult, *, required: bool, maximum: int) -> int:
     return raw_steps
 
 
-def build_supervisor_graph(deps: SupervisorDependencies) -> Any:
+def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = None) -> Any:
     async def route(state: SupervisorState) -> dict[str, Any]:
         work = state["work"]
         domain_id = _route_domain(work)
@@ -205,9 +209,11 @@ def build_supervisor_graph(deps: SupervisorDependencies) -> Any:
         return {"domain_id": domain_id, "steps": 1}
 
     def after_route(state: SupervisorState) -> str:
-        return "finish" if "error" in state else "delegate"
+        return "finish" if state.get("error") is not None else "delegate"
 
-    async def delegate(state: SupervisorState) -> dict[str, Any]:
+    async def delegate(
+        state: SupervisorState, runtime: Runtime[InvocationContext]
+    ) -> dict[str, Any]:
         work = state["work"]
         domain_id = state["domain_id"]
         config = DOMAIN_CONFIGS[domain_id]
@@ -238,7 +244,7 @@ def build_supervisor_graph(deps: SupervisorDependencies) -> Any:
             domain_id=domain_id,
             memory_namespace=config.memory_namespace,
             capabilities=config.capabilities,
-            allowed_audiences=_allowed_audiences(state["principal"], work.target.audience),
+            allowed_audiences=_allowed_audiences(runtime.context.principal, work.target.audience),
             instructions_ref=config.instructions_ref,
             max_steps=remaining_domain_steps,
             max_tool_calls=deps.max_tool_calls,
@@ -253,7 +259,7 @@ def build_supervisor_graph(deps: SupervisorDependencies) -> Any:
             task_type="domain_task",
             payload={
                 "work_request": work.model_dump(mode="json"),
-                "principal": state["principal"].model_dump(mode="json"),
+                "principal": runtime.context.principal.model_dump(mode="json"),
             },
         )
         try:
@@ -345,7 +351,7 @@ def build_supervisor_graph(deps: SupervisorDependencies) -> Any:
         }
 
     def after_delegate(state: SupervisorState) -> str:
-        return "finish" if "error" in state else "review"
+        return "finish" if state.get("error") is not None else "review"
 
     async def review(state: SupervisorState) -> dict[str, Any]:
         work = state["work"]
@@ -400,12 +406,56 @@ def build_supervisor_graph(deps: SupervisorDependencies) -> Any:
             "steps": state["steps"] + 1,
         }
 
-    builder = StateGraph(SupervisorState)
+    async def await_review(
+        state: SupervisorState, runtime: Runtime[InvocationContext]
+    ) -> dict[str, Any]:
+        # Resume is a wakeup only. Submit happens in a prior checkpointed node,
+        # so restarting this node cannot re-submit a draft or fabricate approval.
+        interrupt(
+            {
+                "kind": "review_pending",
+                "run_id": state["work"].run_id,
+                "draft_id": state["draft"].draft_id,
+            }
+        )
+        work, draft = state["work"], state["draft"]
+        await deps.validate_resume(draft, runtime.context.principal)
+        raw_decision = await deps.response.get_decision(draft.draft_id)
+        if raw_decision is None:
+            return {"status": WorkStatus.WAITING_APPROVAL}
+        decision = ReviewDecision.model_validate(raw_decision)
+        if not _review_matches(decision, draft=draft, work=work):
+            return {
+                "error": _error(
+                    work, "approval_binding_mismatch", "현재 초안과 승인 참조가 일치하지 않습니다."
+                ),
+                "status": WorkStatus.FAILED,
+            }
+        if decision.decision == ReviewStatus.APPROVED:
+            status = WorkStatus.COMPLETED
+        elif decision.decision == ReviewStatus.REJECTED:
+            status = WorkStatus.FAILED
+        else:
+            status = WorkStatus.WAITING_APPROVAL
+        return {
+            "review": decision,
+            "status": status,
+            "publication_status": decision.publication_status,
+        }
+
+    def after_review(state: SupervisorState) -> str:
+        return "wait" if state.get("status") == WorkStatus.WAITING_APPROVAL else "finish"
+
+    builder = StateGraph(SupervisorState, context_schema=InvocationContext)
     builder.add_node("route", route)
     builder.add_node("delegate", delegate)
     builder.add_node("review", review)
+    builder.add_node("await_review", await_review)
     builder.add_edge(START, "route")
     builder.add_conditional_edges("route", after_route, {"delegate": "delegate", "finish": END})
     builder.add_conditional_edges("delegate", after_delegate, {"review": "review", "finish": END})
-    builder.add_edge("review", END)
-    return builder.compile()
+    builder.add_conditional_edges("review", after_review, {"wait": "await_review", "finish": END})
+    builder.add_conditional_edges(
+        "await_review", after_review, {"wait": "await_review", "finish": END}
+    )
+    return builder.compile(checkpointer=checkpointer)
