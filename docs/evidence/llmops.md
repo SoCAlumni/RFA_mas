@@ -32,10 +32,28 @@
 
 비교: `comparable=true`, 버전/환경 차이 없음, 24개 모두 `unchanged`, 관찰 digest 24/24 일치, 보안 회귀 0, release `fail`(exit 1). 이것은 같은 버전의 결정적 replay 확인이지 개선/악화 주장이 아니다.
 
-실패 사례(현재 main 동작):
+실패 사례(당시 main 동작, P1-005 통합 전):
 
 - `PR2-{owner,colleague,other-unit,external}-private-mixed`: public 라벨 노트에 섞인 합성 private canary가 public 대상 모델 요청에 도달한다(`model_context`, `forbidden_absent` 실패). main에는 모델 호출 전 내용 screen이 없다. 미통합 P1-005 체인의 share/content screen이 이 경계를 다룬다. 통합 후 같은 dataset/policy로 다시 실행해야 개선을 주장할 수 있다.
 - `PR2-colleague-evidence-insufficient`: 무관한 질의가 흔한 토큰(사내)으로 사내 가이드와 lexical match되어 "근거 부족" 대신 무관한 근거를 인용한다(기능 실패, 보안 gate는 pass).
+
+### P1-005 통합 후 재측정 (2026-09-27 KST, `wip/stack` 260f394)
+
+위 측정은 P1-005 screen이 통합되기 전 base main a0a9347의 결과다. P1-005 체인이 들어간 stack tip에서 같은 dataset·seed·policy로 두 번 다시 실행했다(2026-09-26T20:29Z, 2026-09-27 05:29 KST). 명령은 `rfa evaluate --dataset persona-regression-v2 --label <baseline|candidate> --output <새 파일>`과 `rfa evaluate-compare`다.
+
+환경: CPython 3.12.13, Darwin-arm64, SQLite 3.53.1, langgraph 1.2.12, langchain-core 1.6.5, pydantic 2.13.5, fastapi 0.141.1. code digest `src-0cdf621c92e27207`, evaluator `regression-v2+eval-69c316ae2d199089`, template `tpl-ed8950b9c00e2313`, dataset digest `8fdad15f962d5f6b…`(위와 같음), seed 29, policy `local-v1`, 모델 adapter `mock-model`, retriever `local-lexical-v1`.
+
+| 실행 | 실행 사례 | pass | fail | unknown/error | 보안 실패 | 평균 점수 | release | exit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| baseline (simulated) | 24/24 | 23 | 1 | 0/0 | 0 | 0.9954 | fail | 1 |
+| candidate (같은 코드, simulated) | 24/24 | 23 | 1 | 0/0 | 0 | 0.9954 | fail | 1 |
+
+두 새 실행의 비교: `comparable=true`, 버전·환경 차이 없음, 24개 모두 `unchanged`, 관찰 digest 24/24 일치, 보안 회귀 0, release `fail`(exit 1).
+
+- 네 `PR2-*-private-mixed` 사례는 이번 측정에서 규칙과 보안 gate가 모두 pass다. 이전 측정의 실패 이유였던 모델 호출 전 내용 screen(P1-005)이 이 코드에는 있다.
+- 남은 실패는 `PR2-colleague-evidence-insufficient` 하나다. 필수 규칙 `insufficient` 위반이며 보안 gate는 pass, 사례 점수는 0.8889다.
+- 이전 측정과 code digest가 달라(`src-8bdcbfd40df752fc` → `src-0cdf621c92e27207`) 같은 코드의 replay가 아니다. 이전 실행 manifest는 저장소에 없어 `evaluate-compare`로 직접 비교하지 않았다. 따라서 두 실행 비교로 개선을 주장하지 않고, 같은 dataset·seed·policy에서 관측한 수치만 적는다.
+- `semantic_quality`, `product_final_gate`, Judge는 이번에도 not_run이다. 모델은 mock이며 실제 NVIDIA 모델 평가가 아니다.
 
 ### 테스트로 확인한 회귀 탐지
 
