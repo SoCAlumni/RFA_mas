@@ -24,6 +24,7 @@ from rfa_mas.application.graphs import (
     SupervisorDependencies,
     build_domain_task_handler,
 )
+from rfa_mas.application.observations import Observations, ObservedPort
 from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.service import WorkService
 from rfa_mas.contracts import AdapterInfo, KnowledgeDocument
@@ -269,7 +270,22 @@ def build_container(settings: Settings | None = None) -> Container:
             )
         )
 
-    trace = LocalJsonlTrace(settings.trace_dir, redactor)
+    trace = LocalJsonlTrace(
+        settings.trace_dir,
+        redactor,
+        repository=repository,
+        retention_days=settings.trace_retention_days,
+    )
+    observer = Observations(repository, trace, policy=policy)
+    observed_model = ObservedPort(model, observer, "model", mode="mock")
+    observed_retrieval = ObservedPort(retrieval, observer, "retrieval", mode="mock")
+    observed_policy = ObservedPort(
+        policy,
+        observer,
+        "policy",
+        mode="local",
+        provider_kind="reference_http" if settings.policy_backend == "http" else "builtin",
+    )
 
     judge = MockJudge()
 
@@ -277,7 +293,9 @@ def build_container(settings: Settings | None = None) -> Container:
         runtime.register(
             "domain_task",
             build_domain_task_handler(
-                DomainGraphDependencies(model=model, retrieval=retrieval, policy=policy)
+                DomainGraphDependencies(
+                    model=observed_model, retrieval=observed_retrieval, policy=observed_policy
+                )
             ),
         )
 
@@ -296,14 +314,29 @@ def build_container(settings: Settings | None = None) -> Container:
         repository=repository,
         trace=trace,
         supervisor_dependencies=SupervisorDependencies(
-            runtime=runtime,
-            response=response,
+            runtime=ObservedPort(
+                runtime,
+                observer,
+                "runtime",
+                mode="local",
+                provider_kind="reference_http" if settings.runtime_backend == "http" else "builtin",
+            ),
+            response=ObservedPort(
+                response,
+                observer,
+                "approval",
+                mode="local" if settings.response_backend == "http" else "mock",
+                provider_kind="reference_http"
+                if settings.response_backend == "http"
+                else "builtin",
+            ),
             max_graph_steps=settings.max_graph_steps,
             max_tool_calls=settings.max_tool_calls,
-            validate_resume=ResumePolicy(repository, policy),
+            validate_resume=ResumePolicy(repository, observed_policy),
         ),
         adapters=adapters,
         guard_thread=checkpoints.guard,
+        observations=observer,
     )
     return Container(
         settings=settings,

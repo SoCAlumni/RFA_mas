@@ -1,0 +1,13 @@
+{
+  "dataset_version": "observation-contract-v1",
+  "synthetic": true,
+  "execution_status": "not_run",
+  "cases": [
+    {"id": "normal", "input": "TRIV3 public summary", "expected": "actual port records; unavailable stage IDs/tokens null"},
+    {"id": "resume", "input": "synthetic pending then approved authority", "expected": "same trusted aliases; increasing sequence; no second submission"},
+    {"id": "private-canary", "input": "PRIVATE_CANARY_Q7", "expected": "no caller IDs, error text, extra-key loc or raw payload in exported observations"},
+    {"id": "sink", "input": "synthetic local sink receipt", "expected": "test_sink collected separately; production tool/publish uncollected"},
+    {"id": "timeout", "input": "fake provider TimeoutError", "expected": "transport raised; duration measured; provider tokens null"},
+    {"id": "retention", "input": "expired owned file and legacy/development files", "expected": "only registered product files expire; DB ledger and aliases remain"}
+  ]
+}

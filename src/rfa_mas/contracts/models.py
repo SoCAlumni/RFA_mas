@@ -936,6 +936,47 @@ class TraceEvent(ExtendedContractModel):
         return self
 
 
+class ObservationRecord(ExtendedContractModel):
+    """Trusted boundary observation, not approval or authorization evidence."""
+
+    observation_id: OpaqueId
+    sequence: int = Field(ge=1)
+    origin: Literal["service", "port", "test_sink"]
+    provider_ref: OpaqueId
+    provider_kind: Literal["builtin", "reference_http", "test"] = "builtin"
+    transport: Literal["returned", "raised"] | None = None
+    event: TraceEvent
+
+
+class ObservationCoverage(ExtendedContractModel):
+    boundary: Literal[
+        "request",
+        "retrieval",
+        "policy",
+        "model",
+        "runtime",
+        "approval",
+        "tool",
+        "publish",
+        "internal_nodes",
+        "test_sink",
+    ]
+    state: Literal["collected", "uncollected", "incomplete"]
+    calls: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def actual_count_only(self) -> ObservationCoverage:
+        if (self.state != "collected") != (self.calls is None):
+            raise ValueError("uncollected counts are unknown, not zero")
+        return self
+
+
+class ObservationLedger(ExtendedContractModel):
+    execution: ExecutionContext
+    observations: tuple[ObservationRecord, ...] = ()
+    coverage: tuple[ObservationCoverage, ...]
+
+
 class EvaluationCaseV11(EvaluationCase):
     schema_version: Literal["1.1"] = "1.1"
     scenario_id: OpaqueId

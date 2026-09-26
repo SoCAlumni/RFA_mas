@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "337a364676972b559d3b94fed6c1ae1a77b6ef98ea6e73c33f20cad4152e5b20",
+  "digest": "215db7d2fec60c1efea6a7d3f0014143def3980f68423f2b4ebdaf0b9e1a533d",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -4664,6 +4664,174 @@
         "title": "JudgeDimensions",
         "type": "object"
       },
+      "ObservationCoverage": {
+        "additionalProperties": false,
+        "properties": {
+          "boundary": {
+            "enum": [
+              "request",
+              "retrieval",
+              "policy",
+              "model",
+              "runtime",
+              "approval",
+              "tool",
+              "publish",
+              "internal_nodes",
+              "test_sink"
+            ],
+            "title": "Boundary",
+            "type": "string"
+          },
+          "calls": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Calls"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "collected",
+              "uncollected",
+              "incomplete"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "boundary",
+          "state"
+        ],
+        "title": "ObservationCoverage",
+        "type": "object"
+      },
+      "ObservationLedger": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage": {
+            "items": {
+              "$ref": "#/$defs/ObservationCoverage"
+            },
+            "title": "Coverage",
+            "type": "array"
+          },
+          "execution": {
+            "$ref": "#/$defs/ExecutionContext"
+          },
+          "observations": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/ObservationRecord"
+            },
+            "title": "Observations",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "execution",
+          "coverage"
+        ],
+        "title": "ObservationLedger",
+        "type": "object"
+      },
+      "ObservationRecord": {
+        "additionalProperties": false,
+        "description": "Trusted boundary observation, not approval or authorization evidence.",
+        "properties": {
+          "event": {
+            "$ref": "#/$defs/TraceEvent"
+          },
+          "observation_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Observation Id",
+            "type": "string"
+          },
+          "origin": {
+            "enum": [
+              "service",
+              "port",
+              "test_sink"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "provider_kind": {
+            "default": "builtin",
+            "enum": [
+              "builtin",
+              "reference_http",
+              "test"
+            ],
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "provider_ref": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Provider Ref",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "transport": {
+            "anyOf": [
+              {
+                "enum": [
+                  "returned",
+                  "raised"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Transport"
+          }
+        },
+        "required": [
+          "observation_id",
+          "sequence",
+          "origin",
+          "provider_ref",
+          "event"
+        ],
+        "title": "ObservationRecord",
+        "type": "object"
+      },
       "PersistentTask": {
         "additionalProperties": false,
         "properties": {
@@ -6763,19 +6931,25 @@
     },
     "TracePort": {
       "emit": "(self, *, event: 'str', request_id: 'str', trace_id: 'str', run_id: 'str', status: 'str', metadata: 'dict[str, Any] | None' = None) -> 'None'",
-      "emit_event": "(self, event: 'TraceEvent') -> 'None'"
+      "emit_event": "(self, event: 'TraceEvent') -> 'None'",
+      "emit_observation": "(self, record: 'ObservationRecord') -> 'None'"
     },
     "WorkRepositoryPort": {
+      "append_observation": "(self, run_id: 'str', principal: 'TrustedPrincipal', event: 'TraceEvent', *, origin: 'str', provider_ref: 'str', transport: 'str | None' = None, provider_kind: 'str' = 'builtin') -> 'ObservationRecord'",
       "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None) -> 'SessionRecord'",
       "create_run": "(self, request: 'WorkRequest') -> 'None'",
       "create_session": "(self, principal: 'TrustedPrincipal') -> 'SessionRecord'",
+      "get_observation": "(self, observation_id: 'str') -> 'ObservationRecord | None'",
       "get_owned_run": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'RunRecord'",
       "get_result": "(self, run_id: 'str') -> 'RunResult | None'",
       "get_session": "(self, session_id: 'str', principal: 'TrustedPrincipal') -> 'SessionDetail'",
       "initialize": "(self) -> 'None'",
       "list_documents": "(self, domain_id: 'str') -> 'list[KnowledgeDocument]'",
+      "list_observations": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[ObservationRecord, ...]'",
       "list_sessions": "(self, principal: 'TrustedPrincipal') -> 'list[SessionRecord]'",
       "local_principal": "(self) -> 'TrustedPrincipal'",
+      "observation_alias": "(self, run_id: 'str', principal: 'TrustedPrincipal', kind: 'str', reference: 'str' = '') -> 'str'",
+      "observation_context": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'ExecutionContext'",
       "register_task_owner": "(self, task: 'PersistentTask') -> 'None'",
       "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
       "save_result": "(self, result: 'RunResult') -> 'None'",
@@ -6785,6 +6959,9 @@
     }
   },
   "public_model_names": [
+    "ObservationRecord",
+    "ObservationCoverage",
+    "ObservationLedger",
     "ApprovalReference",
     "AttachmentRef",
     "ChannelWorkRequest",
@@ -6822,12 +6999,12 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
-    "src/rfa_mas/api/app.py": "082ebce1001728632d4249543800c02f2dfc1b944da73ea7f7744f1dacc13ee9",
+    "src/rfa_mas/api/app.py": "d62bb50ad4e152ae515610229a419114314e3106ab3a7c4042886312e86d7dee",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "a176557b4a69775d05924b6b657097dd1d42cc02760476cd36f5767282732f60",
+    "src/rfa_mas/contracts/__init__.py": "61e4a42f7079980f6a6b65072eeb52a34fd6eedd6e560651c27f0cfd7d9bbab5",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "e6ce3f0271ab0890149e42841adb084cf7d6b2ee2f5700ff993398a0881053a9",
-    "src/rfa_mas/ports/interfaces.py": "c123e83a22933647374d441822e253ccb06ca0139472838d74674c5957edaad4",
+    "src/rfa_mas/contracts/models.py": "6a4b0ae66627925d079a31c4c0b0a25e327150182b345e609a873d7744b0b950",
+    "src/rfa_mas/ports/interfaces.py": "0076413ce66aea39ac486d6636652831b8cad3eec263e24e1e83aeea20e61331",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",

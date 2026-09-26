@@ -10,10 +10,12 @@ from rfa_mas.contracts import (
     DraftBundle,
     EvaluationCase,
     EvidenceBundle,
+    ExecutionContext,
     JudgeAssessment,
     KnowledgeDocument,
     ModelRequest,
     ModelResult,
+    ObservationRecord,
     PersistentTask,
     PolicyDecision,
     PolicyRequest,
@@ -120,6 +122,32 @@ class JudgePort(Protocol):
 
 
 class WorkRepositoryPort(Protocol):
+    async def observation_context(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> ExecutionContext: ...
+
+    async def observation_alias(
+        self, run_id: str, principal: TrustedPrincipal, kind: str, reference: str = ""
+    ) -> str: ...
+
+    async def append_observation(
+        self,
+        run_id: str,
+        principal: TrustedPrincipal,
+        event: TraceEvent,
+        *,
+        origin: str,
+        provider_ref: str,
+        transport: str | None = None,
+        provider_kind: str = "builtin",
+    ) -> ObservationRecord: ...
+
+    async def get_observation(self, observation_id: str) -> ObservationRecord | None: ...
+
+    async def list_observations(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[ObservationRecord, ...]: ...
+
     async def initialize(self) -> None: ...
 
     async def local_principal(self) -> TrustedPrincipal: ...
@@ -165,6 +193,8 @@ class WorkRepositoryPort(Protocol):
 class TracePort(Protocol):
     adapter_name: str
     simulated: bool
+
+    async def emit_observation(self, record: ObservationRecord) -> None: ...
 
     async def emit(
         self,

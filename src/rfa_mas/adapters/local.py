@@ -4,12 +4,13 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import stat
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,10 @@ from rfa_mas.application.state_machine import ensure_transition
 from rfa_mas.contracts import (
     AgentSpec,
     Audience,
+    DomainId,
+    ExecutionContext,
     KnowledgeDocument,
+    ObservationRecord,
     PersistentTask,
     PolicyDecision,
     PolicyRequest,
@@ -31,6 +35,7 @@ from rfa_mas.contracts import (
     TaskRequest,
     TaskResult,
     ToolEffect,
+    TraceEvent,
     TrustedPrincipal,
     WorkRequest,
     WorkStatus,
@@ -228,6 +233,30 @@ class SqliteWorkRepository:
                         connection.execute(statement)
                     connection.execute(
                         "INSERT INTO rfa_schema_migrations VALUES (1, ?)",
+                        (datetime.now(UTC).isoformat(),),
+                    )
+                # Credentials authenticate this installation's owner, not a fixture
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version = 2"
+                ).fetchone():
+                    connection.execute(
+                        "CREATE TABLE observation_aliases "
+                        "(run_id TEXT NOT NULL REFERENCES runs(run_id), "
+                        "kind TEXT NOT NULL, ref TEXT NOT NULL, alias TEXT NOT NULL UNIQUE, "
+                        "PRIMARY KEY (run_id, kind, ref))"
+                    )
+                    connection.execute(
+                        "CREATE TABLE observation_sequences (run_id TEXT PRIMARY KEY REFERENCES "
+                        "runs(run_id), sequence INTEGER NOT NULL)"
+                    )
+                    connection.execute(
+                        "CREATE TABLE observations (observation_id TEXT PRIMARY KEY, "
+                        "run_id TEXT NOT NULL REFERENCES runs(run_id), sequence INTEGER NOT NULL, "
+                        "record_json TEXT NOT NULL, created_at TEXT NOT NULL, "
+                        "UNIQUE(run_id, sequence))"
+                    )
+                    connection.execute(
+                        "INSERT INTO rfa_schema_migrations VALUES (2, ?)",
                         (datetime.now(UTC).isoformat(),),
                     )
                 # Credentials authenticate this installation's owner, not a fixture
@@ -473,6 +502,170 @@ class SqliteWorkRepository:
                 if row is None:
                     raise ResourceNotFoundError("run")
                 return self._run_record(row)
+
+        return await asyncio.to_thread(operation)
+
+    async def observation_alias(
+        self, run_id: str, principal: TrustedPrincipal, kind: str, reference: str = ""
+    ) -> str:
+        owned = await self.get_owned_run(run_id, principal)
+        if kind == "domain":
+            domain = DomainId(reference)
+            if owned.domain_id is not None and owned.domain_id != domain:
+                raise RfaError("invalid_trace_event", "도메인 관측 참조가 일치하지 않습니다.")
+
+        def operation() -> str:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                if kind == "domain":
+                    previous = connection.execute(
+                        "SELECT ref FROM observation_aliases WHERE run_id=? AND kind='domain'",
+                        (run_id,),
+                    ).fetchone()
+                    if previous and previous[0] != reference:
+                        raise RfaError("invalid_trace_event", "도메인 관측 참조가 변경되었습니다.")
+                connection.execute(
+                    "INSERT OR IGNORE INTO observation_aliases VALUES (?, ?, ?, ?)",
+                    (run_id, kind, reference, new_id("obsref")),
+                )
+                return connection.execute(
+                    "SELECT alias FROM observation_aliases WHERE run_id=? AND kind=? AND ref=?",
+                    (run_id, kind, reference),
+                ).fetchone()[0]
+
+        return await asyncio.to_thread(operation)
+
+    async def observation_context(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> ExecutionContext:
+        row = await self.get_owned_run(run_id, principal)
+        fields = {}
+        for name in ("request_id", "trace_id", "run_id", "session_id", "task_id"):
+            if name == "task_id" and row.task_id is None:
+                continue
+            # Do not duplicate caller request/trace strings. Mapping is run-local.
+            fields[name] = await self.observation_alias(run_id, principal, name)
+        fields["agent_id"] = await self.observation_alias(
+            run_id, principal, "actor", "assistant-supervisor"
+        )
+
+        def bound_domain():
+            with self._connect() as connection:
+                domain = connection.execute(
+                    "SELECT ref FROM observation_aliases WHERE run_id=? AND kind='domain'",
+                    (run_id,),
+                ).fetchone()
+                return DomainId(domain[0]) if domain else row.domain_id
+
+        return ExecutionContext(**fields, domain_id=await asyncio.to_thread(bound_domain))
+
+    async def append_observation(
+        self,
+        run_id: str,
+        principal: TrustedPrincipal,
+        event: TraceEvent,
+        *,
+        origin: str,
+        provider_ref: str,
+        transport: str | None = None,
+        provider_kind: str = "builtin",
+    ) -> ObservationRecord:
+        context = await self.observation_context(run_id, principal)
+        event = TraceEvent.model_validate(event.model_dump())
+
+        def operation() -> ObservationRecord:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                aliases = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT alias FROM observation_aliases WHERE run_id=?", (run_id,)
+                    )
+                }
+                refs = [
+                    value
+                    for key, value in event.execution.model_dump().items()
+                    if key not in {"schema_version", "domain_id"} and value is not None
+                ]
+                refs += [provider_ref, event.versions.policy, *event.versions.sources]
+                refs += [
+                    getattr(event, name)
+                    for name in (
+                        "policy_decision_id",
+                        "sandbox_id",
+                        "draft_id",
+                        "approval_id",
+                        "publication_id",
+                        "evidence_ref",
+                    )
+                    if getattr(event, name) is not None
+                ]
+                if (
+                    event.execution.model_dump(exclude={"agent_id"})
+                    != context.model_dump(exclude={"agent_id"})
+                    or any(ref not in aliases for ref in refs)
+                    or event.versions.code != "rfa-observations-v1"
+                    or any(
+                        getattr(event.versions, name) is not None
+                        for name in ("dataset", "evaluator", "model", "prompt", "template")
+                    )
+                ):
+                    raise RfaError("invalid_trace_event", "신뢰된 관측 참조가 필요합니다.")
+                connection.execute(
+                    "INSERT INTO observation_sequences VALUES (?, 1) "
+                    "ON CONFLICT(run_id) DO UPDATE SET sequence=sequence+1",
+                    (run_id,),
+                )
+                sequence = connection.execute(
+                    "SELECT sequence FROM observation_sequences WHERE run_id=?", (run_id,)
+                ).fetchone()[0]
+                record = ObservationRecord(
+                    observation_id=new_id("observation"),
+                    sequence=sequence,
+                    origin=origin,
+                    provider_ref=provider_ref,
+                    transport=transport,
+                    event=event,
+                    provider_kind=provider_kind,
+                )
+                connection.execute(
+                    "INSERT INTO observations VALUES (?, ?, ?, ?, ?)",
+                    (
+                        record.observation_id,
+                        run_id,
+                        sequence,
+                        record.model_dump_json(),
+                        record.event.timestamp.isoformat(),
+                    ),
+                )
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def get_observation(self, observation_id: str) -> ObservationRecord | None:
+        def operation() -> ObservationRecord | None:
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT record_json FROM observations WHERE observation_id=?", (observation_id,)
+                ).fetchone()
+                return ObservationRecord.model_validate_json(row[0]) if row else None
+
+        return await asyncio.to_thread(operation)
+
+    async def list_observations(
+        self, run_id: str, principal: TrustedPrincipal
+    ) -> tuple[ObservationRecord, ...]:
+        await self.get_owned_run(run_id, principal)
+
+        def operation() -> tuple[ObservationRecord, ...]:
+            with self._connect() as connection:
+                return tuple(
+                    ObservationRecord.model_validate_json(row[0])
+                    for row in connection.execute(
+                        "SELECT record_json FROM observations WHERE run_id=? ORDER BY sequence",
+                        (run_id,),
+                    )
+                )
 
         return await asyncio.to_thread(operation)
 
@@ -940,9 +1133,18 @@ class LocalJsonlTrace:
     adapter_name = "local-jsonl-trace"
     simulated = False
 
-    def __init__(self, trace_dir: Path, redactor: SecretRedactor) -> None:
+    def __init__(
+        self,
+        trace_dir: Path,
+        redactor: SecretRedactor,
+        *,
+        repository: SqliteWorkRepository | None = None,
+        retention_days: int = 7,
+    ) -> None:
         self.trace_dir = trace_dir
         self._redactor = redactor
+        self.repository = repository
+        self.retention_days = retention_days
         self._lock = asyncio.Lock()
 
     async def emit(
@@ -955,26 +1157,97 @@ class LocalJsonlTrace:
         status: str,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        event_metadata = metadata or {}
-        run_simulated = bool(event_metadata.get("simulated", self.simulated))
-        record = {
-            "timestamp": datetime.now(UTC).isoformat(),
-            "event": event,
-            "request_id": request_id,
-            "trace_id": trace_id,
-            "run_id": run_id,
-            "status": status,
-            "simulated": run_simulated,
-            "adapter": self.adapter_name,
-            "metadata": self._redactor.value(event_metadata),
-        }
-        self.trace_dir.mkdir(parents=True, exist_ok=True)
-        path = self.trace_dir / "events.jsonl"
-        line = json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n"
+        # Legacy public shape remains callable but no longer accepts arbitrary
+        # payloads or treats a caller-proposed identifier as trusted provenance.
+        raise RfaError("invalid_trace_event", "신뢰된 관측 recorder를 사용해야 합니다.")
+
+    async def emit_event(self, event: TraceEvent) -> None:
+        raise RfaError("invalid_trace_event", "영속 관측 참조가 필요합니다.")
+
+    async def emit_observation(self, record: ObservationRecord) -> None:
+        record = ObservationRecord.model_validate(record.model_dump())
+        if (
+            self.repository is None
+            or await self.repository.get_observation(record.observation_id) != record
+        ):
+            raise RfaError("invalid_trace_event", "확인되지 않은 관측은 내보낼 수 없습니다.")
+        now = datetime.now(UTC)
         async with self._lock:
-            await asyncio.to_thread(self._append, path, line)
+            await asyncio.to_thread(self._append_owned, record, now)
 
     @staticmethod
-    def _append(path: Path, line: str) -> None:
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(line)
+    def _private_open(path: Path, flags: int) -> int:
+        descriptor = os.open(path, flags | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            os.close(descriptor)
+            raise RfaError("configuration_error", "관측 파일은 일반 파일이어야 합니다.")
+        os.fchmod(descriptor, 0o600)
+        return descriptor
+
+    def _append_owned(self, record: ObservationRecord, now: datetime) -> None:
+        directory = self.trace_dir.absolute() / "rfa-observations-v1"
+        # Refuse symlink traversal; do not touch legacy events.jsonl or unrelated data.
+        if any(path.is_symlink() for path in (directory, *directory.parents)):
+            raise RfaError("configuration_error", "관측 경로에 symlink를 사용할 수 없습니다.")
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        directory.chmod(0o700)
+        manifest = directory / "owned.json"
+        try:
+            with _sqlite_setup_guard(directory / "export"):
+                if manifest.is_symlink():
+                    raise ValueError("symlink manifest")
+                if manifest.exists():
+                    fd = self._private_open(manifest, os.O_RDONLY)
+                    with os.fdopen(fd, "r", encoding="utf-8") as handle:
+                        registry = json.loads(handle.read(1_000_000))
+                    if set(registry) != {"owner", "files"} or not re.fullmatch(
+                        r"[0-9a-f]{32}", registry["owner"]
+                    ):
+                        raise ValueError("invalid manifest")
+                else:
+                    # Never adopt a pre-existing arbitrary file as ours.
+                    registry = {"owner": new_id("export").split("_", 1)[1], "files": []}
+                pattern = r"events-[0-9]{8}-" + registry["owner"] + r"\.jsonl"
+                if not isinstance(registry["files"], list) or any(
+                    not isinstance(name, str) or not re.fullmatch(pattern, name)
+                    for name in registry["files"]
+                ):
+                    raise ValueError("invalid manifest entries")
+                retained = []
+                cutoff = (now - timedelta(days=self.retention_days)).strftime("%Y%m%d")
+                for name in registry["files"]:
+                    path = directory / name
+                    if path.is_symlink():
+                        raise ValueError("symlink in owned entries")
+                    if path.exists() and not path.is_file():
+                        raise ValueError("nonregular owned entry")
+                    if name[7:15] < cutoff:
+                        if path.exists():
+                            path.unlink()
+                    else:
+                        retained.append(name)
+                name = "events-" + now.strftime("%Y%m%d") + "-" + registry["owner"] + ".jsonl"
+                path = directory / name
+                if name not in retained and (path.exists() or path.is_symlink()):
+                    raise ValueError("unregistered file is not adopted")
+                # Reserve ownership before creation. A crash before log creation is
+                # recoverable; a crash after append can yield a duplicate export
+                # (deduplicate by observation_id). The SQLite ledger is authoritative.
+                registry["files"] = sorted(set([*retained, name]))
+                temporary = directory / (new_id("manifest") + ".tmp")
+                fd = self._private_open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    json.dump(registry, handle, sort_keys=True)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.replace(temporary, manifest)
+                fd = self._private_open(
+                    path,
+                    os.O_WRONLY | os.O_APPEND | (0 if path.exists() else os.O_CREAT | os.O_EXCL),
+                )
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    handle.write(record.model_dump_json() + "\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            raise RfaError("configuration_error", "안전한 관측 파일 저장에 실패했습니다.") from exc

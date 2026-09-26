@@ -258,8 +258,8 @@ def test_example_secret_values_are_empty_and_planned_names_are_not_active() -> N
         for item in PLANNED_SETTINGS
     )
     assert all(set(item.reuses) <= assignments.keys() for item in PLANNED_SETTINGS)
-    retention = next(item for item in PLANNED_SETTINGS if item.purpose == "trace_retention")
-    assert retention.owner_tasks == ("P1-006D", "P1-006C")
+    assert not any(item.purpose == "trace_retention" for item in PLANNED_SETTINGS)
+    assert assignments["TRACE_RETENTION_DAYS"] == "7"
     assert "SESSION_DB" not in assignments and "CHECKPOINT_DATABASE_URL" not in assignments
 
 

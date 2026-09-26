@@ -62,12 +62,6 @@ PLANNED_SETTINGS = (
         "MAX_CONCURRENT_WORKERS",
     ),
     PlannedSetting(
-        "trace_retention",
-        ("P1-006D", "P1-006C"),
-        "Local retention and external trace backend remain separate work",
-        "TRACE_RETENTION_DAYS",
-    ),
-    PlannedSetting(
         "judge_endpoint",
         ("P1-006A",),
         "Real judge consumer not implemented",
@@ -146,6 +140,7 @@ class Settings(BaseSettings):
 
     trace_backend: Literal["local", "langfuse"] = "local"
     trace_dir: Path = Path("./.local/traces")
+    trace_retention_days: int = Field(default=7, ge=1, le=365)
     log_level: str = "INFO"
     langfuse_base_url: str | None = None
     langfuse_public_key: SecretStr | None = None

@@ -111,6 +111,9 @@ from rfa_mas.contracts.models import (
     EvaluationCaseV11,
     ExecutionContext,
     ExperimentEvidence,
+    ObservationCoverage,
+    ObservationLedger,
+    ObservationRecord,
     PersistentTask,
     PolicyBindings,
     PolicyDecisionV11,
@@ -134,6 +137,9 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "ObservationRecord",
+    "ObservationCoverage",
+    "ObservationLedger",
     "ApprovalReference",
     "AttachmentRef",
     "ChannelWorkRequest",
@@ -169,6 +175,9 @@ EXTENDED_MODEL_NAMES = (
     "VersionReferences",
 )
 __all__ += [
+    "ObservationRecord",
+    "ObservationCoverage",
+    "ObservationLedger",
     "ApprovalReference",
     "AttachmentRef",
     "ChannelWorkRequest",
