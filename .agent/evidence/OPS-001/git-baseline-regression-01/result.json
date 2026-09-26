@@ -1,0 +1,62 @@
+{
+  "attempt_id": "git-baseline-regression-01",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "development-control/local; product AC not_run",
+  "report": {
+    "changed_condition": "Previous disk-related failure retained. User freed disk (93 GiB available) and authorized committed Git baseline; a fresh isolated offline regression run was performed.",
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "assertions": [
+          "기존 58개 ID/체크/AC/주석/링크가 원문 또는 단일 task 원본에 보존되고 YAML/DAG/참조 검증을 통과한다.",
+          "동시 claim·경로/자원 충돌·revision/generation·만료 복구·submit 예약·done gate를 임시 Git worktree에서 재현한다.",
+          "원본 저장 뒤 view 실패/변조를 복구하고 재생성은 결정적이며 단일 context pack/handoff로 재개할 수 있다.",
+          "합성 계약 fixture의 실제 local/reference 응답은 tests/test_contract_baseline.py에서 재생·대조된다."
+        ],
+        "counts": {
+          "collected": 256,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 256,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "256 passed in 29.92s; env -i retained only PATH and LANG; no external provider calls.",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "assertions": [
+          "기존 Pydantic/OpenAPI export 및 9개 합성 reference fixture의 schema·형식·binding이 현재 원본과 일치한다."
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T06:18:09+00:00",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-26T06:17:03+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "71d326deefceac01bf0d5ad3e95f1ab30e6fa47902cb15604c1d02dc093d930a",
+  "source_manifest": ".agent/evidence/OPS-001/git-baseline-regression-01/source.json",
+  "spec_digest": "91c060a8498c5bf9210a8be4b94c9922ed38e9e8dbf79c1188745b7d2264a01b",
+  "spec_revision": 3,
+  "task_id": "OPS-001"
+}

@@ -37,3 +37,17 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   원문 archive/hash와 기존 handoff를 보존해야 하므로 임의 정리하지 않는다. 최초
   baseline에만 `core.whitespace=-blank-at-eof`로 해당 기존 경고를 제외해 검사하며,
   이후 새 변경에는 기본 whitespace 검사를 사용한다. 기능/보안 검증 완화가 아니다.
+
+## OPS-000 / OPS-001 재검증 — 2026-09-26T06:18:09Z
+
+- 최초 보존 커밋: `d51137a`. canonical main baseline 등록 및 P0-014/P0-027
+  별도 source worktree 생성 완료. 두 worktree의 control digest 일치를 확인했다.
+- 임시 worktree/baseline 테스트 3개 통과(1.23초).
+- 깨끗한 환경의 전체 회귀: `env -i PATH="$PATH" LANG=en_US.UTF-8
+  .venv/bin/python -m pytest -q` — 256 passed, 29.92초, skip/error 없음.
+- `scripts/contract_baseline.py check`: 기존 schema/OpenAPI와 합성 fixture 9개 일치.
+- taskctl validate: task 66개 및 generated view 유효. 기본 `git diff --check` 통과.
+- 새 불변 evidence: OPS-000/git-baseline-01, OPS-001/git-baseline-regression-01.
+  이전 디스크 실패는 삭제하지 않았고 확보된 디스크·등록된 Git이라는 변경 근거로
+  새 검증을 수행했다. 제품 E2E·NAT·실제 provider 통합 검증은 별도 후속이다.
+- 다음: P0-014 추적/평가 계약 구현, P0-027 NAT 호환성 spike.

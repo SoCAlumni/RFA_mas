@@ -1,0 +1,34 @@
+{
+  "attempt_id": "git-baseline-01",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "development-control/local; product AC not_run",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "동일 repository identity의 깨끗한 integration branch/HEAD가 등록된다.",
+          "필요한 기존 파일은 baseline에 포함되고 real .env/secret은 추적되지 않는다.",
+          "서로 다른 feature worktree가 하나의 canonical task 상태를 조회하며 오래된 source baseline claim은 거절된다."
+        ],
+        "id": "V1",
+        "observed": "Baseline registered; only .env.example tracked; 169 existing candidates had no detected credential patterns; 3 targeted taskctl tests passed in 1.23s; actual P0-014/P0-027 worktrees see identical canonical state. This is administrative validation, not product acceptance.",
+        "procedure_performed": [
+          "Reviewed initial Git candidate paths, scanned credential patterns without emitting contents, checked real environment exclusion.",
+          "Committed preserved baseline d51137a; registered canonical main via adopt-baseline using reviewed inspection.",
+          "Created two feature worktrees; both returned canonical project digest 9e0a3871e7e1c8a6de1d1af13da7a95562ee4d4ba19c37a86f80e9c84bad9510.",
+          "Executed three isolated taskctl worktree/claim tests."
+        ],
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T06:18:09+00:00",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-26T06:12:51+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "6c4d4d0649e21fdbd5f0ec6a929bb64747f0631cad8c63877792f20f84bfa76c",
+  "source_manifest": ".agent/evidence/OPS-000/git-baseline-01/source.json",
+  "spec_digest": "2c62cfeba479d1d24011eb2b055e610c761060d5e3d097b1d54f217a693a44bf",
+  "spec_revision": 3,
+  "task_id": "OPS-000"
+}

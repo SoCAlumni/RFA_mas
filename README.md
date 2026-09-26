@@ -207,4 +207,4 @@ P0 `graph_checkpoints`는 LangGraph의 production durable resume/checkpointer를
 - 로컬 API 기동 후 health/readiness/OpenAPI/work create/get 확인
 - `.local/verification/openapi.json` export와 schema/path 검사
 
-개발 상태는 [TASKS.md](TASKS.md)의 생성 view, 명세·실제 검증 evidence는 `tasks/<ID>/task.yaml`에서 조회한다. 작업 운영은 [TASK_EXECUTION_RULES.md](TASK_EXECUTION_RULES.md), 이번 이관 검증은 [docs/TASK_MIGRATION.md](docs/TASK_MIGRATION.md)를 참고한다. 실제 NVIDIA 모델, NeMo Retriever, MCP, 팀원 live 서비스, NemoClaw/OpenShell 검증은 수행하지 않았으며 P1의 opt-in 통합 테스트로 남아 있다. 현재 디렉터리는 Git worktree가 아니므로 `.env.example`의 실제 tracked 상태는 확인할 수 없고, 파일 존재와 `.gitignore` 예외만 검증했다.
+개발 상태는 [TASKS.md](TASKS.md)의 생성 view, 명세·실제 검증 evidence는 `tasks/<ID>/task.yaml`에서 조회한다. 작업 운영은 [TASK_EXECUTION_RULES.md](TASK_EXECUTION_RULES.md), 이관 당시 검증은 [docs/TASK_MIGRATION.md](docs/TASK_MIGRATION.md), 이후 커밋·검증·오류는 [docs/WORK_LOG.md](docs/WORK_LOG.md)를 참고한다. 2026-09-26 첫 Git 기준 커밋을 만들었으며 `.env.example`만 추적하고 실제 env는 제외한다. NVIDIA 직접 API의 합성 연결 검사는 수행했으나 제품 ModelPort 통합 검증과는 다르다. NeMo Retriever, MCP, 팀원 실제 서비스, NemoClaw/OpenShell 통합은 아직 미검증이다. 최종 인수 기준은 [E2E 시나리오 10개](RFA_E2E_Test_Scenarios_10_ko.md)이며 구현 전 기능을 사용 가능하다고 뜻하지 않는다.

@@ -1,9 +1,9 @@
 generated: true
 schema_version: '1.0'
-source_digest: eeca2f4768abd7f84c1597dd46369b5a594f0d83dd91170f93e6393a6e7addeb
+source_digest: c7c08244b3e71a313a24bd40ef5a149859296efd335756aa6612f1afaec66708
 source_revisions:
-  OPS-000: 2
-  OPS-001: 10
+  OPS-000: 5
+  OPS-001: 12
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -68,13 +68,13 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T03:52:47+00:00'
+generated_at: '2026-09-26T06:22:59+00:00'
 counts:
   todo: 36
   in_progress: 0
-  verifying: 1
-  blocked: 7
-  done: 13
+  verifying: 0
+  blocked: 6
+  done: 15
   deferred: 9
   cancelled: 0
 final_acceptance:
@@ -103,37 +103,34 @@ final_acceptance:
     passed: false
   control_migration:
   - id: OPS-001
-    passed: false
+    passed: true
 tasks:
 - id: OPS-000
-  status: blocked
-  workstream: contracts/control
-  owner: null
-  recovery_required: false
-  integration: not_required
-  reserved: false
-  blocker: 현재 폴더/상위에 .git이 없어 worktree 통합 baseline 미등록
-  verification: not_run
-  planning_ready: false
-  executable: false
-  reasons:
-  - status:blocked
-  - spec unresolved
-  - source Git baseline unregistered
-- id: OPS-001
-  status: verifying
+  status: done
   workstream: contracts/control
   owner: null
   recovery_required: false
   integration: not_required
   reserved: false
   blocker: null
-  verification: failed
+  verification: passed
   planning_ready: false
   executable: false
   reasons:
-  - status:verifying
-  - source Git baseline unregistered
+  - status:done
+- id: OPS-001
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
 - id: P0-001
   status: done
   workstream: contracts/control
@@ -147,7 +144,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-002
   status: done
   workstream: contracts/control
@@ -161,7 +157,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-003
   status: done
   workstream: contracts/control
@@ -175,7 +170,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-004
   status: done
   workstream: contracts/control
@@ -189,7 +183,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-005
   status: done
   workstream: knowledge
@@ -203,7 +196,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-006
   status: done
   workstream: knowledge
@@ -217,7 +209,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-007
   status: done
   workstream: agents
@@ -231,7 +222,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-008
   status: done
   workstream: integration/evaluation
@@ -245,7 +235,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-009
   status: done
   workstream: integration/evaluation
@@ -259,7 +248,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-010
   status: done
   workstream: integration/evaluation
@@ -273,7 +261,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-011
   status: done
   workstream: integration/evaluation
@@ -287,7 +274,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-012
   status: done
   workstream: contracts/control
@@ -301,7 +287,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-013
   status: done
   workstream: contracts/control
@@ -315,7 +300,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - source Git baseline unregistered
 - id: P0-014
   status: todo
   workstream: contracts/control
@@ -326,9 +310,8 @@ tasks:
   blocker: null
   verification: not_run
   planning_ready: true
-  executable: false
-  reasons:
-  - source Git baseline unregistered
+  executable: true
+  reasons: []
 - id: P0-015
   status: todo
   workstream: execution
@@ -344,7 +327,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P0-014
-  - source Git baseline unregistered
 - id: P0-016
   status: todo
   workstream: execution
@@ -360,7 +342,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P0-015
-  - source Git baseline unregistered
 - id: P0-017
   status: todo
   workstream: contracts/control
@@ -377,7 +358,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-014
   - dependency:P0-016
-  - source Git baseline unregistered
 - id: P0-018
   status: todo
   workstream: agents
@@ -393,7 +373,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P0-014
-  - source Git baseline unregistered
 - id: P0-019
   status: todo
   workstream: agents
@@ -410,7 +389,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-018
   - dependency:P0-015
-  - source Git baseline unregistered
 - id: P0-020
   status: todo
   workstream: agents
@@ -429,7 +407,6 @@ tasks:
   - dependency:P0-017
   - dependency:P1-001A
   - dependency:P1-006D
-  - source Git baseline unregistered
 - id: P0-021
   status: todo
   workstream: execution
@@ -447,7 +424,6 @@ tasks:
   - dependency:P0-016
   - dependency:P0-020
   - dependency:P1-005A
-  - source Git baseline unregistered
 - id: P0-022
   status: todo
   workstream: execution
@@ -466,7 +442,6 @@ tasks:
   - dependency:P0-017
   - dependency:P1-004
   - dependency:P0-021
-  - source Git baseline unregistered
 - id: P0-023
   status: todo
   workstream: execution
@@ -482,7 +457,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P0-022
-  - source Git baseline unregistered
 - id: P0-024
   status: todo
   workstream: execution
@@ -501,7 +475,6 @@ tasks:
   - dependency:P1-004B
   - dependency:P2-003
   - dependency:P1-005
-  - source Git baseline unregistered
 - id: P0-025
   status: todo
   workstream: integration/evaluation
@@ -520,7 +493,6 @@ tasks:
   - dependency:P0-020
   - dependency:P0-024
   - dependency:P1-008
-  - source Git baseline unregistered
 - id: P0-026
   status: todo
   workstream: integration/evaluation
@@ -542,7 +514,6 @@ tasks:
   - dependency:P1-008
   - dependency:P1-001B
   - dependency:P1-006E
-  - source Git baseline unregistered
 - id: P0-027
   status: todo
   workstream: integration/evaluation
@@ -553,9 +524,8 @@ tasks:
   blocker: null
   verification: not_run
   planning_ready: true
-  executable: false
-  reasons:
-  - source Git baseline unregistered
+  executable: true
+  reasons: []
 - id: P0-028
   status: todo
   workstream: integration/evaluation
@@ -574,7 +544,6 @@ tasks:
   - dependency:P0-027
   - dependency:P1-006D
   - dependency:P0-016
-  - source Git baseline unregistered
 - id: P1-001
   status: todo
   workstream: knowledge
@@ -591,7 +560,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-014
   - dependency:P0-015
-  - source Git baseline unregistered
 - id: P1-001A
   status: todo
   workstream: knowledge
@@ -607,7 +575,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P1-001
-  - source Git baseline unregistered
 - id: P1-001B
   status: todo
   workstream: knowledge
@@ -624,7 +591,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-014
   - dependency:P1-001A
-  - source Git baseline unregistered
 - id: P1-001C
   status: deferred
   workstream: knowledge
@@ -642,7 +608,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P1-001B
   - dependency:P1-004A
-  - source Git baseline unregistered
 - id: P1-002
   status: todo
   workstream: integration/evaluation
@@ -658,7 +623,6 @@ tasks:
   - dependency:P0-014
   - dependency:P0-017
   - dependency:P1-005
-  - source Git baseline unregistered
 - id: P1-002A
   status: blocked
   workstream: integration/evaluation
@@ -675,7 +639,6 @@ tasks:
   - status:blocked
   - spec unresolved
   - dependency:P1-002
-  - source Git baseline unregistered
 - id: P1-003
   status: todo
   workstream: integration/evaluation
@@ -691,7 +654,6 @@ tasks:
   - dependency:P0-020
   - dependency:P1-001A
   - dependency:P1-005
-  - source Git baseline unregistered
 - id: P1-003A
   status: blocked
   workstream: integration/evaluation
@@ -708,7 +670,6 @@ tasks:
   - status:blocked
   - spec unresolved
   - dependency:P1-003
-  - source Git baseline unregistered
 - id: P1-004
   status: todo
   workstream: agents
@@ -725,7 +686,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-016
   - dependency:P1-001A
-  - source Git baseline unregistered
 - id: P1-004A
   status: todo
   workstream: knowledge
@@ -742,7 +702,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-020
   - dependency:P1-001A
-  - source Git baseline unregistered
 - id: P1-004B
   status: todo
   workstream: knowledge
@@ -759,7 +718,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P1-004A
   - dependency:P0-019
-  - source Git baseline unregistered
 - id: P1-005
   status: todo
   workstream: agents
@@ -777,7 +735,6 @@ tasks:
   - dependency:P0-020
   - dependency:P1-004A
   - dependency:P1-001B
-  - source Git baseline unregistered
 - id: P1-005A
   status: todo
   workstream: agents
@@ -794,7 +751,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P1-005
   - dependency:P0-016
-  - source Git baseline unregistered
 - id: P1-005B
   status: todo
   workstream: agents
@@ -810,7 +766,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P1-005A
-  - source Git baseline unregistered
 - id: P1-006
   status: todo
   workstream: integration/evaluation
@@ -827,7 +782,6 @@ tasks:
   - contract baseline pending/stale
   - dependency:P0-014
   - dependency:P1-006D
-  - source Git baseline unregistered
 - id: P1-006A
   status: todo
   workstream: integration/evaluation
@@ -842,7 +796,6 @@ tasks:
   reasons:
   - dependency:P1-006
   - dependency:P1-002
-  - source Git baseline unregistered
 - id: P1-006B
   status: todo
   workstream: integration/evaluation
@@ -856,7 +809,6 @@ tasks:
   executable: false
   reasons:
   - dependency:P1-006
-  - source Git baseline unregistered
 - id: P1-006C
   status: todo
   workstream: integration/evaluation
@@ -871,7 +823,6 @@ tasks:
   reasons:
   - dependency:P1-006
   - dependency:P1-006D
-  - source Git baseline unregistered
 - id: P1-006D
   status: todo
   workstream: integration/evaluation
@@ -887,7 +838,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P0-014
-  - source Git baseline unregistered
 - id: P1-006E
   status: todo
   workstream: integration/evaluation
@@ -903,7 +853,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P1-006
-  - source Git baseline unregistered
 - id: P1-007
   status: todo
   workstream: integration/evaluation
@@ -918,7 +867,6 @@ tasks:
   reasons:
   - dependency:P0-014
   - dependency:P0-025
-  - source Git baseline unregistered
 - id: P1-007A
   status: blocked
   workstream: integration/evaluation
@@ -936,7 +884,6 @@ tasks:
   - spec unresolved
   - dependency:P1-007
   - dependency:P1-008B
-  - source Git baseline unregistered
 - id: P1-007B
   status: blocked
   workstream: integration/evaluation
@@ -953,7 +900,6 @@ tasks:
   - status:blocked
   - spec unresolved
   - dependency:P1-008B
-  - source Git baseline unregistered
 - id: P1-008
   status: todo
   workstream: integration/evaluation
@@ -973,7 +919,6 @@ tasks:
   - dependency:P0-021
   - dependency:P1-005A
   - dependency:P1-006D
-  - source Git baseline unregistered
 - id: P1-008A
   status: blocked
   workstream: integration/evaluation
@@ -991,7 +936,6 @@ tasks:
   - spec unresolved
   - dependency:P1-008
   - dependency:P0-026
-  - source Git baseline unregistered
 - id: P1-008B
   status: blocked
   workstream: integration/evaluation
@@ -1010,7 +954,6 @@ tasks:
   - dependency:P1-008
   - dependency:P0-025
   - dependency:P0-026
-  - source Git baseline unregistered
 - id: P1-009
   status: todo
   workstream: integration/evaluation
@@ -1024,7 +967,6 @@ tasks:
   executable: false
   reasons:
   - dependency:P0-026
-  - source Git baseline unregistered
 - id: P2-001
   status: deferred
   workstream: knowledge
@@ -1040,7 +982,6 @@ tasks:
   - status:deferred
   - dependency:P1-004B
   - dependency:P2-003
-  - source Git baseline unregistered
 - id: P2-002
   status: deferred
   workstream: agents
@@ -1057,7 +998,6 @@ tasks:
   - dependency:P2-003
   - dependency:P1-006B
   - dependency:P0-020
-  - source Git baseline unregistered
 - id: P2-003
   status: todo
   workstream: knowledge
@@ -1073,7 +1013,6 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P1-004B
-  - source Git baseline unregistered
 - id: P2-004
   status: deferred
   workstream: knowledge
@@ -1089,7 +1028,6 @@ tasks:
   - status:deferred
   - dependency:P1-001A
   - dependency:P1-008A
-  - source Git baseline unregistered
 - id: P2-005
   status: deferred
   workstream: integration/evaluation
@@ -1105,7 +1043,6 @@ tasks:
   - status:deferred
   - dependency:P0-020
   - dependency:P1-007B
-  - source Git baseline unregistered
 - id: P2-006
   status: deferred
   workstream: agents
@@ -1122,7 +1059,6 @@ tasks:
   - dependency:P0-020
   - dependency:P1-007B
   - dependency:P1-008A
-  - source Git baseline unregistered
 - id: P2-007
   status: deferred
   workstream: agents
@@ -1138,7 +1074,6 @@ tasks:
   - status:deferred
   - dependency:P0-019
   - dependency:P0-021
-  - source Git baseline unregistered
 - id: P2-008
   status: deferred
   workstream: integration/evaluation
@@ -1154,7 +1089,6 @@ tasks:
   - status:deferred
   - dependency:P1-008A
   - dependency:P0-015
-  - source Git baseline unregistered
 - id: P2-009
   status: deferred
   workstream: agents
@@ -1171,4 +1105,3 @@ tasks:
   - dependency:P0-018
   - dependency:P1-002A
   - dependency:P1-006B
-  - source Git baseline unregistered

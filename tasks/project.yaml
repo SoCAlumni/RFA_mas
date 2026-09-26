@@ -1,22 +1,22 @@
-schema_version: "1.0"
-repository_id: "rfa-mas-2026-local"
-control_root: "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas"
-updated_at: "2026-09-26T02:58:21.356Z"
+schema_version: '1.0'
+repository_id: rfa-mas-2026-local
+control_root: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
+updated_at: '2026-09-26T06:14:45+00:00'
 global_context:
-  - "AGENTS.md"
-  - "docs/PROJECT_CONTEXT.md"
-  - "TASK_EXECUTION_RULES.md"
-task_schema: "scripts/tasklib/schema.py"
-canonical_glob: "tasks/*/task.yaml"
+- AGENTS.md
+- docs/PROJECT_CONTEXT.md
+- TASK_EXECUTION_RULES.md
+task_schema: scripts/tasklib/schema.py
+canonical_glob: tasks/*/task.yaml
 generated_views:
-  - "tasks/index.yaml"
-  - "tasks/state.yaml"
-  - "TASKS.md"
+- tasks/index.yaml
+- tasks/state.yaml
+- TASKS.md
 coordinator_sessions:
-  - "rfa-coordinator"
+- rfa-coordinator
 administrative_tasks:
-  - "OPS-000"
-  - "OPS-001"
+- OPS-000
+- OPS-001
 max_workers: 2
 max_workers_ceiling: 3
 lease_seconds: 900
@@ -25,200 +25,208 @@ automatic_heartbeat: false
 cycle_limit: 3
 no_progress_limit: 2
 integration_target:
-  state: "unregistered"
-  worktree: "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas"
-  branch: null
-  baseline_head: null
-  git_common_dir: null
-  reason: "Git initialized but HEAD absent; project files untracked. OPS-000 still requires an approved clean integration baseline; no implicit commit."
+  state: registered
+  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
+  branch: main
+  baseline_head: d51137a1eccf725c8dea0682051013329c5f8207
+  git_common_dir: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.git
+  inspection:
+    user_changes_preserved: true
+    source_reviewed: true
+    no_secrets_tracked: true
+    control_files_excluded_from_worker_commits: true
+    authorization: 2026-09-26 user explicitly requested all task development managed with git commits
+      and logs
+    inspection: 169 preexisting Git candidates reviewed, credential-pattern scan empty, real env excluded,
+      existing archive and source preserved in d51137a
 workstreams:
   contracts/control:
-    owner: "coordinator"
-    scope: "공통 DTO·계약·migration 순서·composition·task control"
+    owner: coordinator
+    scope: 공통 DTO·계약·migration 순서·composition·task control
   knowledge:
-    owner: "claimed task"
-    scope: "KB/ACL/provenance/후보"
+    owner: claimed task
+    scope: KB/ACL/provenance/후보
   agents:
-    owner: "claimed task"
-    scope: "Supervisor/selector/worker/DRAFT"
+    owner: claimed task
+    scope: Supervisor/selector/worker/DRAFT
   execution:
-    owner: "claimed task"
-    scope: "session/checkpoint/scheduler/effect ledger"
+    owner: claimed task
+    scope: session/checkpoint/scheduler/effect ledger
   integration/evaluation:
-    owner: "claimed task"
-    scope: "HTTP adapters/UI-facing state/trace/eval"
+    owner: claimed task
+    scope: HTTP adapters/UI-facing state/trace/eval
 shared_resources:
-  canonical-contracts: "coordinator serialized DTO/ports"
-  composition: "coordinator serialized bootstrap"
-  dependencies-settings: "coordinator serialized pyproject/lock/settings/.env.example"
-  sqlite-migrations: "coordinator serialized local repository schema/migration"
-  root-test-fixtures: "coordinator serialized tests/conftest.py"
-  contract-docs: "coordinator serialized docs/INTEGRATION.md"
-  task-control: "coordinator canonical state/schema"
+  canonical-contracts: coordinator serialized DTO/ports
+  composition: coordinator serialized bootstrap
+  dependencies-settings: coordinator serialized pyproject/lock/settings/.env.example
+  sqlite-migrations: coordinator serialized local repository schema/migration
+  root-test-fixtures: coordinator serialized tests/conftest.py
+  contract-docs: coordinator serialized docs/INTEGRATION.md
+  task-control: coordinator canonical state/schema
 isolation:
-  tests: "tmp_path per test/worktree/attempt; no shared .local DB"
-  network: "offline default; explicit per-attempt loopback port for opt-in tests"
-  outputs: ".agent/evidence/<development-task>/<development-attempt> only in control root"
+  tests: tmp_path per test/worktree/attempt; no shared .local DB
+  network: offline default; explicit per-attempt loopback port for opt-in tests
+  outputs: .agent/evidence/<development-task>/<development-attempt> only in control root
 fingerprint_inputs:
-  - "pyproject.toml"
-  - "uv.lock"
-  - "src/rfa_mas/contracts"
-  - "src/rfa_mas/ports/interfaces.py"
-  - "src/rfa_mas/settings.py"
+- pyproject.toml
+- uv.lock
+- src/rfa_mas/contracts
+- src/rfa_mas/ports/interfaces.py
+- src/rfa_mas/settings.py
 contracts:
   RFA-DTO:
-    version: "1.0"
-    path: "docs/contracts/baseline.json"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    state: "ready"
-    owner: "coordinator"
+    version: '1.0'
+    path: docs/contracts/baseline.json
+    digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+    state: ready
+    owner: coordinator
     provisional: true
   RFA-EXTENDED:
-    version: "1.1"
-    path: "docs/contracts/extended.json"
+    version: '1.1'
+    path: docs/contracts/extended.json
     digest: null
-    state: "planned"
-    owner_task: "P0-014"
+    state: planned
+    owner_task: P0-014
     provisional: true
 milestones:
   D1:
-    - "P0-014"
-    - "P0-015"
-    - "P0-016"
-    - "P1-001"
-    - "P1-001A"
-    - "P1-004"
-    - "P0-017"
+  - P0-014
+  - P0-015
+  - P0-016
+  - P1-001
+  - P1-001A
+  - P1-004
+  - P0-017
   D2:
-    - "P0-018"
-    - "P0-019"
-    - "P0-020"
-    - "P1-004A"
-    - "P1-004B"
-    - "P2-003"
-    - "P1-005"
-    - "P1-005A"
-    - "P1-005B"
+  - P0-018
+  - P0-019
+  - P0-020
+  - P1-004A
+  - P1-004B
+  - P2-003
+  - P1-005
+  - P1-005A
+  - P1-005B
   D3:
-    - "P0-021"
-    - "P0-022"
-    - "P0-023"
-    - "P0-024"
-    - "P1-008"
-    - "P0-025"
-    - "P1-006"
-    - "P0-026"
+  - P0-021
+  - P0-022
+  - P0-023
+  - P0-024
+  - P1-008
+  - P0-025
+  - P1-006
+  - P0-026
   D4:
-    - "P1-002"
-    - "P1-002A"
-    - "P1-003"
-    - "P1-003A"
-    - "P1-008A"
-    - "P1-008B"
-    - "P1-007"
-    - "P1-007A"
-    - "P1-007B"
-    - "P1-009"
+  - P1-002
+  - P1-002A
+  - P1-003
+  - P1-003A
+  - P1-008A
+  - P1-008B
+  - P1-007
+  - P1-007A
+  - P1-007B
+  - P1-009
   LLMOps:
-    - "P1-006A"
-    - "P1-006B"
-    - "P1-006C"
+  - P1-006A
+  - P1-006B
+  - P1-006C
   TECH_D1:
-    - "P0-027"
-    - "P1-006D"
+  - P0-027
+  - P1-006D
   TECH_D2:
-    - "P0-028"
-    - "P1-001B"
+  - P0-028
+  - P1-001B
   TECH_D3:
-    - "P1-006E"
+  - P1-006E
   TECH_DEFERRED:
-    - "P1-001C"
+  - P1-001C
   P2:
-    - "P2-001"
-    - "P2-002"
-    - "P2-004"
-    - "P2-005"
-    - "P2-006"
-    - "P2-007"
-    - "P2-008"
-    - "P2-009"
+  - P2-001
+  - P2-002
+  - P2-004
+  - P2-005
+  - P2-006
+  - P2-007
+  - P2-008
+  - P2-009
 final_acceptance:
   local_product:
-    - "P0-026"
+  - P0-026
   nat_installed_fake_provider:
-    - "P0-028"
+  - P0-028
   real_technology:
-    - "P1-002A"
-    - "P1-003A"
-    - "P1-007A"
-    - "P1-007B"
+  - P1-002A
+  - P1-003A
+  - P1-007A
+  - P1-007B
   teammate_modules:
-    - "P1-008A"
-    - "P1-008B"
+  - P1-008A
+  - P1-008B
   final_reporting:
-    - "P1-009"
+  - P1-009
   control_migration:
-    - "OPS-001"
+  - OPS-001
 migration:
-  source: "docs/archive/TASKS_2026-09-26.md"
-  source_sha256: "73d1f72461a6c3696c101be6418fc7a8782bdf8c2c7cfd0648f533133a36e6b0"
+  source: docs/archive/TASKS_2026-09-26.md
+  source_sha256: 73d1f72461a6c3696c101be6418fc7a8782bdf8c2c7cfd0648f533133a36e6b0
   legacy_ids:
-    - "P0-001"
-    - "P0-002"
-    - "P0-003"
-    - "P0-004"
-    - "P0-005"
-    - "P0-006"
-    - "P0-007"
-    - "P0-008"
-    - "P0-009"
-    - "P0-010"
-    - "P0-011"
-    - "P0-012"
-    - "P0-013"
-    - "P0-014"
-    - "P0-015"
-    - "P0-016"
-    - "P0-017"
-    - "P0-018"
-    - "P0-019"
-    - "P0-020"
-    - "P0-021"
-    - "P0-022"
-    - "P0-023"
-    - "P0-024"
-    - "P0-025"
-    - "P0-026"
-    - "P1-001"
-    - "P1-001A"
-    - "P1-002"
-    - "P1-002A"
-    - "P1-003"
-    - "P1-003A"
-    - "P1-004"
-    - "P1-004A"
-    - "P1-004B"
-    - "P1-005"
-    - "P1-005A"
-    - "P1-005B"
-    - "P1-006"
-    - "P1-006A"
-    - "P1-006B"
-    - "P1-006C"
-    - "P1-007"
-    - "P1-007A"
-    - "P1-007B"
-    - "P1-008"
-    - "P1-008A"
-    - "P1-008B"
-    - "P1-009"
-    - "P2-001"
-    - "P2-002"
-    - "P2-003"
-    - "P2-004"
-    - "P2-005"
-    - "P2-006"
-    - "P2-007"
-    - "P2-008"
-    - "P2-009"
-  mapping: "docs/TASK_MIGRATION.md"
+  - P0-001
+  - P0-002
+  - P0-003
+  - P0-004
+  - P0-005
+  - P0-006
+  - P0-007
+  - P0-008
+  - P0-009
+  - P0-010
+  - P0-011
+  - P0-012
+  - P0-013
+  - P0-014
+  - P0-015
+  - P0-016
+  - P0-017
+  - P0-018
+  - P0-019
+  - P0-020
+  - P0-021
+  - P0-022
+  - P0-023
+  - P0-024
+  - P0-025
+  - P0-026
+  - P1-001
+  - P1-001A
+  - P1-002
+  - P1-002A
+  - P1-003
+  - P1-003A
+  - P1-004
+  - P1-004A
+  - P1-004B
+  - P1-005
+  - P1-005A
+  - P1-005B
+  - P1-006
+  - P1-006A
+  - P1-006B
+  - P1-006C
+  - P1-007
+  - P1-007A
+  - P1-007B
+  - P1-008
+  - P1-008A
+  - P1-008B
+  - P1-009
+  - P2-001
+  - P2-002
+  - P2-003
+  - P2-004
+  - P2-005
+  - P2-006
+  - P2-007
+  - P2-008
+  - P2-009
+  mapping: docs/TASK_MIGRATION.md

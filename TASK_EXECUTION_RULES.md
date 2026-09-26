@@ -15,7 +15,7 @@ export TASK_CONTROL_ROOT=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 task.yaml이 명세·상태 원본, handoff는 재개 요약, project.yaml은 공통 규약이다. index/state/TASKS.md는 읽기용 파생 view이며 직접 수정 금지. schema는 `scripts/tasklib/schema.py`. 최초 이관 외 명세 변경도 coordinator의 `edit-spec`을 이용한다. source 변경 commit에는 stale tasks/global view/handoff를 섞지 않는다. canonical 상태 Git 이력은 coordinator만 관리한다.
 
-현재 Git은 초기화됐지만 HEAD 커밋이 없어 source worktree baseline은 **unregistered**다. OPS-000에서 승인된 초기 기준 또는 기존 checkout을 확인한다. 이 요청은 사용자 변경 commit/stash/reset 권한이 아니다. CLI의 planning_ready는 설계/의존성 준비, executable은 baseline·reservation까지 포함한다. planning-ready P0-014/P0-027도 baseline 전에는 claim 불가다.
+2026-09-26 사용자가 전체 개발·Git commit·로그 관리를 승인했고 최초 보존 커밋 `d51137a`와 canonical `main` baseline을 등록했다. CLI의 planning_ready는 설계/의존성 준비, executable은 baseline·reservation까지 포함한다. 실제 최신 상태는 project/task 원본으로 확인한다. 사용자 변경 삭제·reset·원격 push/배포는 승인 범위에 포함하지 않는다.
 
 Git 기준이 마련되면 coordinator는 원본 보존·secret 미추적·clean branch/HEAD·repository marker를 검사한다. `project-digest` 후 `adopt-baseline --session rfa-coordinator --source <통합 checkout> --expected-project-digest <값> --inspection-file <검사 JSON>`으로 등록한다. JSON의 `user_changes_preserved`, `source_reviewed`, `no_secrets_tracked`, `control_files_excluded_from_worker_commits`는 실제 확인 후 true로 기록한다. 기준 등록은 코드/상태 commit이나 merge를 대신하지 않는다.
 
@@ -53,6 +53,8 @@ lease 900초, 권장 heartbeat 60초. `heartbeat ID --session ... --generation .
 6. evidence는 `.agent/evidence/<ID>/<attempt>/source.json`, `result.json`에 새 파일로만 저장한다. 덮어쓰기 금지, 재실행은 새 attempt. source hash는 관련 tracked/staged/unstaged/untracked 내용과 index blob, HEAD/branch/worktree, spec/contract를 연결한다. `.env*`(example 제외), key/credential, runtime/vendor/대형 자료, generated task 상태·evidence는 제외한다. heartbeat는 제품 fingerprint를 무효화하지 않는다. 도구 자체 검증에는 scripts/tasklib/schema/tests를 포함한다.
 7. 기본 수정/검증 cycle 3회, 같은 fingerprint 실패 반복 2회 후 block/handoff한다. coordinator가 새 접근 이유를 남긴 recover만 cycle을 새로 시작하며 이전 counts/evidence는 보존한다. AC를 낮추거나 검증을 제거해 통과시키지 않는다.
 8. 필요한 코드 commit은 사용자가 승인한 개발 workflow에서만 수행한다. clean artifact + 유효 source/spec/contract evidence + handoff로 `submit`한다. status=verifying, verification=passed, integration=pending. claim은 없어져도 owned_paths/shared_resources 예약은 남는다.
+
+이번 전체 개발은 커밋이 승인된 workflow다. 커밋 제목에 task ID를 넣고 변경·검증·오류/수정·다음 행동을 handoff와 `docs/WORK_LOG.md`에 기록한다. 새 attempt의 검토된 비밀 없는 source/result JSON은 coordinator가 정확한 경로만 명시적으로 Git에 추가한다(기본 evidence ignore는 유지). 원문/키/인증 헤더나 검토되지 않은 로그를 강제로 추가하지 않는다. 실패도 보존하며 최대 3회 수정/검증 cycle 및 새 근거 없는 반복 2회 제한을 적용한다.
 
 ## 통합·완료·변경
 

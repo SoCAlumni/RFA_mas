@@ -7,7 +7,7 @@
 - 기존 P0-001~013은 기반 구현·offline 검증 이력이다. 확장된 제품 P0 전체 완료가 아니다. 영속 LangGraph resume, 사용자별 세션, 실제 Task 팀, 예약은 아직 없다.
 - 현재 milestone: D1 계약·세션·KB → D2 팀·후보·DRAFT → D3 복구·예약·reference·평가 → D4 실제 통합. 기존 D1~D3 코어 24h + 기술 고도화 4.5h, D4 조건부 8h. 증가분은 독립 세션에 배정할 계획이며 직렬 28.5h를 24h 완료로 약속하지 않는다. 용량 부족 시 필수 gate 미완료를 보고한다.
 - 작업 명세/상태 원본은 canonical control root의 `tasks/<ID>/task.yaml`이다. `TASKS.md`, index/state는 파생 view다. 제품 기능/실행 명령의 현재 사실은 README·소스·검증 근거로 확인한다.
-- Git은 초기화됐지만 HEAD 커밋이 없고 프로젝트 파일이 untracked다(2026-09-26 재확인). 승인된 integration baseline을 등록하지 않았다. OPS-000 해소 전 planning ready와 executable ready를 구분하며 실제 worktree claim은 거절한다. 임의 commit/stash하지 않는다.
+- 사용자가 2026-09-26 전체 개발·Git commit·작업 로그를 승인했다. 최초 보존 커밋 `d51137a`를 만들고 canonical `main` baseline을 등록했다. 각 task는 유효 claim과 별도 source worktree에서 구현·검증 후 통합한다. 비밀 파일은 추적하지 않는다. [작업 기록](WORK_LOG.md)을 함께 갱신한다.
 
 ## 불변 아키텍처
 
@@ -22,6 +22,7 @@
 - P0는 key/GPU/Docker/외부 서비스 없이 local 로직 + mock 공급자로 완주. 저장·권한·상태·팀 중복·스케줄·승인 검증은 실제 local 코드여야 한다. 외부 write는 flag와 무관하게 금지. local runtime은 sandbox가 아니다.
 - NVIDIA 모델, 공식 Skill 도구 연결, NemoClaw 지원 경로, OpenShell 허용/차단은 각각 real 증거. OpenClaw/Deep Agents/Gateway 필수 도입·내부소스 복사 금지. 일반 PC에 전체 RAG/GPU 배포를 요구하지 않는다.
 - LLMOps는 민섭: trace/provenance, Judge, Persona QA, 회귀. 결정적 권한/기밀 gate를 Judge 점수로 상쇄하지 않는다. core는 인터페이스와 합성 fixture부터 진행한다.
+- 최종 인수 명세는 루트 `RFA_E2E_Test_Scenarios_10_ko.md`의 10개 시나리오다. controlled/API, real-model, real-integration/UI와 기능·보안·품질·성능 판정을 분리하며 미실행 gate는 통과가 아니다.
 - NAT는 기존 LangGraph 밖의 선택 adapter다. 호환성 spike 후 대표 비대화형 1경로만 검증하며 checkpoint/인증/실행 원본을 바꾸지 않는다. 기본 실행은 NAT 없이 가능; 설치된 NAT+fake provider 증거와 NVIDIA 모델 실호출은 별개다.
 - P0 평가에는 핵심 Persona 12사례·행동 증거 verifier·고정 공격/정상 대조를 둔다. Judge 미실행은 품질 미검증. KB는 기존 RetrievalPort의 L0/L1/L2 선택 로딩과 모든 부모의 최신 ACL/share/egress를 사용한다. OpenViking 전체 엔진·새 관측 서버는 필수가 아니다.
 - `.env`/credential 값은 읽기·복사·hash·로그 금지. `.env.example` 비밀 값은 빈칸, doctor는 configured/missing만. 기능 flag는 권한이 아니다.

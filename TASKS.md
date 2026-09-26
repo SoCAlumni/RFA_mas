@@ -4,14 +4,14 @@
 
 [공통 맥락](docs/PROJECT_CONTEXT.md) · [실행 규칙](TASK_EXECUTION_RULES.md) · [이관 기록](docs/TASK_MIGRATION.md) · [요구사항/일정](docs/PRODUCT_REQUIREMENTS.md)
 
-Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas`. Git baseline: **unregistered**.
+Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas`. Git baseline: **registered**.
 
 개발 작업 완료와 제품 최종 gate는 별개입니다. mock 통과는 실제 NVIDIA/Skill/NemoClaw/OpenShell 증거가 아닙니다.
 
 | ID | 작업 | 우선순위 | 상태 / 검증 | stream | h | 선행 |
 | --- | --- | --- | --- | --- | --- | --- |
-| [OPS-000](tasks/OPS-000/task.yaml) | 사용자 변경을 보존한 Git/worktree baseline 등록 | P0 | blocked / not_run | contracts/control | 0.5 | — |
-| [OPS-001](tasks/OPS-001/task.yaml) | 작업 이관·공통 CLI·병렬 제어 검증 | P0 | verifying / failed | contracts/control | 0.5 | — |
+| [OPS-000](tasks/OPS-000/task.yaml) | 사용자 변경을 보존한 Git/worktree baseline 등록 | P0 | done / passed | contracts/control | 0.5 | — |
+| [OPS-001](tasks/OPS-001/task.yaml) | 작업 이관·공통 CLI·병렬 제어 검증 | P0 | done / passed | contracts/control | 0.5 | — |
 | [P0-001](tasks/P0-001/task.yaml) | 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정 | P0 | done / passed | contracts/control | 0 | — |
 | [P0-002](tasks/P0-002/task.yaml) | typed settings, `.env.example`, `.gitignore`, secret-safe doctor와 named dev credential 초기화 | P0 | done / passed | contracts/control | 0 | P0-001 |
 | [P0-003](tasks/P0-003/task.yaml) | 공통 Pydantic DTO, async ports, 오류 모델, state transition | P0 | done / passed | contracts/control | 0 | P0-001 |
@@ -79,8 +79,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
-- P0-014: planning ready; source Git baseline unregistered
-- P0-027: planning ready; source Git baseline unregistered
+- P0-014: planning ready; claim 가능
+- P0-027: planning ready; claim 가능
 
 ## 최종 gate
 
@@ -89,4 +89,4 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 - real_technology: P1-002A=not_passed, P1-003A=not_passed, P1-007A=not_passed, P1-007B=not_passed
 - teammate_modules: P1-008A=not_passed, P1-008B=not_passed
 - final_reporting: P1-009=not_passed
-- control_migration: OPS-001=not_passed
+- control_migration: OPS-001=passed
