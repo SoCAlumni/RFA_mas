@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from .evidence import (
+    matches,
     record_attempt,
     scope_check,
     source_manifest,
@@ -177,6 +178,84 @@ def integration_guard(store: Store, task: Task, args) -> None:
         raise ControlError("Stale submission generation")
     if task.status != "verifying" or not task.integration.reservation:
         raise ControlError("No reserved submission")
+
+
+def revalidation_baseline(store: Store, task: Task, source: dict) -> str:
+    """Confirm historical integration, not current AC, before resetting its baseline."""
+    integration = task.integration
+    result = integration.result or {}
+    submission = integration.submission or {}
+    summary = result.get("verification_summary", {})
+    if (
+        task.claim
+        or task.status != "verifying"
+        or integration.state != "integrated"
+        or not integration.reservation
+        or not submission.get("head")
+        or not result.get("head")
+        or not integration.evidence
+        or summary.get("state") != "passed"
+        or summary.get("evidence") != integration.evidence
+    ):
+        raise ControlError("Revalidation requires a previously integrated submission and evidence")
+    try:
+        record = json.loads(store.path(integration.evidence).read_text())
+        before = json.loads(store.path(record["source_manifest"]).read_text())
+    except (OSError, KeyError, ValueError):
+        raise ControlError("Historical integration evidence unavailable") from None
+    if (
+        record.get("task_id") != task.id
+        or record.get("result") != "passed"
+        or before.get("repository_id") != store.project["repository_id"]
+        or before.get("head") != result["head"]
+        or record.get("source_fingerprint") != summary.get("source_fingerprint")
+        or before.get("fingerprint") != summary.get("source_fingerprint")
+        or any(
+            before.get("files", {}).get(name, {}).get("sha256") != expected
+            for name, expected in submission.get("changed_files", {}).items()
+        )
+        or any(
+            record.get(field) != summary.get(field) or before.get(field) != summary.get(field)
+            for field in ["spec_revision", "spec_digest", "contract_digest"]
+        )
+    ):
+        raise ControlError("Historical integration evidence binding mismatch")
+    path = Path(source["worktree"])
+    # Integration may have been cherry-picked; require its recorded artifact binding,
+    # not ancestry of the worker commit. The integrated target must remain an ancestor.
+    git(path, "cat-file", "-e", submission["head"] + "^{commit}")
+    git(path, "merge-base", "--is-ancestor", result["head"], source["target_head"])
+    return source["target_head"]
+
+
+def submission_paths(store: Store, task: Task, source: Path) -> list[str]:
+    """Only a fenced, explicitly recovered integration may submit unchanged artifacts."""
+    approach = task.attempts.approaches[-1] if task.attempts.approaches else {}
+    revalidation = (
+        approach.get("kind") == "integrated_revalidation"
+        and approach.get("generation") == task.claim.generation
+        and approach.get("baseline_head") == task.claim.baseline_head
+    )
+    if revalidation and git(source, "rev-parse", "HEAD") == task.claim.baseline_head:
+        # A no-change revalidation still submits an exact, clean current Git commit.
+        # Never swallow scope_check errors for dirty or out-of-scope worker changes.
+        store.source(str(source), feature=True, current=True)
+        paths = []
+    else:
+        paths = scope_check(store, task, source)
+    if revalidation:
+        manifest = source_manifest(store, task, source)
+        paths = sorted(
+            set(paths)
+            | {
+                name
+                for name in manifest["files"]
+                if any(matches(name, pattern) for pattern in task.scope.owned_paths)
+            }
+        )
+        if not paths:
+            raise ControlError("Revalidation requires committed owned source artifacts")
+    return paths
 
 
 def execute(store: Store, args) -> dict:
@@ -443,7 +522,14 @@ def execute(store: Store, args) -> dict:
                     raise ControlError(
                         "Recovery inspection incomplete; expiry alone is insufficient"
                     )
-            source = store.source(args.source, feature=task.execution_role == "worker")
+            revalidation = inspection.get("integrated_revalidation") is True
+            if revalidation and args.disposition != "resume":
+                raise ControlError("Integrated revalidation requires explicit resume")
+            source = store.source(
+                args.source,
+                feature=revalidation or task.execution_role == "worker",
+                current=revalidation,
+            )
             if task.execution_role == "coordinator":
                 store.coordinator(args.new_session)
             active = [t for t in tasks.values() if t.id != task.id and t.claim]
@@ -462,27 +548,45 @@ def execute(store: Store, args) -> dict:
                 not store.complete(tasks[d.id]) for d in task.depends_on
             ):
                 raise ControlError("Recovery dependency is not integrated and verified")
+            previous_claim = next(
+                (a["claim"] for a in reversed(task.attempts.approaches) if a.get("claim")),
+                {},
+            )
             original_base = (
                 task.claim.baseline_head
                 if task.claim
-                else task.integration.submission.get("baseline_head", source["target_head"])
+                else task.integration.submission.get("baseline_head")
                 if task.integration.submission
-                else source["target_head"]
+                else previous_claim.get("baseline_head")
             )
+            baseline = revalidation_baseline(store, task, source) if revalidation else original_base
+            if args.disposition == "resume" and not baseline:
+                raise ControlError(
+                    "Original claim baseline unavailable; coordinator must inspect history"
+                )
             handoff(store, task, args.handoff_file)
             task.claim_generation += 1
-            task.integration.submission_generation = None
             task.attempts.approaches.append(
                 {
+                    "kind": "integrated_revalidation" if revalidation else "recovery",
+                    "generation": task.claim_generation,
+                    "baseline_head": baseline,
                     "reason": args.reason,
                     "at": now(),
                     "cycles": task.attempts.cycles,
                     "no_progress_count": task.attempts.no_progress_count,
+                    "claim": task.claim.model_dump(mode="json") if task.claim else None,
+                    "integration": task.integration.model_dump(mode="json"),
+                    "verification_summary": task.verification_summary.model_dump(mode="json"),
+                    "latest_evidence_file": task.latest_evidence_file,
                 }
             )
             task.attempts.cycles = 0
             task.attempts.no_progress_count = 0
             task.integration.submission = None
+            task.integration.submission_generation = None
+            task.integration.result = None
+            task.integration.evidence = None
             task.integration.reservation = False
             task.integration.state = "pending"
             task.verification_summary.state = "stale" if task.latest_evidence_file else "not_run"
@@ -505,7 +609,7 @@ def execute(store: Store, args) -> dict:
                     claimed_at=now(),
                     heartbeat_at=now(),
                     lease_expires_at=store.lease(),
-                    baseline_head=original_base,
+                    baseline_head=baseline,
                     context_digest=store.context_digest(task),
                 )
                 task.status = "in_progress"
@@ -605,6 +709,14 @@ def execute(store: Store, args) -> dict:
                 task.next_action, task.concise_result = args.next_action, args.result
             elif command in {"release", "block"}:
                 handoff(store, task, args.handoff_file)
+                task.attempts.approaches.append(
+                    {
+                        "kind": command,
+                        "at": now(),
+                        "reason": args.reason,
+                        "claim": task.claim.model_dump(mode="json"),
+                    }
+                )
                 data = task.model_dump(mode="json")
                 data["blocker"] = {
                     "cause": args.reason,
@@ -651,7 +763,7 @@ def execute(store: Store, args) -> dict:
             elif command == "submit":
                 source = Path(task.claim.worktree)
                 valid_evidence(store, task, source)
-                paths = scope_check(store, task, source)
+                paths = submission_paths(store, task, source)
                 handoff(store, task, args.handoff_file)
                 manifest = source_manifest(store, task, source)
                 task.status = "verifying"

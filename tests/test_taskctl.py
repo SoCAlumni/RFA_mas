@@ -1059,6 +1059,184 @@ def test_unrelated_target_change_does_not_invalidate_completed_task(control):
     assert rows["DEV-001"]["verification"] == "passed"
 
 
+def completed_then_changed(control):
+    """Real temp Git history: integrated A, followed by legitimate A and unrelated B."""
+    control.claim()
+    control.commit_change()
+    control.evidence()
+    control.submit()
+    git_call(control.target, "merge", "--ff-only", "worker-a")
+    control.evidence("target-1", stage="integration")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    original = control.task().model_copy(deep=True)
+    control.commit_change(control.target, "src/a.py", "VALUE = 3\n")
+    control.commit_change(control.target, "src/b.py", "VALUE = 4\n")
+    control.run("status")
+    assert control.task().status == "verifying"
+    assert control.task().integration.reservation
+    return original
+
+
+def inspected_recover(control, *, revalidate=True, source=None, session="coordinator"):
+    inspection = control.root.parent / "revalidation-inspection.json"
+    inspection.write_text(
+        json.dumps(
+            {
+                "old_process_stopped_or_fenced": True,
+                "worktree_reviewed": True,
+                "unintegrated_changes_reviewed": True,
+                "side_effects_reconciled": True,
+                "integrated_revalidation": revalidate,
+            }
+        )
+    )
+    return control.run(
+        "recover",
+        "DEV-001",
+        "--session",
+        session,
+        "--source",
+        str(source or control.first),
+        "--expected-revision",
+        str(control.task().revision),
+        "--new-session",
+        "worker-a",
+        "--disposition",
+        "resume",
+        "--inspection-file",
+        str(inspection),
+        "--handoff-file",
+        str(control.handoff_file),
+        "--reason",
+        "Reviewed subsequent integrated source; reverify current artifacts",
+    )
+
+
+@pytest.mark.parametrize("owned_fix", [False, True])
+def test_integrated_revalidation_uses_current_baseline_retains_history_and_new_gates(
+    control, owned_fix
+):
+    original = completed_then_changed(control)
+    old_evidence = (control.root / original.integration.evidence).read_bytes()
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    baseline = git_call(control.target, "rev-parse", "HEAD")
+    inspected_recover(control)
+    recovered = control.task()
+    assert (
+        recovered.claim.baseline_head
+        == baseline
+        != original.integration.submission["baseline_head"]
+    )
+    approach = recovered.attempts.approaches[-1]
+    assert approach["kind"] == "integrated_revalidation"
+    assert approach["integration"] == original.integration.model_dump(mode="json") | {
+        "reservation": True
+    }
+    assert approach["latest_evidence_file"] == original.latest_evidence_file
+    assert recovered.integration.result is None and recovered.integration.evidence is None
+    assert recovered.verification_summary.state == "stale"
+    with pytest.raises(ControlError, match="not passed"):
+        control.submit()
+    with pytest.raises(ControlError, match="Stale/foreign"):
+        control.run(
+            "submit",
+            "DEV-001",
+            "--session",
+            "worker-a",
+            "--generation",
+            "1",
+            "--expected-revision",
+            str(recovered.revision),
+            "--handoff-file",
+            str(control.handoff_file),
+        )
+    if owned_fix:
+        control.commit_change(value="VALUE = 5\n")
+    control.evidence("worker-revalidation")
+    control.submit()
+    submitted = control.task()
+    assert submitted.integration.submission["baseline_head"] == baseline
+    assert set(submitted.integration.submission["changed_files"]) == {"src/a.py"}
+    assert not Store(control.root).readiness(control.task("DEV-003"), Store(control.root).tasks())[
+        "executable"
+    ]
+    with pytest.raises(ControlError, match="Target integration evidence"):
+        control.owned("close", session="coordinator")
+    if owned_fix:
+        git_call(control.target, "merge", "--ff-only", "worker-a")
+    control.evidence("target-revalidation", stage="integration")
+    with pytest.raises(ControlError, match="Integrate"):
+        control.owned("close", session="coordinator")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    assert Store(control.root).complete(control.task())
+    assert Store(control.root).readiness(control.task("DEV-003"), Store(control.root).tasks())[
+        "executable"
+    ]
+    assert control.task().latest_evidence_file != original.latest_evidence_file
+    assert (control.root / original.integration.evidence).read_bytes() == old_evidence
+
+
+@pytest.mark.parametrize("invalid", ["old_branch", "dirty", "wrong_session", "missing_evidence"])
+def test_revalidation_baseline_reset_rejects_invalid_inputs(control, invalid):
+    completed_then_changed(control)
+    if invalid != "old_branch":
+        git_call(control.first, "merge", "--ff-only", "fixture-main")
+    if invalid == "dirty":
+        (control.first / "src/b.py").write_text("DIRTY = True\n")
+    if invalid == "missing_evidence":
+        task = control.task()
+        task.integration.evidence = None
+        control.put(task)
+    before = control.task().model_dump(mode="json")
+    with pytest.raises(ControlError):
+        inspected_recover(
+            control, session="worker-a" if invalid == "wrong_session" else "coordinator"
+        )
+    assert control.task().model_dump(mode="json") == before
+
+
+@pytest.mark.parametrize("released", [False, True])
+def test_pending_recovery_keeps_original_baseline_and_cannot_launder_scope(control, released):
+    control.claim()
+    baseline = control.task().claim.baseline_head
+    control.commit_change(filename="src/b.py")  # Unintegrated, out-of-scope worker edit.
+    if released:
+        control.owned(
+            "release",
+            "--handoff-file",
+            str(control.handoff_file),
+            "--reason",
+            "Inspect pending work",
+        )
+    else:
+        task = control.task()
+        task.claim.lease_expires_at = "2000-01-01T00:00:00+00:00"
+        control.put(task)
+    with pytest.raises(ControlError):
+        inspected_recover(control)
+    inspected_recover(control, revalidate=False)
+    assert control.task().claim.baseline_head == baseline
+    control.evidence("pending-recovered")
+    with pytest.raises(ControlError, match="out-of-scope"):
+        control.submit()
+
+
+def test_revalidation_does_not_waive_dirty_or_out_of_scope_submission(control):
+    completed_then_changed(control)
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    (control.first / "src/b.py").write_text("DIRTY = True\n")
+    control.evidence("revalidation-dirty")
+    with pytest.raises(ControlError, match="clean feature"):
+        control.submit()
+    git_call(control.first, "add", "src/b.py")
+    git_call(control.first, "commit", "-m", "Out-of-scope revalidation change")
+    with pytest.raises(ControlError, match="out-of-scope"):
+        control.submit()
+
+
 def test_all_planned_checks_required_even_when_they_reference_the_same_ac(control):
     task = control.task()
     second = task.verification[0].model_copy(deep=True)

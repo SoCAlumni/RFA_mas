@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -18,8 +19,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def records():
-    store = Store(ROOT)
-    return store, store.tasks()
+    # An explicit canonical root supports read-only audits from source worktrees.
+    # Store still rejects copied/wrong roots; do not silently retry with ROOT.
+    store = Store(os.environ.get("TASK_CONTROL_ROOT", ROOT))
+    with store.lock():
+        return store, store.tasks()
 
 
 def legacy_cards(text):
@@ -80,8 +84,9 @@ def test_task_schema_paths_dag_and_contract_references_are_valid():
 
 def test_schedule_effort_and_final_acceptance_are_separate():
     store, tasks = records()
-    for day in ["D1", "D2", "D3", "D4"]:
-        assert sum(tasks[t].estimated_effort for t in store.project["milestones"][day]) == 8
+    for day, expected in {"D1": 8, "D2": 8, "D3": 11, "D4": 8}.items():
+        assert sum(tasks[t].estimated_effort for t in store.project["milestones"][day]) == expected
+    assert tasks["P0-026"].estimated_effort == 4  # Approved E2E expansion: 1h + 3h.
     assert sum(tasks[t].estimated_effort for t in store.project["milestones"]["LLMOps"]) == 3.5
     assert store.project["final_acceptance"]["local_product"] == ["P0-026"]
     assert set(store.project["final_acceptance"]["real_technology"]) == {
@@ -114,13 +119,31 @@ def test_extended_contract_consumers_cannot_claim_and_selector_is_independent():
 
 
 def test_generated_views_are_consistent_and_no_monolithic_state_original():
+    store, _ = records()
+    # Heartbeats may run during this read-only audit; compare one locked snapshot.
+    with store.lock():
+        tasks = store.tasks()
+        assert store.views_current(tasks)
+        assert store.expected_views(tasks) == store.expected_views(tasks)
+        assert not store.path("tasks.yaml").exists()
+        assert "statuses" not in store.project
+        assert "status" not in store.project
+        assert "직접 수정하지" in store.path("TASKS.md").read_text()
+
+
+def test_read_only_audit_uses_explicit_control_root_without_accepting_copy(
+    control, tmp_path, monkeypatch
+):
+    import shutil
+
+    monkeypatch.setenv("TASK_CONTROL_ROOT", str(control.root))
     store, tasks = records()
-    assert store.views_current(tasks)
-    assert store.expected_views(tasks) == store.expected_views(tasks)
-    assert not (ROOT / "tasks.yaml").exists()
-    assert "statuses" not in store.project
-    assert "status" not in store.project
-    assert "직접 수정하지" in store.path("TASKS.md").read_text()
+    assert store.root == control.root and "DEV-001" in tasks
+    copied = tmp_path / "copied-control"
+    shutil.copytree(control.root, copied)
+    monkeypatch.setenv("TASK_CONTROL_ROOT", str(copied))
+    with pytest.raises(ControlError, match="Copied/wrong control root"):
+        records()
 
 
 def test_initial_resume_handoffs_are_factual_and_other_tasks_use_template():
