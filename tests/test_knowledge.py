@@ -341,14 +341,10 @@ async def test_restart_cas_history_and_seed_do_not_restore_deleted_source(tmp_pa
         assert await second.knowledge.write(note(), owner) == original
         assert await second.knowledge.list(owner) == []
         with sqlite3.connect(second.repository.path) as db:
-            assert db.execute("SELECT version FROM rfa_schema_migrations").fetchall() == [
-                (1,),
-                (2,),
-                (3,),
-                (4,),
-                (5,),
-                (6,),
-            ]
+            versions = [row[0] for row in db.execute(
+                "SELECT version FROM rfa_schema_migrations ORDER BY rowid"
+            )]
+            assert versions == list(range(1, len(versions) + 1)) and len(versions) >= 7
             assert db.execute("SELECT count(*) FROM installation_seeds").fetchone()[0] == 1
     finally:
         await second.shutdown()
