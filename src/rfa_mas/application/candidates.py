@@ -147,6 +147,10 @@ class CandidateService:
             return candidates
         return [c for c in candidates if c.state in {"proposed", "deferred", "accepted"}]
 
+    async def ranked(self, domain_id: DomainId | None, principal: TrustedPrincipal):
+        """Recommendation order only; ranking never changes candidate state or authority."""
+        return rank(await self.list(domain_id, principal), now=self.clock())
+
     async def decide(self, candidate_id: str, decision: CandidateDecision,
                      principal: TrustedPrincipal) -> TodoCandidate:
         decision = CandidateDecision.model_validate(decision.model_dump())
@@ -165,3 +169,57 @@ class CandidateService:
             "resurface_on_new_evidence": decision.resurface_on_new_evidence,
             "updated_at": now, "history": current.history + (f"{now.isoformat()} {state}",),
         }), principal, expected_state=current.state)
+
+# -- P2-003 explainable default ranking ----------------------------------------------------
+# Fixed, documented rule weights (rule_version candidate-rank-v1). Missing inputs score 0
+# with an explicit reason; no deadline or impact is ever invented.
+RANK_RULES = {
+    "overdue": 60, "due_within_3d": 45, "due_within_7d": 30, "due_later": 10,
+    "blocker": 25, "impact_release": 15, "cited": 10, "tentative": -20, "inferred": -5,
+    "accepted": 5, "deferred": -10,
+}
+IMPACT_TERMS = ("출시", "release", "공개", "sdk", "고객")
+
+
+def rank(candidates, *, now: datetime, zone: str = "Asia/Seoul"):
+    from zoneinfo import ZoneInfo
+
+    from rfa_mas.contracts import RankedCandidate, RankReason
+
+    today = now.astimezone(ZoneInfo(zone)).date()
+    scored = []
+    for candidate in candidates:
+        reasons = []
+        if candidate.due_date:
+            due = datetime.fromisoformat(candidate.due_date).date()
+            days = (due - today).days
+            key = ("overdue" if days < 0 else "due_within_3d" if days <= 3
+                   else "due_within_7d" if days <= 7 else "due_later")
+            reasons.append(RankReason(factor="due", points=RANK_RULES[key],
+                                      explanation=f"원문 마감 {candidate.due_date} (D{days:+d})"))
+        else:
+            reasons.append(RankReason(factor="due", points=0, explanation="원문에 마감 정보 없음"))
+        if candidate.blocker:
+            reasons.append(RankReason(factor="dependency", points=RANK_RULES["blocker"],
+                                      explanation="선행 확인이 필요한 미완료 항목(의존성 미충족)"))
+        text = candidate.content.lower()
+        if any(term in text for term in IMPACT_TERMS):
+            reasons.append(RankReason(factor="impact", points=RANK_RULES["impact_release"],
+                                      explanation="출시/공개 관련 원문 표현"))
+        certainty = RANK_RULES.get(candidate.epistemic_state, 0)
+        reasons.append(RankReason(
+            factor="certainty", points=certainty,
+            explanation={"cited": "원문 인용 근거", "tentative": "검증 전/불확실 근거",
+                         "inferred": "추론된 항목"}.get(candidate.epistemic_state,
+                                                      candidate.epistemic_state),
+        ))
+        if candidate.state in {"accepted", "deferred"}:
+            reasons.append(RankReason(factor="state", points=RANK_RULES[candidate.state],
+                                      explanation=f"사용자 결정: {candidate.state}"))
+        score = sum(r.points for r in reasons)
+        scored.append((score, candidate, tuple(reasons)))
+    # Stable tie-break: score desc, earlier due, earlier creation, candidate id.
+    scored.sort(key=lambda item: (-item[0], item[1].due_date or "9999-12-31",
+                                  item[1].created_at, item[1].candidate_id))
+    return [RankedCandidate(rank=i, score=s, candidate=c, reasons=r)
+            for i, (s, c, r) in enumerate(scored, 1)]

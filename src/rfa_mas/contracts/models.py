@@ -1033,6 +1033,22 @@ class CandidateDecision(ExtendedContractModel):
     reason: str = Field(default="", max_length=500)
     resurface_on_new_evidence: bool = True
 
+class RankReason(ExtendedContractModel):
+    factor: Literal["due", "dependency", "impact", "certainty", "state"]
+    points: int
+    explanation: str = Field(max_length=300)
+
+
+class RankedCandidate(ExtendedContractModel):
+    """Explainable recommendation order (P2-003). Never grants creation/approval authority."""
+
+    rank: int = Field(ge=1)
+    score: int
+    candidate: TodoCandidate
+    reasons: tuple[RankReason, ...]
+    rule_version: OpaqueId = "candidate-rank-v1"
+
+
 
 
 

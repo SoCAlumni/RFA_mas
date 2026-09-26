@@ -130,3 +130,35 @@ def test_fingerprint_is_issue_scoped_and_order_independent():
     assert fingerprint("todo", "issue #17 확인", ["a"]) == fingerprint("todo", "#17 다른 문장", ["b"])
     assert fingerprint("todo", "X  확인", ["b", "a"]) == fingerprint("todo", "x 확인", ["a", "b"])
 
+
+async def test_rank_orders_imminent_blocker_over_open_idea_with_reasons_and_is_stable(env):
+    from rfa_mas.application.candidates import rank
+
+    container, owner, service = env
+    await container.knowledge.write(note(
+        "r05", "issue #17: B 결과 환경 checksum 확인 필요, 출시 전, 10월 2일 마감, open"), owner)
+    await container.knowledge.write(note(
+        "r06", "TODO: 다른 방법의 6.0ms는 검증 전 가설이라 추가 실험 필요"), owner)
+    await container.knowledge.write(note("r09", "TODO: FAQ 오탈자 확인 필요"), owner)
+    await service.discover(DomainId.TRIV3, owner)
+    before = await service.list(DomainId.TRIV3, owner)
+    first = await service.ranked(DomainId.TRIV3, owner)
+    assert [r.candidate.candidate_id for r in first] == [
+        r.candidate.candidate_id for r in await service.ranked(DomainId.TRIV3, owner)]
+    top = first[0]
+    assert "#17" in top.candidate.content and top.rank == 1
+    factors = {r.factor: r for r in top.reasons}
+    assert factors["due"].points > 0 and "2026-10-02" in factors["due"].explanation
+    assert factors["dependency"].points > 0 and factors["impact"].points > 0
+    idea = next(r for r in first if "6.0ms" in r.candidate.content)
+    idea_reasons = {r.factor: r for r in idea.reasons}
+    assert idea_reasons["due"].points == 0 and "마감 정보 없음" in idea_reasons["due"].explanation
+    assert idea_reasons["certainty"].points < 0 and idea.rank > top.rank
+    # Ranking is advice only: states and stored candidates are unchanged.
+    assert await service.list(DomainId.TRIV3, owner) == before
+    # Equal scores keep a deterministic tie-break (due, created_at, id).
+    twins = [c.model_copy(update={"candidate_id": cid}) for cid, c in
+             zip(("candidate_b", "candidate_a"), [before[0], before[0]], strict=True)]
+    assert [r.candidate.candidate_id for r in rank(twins, now=CLOCK)] == [
+        "candidate_a", "candidate_b"]
+

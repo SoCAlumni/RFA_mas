@@ -132,6 +132,8 @@ from rfa_mas.contracts.models import (
     PolicyBindings,
     PolicyDecisionV11,
     PublicationReceipt,
+    RankReason,
+    RankedCandidate,
     ResumeRequest,
     RoleOutcome,
     RunRecord,
@@ -159,6 +161,8 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "RankReason",
+    "RankedCandidate",
     "TodoCandidate",
     "CandidateDecision",
     "DerivedItemProposal",

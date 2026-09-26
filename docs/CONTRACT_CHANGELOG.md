@@ -1,5 +1,10 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P2-003 설명 가능한 후보 정렬 1.1 (통합·발행 대기)
+
+- additive 1.1: `RankReason`(due/dependency/impact/certainty/state, 점수·설명), `RankedCandidate`(rank, score, rule_version `candidate-rank-v1`). 고정 규칙 가중치는 application/candidates.py의 `RANK_RULES`에 문서화했다.
+- 원문에 명시된 마감만 점수에 쓰고 없으면 0점과 "마감 정보 없음"을 표시한다. 같은 입력·clock은 같은 순서(점수→마감→생성 시각→ID). 순위는 추천이며 후보 상태·Task 생성·승인 권한을 바꾸지 않는다.
+
 ## 2026-09-27 — P1-004B 작업 후보 1.1 (통합·발행 대기)
 
 - additive 1.1: `TodoCandidate`(owner/domain 범위, dedup fingerprint, 부모 revision, 명시된 마감만, proposed/accepted/deferred/rejected/superseded 이력), `CandidateDecision`. migration7 `todo_candidates`(owner·domain·fingerprint unique).
