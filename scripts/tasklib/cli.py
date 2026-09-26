@@ -342,6 +342,20 @@ def reserved_contract_acceptance(store: Store, task: Task, patch: dict) -> None:
         raise ControlError("All required contracts must be published before spec readiness")
 
 
+def _fast_forwarded_to_target(store: Store, task: Task, source: Path) -> bool:
+    """True only if source HEAD is exactly the current target HEAD and descends from the
+    claim baseline, i.e. the revalidation worktree carries no worker commit of its own."""
+    head = git(source, "rev-parse", "HEAD")
+    target_head = git(Path(store.project["integration_target"]["worktree"]), "rev-parse", "HEAD")
+    if head != target_head or head == task.claim.baseline_head:
+        return False
+    try:
+        git(source, "merge-base", "--is-ancestor", task.claim.baseline_head, head)
+    except ControlError:
+        return False
+    return True
+
+
 def submission_paths(store: Store, task: Task, source: Path) -> list[str]:
     """Only a fenced, explicitly recovered integration may submit unchanged artifacts."""
     approach = task.attempts.approaches[-1] if task.attempts.approaches else {}
@@ -353,6 +367,12 @@ def submission_paths(store: Store, task: Task, source: Path) -> list[str]:
     if revalidation and git(source, "rev-parse", "HEAD") == task.claim.baseline_head:
         # A no-change revalidation still submits an exact, clean current Git commit.
         # Never swallow scope_check errors for dirty or out-of-scope worker changes.
+        store.source(str(source), feature=True, current=True)
+        paths = []
+    elif revalidation and _fast_forwarded_to_target(store, task, source):
+        # OPS-005: another integration moved the target during this revalidation. A clean
+        # fast-forward to exactly the current integrated HEAD adds no worker change; the
+        # evidence must still be captured at this head (fingerprint check at submit).
         store.source(str(source), feature=True, current=True)
         paths = []
     else:

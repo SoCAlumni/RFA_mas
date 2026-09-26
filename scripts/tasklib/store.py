@@ -130,6 +130,24 @@ def expired(task: Task) -> bool:
     )
 
 
+def inactive_stale_integrated(task: Task) -> bool:
+    """OPS-005: an integrated task made stale only by later target changes.
+
+    It has no active claim and no unintegrated submission, so no in-flight artifact can be
+    overwritten from an older baseline. Its reservation keeps the history binding for
+    revalidation but does not block unrelated new claims. Dependents are still gated by
+    complete() (dependency revalidation), and final acceptance requires every integrated
+    task to be re-verified.
+    """
+    return (
+        task.kind != "control"
+        and task.claim is None
+        and task.status == "verifying"
+        and task.verification_summary.state == "stale"
+        and task.integration.state == "integrated"
+    )
+
+
 class Store:
     """Same-host advisory lock. All task decisions re-read originals under this lock."""
 
@@ -376,6 +394,7 @@ class Store:
             if (
                 other.id != task.id
                 and (other.claim or other.integration.reservation)
+                and not inactive_stale_integrated(other)
                 and conflict(task, other)
             ):
                 reasons.append("reserved:" + other.id)

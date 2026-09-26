@@ -1792,3 +1792,83 @@ def test_cli_main_enables_memo_only_for_its_own_execution(control, monkeypatch, 
     )
     assert result.returncode == 0, result.stderr
     assert isinstance(json.loads(result.stdout), dict)
+
+
+# -- OPS-005: stale integrated reservations and moved-target revalidation ----------------
+
+
+def test_stale_integrated_reservation_does_not_block_overlap_but_dependency_and_active_do(
+    control,
+):
+    completed_then_changed(control)
+    stale = control.task()
+    assert stale.status == "verifying" and stale.integration.reservation
+    second = control.task("DEV-002")
+    second.scope.owned_paths.append("src/a.py")
+    control.put(second)
+    third = control.task("DEV-003")
+    third.depends_on = [
+        {"id": "DEV-001", "condition": "integrated_done", "required_output": "fixture result"}
+    ]
+    control.put(third)
+    store = Store(control.root)
+    tasks = store.tasks()
+    assert "reserved:DEV-001" not in store.readiness(tasks["DEV-002"], tasks)["reasons"]
+    # The dependency gate still requires DEV-001's current verification.
+    assert "dependency:DEV-001" in store.readiness(tasks["DEV-003"], tasks)["reasons"]
+    git_call(control.second, "merge", "--ff-only", "fixture-main")
+    control.claim("DEV-002", "worker-b", control.second)
+    assert control.task("DEV-002").status == "in_progress"
+    # The stale history reservation is retained, and its revalidation now waits for the
+    # overlapping active claim (existing serial recovery rule).
+    assert control.task().integration.reservation
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    with pytest.raises(ControlError, match="Recovery conflicts"):
+        inspected_recover(control)
+
+
+def test_active_claim_and_pending_submission_reservations_still_block_overlap(control):
+    control.claim()
+    second = control.task("DEV-002")
+    second.scope.owned_paths.append("src/a.py")
+    control.put(second)
+    tasks = Store(control.root).tasks()
+    assert "reserved:DEV-001" in Store(control.root).readiness(tasks["DEV-002"], tasks)["reasons"]
+    control.commit_change()
+    control.evidence()
+    control.submit()
+    tasks = Store(control.root).tasks()
+    assert tasks["DEV-001"].claim is None and tasks["DEV-001"].integration.reservation
+    assert "reserved:DEV-001" in Store(control.root).readiness(tasks["DEV-002"], tasks)["reasons"]
+    with pytest.raises(ControlError, match="reserved:DEV-001"):
+        control.claim("DEV-002", "worker-b", control.second)
+
+
+def test_revalidation_survives_target_move_only_by_clean_fast_forward(control):
+    completed_then_changed(control)
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    control.evidence("reval-worker-1")
+    # Another integration moves the canonical target during this revalidation.
+    control.commit_change(control.target, "src/b.py", "VALUE = 5\n")
+    with pytest.raises(ControlError, match="current integrated HEAD"):
+        control.submit()
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    # A worker commit on top of the moved target is not a no-change revalidation.
+    control.commit_change(control.first, "src/a.py", "VALUE = 9\n")
+    with pytest.raises(ControlError):
+        control.submit()
+    git_call(control.first, "reset", "--hard", "fixture-main")  # temp fixture worktree only
+    (control.first / "src/untracked.py").write_text("X = 1\n")
+    with pytest.raises(ControlError):
+        control.submit()
+    (control.first / "src/untracked.py").unlink()
+    control.evidence("reval-worker-2")
+    control.submit()
+    task = control.task()
+    assert task.status == "verifying" and task.integration.submission
+    assert task.integration.submission["head"] == git_call(control.target, "rev-parse", "HEAD")
+    control.evidence("reval-target", stage="integration")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    assert control.task().status == "done"

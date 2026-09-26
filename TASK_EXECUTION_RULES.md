@@ -66,6 +66,8 @@ Coordinator는 제출 generation/HEAD/변경 파일/범위/evidence를 확인하
 
 공유 계약 변경은 docs/CONTRACT_CHANGELOG.md 절차와 `publish-contract`로 처리한다. schema/fixture 확인 evidence와 새 file digest·영향 목록·호환성·migration 이유를 남긴다. 영향 task를 draft/stale로 만들고 coordinator의 `edit-spec --patch <명세 필드만 YAML> --reason ...`으로 새 baseline을 수락해야 한다. spec 변경은 spec_revision도 증가, heartbeat/owner는 revision만 증가한다. 관련 소스/계약 변경으로 완료 근거가 달라지면 다음 조회에서 verifying/stale로 기록하고 영향 AC만 재검증한다.
 
+OPS-005(2026-09-27) stale 통합 예약 규칙: 활성 claim과 미통합 제출이 없고 `status=verifying`, `verification=stale`, `integration=integrated`인 task는 진행 중 산출물이 없으므로 그 예약이 새 claim의 경로/자원 충돌 사유가 되지 않는다(이력 binding용 예약 자체는 유지). 활성 claim, 미통합 제출, blocked 예약은 계속 충돌로 거절한다. 새 claim의 `depends_on`은 여전히 현재 검증된 done이어야 하므로 계약/공유 소스 변경 뒤에는 **다음 작업의 직접 의존 task만** 먼저 재검증한다. 최종 acceptance(P0-026/P1-009) 전에는 모든 통합 task를 현재 target에서 재검증해 done으로 만든다(전체 cascade 1회). 재검증 중 다른 통합으로 target이 이동하면 worker 변경 없이 현재 target HEAD로 clean fast-forward한 뒤 같은 계획으로 worker evidence를 다시 캡처해 제출한다. target과 다른 head, dirty tree, 범위 밖 commit은 기존처럼 거절된다.
+
 ## snapshot·장애·범위 한계
 
 짧은 `flock` 안에서 최신 원본 재조회→revision/claim/충돌 확인→task atomic replace→view 생성한다. 긴 테스트/구현 동안 lock을 잡지 않는다. 각 파일 rename은 원자적이나 여러 파일이 DB transaction인 것은 아니다. 원본 저장 뒤 view 실패 시 source_saved=true / repair_required를 반환하고 원본을 거짓 rollback하지 않는다. `refresh`로 복구한다.
