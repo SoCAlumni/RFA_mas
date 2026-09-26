@@ -133,3 +133,24 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   [26.08.1 CLI](https://github.com/NVIDIA/NeMo-Retriever/blob/26.08.1/nemo_retriever/docs/cli/README.md).
   CLI evidence에는 RFA revision/ACL이 없으므로 신뢰된 index manifest와 매핑해야 한다.
   이 조사는 설치·Skill 실행·실제 embedding 성공 증거가 아니다.
+
+## P0-015 독립 검토·중단·새 접근 — 2026-09-26T07:12Z
+
+- sessions-01에서 1.1 요청을 1.0 graph가 거절한 오류를 service projection으로 수정.
+  sessions-02는 자동 19 passed였지만 독립 리뷰에서 두 사용자의 동일 client key가
+  downstream Runtime/Response에서 충돌함을 재현했다. DB뿐 아니라 graph 호출 키도
+  신뢰된 owner로 namespace하여 두 사용자의 완료·호출 횟수 회귀를 추가했다.
+- sessions-03 자동 20 passed / 보조 회귀 34 passed여도 AC4 전체는 실패로 보존했다.
+  외부 body의 run_id를 전역 PK에 사용해 known/unused ID의 생성 응답이 달라지는
+  존재 추측 경로를 재현했다. 조회 권한만 통과했다고 전체 격리를 선언하지 않는다.
+- 3 cycles 뒤 작업을 중단·blocked 처리하고 WIP `8fcb6f6`에 미완료 코드를 보존했다.
+  clean worktree·중단 프로세스·합성 로컬 부작용과 실패 로그를 검토한 후 generation 4의
+  새 접근을 명시 승인했다: HTTP run_id 서버 발급, proxy 경유 시 인증 요구.
+  같은 실패의 무근거 네 번째 재시도가 아니며 이전 3회 증거·횟수는 삭제하지 않는다.
+- 기존 CLI의 block→recover는 claim baseline을 보존하지 않아 현재 main을 선택했다.
+  WIP 보존 후 정상 main merge로 baseline 정합성을 회복한다(reset/stash 없음).
+  OPS-002는 claim history 보존과 불명확 baseline 거절을 구현 중이다.
+- 환경의 read-only 확인: Docker CLI는 있으나 로컬 Colima daemon 접속 실패,
+  OpenShell/NemoClaw CLI는 PATH에 없다. 설치·기동·실제 sandbox 결과는 아직 없음.
+  `docs/DEVELOPMENT.md` 탐색은 파일 없음으로 종료했고 `rg --files docs`로 실제
+  문서 목록을 확인했다. 이 진단은 제품 테스트 실패나 remote 서비스 요구가 아니다.
