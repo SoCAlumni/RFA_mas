@@ -29,10 +29,10 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from rfa_mas.adapters.nvidia import (
     MAX_ATTEMPTS,
-    RETRYABLE_STATUS,
     ModelEgressGrant,
     NvidiaChatConfig,
     _retry_after,
+    is_transient_status,
 )
 from rfa_mas.contracts import (
     Audience,
@@ -207,7 +207,7 @@ class NvidiaJudge:
                 raise _error("judge_pending")
             if status in (401, 403):
                 raise _error("judge_auth_failed")
-            if status not in RETRYABLE_STATUS:
+            if not is_transient_status(status, payload):
                 raise _error("judge_request_rejected")
             last = "judge_rate_limited" if status == 429 else "judge_unavailable"
             if attempt == attempts:

@@ -310,6 +310,18 @@ async def test_retries_are_bounded_by_grant_and_deadline():
     assert len(slow.requests) == 1
 
 
+async def test_empty_body_404_is_transient_but_unknown_model_is_rejected():
+    server = Server(httpx.Response(404, content=b""), scored())
+    adapter, sleeper = judge(server)
+    assessment = await adapter.evaluate(case(), run_result())
+    assert assessment.kind == "actual" and sleeper.slept == [1.0] and len(server.requests) == 2
+    unknown = Server(httpx.Response(404, text="404 page not found\n"))
+    adapter, sleeper = judge(unknown)
+    with pytest.raises(RfaError) as error:
+        await adapter.evaluate(case(), run_result())
+    assert error.value.code == "judge_request_rejected" and len(unknown.requests) == 1
+
+
 @pytest.mark.parametrize(
     ("response", "code"),
     [
