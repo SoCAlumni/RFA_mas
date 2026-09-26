@@ -456,3 +456,13 @@ async def test_ranking_runs_after_authorization_and_ignores_unreadable_documents
     after=await adapter.search(search_request(OTHER,query="지연이 얼마나 있어?"))
     assert [i.source_id for i in after.items]==[i.source_id for i in before.items]
     assert len(after.items)==2 and "PRIVATE_CANARY" not in after.model_dump_json()
+
+
+async def test_maximum_length_query_is_bounded_and_still_searches(kb):
+    repo,service,_=kb
+    target=await service.write(note("long",title="지연 기록",content="지연 기록 benchmark"),OWNER)
+    query=("지연이 " + "가나다라마바사아자차카타파하" * 700)[:10_000]
+    assert len(lexical_terms(query)) <= 128 and ("지연", False) in lexical_terms(query)
+    result=await LocalRetrieval(repo,policy_version="local-v1").search(
+        search_request(query=query))
+    assert [i.source_id for i in result.items]==[target.document.source_id]

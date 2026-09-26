@@ -32,6 +32,8 @@ _STOPWORDS = frozenset({
 })
 BM25_K1 = 1.2
 BM25_B = 0.75
+# One SQL result column per term (SQLite allows 2000); a request may be 10,000 characters.
+MAX_QUERY_TERMS = 128
 
 
 def _strip_particle(word: str) -> str:
@@ -47,8 +49,10 @@ def lexical_terms(query: str) -> tuple[tuple[str, bool], ...]:
     Hangul words drop one trailing particle and add character bigrams (the Lucene CJK
     bigram approach) so "담당자"/"마감일" still meet "담당"/"마감". Short Latin/digit
     tokens (<=2 chars, e.g. "a", "17") only match as whole tokens, never inside words.
+    At most MAX_QUERY_TERMS terms are kept deterministically: whole words before bigrams.
     """
     terms: set[tuple[str, bool]] = set()
+    bigrams: set[tuple[str, bool]] = set()
     for token in _TOKEN.findall(query.lower()):
         if token in _STOPWORDS or token in _PARTICLE_SET:
             continue
@@ -58,10 +62,12 @@ def lexical_terms(query: str) -> tuple[tuple[str, bool], ...]:
                 continue
             terms.add((word, False))
             if len(word) >= 3:
-                terms.update((word[i:i + 2], False) for i in range(len(word) - 1))
+                bigrams.update((word[i:i + 2], False) for i in range(len(word) - 1))
         else:
             terms.add((token, len(token) <= 2))
-    return tuple(sorted(terms))
+    kept = sorted(terms)[:MAX_QUERY_TERMS]
+    kept += sorted(bigrams - terms)[: MAX_QUERY_TERMS - len(kept)]
+    return tuple(sorted(kept))
 
 
 def bm25_scores(rows, term_count: int) -> dict[str, float]:
