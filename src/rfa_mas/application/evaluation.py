@@ -421,7 +421,32 @@ class BoundarySpy:
                 return result
 
             setattr(obj, method, observe)
+        # P1-005C: owner/public local targets retrieve through the staged-context boundary
+        # instead of the retrieval port. Observe it as "retrieval" only when it actually
+        # served (or failed) the call; None means the graph falls back to the spied port.
+        staged = getattr(self.container, "context", None)
+        if staged is not None:
+            original_load = staged.load
+            self.originals.append((staged, "load", original_load))
+
+            async def observe_staged(principal, work, request, *, _original=original_load):
+                copied = request.model_copy(deep=True)
+                try:
+                    result = await _original(principal, work, request)
+                except BaseException:
+                    self._count("retrieval")
+                    raise
+                if result is not None:
+                    self._count("retrieval")
+                    evidence = result[0]
+                    self.capture.retrieval.append((copied, evidence.model_copy(deep=True)))
+                return result
+
+            staged.load = observe_staged
         return self
+
+    def _count(self, boundary: str) -> None:
+        self.capture.boundary_calls[boundary] = self.capture.boundary_calls.get(boundary, 0) + 1
 
     def __exit__(self, *_):
         for obj, method, original in self.originals:

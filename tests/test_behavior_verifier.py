@@ -125,6 +125,19 @@ def test_independent_acl_oracle_requires_company_as_well_as_membership(company):
         assert ev._authorized_sources([bad_doc], bad_principal, Audience.BUSINESS_UNIT) == set()
 
 
+async def test_staged_context_boundary_is_the_observed_retrieval_boundary(observed):
+    # P1-005C: a public local target retrieves through the staged-context loader, not the
+    # retrieval port; the spy count must equal the server-side ledger count for it.
+    fixture, capture, container = observed
+    assert container.context is not None
+    report = await ev.evaluate_observed(fixture, capture)
+    assert capture.retrieval and all(
+        bundle.adapter == "staged-context-v1" for _, bundle in capture.retrieval
+    )
+    assert capture.boundary_calls["retrieval"] == report.observed_calls["retrieval"] >= 1
+    assert report.rules["source_scope"].status == EvaluationStatus.PASS
+
+
 async def test_native_observation_is_owner_bound_and_unknown_is_not_zero(observed):
     fixture, capture, _ = observed
     report = await ev.evaluate_observed(fixture, capture)

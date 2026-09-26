@@ -177,6 +177,8 @@ class Container:
     team_runner: TeamRunner | None = None
     # P1-005A: DRAFT versions/approval validity/publication receipts (mock publisher only).
     drafts: DraftLifecycle | None = None
+    # P1-005C: staged-context retrieval boundary (None when the runtime is not local).
+    context: StagedContextBoundary | None = None
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
@@ -306,6 +308,24 @@ def _staged_context(repository, policy, settings: Settings, observer: Observatio
         return evidence, stats
 
     return load
+
+
+class StagedContextBoundary:
+    """P1-005C: the staged-context retrieval boundary as a container-owned component.
+
+    The domain graph calls `load` through late attribute lookup (like the ObservedPort
+    wrappers do for adapters), so an isolated evaluation harness can observe this exact
+    boundary on its own private container. It adds no capability and no fallback.
+    """
+
+    adapter_name = "staged-context-v1"
+    simulated = False
+
+    def __init__(self, load) -> None:
+        self._load = load
+
+    async def load(self, principal, work, request):
+        return await self._load(principal, work, request)
 
 
 def build_container(settings: Settings | None = None, *, project_resolver: ProjectResolver = no_projects) -> Container:
@@ -452,6 +472,9 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
     )
 
     if isinstance(runtime, LocalRuntime):
+        staged_context = StagedContextBoundary(
+            _staged_context(repository, policy, settings, observer)
+        )
         runtime.register(
             "domain_task",
             build_domain_task_handler(
@@ -459,12 +482,16 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
                     model=observed_model,
                     retrieval=observed_retrieval,
                     policy=observed_policy,
-                    context=_staged_context(repository, policy, settings, observer),
+                    context=lambda principal, work, request: staged_context.load(
+                        principal, work, request
+                    ),
                     model_endpoint="local" if settings.model_provider == "mock" else "cloud",
                 )
             ),
         )
         runtime.register(TEAM_ROLE_TASK, team_runner.handler())
+    else:
+        staged_context = None
 
     adapters = tuple(
         AdapterInfo(port=port, adapter=adapter.adapter_name, simulated=adapter.simulated)
@@ -528,5 +555,6 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         team_factory=team_factory,
         team_runner=team_runner,
         drafts=drafts,
+        context=staged_context,
         http_clients=clients,
     )
