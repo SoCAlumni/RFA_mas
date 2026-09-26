@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: d7cfa8e645d99b16a3fbce8f6e695481ef805b5467c0ab1ccf382b28f06a5786
+source_digest: 9a8ffbb07ed1a1231aa27f42d9e89db6aa82b5114f9bac7ccab95b309cdd50f3
 source_revisions:
   OPS-000: 6
   OPS-001: 13
@@ -18,58 +18,58 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 69
-  P0-015: 85
-  P0-016: 70
-  P0-017: 56
-  P0-018: 70
-  P0-019: 29
+  P0-014: 70
+  P0-015: 86
+  P0-016: 71
+  P0-017: 58
+  P0-018: 72
+  P0-019: 30
   P0-020: 9
-  P0-021: 8
-  P0-022: 8
-  P0-023: 7
-  P0-024: 8
-  P0-025: 10
-  P0-026: 11
-  P0-027: 71
-  P0-028: 47
-  P1-001: 22
-  P1-001A: 15
-  P1-001B: 8
-  P1-001C: 8
+  P0-021: 9
+  P0-022: 9
+  P0-023: 8
+  P0-024: 9
+  P0-025: 11
+  P0-026: 12
+  P0-027: 72
+  P0-028: 49
+  P1-001: 23
+  P1-001A: 29
+  P1-001B: 9
+  P1-001C: 9
   P1-002: 3
-  P1-002A: 1
+  P1-002A: 8
   P1-003: 2
   P1-003A: 1
-  P1-004: 8
-  P1-004A: 10
-  P1-004B: 8
-  P1-005: 10
-  P1-005A: 8
-  P1-005B: 8
-  P1-006: 37
+  P1-004: 9
+  P1-004A: 11
+  P1-004B: 9
+  P1-005: 11
+  P1-005A: 9
+  P1-005B: 9
+  P1-006: 39
   P1-006A: 4
   P1-006B: 3
   P1-006C: 3
-  P1-006D: 47
-  P1-006E: 8
+  P1-006D: 48
+  P1-006E: 9
   P1-007: 2
   P1-007A: 1
   P1-007B: 2
-  P1-008: 10
+  P1-008: 11
   P1-008A: 4
   P1-008B: 4
   P1-009: 5
   P2-001: 2
   P2-002: 2
-  P2-003: 8
+  P2-003: 9
   P2-004: 2
   P2-005: 2
   P2-006: 2
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T12:43:30+00:00'
+generated_at: '2026-09-26T14:08:27+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -353,7 +353,7 @@ tasks:
   title: NVIDIA 실제 합성 호출 증거
   workstream: integration/evaluation
   depends_on:
-  - P1-002
+  - P0-017
   path: tasks/P1-002A/task.yaml
 - id: P1-003
   title: 공식 NeMo Retriever Skill을 Research 도구에 연결

@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: knowledge
@@ -149,12 +149,14 @@ scope:
   - src/rfa_mas/application/evaluation.py
   - src/rfa_mas/application/source_access.py
   - tests/test_teams.py
+  - scripts/contract_baseline.py
+  - tests/test_trace_contract.py
+  - tests/test_nat_smoke.py
   read_only_paths:
   - AGENTS.md
   - docs/EVALUATION_CONTEXT.md
   - src/rfa_mas/application/graphs/domain.py
   - src/rfa_mas/application/observations.py
-  - scripts/contract_baseline.py
   - src/rfa_mas/application/knowledge.py
   planned_paths:
   - src/rfa_mas/adapters/retrieval.py
@@ -518,34 +520,113 @@ verification:
     음성 회귀 유지.
   runner: pytest
 evidence_dir: .agent/evidence/P1-001A
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-001A/retrieval-target-03/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 16
+  spec_digest: 1fb0a3f8fa049fa1cbbaa2a47f1614989f2af5f33c0dabd6852f6f31a6b787dd
+  contract_digest: 28b02f894b446b7234ccf01c8eefe156b30c2b377c1b734323439cb24e36d6b5
+  source_fingerprint: 8722e7997a3fb991b96a71b922a4cc3ceb2e14a8bfb5b73eeda90ae989cf8642
+  evidence: .agent/evidence/P1-001A/retrieval-target-03/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 15
-spec_revision: 15
-claim_generation: 0
+  submission_generation: 3
+  submission:
+    head: 66b2d49a4ec0c8c3c3628e4790df6c44d9e4401f
+    baseline_head: 47f002f98567847bb7c2ab69d252799fab716f09
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001A
+    branch: task/P1-001A
+    evidence: .agent/evidence/P1-001A/retrieval-worker-03/result.json
+    changed_files:
+      .env.example: 6b6116e707e91b7e7020c22a961ec00426b7eec8d9434db909de49779008ea1c
+      docs/CONTRACT_CHANGELOG.md: c0beb31b9d9f0ae40c5f3a2e9180f30c0a1c93d1881a05270d2f867d8c283402
+      docs/contracts/extended.json: f711bab872a44aee01f063146d6061a5fee6c527d0232db89e560928e55a6932
+      scripts/contract_baseline.py: 2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465
+      src/rfa_mas/adapters/local.py: 88c97a6971cdcc77457bd36750c2a492a0508c0f86448923aac51c68caf61de5
+      src/rfa_mas/adapters/mock.py: beed366077642da0d95f81f27d0e5c45484aaa315033322bbbf8509988b029a0
+      src/rfa_mas/adapters/retrieval.py: 8f588493d0909ae71569e80fd65c468a3f1909f8f38b28bbd373e7cdfbe05a1b
+      src/rfa_mas/api/app.py: c501c81bb697b8a5b068014b38bfc3ea910add98c691d3e00c62c297a35cf94c
+      src/rfa_mas/application/evaluation.py: 10cd88fe7d6edef18e0dbe264f9c035f48b5426805a452796607f852d066550a
+      src/rfa_mas/application/resume_policy.py: 3227aecb45a2243e0f8d1cd2f687290901aa515cd1693274ff21aa284b3ffcc7
+      src/rfa_mas/application/service.py: 1cd83350edea1c8ee678bf58c97c4c90dfbe273182b2f74da82a7323c236954f
+      src/rfa_mas/application/source_access.py: 42acb39419162a457f5555fbb5e5ed7cbefc208284e295144421bdec121fee66
+      src/rfa_mas/bootstrap.py: de41996e42fbbceba707e0dfd50cba4db82b015b300622547241cdf8a4eb7e1e
+      src/rfa_mas/contracts/__init__.py: bc24bd0a354d27151f91b8eceefc51ee65755d5da8df68201de8cd1725ce8dde
+      src/rfa_mas/contracts/models.py: 88a74db5ed3823096963c3ca7b1124d4031dba924331c92249471dbe8b469d13
+      src/rfa_mas/ports/interfaces.py: f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e
+      src/rfa_mas/settings.py: 97d1f3e231f9049ea794744c772add4133f63d170ae9866386a4ba6ea2e5de1e
+      tests/test_behavior_verifier.py: 450893257a37b877c67e703926761af1859b60e78fb980552477e334b2bce5e6
+      tests/test_graph.py: 07410ebd948b10d0a04370e9c4b4f749ed1d55c50be884daca260e8125ea5fc8
+      tests/test_knowledge.py: ddd467bafa9a48224cd32aa58a7cd6a6ea793eb74cf1e533b7f6d80e3c3834a0
+      tests/test_nat_adapter.py: 1cc8a9b1c44f03659e57d8a518c09fc1faa70989e85ec2f61fc7f6d17c50f7a5
+      tests/test_nat_smoke.py: 69cf60d5f1d68fd5ac51292c9fcd8ea602b1f75f9f521dbefb841b18eee62d61
+      tests/test_policy.py: c43127bc8c9420bfd0005605332e6fb351a20d7a808142bdee334d09bb193eeb
+      tests/test_resume.py: 0fa395ad0736205b525f33f770c6dd78366a1cd798336b9e724a179d60f548c3
+      tests/test_retrieval.py: df4d18a85916b291b5ba0d17670a4b37fcea35ffe799b43ed4221c7ec682e173
+      tests/test_sessions.py: e37908564a24f219a301358c97c898eb4d71bd4cefcca71ea285583409183a2c
+      tests/test_teams.py: 0c58340e1d02df11402d7f53f77b18e0f5e8fd610ba73f60867d716a11e9670d
+      tests/test_trace_contract.py: c23435cc5795d51666e8f49ca6b19b831671a75a235c3d510b63fc567d6d5f88
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 16
+      spec_digest: 1fb0a3f8fa049fa1cbbaa2a47f1614989f2af5f33c0dabd6852f6f31a6b787dd
+      contract_digest: 28b02f894b446b7234ccf01c8eefe156b30c2b377c1b734323439cb24e36d6b5
+      source_fingerprint: 8722e7997a3fb991b96a71b922a4cc3ceb2e14a8bfb5b73eeda90ae989cf8642
+      evidence: .agent/evidence/P1-001A/retrieval-target-03/result.json
+    head: 66b2d49a4ec0c8c3c3628e4790df6c44d9e4401f
+  evidence: .agent/evidence/P1-001A/retrieval-target-03/result.json
+revision: 29
+spec_revision: 16
+claim_generation: 3
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
-  approaches: []
+  latest_attempt: retrieval-target-03
+  evidence_refs:
+  - .agent/evidence/P1-001A/retrieval-worker-03/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
+    baseline_head: 47f002f98567847bb7c2ab69d252799fab716f09
+    reason: Expired lease; release claim to add three verified-necessary test/script paths to owned scope
+      via edit-spec, then re-claim same worktree
+    at: '2026-09-26T14:03:25+00:00'
+    cycles: 0
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001A
+      branch: task/P1-001A
+      generation: 1
+      claimed_at: '2026-09-26T12:46:12+00:00'
+      heartbeat_at: '2026-09-26T12:53:50+00:00'
+      lease_expires_at: '2026-09-26T13:08:50+00:00'
+      baseline_head: 47f002f98567847bb7c2ab69d252799fab716f09
+      recovery_required: false
+      context_digest: d7c8d2aae91bd1f31912a90837696339e24e3b96e1b795f1b6b0d16e06512216
+    integration:
+      state: pending
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: not_run
+      spec_revision: null
+      spec_digest: null
+      contract_digest: null
+      source_fingerprint: null
+      evidence: null
+    latest_evidence_file: null
 blocker: null
 migration:
   original_status: todo
@@ -558,8 +639,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T12:43:04+00:00'
-concise_result: 'Specification changed: Before claim, actual file discovery found legacy V2 tests/test_baseline.py
-  absent; use existing tests/test_contract_baseline.py without reducing AC or claiming any test ran'
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T14:08:14+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: Implement current source metadata/access/receipts then reader and outward projection; capture
+  exact V1/V2

@@ -1,168 +1,190 @@
-schema_version: "1.0"
-id: "P1-002A"
-title: "NVIDIA 실제 합성 호출 증거"
-objective: "NVIDIA 모델 활용을 실제 실행으로 입증한다."
-kind: "task"
+schema_version: '1.0'
+id: P1-002A
+title: NVIDIA 실제 합성 호출 증거
+objective: NVIDIA 모델 활용을 실제 실행으로 입증한다.
+kind: task
 source_tasks:
-  - "P1-002A"
+- P1-002A
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P1"
-status: "blocked"
-spec_state: "draft"
-unresolved:
-  - "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
-workstream: "integration/evaluation"
-execution_role: "worker"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P1
+status: in_progress
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: worker
 estimated_effort: 0.5
-product_owner: "민섭"
-execution_class: "이 저장소 구현"
-product_mode: "not_run, real 미검증. blocked 사유: 사용할 계정/endpoint의 live readiness 미제공. 현재 가능한 mock은 P1-002; 실제 연결에는 사용자가 제공한 credential·네트워크·API quota 필요."
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: opt-in direct hosted API live smoke. build.nvidia.com hosted endpoint(integrate.api.nvidia.com)에
+  고정된 합성 한국어 요청만 보내 실제 NVIDIA 모델 호출·structured/tool 제안 지원·근거 충실도를 입증한다. 제품 ModelPort/bootstrap/graph 경로의
+  live 증거가 아니며 그 연결은 P1-002 이후 별도 검증이다.
 scope:
   included:
-    - "opt-in live smoke와 모델/endpoint·timestamp·safe request/response ref·usage/latency·simulated=false 기록. credential/원문 private context는 미수집; DTO 변경 없음."
+  - 'tests/integration/test_nvidia_live.py: RFA_NVIDIA_LIVE=1과 명시 RFA_NVIDIA_ENV_FILE이 있을 때만 실행하는 opt-in
+    live smoke. 미설정은 skip이며 성공이 아니다.'
+  - 자격 증명은 기존 Settings(_env_file=명시 경로)의 NVIDIA_BASE_URL/NVIDIA_MODEL/NVIDIA_API_KEY 이름만 재사용한다. 값은 출력·로그·evidence·assertion
+    메시지에 남기지 않는다. 새 환경변수 동의어를 만들지 않는다(opt-in/evidence 경로 변수만 테스트 전용).
+  - 요청 본문은 테스트에 고정된 합성 문자열만 사용한다. 사용자 노트·KB·세션·trace 등 제품 데이터는 전송하지 않는다. https + integrate.api.nvidia.com
+    host만 허용하고 follow_redirects=false, trust_env=false, stream=false.
+  - 'AC1/AC3: 기본 모드 한국어 근거 질문 성공과 근거 부족 질문의 불확실 표시를 결정적 문자열 검사로 확인한다. AC2: json_object(thinking off) 응답의
+    Pydantic 검증과 named tool_choice의 호출 제안(실행 0회) 지원을 기록한다.'
+  - docs/evidence/nvidia-model.md에 endpoint/model ID·확인일·지원 기능·관측 latency/usage·한계와 not_run 구획을 기록하고 docs/EDUCATION_MAPPING.md의
+    NVIDIA 추론 API 행을 실제 범위로 갱신한다. reasoning_content와 key는 기록하지 않는다.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - src/ 제품 코드, bootstrap/settings/contracts/.env.example 변경과 ModelPort adapter 구현(P1-002 소유)
+  - 제품 사용자 데이터 전송, 도구 실행, MCP loop, 품질 점수화, Judge 구현
+  - 실제 .env/.env.dev 내용 조회·복사·출력. 테스트 프로세스의 Settings 로드만 허용
+  - 다른 task의 제품 기능·외부 게시/배포
   owned_paths:
-    - "docs/EDUCATION_MAPPING.md"
-    - "tests/integration/test_nvidia_live.py"
-    - "docs/evidence/nvidia-model.md"
+  - docs/EDUCATION_MAPPING.md
+  - tests/integration/test_nvidia_live.py
+  - docs/evidence/nvidia-model.md
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/contracts"
-    - "src/rfa_mas/ports/interfaces.py"
-    - "docs/INTEGRATION.md"
+  - AGENTS.md
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
   planned_paths:
-    - "tests/integration/test_nvidia_live.py"
-    - "docs/evidence/nvidia-model.md"
+  - tests/integration/test_nvidia_live.py
+  - docs/evidence/nvidia-model.md
   shared_resources: []
 depends_on:
-  -
-    id: "P1-002"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-017
+  condition: integrated_done
+  required_output: 기존 NVIDIA_* 설정 이름·SecretStr·명시 env-file 로드 경계
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P1-002A — NVIDIA 실제 합성 호출 증거"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "docs/EDUCATION_MAPPING.md"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P1-002A/handoff.md"
+  - path: src/rfa_mas/settings.py
+    section: NVIDIA_BASE_URL/NVIDIA_MODEL/NVIDIA_API_KEY와 _env_file 로드
+    reason: 기존 이름과 SecretStr만 재사용한다.
+  - path: docs/EDUCATION_MAPPING.md
+    section: NVIDIA 추론 API 행과 Module 1 모델 호출 설명
+    reason: 실제 검증 범위만 갱신하고 제품 경로를 과장하지 않는다.
+  - path: tasks/P1-002/task.yaml
+    section: hosted model card/API reference URL과 202·json_object·tool_choice 주의사항
+    reason: 공식 근거 URL을 재사용하고 제품 adapter 범위를 침범하지 않는다.
+  handoff: tasks/P1-002A/handoff.md
   dependency_results:
-    - "tasks/P1-002/handoff.md"
+  - tasks/P0-017/handoff.md
 deliverables:
-  -
-    path: "docs/EDUCATION_MAPPING.md"
-    availability: "existing"
-    description: "opt-in live smoke와 모델/endpoint·timestamp·safe request/response ref·usage/latency·simulated=false 기록. credential/원문 private context는 미수집; DTO 변경 없음."
-  -
-    path: "tests/integration/test_nvidia_live.py"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "docs/evidence/nvidia-model.md"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: tests/integration/test_nvidia_live.py
+  availability: planned
+  description: opt-in direct hosted live smoke 4 case와 비밀 없는 evidence JSON 출력
+- path: docs/evidence/nvidia-model.md
+  availability: planned
+  description: endpoint/model·확인일·지원 기능·관측값·한계·제품 경로 not_run
+- path: docs/EDUCATION_MAPPING.md
+  availability: existing
+  description: NVIDIA 추론 API 행을 direct hosted live verified / 제품 ModelPort not_run으로 구분
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "합성 요청 실제 성공"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "사용할 structured/tool 기능의 지원·Pydantic 검증 또는 명시적 미지원 기록"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
-    expect: "한국어 골든 입력·근거 충실도 확인, 미달 시 후보 교체/제한 표시."
-    required: true
+- id: AC1
+  given: 고정 합성 한국어 요청과 사용자가 제공한 NVIDIA_API_KEY 명시 로드
+  expect: hosted nvidia/nemotron-3.5-lightning-30b-a3b 합성 요청 실제 성공(200, finish_reason=stop, 비어 있지 않은 content,
+    usage, model echo)
+  required: true
+- id: AC2
+  given: 고정 합성 요청
+  expect: json_object 응답의 Pydantic 검증과 named tool_choice 호출 제안 지원 기록(도구 실행 0회), 또는 명시적 미지원 기록
+  required: true
+- id: AC3
+  given: 합성 한국어 골든 근거 2건
+  expect: 근거 내 질문은 정확한 사실과 [E1] 인용으로 한국어 답변, 근거 밖 질문은 '근거 부족' 표시. 미달 시 후보 교체/제한 표시.
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-    type: "command"
-    availability: "planned"
-    prerequisites:
-      - "opt-in live test 1경로와 schema 검사; 점수/성능은 실행 후 기록."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv:
-      - ".venv/bin/python"
-      - "-m"
-      - "pytest"
-      - "-q"
-      - "tests/integration/test_nvidia_live.py"
-    timeout_seconds: 180
-    procedure: []
-    assertions:
-      - "합성 요청 실제 성공"
-      - "사용할 structured/tool 기능의 지원·Pydantic 검증 또는 명시적 미지원 기록"
-      - "한국어 골든 입력·근거 충실도 확인, 미달 시 후보 교체/제한 표시."
-    runner: "pytest"
-evidence_dir: ".agent/evidence/P1-002A"
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - source worktree에서 실행. RFA_NVIDIA_ENV_FILE은 canonical root의 사용자 소유 .env.dev 절대 경로이며 내용을 열람하지 않는다.
+  - skip/미수집은 성공이 아니다. 실제 네트워크와 API quota를 사용하므로 attempt당 1회 실행한다.
+  cwd: .
+  argv:
+  - env
+  - RFA_NVIDIA_LIVE=1
+  - RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev
+  - RFA_NVIDIA_EVIDENCE_OUT=/tmp/rfa-nvidia-live-evidence.json
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - -p
+  - no:cacheprovider
+  - tests/integration/test_nvidia_live.py
+  timeout_seconds: 420
+  procedure: []
+  assertions:
+  - hosted 합성 요청 실제 성공과 model echo·usage·finish_reason=stop
+  - json_object Pydantic 검증 통과와 named tool_choice 제안(실행 0회)
+  - 근거 질문 정확 사실+[E1] 인용 한국어 답변, 근거 밖 질문 '근거 부족'
+  - 출력·evidence에 key/Authorization/reasoning_content 없음
+  runner: pytest
+evidence_dir: .agent/evidence/P1-002A
 latest_evidence_file: null
 verification_summary:
-  state: "not_run"
+  state: not_run
   spec_revision: null
   spec_digest: null
   contract_digest: null
   source_fingerprint: null
   evidence: null
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: pending
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 1
-spec_revision: 1
-claim_generation: 0
-claim: null
+revision: 8
+spec_revision: 2
+claim_generation: 1
+claim:
+  session_id: worker-nvidia-1
+  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-002A
+  branch: task/P1-002A
+  generation: 1
+  claimed_at: '2026-09-26T13:56:19+00:00'
+  heartbeat_at: '2026-09-26T14:08:25+00:00'
+  lease_expires_at: '2026-09-26T14:23:25+00:00'
+  baseline_head: 47f002f98567847bb7c2ab69d252799fab716f09
+  recovery_required: false
+  context_digest: b4fad6b37a4e26caac0b0f175b16fb2c29c2d70fe7f57f89a1dfe859057018a1
 attempts:
-  count: 0
+  count: 1
   cycles: 0
   no_progress_count: 0
-  latest_attempt: null
+  latest_attempt: v1-live-a1
   evidence_refs: []
-blocker:
-  cause: "not_run, real 미검증. blocked 사유: 사용할 계정/endpoint의 live readiness 미제공. 현재 가능한 mock은 P1-002; 실제 연결에는 사용자가 제공한 credential·네트워크·API quota 필요."
-  evidence:
-    - "docs/archive/TASKS_2026-09-26.md"
-  resolve_when: "준비 task 완료 + 사용자 제공 실제 설정/권한 + 지원 서비스 접근성 확인. 해당 real 검증만 막으며 P0/local 준비는 계속한다."
-  affects: []
+  approaches: []
+blocker: null
 migration:
-  original_status: "blocked"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P1-002A"
-  prior_claim: "not_run, real 미검증. blocked 사유: 사용할 계정/endpoint의 live readiness 미제공. 현재 가능한 mock은 P1-002; 실제 연결에는 사용자가 제공한 credential·네트워크·API quota 필요."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: blocked
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-002A
+  prior_claim: 'not_run, real 미검증. blocked 사유: 사용할 계정/endpoint의 live readiness 미제공. 현재 가능한 mock은 P1-002;
+    실제 연결에는 사용자가 제공한 credential·네트워크·API quota 필요.'
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T02:58:21.356Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T14:08:27+00:00'
+concise_result: 'Unblocked by coordinator: Spec r2 removes P1-002 dependency; user-supplied NVIDIA_API_KEY
+  is configured in .env.dev (value not inspected) and hosted endpoint is reachable'
+next_action: 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.
