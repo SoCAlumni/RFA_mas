@@ -1954,3 +1954,44 @@ def test_revalidation_survives_target_move_only_by_clean_fast_forward(control):
     control.owned("integrate", session="coordinator")
     control.owned("close", session="coordinator")
     assert control.task().status == "done"
+
+
+def test_fast_forward_revalidation_still_binds_the_captured_integration_head(control):
+    """OPS-003 binding also holds for an OPS-005 moved-target (fast-forward) revalidation."""
+    completed_then_changed(control)
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    control.commit_change(control.target, "src/b.py", "VALUE = 5\n")
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    control.evidence("reval-worker-ff")
+    control.submit()
+    control.owned(
+        "begin-evidence", "--attempt", "reval-race", "--stage", "integration", session="coordinator"
+    )
+    captured = git_call(control.target, "rev-parse", "HEAD")
+    control.commit_change(control.target, "src/b.py", "UNRELATED = 10\n")
+    report = control.root.parent / "reval-race-report.json"
+    report.write_text(json.dumps(control.report()))
+    control.owned(
+        "record-evidence",
+        "--attempt",
+        "reval-race",
+        "--stage",
+        "integration",
+        "--report",
+        str(report),
+        session="coordinator",
+    )
+    assert control.task().integration.result["head"] == captured
+    assert captured != git_call(control.target, "rev-parse", "HEAD")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    assert control.task().status == "done"
+    # A later revalidation accepts this historical binding, as for ordinary integrations.
+    control.commit_change(control.target, "src/a.py", "VALUE = 11\n")
+    control.run("status")
+    assert control.task().status == "verifying"
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    assert control.task().attempts.approaches[-1]["kind"] == "integrated_revalidation"
+
