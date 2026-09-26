@@ -1,0 +1,178 @@
+schema_version: "1.0"
+id: "P2-007"
+title: "팀 재구성·template 버전 전환"
+objective: "진행 업무의 팀을 바꿀 때 승인과 기존 결과를 추적한다."
+kind: "task"
+source_tasks:
+  - "P2-007"
+requirement_refs:
+  - "docs/PRODUCT_REQUIREMENTS.md"
+  - "docs/archive/TASKS_2026-09-26.md"
+priority: "P2"
+status: "deferred"
+spec_state: "ready"
+unresolved: []
+workstream: "agents"
+execution_role: "coordinator"
+estimated_effort: 1
+product_owner: "민섭"
+execution_class: "이 저장소 구현"
+product_mode: "missing/not_run. local state(false), runtime mock(true); real lifecycle는 다영 계약 의존."
+scope:
+  included:
+    - "template 제안→검토→기존 팀 drain→새 버전 활성화 이력. P2-001의 자동 template 생성은 승인 전 제안만."
+  excluded:
+    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
+    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  owned_paths:
+    - "src/rfa_mas/adapters/local.py"
+    - "src/rfa_mas/contracts/models.py"
+    - "src/rfa_mas/application/teams.py"
+    - "tests/test_teams.py"
+  read_only_paths:
+    - "AGENTS.md"
+    - "src/rfa_mas/ports/interfaces.py"
+    - "docs/INTEGRATION.md"
+  planned_paths:
+    - "src/rfa_mas/application/teams.py"
+    - "tests/test_teams.py"
+  shared_resources:
+    - "canonical-contracts"
+    - "sqlite-migrations"
+depends_on:
+  -
+    id: "P0-019"
+    condition: "integrated_done"
+    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+  -
+    id: "P0-021"
+    condition: "integrated_done"
+    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+contract_refs:
+  -
+    id: "RFA-DTO"
+    version: "1.0"
+    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
+    role: "consumer"
+context:
+  global_refs:
+    - "docs/PROJECT_CONTEXT.md"
+    - "TASK_EXECUTION_RULES.md"
+  read:
+    -
+      path: "docs/archive/TASKS_2026-09-26.md"
+      section: "P2-007 — 팀 재구성·template 버전 전환"
+      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
+    -
+      path: "src/rfa_mas/adapters/local.py"
+      section: "task에 관련된 정의/호출부"
+      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
+    -
+      path: "src/rfa_mas/contracts/models.py"
+      section: "task에 관련된 정의/호출부"
+      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
+  handoff: "tasks/P2-007/handoff.md"
+  dependency_results:
+    - "tasks/P0-019/handoff.md"
+    - "tasks/P0-021/handoff.md"
+deliverables:
+  -
+    path: "src/rfa_mas/adapters/local.py"
+    availability: "existing"
+    description: "template 제안→검토→기존 팀 drain→새 버전 활성화 이력. P2-001의 자동 template 생성은 승인 전 제안만."
+  -
+    path: "src/rfa_mas/contracts/models.py"
+    availability: "existing"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+  -
+    path: "src/rfa_mas/application/teams.py"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+  -
+    path: "tests/test_teams.py"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+acceptance_criteria:
+  -
+    id: "AC1"
+    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
+    expect: "어떤 시점에도 Task 활성 팀 하나"
+    required: true
+  -
+    id: "AC2"
+    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
+    expect: "in-flight run·승인/DRAFT binding 보존 또는 명시적 무효화"
+    required: true
+  -
+    id: "AC3"
+    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
+    expect: "실패 시 이전 안전 상태 rollback, 새 팀의 권한 자동 확대 없음."
+    required: true
+verification:
+  -
+    id: "V1"
+    ac_ids:
+      - "AC1"
+      - "AC2"
+      - "AC3"
+    type: "command"
+    availability: "planned"
+    prerequisites:
+      - "동시 재구성·부분 prepare 실패·drain/cancel·rollback."
+      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
+    cwd: "."
+    argv:
+      - ".venv/bin/python"
+      - "-m"
+      - "pytest"
+      - "-q"
+      - "tests/test_teams.py"
+    timeout_seconds: 120
+    procedure: []
+    assertions:
+      - "어떤 시점에도 Task 활성 팀 하나"
+      - "in-flight run·승인/DRAFT binding 보존 또는 명시적 무효화"
+      - "실패 시 이전 안전 상태 rollback, 새 팀의 권한 자동 확대 없음."
+    runner: "pytest"
+evidence_dir: ".agent/evidence/P2-007"
+latest_evidence_file: null
+verification_summary:
+  state: "not_run"
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: "pending"
+  target: "canonical integration branch after OPS-000"
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 2
+spec_revision: 2
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+blocker: null
+migration:
+  initial_spec_revision: 2
+  original_status: "deferred"
+  source_ref: "docs/archive/TASKS_2026-09-26.md — P2-007"
+  prior_claim: "missing/not_run. local state(false), runtime mock(true); real lifecycle는 다영 계약 의존."
+  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  previous_evidence: []
+  checks_this_migration:
+    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
+  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
+updated_at: "2026-09-26T03:13:39.816Z"
+concise_result: "이관 완료; 제품 구현/검증 not_run."
+next_action: "동시 재구성·부분 prepare 실패·drain/cancel·rollback."

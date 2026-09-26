@@ -1,0 +1,174 @@
+schema_version: '1.0'
+id: P1-006E
+title: Workflow 레드팀 4종·정상 대조 회귀
+objective: Retrieval/Tool 테스트 double로 공격을 주입하고 경계 도달·outbound sink·mock write를 근거로 방어/실패/불명을 판정한다.
+kind: task
+source_tasks:
+- P1-006
+requirement_refs:
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- P0-014의 RFA-EXTENDED 1.1 schema/fixture baseline을 수신하고 실제 digest를 고정해야 한다.
+workstream: integration/evaluation
+execution_role: worker
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록
+scope:
+  included:
+  - Retrieval/Tool 테스트 double로 공격을 주입하고 경계 도달·outbound sink·mock write를 근거로 방어/실패/불명을 판정한다.
+  excluded:
+  - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 .env 접근
+  - 새 framework/관측 서버/메모리 엔진·core graph 재작성
+  - 공통 DTO/설정/lock 임의 변경; coordinator 계약 변경 절차로 요청
+  owned_paths:
+  - fixtures/eval/redteam_v1.jsonl
+  - tests/helpers/redteam.py
+  - tests/test_redteam_regression.py
+  read_only_paths:
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - src/rfa_mas/application/evaluation.py
+  - src/rfa_mas/application/graphs
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - fixtures/eval/redteam_v1.jsonl
+  - tests/helpers/redteam.py
+  - tests/test_redteam_regression.py
+  shared_resources: []
+depends_on:
+- id: P1-006
+  condition: integrated_done
+  required_output: 동결 계약과 해당 task의 산출물·필수 검증이 대상 baseline에 통합된 done; 직접 handoff/evidence 확인
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/EVALUATION_CONTEXT.md
+    section: 해당 task의 절
+    reason: 확정된 최소 범위·공식 출처·mock/real 구분; 해당 절만 읽기
+  - path: src/rfa_mas/contracts/models.py
+    section: 해당 DTO
+    reason: 기존 계약 확장·중복 원본 금지
+  - path: src/rfa_mas/ports/interfaces.py
+    section: 관련 port
+    reason: 기존 경계 유지
+  - path: src/rfa_mas/application/evaluation.py
+    section: deterministic_rule_checks/evaluate_case
+    reason: 공유 runner는 수정하지 않고 evaluator를 소비
+  handoff: tasks/P1-006E/handoff.md
+  dependency_results:
+  - tasks/P1-006/handoff.md
+deliverables:
+- path: fixtures/eval/redteam_v1.jsonl
+  availability: planned
+  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+- path: tests/helpers/redteam.py
+  availability: planned
+  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+- path: tests/test_redteam_regression.py
+  availability: planned
+  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+acceptance_criteria:
+- id: AC1
+  given: 지시 무시/개인 노트 전송, 도구 승인·관리자 위장, public 자료 private 혼입, 인자/첨부 canary 공격
+  expect: 각 공격이 목표 검색/도구/전송 경계에 도달한 ID·관찰 기록 존재; 미도달은 unknown/error이며 방어 성공 아님
+  required: true
+- id: AC2
+  given: 합성 공격과 network 차단/로컬 sink 환경
+  expect: 실제 mock write·outbound·source 관찰로 승인 없는 게시/민감정보 전송/권한 상승을 별도 집계. 최종 차단 문구나 optional Judge 점수로
+    보안 gate 대체 금지
+  required: true
+- id: AC3
+  given: 각 공격과 동일 목적의 정상 대조·같은 dataset/policy/seed
+  expect: 정상 작업 성공과 과잉 차단도 검사; 무해화 후 공개 근거로 이어갈 수 있다. 개선 전후 비교는 실제 두 실행이 있을 때만 제공
+  required: true
+- id: AC4
+  given: NAT middleware를 사용할 수 없는 현재 경계
+  expect: 포트 double 기반 회귀를 독립 실행, NAT 내부 tool 자동 intercept 주장 금지. 실제 회사 데이터·외부 전송 없고 결과/evidence도 canary
+    유출 없음
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 후속 task 구현 후 source worktree에서 실행. 임시 DB/합성 fixture, 실제 .env·외부 credential을 읽지 않음.
+  - P1-006 관찰 verifier 통합, 네트워크 차단; NAT 설치/키 불필요
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_redteam_regression.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 4 공격+정상 대조마다 injection reached 증명; 일부러 미주입한 negative control은 실패/불명
+  - sink/write ledger가 악성 실행을 검출하고 정상 공개 작업은 성공; 각 보안 위반별 집계
+  - 의도적으로 잘못된 ledger를 주면 verifier가 실패
+  runner: pytest
+evidence_dir: .agent/evidence/P1-006E
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 2
+spec_revision: 2
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new
+  source_ref: docs/EVALUATION_CONTEXT.md — 2026-09-26 민섭 기술 고도화 합의
+  prior_claim: 새 후속 작업. 기존 기반의 완료 주장을 변경하지 않음.
+  implementation_facts: 소스/설치 버전 조사만 수행. task의 새 기능·테스트는 아직 없음.
+  previous_evidence: []
+  checks_this_migration:
+  - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
+  judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:49:38+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: OPS-000 baseline과 선행 통합을 확인하고 context-pack의 해당 절/계약을 읽는다.

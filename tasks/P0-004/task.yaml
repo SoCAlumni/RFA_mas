@@ -1,0 +1,145 @@
+schema_version: "1.0"
+id: "P0-004"
+title: "composition root와 adapter 주입"
+objective: "composition root와 adapter 주입"
+kind: "task"
+source_tasks:
+  - "P0-004"
+requirement_refs:
+  - "docs/archive/TASKS_2026-09-26.md"
+priority: "P0"
+status: "done"
+spec_state: "ready"
+unresolved: []
+workstream: "contracts/control"
+execution_role: "coordinator"
+estimated_effort: 0
+product_owner: "민섭"
+execution_class: "이 저장소 구현 — 기존 완료 이력"
+product_mode: "코드·이번 suite; local(false)"
+scope:
+  included:
+    - "graph가 URL/MCP/auth/OpenShell에 의존하지 않고 backend 선택이 `bootstrap.py`에만 존재; reserved backend가 명확히 실패"
+  excluded:
+    - "확장 P0의 세션·팀·스케줄·실제 외부 통합은 후속 ID로 검증"
+  owned_paths:
+    - "src/rfa_mas/bootstrap.py"
+    - "src/rfa_mas/application/graphs"
+  read_only_paths:
+    - "AGENTS.md"
+  planned_paths: []
+  shared_resources:
+    - "composition"
+depends_on:
+  -
+    id: "P0-002"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-003"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+contract_refs:
+  -
+    id: "RFA-DTO"
+    version: "1.0"
+    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
+    role: "consumer"
+context:
+  global_refs:
+    - "docs/PROJECT_CONTEXT.md"
+    - "TASK_EXECUTION_RULES.md"
+  read:
+    -
+      path: "docs/archive/TASKS_2026-09-26.md"
+      section: "P0 — 완료된 기반 이력 / P0-004 / V-001~V-012"
+      reason: "당시 완료 범위와 검증을 현재 확장 범위로 오인하지 않음"
+  handoff: "tasks/P0-004/handoff.md"
+  dependency_results:
+    - "tasks/P0-002/handoff.md"
+    - "tasks/P0-003/handoff.md"
+deliverables:
+  -
+    path: "src/rfa_mas/bootstrap.py"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+  -
+    path: "src/rfa_mas/application/graphs"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+acceptance_criteria:
+  -
+    id: "AC1"
+    given: "기존 기반 범위와 합성 offline fixture"
+    expect: "graph가 URL/MCP/auth/OpenShell에 의존하지 않고 backend 선택이 `bootstrap.py`에만 존재"
+    required: true
+  -
+    id: "AC2"
+    given: "기존 기반 범위와 합성 offline fixture"
+    expect: "reserved backend가 명확히 실패"
+    required: true
+verification:
+  -
+    id: "V1"
+    ac_ids:
+      - "AC1"
+      - "AC2"
+    type: "manual"
+    availability: "available"
+    prerequisites:
+      - "과거 명령/결과의 원본 보존; 현재 환경의 설치/live 실행을 새로 주장하지 않음"
+    cwd: "."
+    argv: []
+    timeout_seconds: 120
+    procedure:
+      - "dependency import test와 configuration tests 통과"
+      - "코드/과거 검증/이번 이관 점검을 분리해 검토"
+    assertions:
+      - "graph가 URL/MCP/auth/OpenShell에 의존하지 않고 backend 선택이 `bootstrap.py`에만 존재"
+      - "reserved backend가 명확히 실패"
+    runner: "manual"
+evidence_dir: ".agent/evidence/P0-004"
+latest_evidence_file: "docs/archive/TASKS_2026-09-26.md"
+verification_summary:
+  state: "passed"
+  spec_revision: 1
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: "docs/archive/TASKS_2026-09-26.md"
+integration:
+  state: "not_required"
+  target: "pre-Git existing working copy"
+  reason: "이관 전부터 현재 작업 폴더에 반영된 기반이다. Git/commit 증거를 조작하지 않고 과거 로컬 완료만 유지; 신규 변경 통합의 우회 경로가 아님."
+  reservation: false
+  submission_generation: null
+  submission: null
+  result:
+    kind: "legacy_baseline"
+    evidence_scope: "historical local/mock; no Git integration claim"
+  evidence: "docs/archive/TASKS_2026-09-26.md"
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+blocker: null
+migration:
+  original_status: "done"
+  source_ref: "docs/archive/TASKS_2026-09-26.md — P0-004"
+  prior_claim: "dependency import test와 configuration tests 통과"
+  implementation_facts: "`src/rfa_mas/bootstrap.py`, `application/graphs/` / adapter 조립"
+  previous_evidence:
+    - "dependency import test와 configuration tests 통과"
+    - "V-001~V-012 및 2026-09-26 170 passed 기록; 원문 보존"
+  checks_this_migration:
+    - "관련 소스/테스트 파일 존재·원문 완료 범위/체크 유지 확인"
+  judgment: "기존 구현 및 과거 검증 근거 확인: done 유지. 이번 YAML 이관 자체를 제품 재실행 근거로 만들지 않음."
+updated_at: "2026-09-26T02:58:21.356Z"
+concise_result: "기존 기반 done 유지; 확장/real AC는 후속 task not_run."
+next_action: "재개할 필요 없음. 관련 변경 시 영향 AC만 재검증하고 새 확장 작업을 선택한다."

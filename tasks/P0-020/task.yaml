@@ -1,0 +1,226 @@
+schema_version: '1.0'
+id: P0-020
+title: 역할별 실행·Supervisor 수집·팀 예산·취소
+objective: 팀 이름만 생성하는 데 그치지 않고 역할이 근거/실험/분석을 수행하고 안전하게 종료한다.
+kind: task
+source_tasks:
+- P0-020
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+workstream: agents
+execution_role: coordinator
+estimated_effort: 1.5
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: 단일 domain_task·메모리 runtime만 implemented; 팀 실행 missing/not_run. 제어·권한 local(false), 모델/실험/tool
+  공급자 mock(true). GPU/팀원 없이 완료.
+scope:
+  included:
+  - 역할별 typed 입력·결과, ToolPort read 실행 연결, Supervisor 위임·수집, shared team budget과 LocalRuntime cancel/status.
+    최소 구현은 순차 실행·concurrency=1이며 병렬화를 완료 조건으로 넣지 않는다.
+  - P1-006D safe TracePort로 실제 역할·tool read 시작/끝/실패 관측을 생산; Run/Task/Team/Agent·policy/source 참조를 연결하고
+    token 미제공 null. 평가 fixture 결과와 실제 core 관측을 구분.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/application/graphs/supervisor.py
+  - src/rfa_mas/application/graphs/domain.py
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/adapters/mock.py
+  - src/rfa_mas/bootstrap.py
+  - tests/test_supervisor_boundaries.py
+  - src/rfa_mas/application/workers.py
+  - tests/test_teams.py
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - src/rfa_mas/application/workers.py
+  - tests/test_teams.py
+  shared_resources:
+  - composition
+  - sqlite-migrations
+depends_on:
+- id: P0-019
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-017
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-001A
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-006D
+  condition: integrated_done
+  required_output: typed safe trace/event 관측 계약·exporter·canary 검증 통합
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-020 — 역할별 실행·Supervisor 수집·팀 예산·취소
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/application/graphs/supervisor.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/application/graphs/domain.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/adapters/local.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/adapters/mock.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: A / F/G — 실행 관측 생산자와 UI 안전 참조
+    reason: 평가가 소비할 실제 관측을 core에 연결; 원본 상태·권한 유지
+  handoff: tasks/P0-020/handoff.md
+  dependency_results:
+  - tasks/P0-019/handoff.md
+  - tasks/P0-017/handoff.md
+  - tasks/P1-001A/handoff.md
+  - tasks/P1-006D/handoff.md
+deliverables:
+- path: src/rfa_mas/application/graphs/supervisor.py
+  availability: existing
+  description: 역할별 typed 입력·결과, ToolPort read 실행 연결, Supervisor 위임·수집, shared team budget과 LocalRuntime
+    cancel/status. 최소 구현은 순차 실행·concurrency=1이며 병렬화를 완료 조건으로 넣지 않는다.
+- path: src/rfa_mas/application/graphs/domain.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/adapters/mock.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_supervisor_boundaries.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/application/workers.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_teams.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 역할별 tool/capability·허용 source·domain/task/agent memory 범위 강제, worker 직접 통신 거절
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: Benchmark/Research 모든 필수 역할 실행·Supervisor 통합; 역할별 실제 safe trace가 Run/Task/Team/Agent/근거·정책 ID에
+    연결되고 관찰한 tool read counter·순서·지연·실패를 남김
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: step/token/time/tool/concurrency 총예산 초과와 필수 worker 실패 시 안전 stop·부분 결과
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 취소 후 새 역할/tool 호출 금지, 모의 실험 조건/수치를 simulated로 표시.; provider 미제공 token은 null, raw prompt/본문/인자·secret
+    trace 미수집
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 두 template 실제 local dispatch, 역할 도구/자료 권한 부족, worker 실패·timeout·취소·예산 소진. mock latency/score를 측정값으로
+    출력하지 않는 assertion.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_supervisor_boundaries.py
+  - tests/test_teams.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 역할별 tool/capability·허용 source·domain/task/agent memory 범위 강제, worker 직접 통신 거절
+  - Benchmark/Research 모든 필수 역할 실행·Supervisor 통합; 역할별 실제 safe trace가 Run/Task/Team/Agent/근거·정책 ID에 연결되고
+    관찰한 tool read counter·순서·지연·실패를 남김
+  - step/token/time/tool/concurrency 총예산 초과와 필수 worker 실패 시 안전 stop·부분 결과
+  - 취소 후 새 역할/tool 호출 금지, 모의 실험 조건/수치를 simulated로 표시.; provider 미제공 token은 null, raw prompt/본문/인자·secret
+    trace 미수집
+  runner: pytest
+evidence_dir: .agent/evidence/P0-020
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 3
+spec_revision: 3
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-020
+  prior_claim: 단일 domain_task·메모리 runtime만 implemented; 팀 실행 missing/not_run. 제어·권한 local(false), 모델/실험/tool
+    공급자 mock(true). GPU/팀원 없이 완료.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:49:41+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

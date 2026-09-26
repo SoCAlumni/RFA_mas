@@ -1,0 +1,191 @@
+schema_version: '1.0'
+id: P1-006A
+title: 실제 Judge adapter·품질 평가
+objective: 근거 충실도·목표 해결·초안 유용성·팀 선택 적합성을 보조 점수로 비교한다.
+kind: task
+source_tasks:
+- P1-006A
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P1
+status: todo
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 1.5
+product_owner: 민섭
+execution_class: 본인 LLMOps
+product_mode: MockJudge만 verified, adapter missing/not_run. mock 계약 준비 가능; real 검증에는 provider/모델 quota
+  필요하며 준비 안 되면 해당 검증을 blocked로 기록.
+scope:
+  included:
+  - JudgePort 실제 adapter, 명시적 rubric/model/prompt 버전·opt-in과 결과 provenance.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/application/evaluation.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/bootstrap.py
+  - tests/test_evaluation.py
+  - src/rfa_mas/adapters/nvidia_judge.py
+  - tests/integration/test_judge_live.py
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - src/rfa_mas/adapters/nvidia_judge.py
+  - tests/integration/test_judge_live.py
+  shared_resources:
+  - canonical-contracts
+  - composition
+depends_on:
+- id: P1-006
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-002
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-006A — 실제 Judge adapter·품질 평가
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/application/evaluation.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/contracts/models.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/bootstrap.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: C — 실제 Judge와 egress
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P1-006A/handoff.md
+  dependency_results:
+  - tasks/P1-006/handoff.md
+  - tasks/P1-002/handoff.md
+deliverables:
+- path: src/rfa_mas/application/evaluation.py
+  availability: existing
+  description: JudgePort 실제 adapter, 명시적 rubric/model/prompt 버전·opt-in과 결과 provenance.
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_evaluation.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/adapters/nvidia_judge.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/integration/test_judge_live.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: ENABLE_JUDGE opt-in일 때만 합성/전송 허가된 자료 평가; endpoint별 egress 허가와 opt-in 둘 다 필요, key 존재만으로 private
+    trace/문서 전송 금지
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 네 품질 차원과 규칙 gate 별도, privacy/access 위반을 점수로 상쇄 금지; 근거성·유용성·요청 충족·표현/팀 선택 rubric을 기록하고 simulated
+    Persona를 실제 만족도 측정으로 표시하지 않음
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: actual/simulated/not_run 및 provider 실패 구분. disabled/error/skip/증거 부족은 semantic not_run/error,
+    결정적 rule 결과는 보존하고 미실행 점수 null
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - mock transport schema/timeout·gate 회귀 후 실제 합성 Judge 요청. 계정 준비 전 실제 점수 기입 금지.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_evaluation.py
+  - tests/integration/test_judge_live.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - ENABLE_JUDGE opt-in일 때만 합성/전송 허가된 자료 평가; endpoint별 egress 허가와 opt-in 둘 다 필요, key 존재만으로 private trace/문서
+    전송 금지
+  - 네 품질 차원과 규칙 gate 별도, privacy/access 위반을 점수로 상쇄 금지; 근거성·유용성·요청 충족·표현/팀 선택 rubric을 기록하고 simulated Persona를
+    실제 만족도 측정으로 표시하지 않음
+  - actual/simulated/not_run 및 provider 실패 구분. disabled/error/skip/증거 부족은 semantic not_run/error, 결정적
+    rule 결과는 보존하고 미실행 점수 null
+  runner: pytest
+evidence_dir: .agent/evidence/P1-006A
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 4
+spec_revision: 4
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-006A
+  prior_claim: MockJudge만 verified, adapter missing/not_run. mock 계약 준비 가능; real 검증에는 provider/모델 quota
+    필요하며 준비 안 되면 해당 검증을 blocked로 기록.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T03:49:28+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: mock transport schema/timeout·gate 회귀 후 실제 합성 Judge 요청. 계정 준비 전 실제 점수 기입 금지.

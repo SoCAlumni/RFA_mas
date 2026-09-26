@@ -1,0 +1,208 @@
+schema_version: '1.0'
+id: P0-017
+title: 후속 설정·readiness 기본값 정리
+objective: 새 기능이 어떤 설정에서 준비되는지 명확히 하고 키 없는 부팅을 유지한다.
+kind: task
+source_tasks:
+- P0-017
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+workstream: contracts/control
+execution_role: coordinator
+estimated_effort: 0.5
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: 기존 설정 검증 통과, 신규 항목 missing/not_run. local(false). 외부 의존 없음.
+scope:
+  included:
+  - 아래 설정 후속 표를 typed settings와 예제에 반영. DATABASE_URL·backend·예산 이름 재사용; 신규 이름은 중복 없이 확정. 미구현 backend는
+    reserved.
+  - NAT/evaluation 선택·로컬 trace/evidence·Judge endpoint·egress 정책 누락만 planned로 보충. 기존 ENABLE_JUDGE/JUDGE_*/TRACE_DIR/TRACE_BACKEND/LANGFUSE_*
+    등 재사용; 실제 읽지 않는 설정을 지원 목록에 추가하지 않음. NAT dependency pin은 P0-027 coordinator 소유와 순차 통합.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - .env.example
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/cli.py
+  - tests/test_settings.py
+  - src/rfa_mas/dev_env.py
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths: []
+  shared_resources:
+  - composition
+  - dependencies-settings
+depends_on:
+- id: P0-014
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-016
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-017 — 후속 설정·readiness 기본값 정리
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/settings.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/bootstrap.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/cli.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/dev_env.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: 설정과 일정
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P0-017/handoff.md
+  dependency_results:
+  - tasks/P0-014/handoff.md
+  - tasks/P0-016/handoff.md
+deliverables:
+- path: .env.example
+  availability: existing
+  description: 아래 설정 후속 표를 typed settings와 예제에 반영. DATABASE_URL·backend·예산 이름 재사용; 신규 이름은 중복 없이 확정. 미구현
+    backend는 reserved.
+- path: src/rfa_mas/settings.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/cli.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_settings.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/dev_env.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: session/checkpoint 경로, scheduler/jobstore/timezone/enabled/misfire, 팀 token/time/tool/concurrency,
+    eval opt-in·trace redaction/보존을 한 번만 정의; NAT/eval opt-in·Judge endpoint·외부 model/embedding/reranker/trace
+    전송 정책도 의미 중복 없이 한 번만 정의
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 모든 key/token 예시 값은 빈칸, 실제 env 덮어쓰기 없음
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: doctor는 변수명·configured/missing만, local ready와 selected real readiness 구분; NAT extra missing/disabled와
+    실제 provider readiness를 구분하며 설치/키 존재로 egress를 허용하지 않음
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 외부 write 기본 false, flag는 권한 아님, real 누락/미지원 명확한 오류. 외부 egress도 기본 비활성; NAT 선택+의존성 누락은 명시 오류,
+    core 기본 mock은 extra/키 없이 부팅
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 설정 이름 parity·reserved/누락·secret masking tests 확장. real 계정/secret 파일 열기 없이 `_env_file=None` 사용.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_settings.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - session/checkpoint 경로, scheduler/jobstore/timezone/enabled/misfire, 팀 token/time/tool/concurrency,
+    eval opt-in·trace redaction/보존을 한 번만 정의; NAT/eval opt-in·Judge endpoint·외부 model/embedding/reranker/trace
+    전송 정책도 의미 중복 없이 한 번만 정의
+  - 모든 key/token 예시 값은 빈칸, 실제 env 덮어쓰기 없음
+  - doctor는 변수명·configured/missing만, local ready와 selected real readiness 구분; NAT extra missing/disabled와
+    실제 provider readiness를 구분하며 설치/키 존재로 egress를 허용하지 않음
+  - 외부 write 기본 false, flag는 권한 아님, real 누락/미지원 명확한 오류. 외부 egress도 기본 비활성; NAT 선택+의존성 누락은 명시 오류, core
+    기본 mock은 extra/키 없이 부팅
+  runner: pytest
+evidence_dir: .agent/evidence/P0-017
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 3
+spec_revision: 3
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-017
+  prior_claim: 기존 설정 검증 통과, 신규 항목 missing/not_run. local(false). 외부 의존 없음.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:49:24+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

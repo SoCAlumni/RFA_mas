@@ -1,0 +1,186 @@
+schema_version: '1.0'
+id: P1-006B
+title: Persona 시뮬레이션·버전 회귀 비교
+objective: prompt/model/template 변경 전후의 실패와 개선을 같은 조건으로 비교한다.
+kind: task
+source_tasks:
+- P1-006B
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P1
+status: todo
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: worker
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 본인 LLMOps
+product_mode: 전체 비교 runner missing/not_run. mock replay는 키 없이 가능, actual 비교는 provider readiness 의존. LLMOps
+  공수를 core와 별도 산정.
+scope:
+  included:
+  - 골든셋+안전하게 재구성한 실패 trace replay, dataset/rubric/정답 버전·실행 모드·baseline/candidate 비교표. 기존 사례 ID/출처 유지.
+  - 이전 P1-006의 신규 24사례 계획을 이 P1 후속으로 명시 이관. P0 core12와 기존24 ID crosswalk 유지; 4persona×근거 있음/부족/충돌/개인정보
+    혼입/사칭/갱신. 의미 중복 사례 수 채우기 금지.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/application/evaluation.py
+  - src/rfa_mas/cli.py
+  - fixtures/eval/evaluation_cases.jsonl
+  - tests/test_evaluation.py
+  - fixtures/eval/persona_regression_v2.jsonl
+  - docs/evidence/llmops.md
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - fixtures/eval/persona_regression_v2.jsonl
+  - docs/evidence/llmops.md
+  shared_resources: []
+depends_on:
+- id: P1-006
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-006B — Persona 시뮬레이션·버전 회귀 비교
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/application/evaluation.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/cli.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: fixtures/eval/evaluation_cases.jsonl
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: C — 핵심 12와 후속 24 행렬
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P1-006B/handoff.md
+  dependency_results:
+  - tasks/P1-006/handoff.md
+deliverables:
+- path: src/rfa_mas/application/evaluation.py
+  availability: existing
+  description: 골든셋+안전하게 재구성한 실패 trace replay, dataset/rubric/정답 버전·실행 모드·baseline/candidate 비교표. 기존 사례
+    ID/출처 유지.
+- path: src/rfa_mas/cli.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: fixtures/eval/evaluation_cases.jsonl
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_evaluation.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: fixtures/eval/persona_regression_v2.jsonl
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/evidence/llmops.md
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 24개 persona×상황의 실제 fixture identity로 실행, 권한 사칭 문장은 권한 아님
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: baseline/candidate 입력·환경·버전 기록; 같은 fixture/policy 조건의 실제 두 실행이 있어야 전후 비교. fake seed는 관찰 재현,
+    real LLM은 문장 재현 대신 실행 조건·버전 기록
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: simulated와 actual 집계 분리, not_run은 점수 없음, security gate 실패는 release 실패.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 동일 버전 deterministic replay 일치, 의도적 policy 위반 회귀 탐지, opt-in actual model 비교. raw private trace를 골든셋으로
+    복사하지 않음.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_evaluation.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 24개 persona×상황의 실제 fixture identity로 실행, 권한 사칭 문장은 권한 아님
+  - baseline/candidate 입력·환경·버전 기록; 같은 fixture/policy 조건의 실제 두 실행이 있어야 전후 비교. fake seed는 관찰 재현, real LLM은
+    문장 재현 대신 실행 조건·버전 기록
+  - simulated와 actual 집계 분리, not_run은 점수 없음, security gate 실패는 release 실패.
+  runner: pytest
+evidence_dir: .agent/evidence/P1-006B
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 3
+spec_revision: 3
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-006B
+  prior_claim: 전체 비교 runner missing/not_run. mock replay는 키 없이 가능, actual 비교는 provider readiness 의존. LLMOps
+    공수를 core와 별도 산정.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:49:29+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: 동일 버전 deterministic replay 일치, 의도적 policy 위반 회귀 탐지, opt-in actual model 비교. raw private trace를
+  골든셋으로 복사하지 않음.

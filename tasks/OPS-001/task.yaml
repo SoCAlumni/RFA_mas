@@ -1,0 +1,181 @@
+schema_version: '1.0'
+id: OPS-001
+title: 작업 이관·공통 CLI·병렬 제어 검증
+objective: 작업 이관·공통 CLI·병렬 제어 검증
+kind: control
+source_tasks: []
+requirement_refs:
+- TASK_EXECUTION_RULES.md
+- docs/TASK_MIGRATION.md
+priority: P0
+status: verifying
+spec_state: ready
+unresolved: []
+workstream: contracts/control
+execution_role: coordinator
+estimated_effort: 0.5
+product_owner: 민섭 / coordinator
+execution_class: 개발 운영 체계 — 제품 D1~D4 24h 산정 밖
+product_mode: development-control/local; product AC not_run
+scope:
+  included:
+  - 작업 이관·공통 CLI·병렬 제어 검증
+  excluded:
+  - 제품 기능 구현/외부 게시/배포/사용자 변경 임의 commit
+  owned_paths:
+  - scripts/taskctl.py
+  - scripts/tasklib
+  - tests/test_taskctl.py
+  - tests/test_task_migration.py
+  - TASK_EXECUTION_RULES.md
+  - .agent/prompts
+  - docs/PROJECT_CONTEXT.md
+  - docs/TASK_MIGRATION.md
+  read_only_paths:
+  - AGENTS.md
+  - pyproject.toml
+  - uv.lock
+  planned_paths: []
+  shared_resources:
+  - task-control
+depends_on: []
+contract_refs: []
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/TASK_MIGRATION.md
+    section: 현재 기준/검증
+    reason: 기존 사용자 변경과 제품 상태를 보존
+  handoff: tasks/OPS-001/handoff.md
+  dependency_results: []
+deliverables:
+- path: scripts/taskctl.py
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: scripts/tasklib
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: tests/test_taskctl.py
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: tests/test_task_migration.py
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: TASK_EXECUTION_RULES.md
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: .agent/prompts
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: docs/PROJECT_CONTEXT.md
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+- path: docs/TASK_MIGRATION.md
+  availability: existing
+  description: 작업 이관·공통 CLI·병렬 제어 검증
+acceptance_criteria:
+- id: AC1
+  given: 기존 사용자 파일을 보존한 canonical control root
+  expect: 기존 58개 ID/체크/AC/주석/링크가 원문 또는 단일 task 원본에 보존되고 YAML/DAG/참조 검증을 통과한다.
+  required: true
+- id: AC2
+  given: 기존 사용자 파일을 보존한 canonical control root
+  expect: 동시 claim·경로/자원 충돌·revision/generation·만료 복구·submit 예약·done gate를 임시 Git worktree에서 재현한다.
+  required: true
+- id: AC3
+  given: 기존 사용자 파일을 보존한 canonical control root
+  expect: 원본 저장 뒤 view 실패/변조를 복구하고 재생성은 결정적이며 단일 context pack/handoff로 재개할 수 있다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - env -i PATH="$PATH" LANG=en_US.UTF-8로 실제 .env/environment provider 사용 없이 전체 offline suite 실행. 운영 테스트는
+    임시 control/worktree만 사용.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 기존 58개 ID/체크/AC/주석/링크가 원문 또는 단일 task 원본에 보존되고 YAML/DAG/참조 검증을 통과한다.
+  - 동시 claim·경로/자원 충돌·revision/generation·만료 복구·submit 예약·done gate를 임시 Git worktree에서 재현한다.
+  - 원본 저장 뒤 view 실패/변조를 복구하고 재생성은 결정적이며 단일 context pack/handoff로 재개할 수 있다.
+  - 합성 계약 fixture의 실제 local/reference 응답은 tests/test_contract_baseline.py에서 재생·대조된다.
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  type: command
+  availability: available
+  prerequisites:
+  - 현재 Pydantic 1.0; settings init/default만, no network
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - scripts/contract_baseline.py
+  - check
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 기존 Pydantic/OpenAPI export 및 9개 합성 reference fixture의 schema·형식·binding이 현재 원본과 일치한다.
+  runner: manual
+evidence_dir: .agent/evidence/OPS-001
+latest_evidence_file: .agent/evidence/OPS-001/technical-spec-01/result.json
+verification_summary:
+  state: failed
+  spec_revision: 3
+  spec_digest: 91c060a8498c5bf9210a8be4b94c9922ed38e9e8dbf79c1188745b7d2264a01b
+  contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+  source_fingerprint: eda44c5b48abe6369d57289bf7c515dbd51a46ae0d479bc7fd824d14b33f652d
+  evidence: .agent/evidence/OPS-001/technical-spec-01/result.json
+integration:
+  state: not_required
+  target: canonical control root
+  reason: 개발 운영 설정/문서 원본에 직접 반영하는 coordinator 관리 작업이며 제품 branch integration이 아니다. 실제 검증/산출물 gate는 필수.
+  reservation: false
+  submission_generation: null
+  submission: null
+  result:
+    kind: administrative_audit
+    source: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
+  evidence: .agent/evidence/OPS-001/technical-spec-01/result.json
+revision: 10
+spec_revision: 3
+claim_generation: 0
+claim: null
+attempts:
+  count: 3
+  cycles: 3
+  no_progress_count: 0
+  latest_attempt: technical-spec-01
+  evidence_refs:
+  - .agent/evidence/OPS-001/migration-final-01/result.json
+  - .agent/evidence/OPS-001/migration-final-02/result.json
+  - .agent/evidence/OPS-001/technical-spec-01/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new_control_task
+  source_ref: 사용자 이번 이관 지시
+  prior_claim: 없음
+  implementation_facts: 개발 운영 체계 이관 중; 임시 fixture에서 검증 예정, 제품 검증과 분리.
+  previous_evidence: []
+  checks_this_migration:
+  - 기존 58개 작업과 별도 관리
+  judgment: 제품 기능 scope/시간을 확대하지 않는 운영 작업.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:52:47+00:00'
+concise_result: Development-control audit failed; not product acceptance
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

@@ -1,0 +1,240 @@
+schema_version: '1.0'
+id: P1-008
+title: Response/Tool/Runtime/Policy reference 계약 완성
+objective: 상대 서비스 없이 실패까지 재현하고 설정·mapper 교체만으로 연결할 패키지를 만든다. 실제 교체는 P1-008A/B로 split.
+kind: task
+source_tasks:
+- P1-008
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 팀원 통합(로컬 준비)
+product_mode: 기존 4-port reference 기반 verified; callback/receipt/TeamSpec 확장 missing/not_run. local transport
+  + simulated=true fixture, real 호환성 미검증. 상대 미제공 시 이 카드 진행 가능; 실제 OpenAPI/auth/idempotency TTL/status
+  항목은 아래 통합 표.
+scope:
+  included:
+  - 공통 contract suite, authenticated callback·approver binding, publication/receipt 조회·취소 계약, ToolRequest
+    caller identity/capabilities/task/run/trace/idempotency. 실제 Tool 권한은 수신 서버의 검증된 identity로 판정하며 body의
+    capability 주장을 권한으로 신뢰하지 않는다. Runtime prepare/run/status/cancel/cleanup과 TeamSpec round-trip. read/side-effect
+    timeout 의미를 각각 기록.
+  - 동일 consumer에 endpoint/config/DTO mapper만 교체. 필수 identity/policy/approval proof는 trace와 별도 검증하고 adapter가
+    safe trace ID를 전파. NAT가 전체 MSA를 연결한다고 가정하지 않음.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/adapters/http.py
+  - src/rfa_mas/adapters/mock.py
+  - src/rfa_mas/reference/app.py
+  - docs/INTEGRATION.md
+  - tests/test_http_contract.py
+  - fixtures/contracts
+  - tests/test_callbacks.py
+  - tests/test_consumer_safety.py
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - tests/test_callbacks.py
+  - tests/test_consumer_safety.py
+  shared_resources:
+  - contract-docs
+depends_on:
+- id: P0-014
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-020
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-021
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-005A
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-006D
+  condition: integrated_done
+  required_output: 서비스 간 안전 trace event/ID 전달 규약·canary 검증
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-008 — Response/Tool/Runtime/Policy reference 계약 완성
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/adapters/http.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/adapters/mock.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/reference/app.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/ports/interfaces.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: F/G — 교체 경계와 최종 증거
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P1-008/handoff.md
+  dependency_results:
+  - tasks/P0-014/handoff.md
+  - tasks/P0-020/handoff.md
+  - tasks/P0-021/handoff.md
+  - tasks/P1-005A/handoff.md
+  - tasks/P1-006D/handoff.md
+deliverables:
+- path: src/rfa_mas/adapters/http.py
+  availability: existing
+  description: 공통 contract suite, authenticated callback·approver binding, publication/receipt 조회·취소 계약,
+    ToolRequest caller identity/capabilities/task/run/trace/idempotency. 실제 Tool 권한은 수신 서버의 검증된 identity로
+    판정하며 body의 capability 주장을 권한으로 신뢰하지 않는다. Runtime prepare/run/status/cancel/cleanup과 TeamSpec round-trip.
+    read/side-effect timeout 의미를 각각 기록.
+- path: src/rfa_mas/adapters/mock.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/reference/app.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_http_contract.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: fixtures/contracts
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_callbacks.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_consumer_safety.py
+  availability: planned
+  description: 共通 consumer의 missing/forged proof·정책/ACL/본문/대상 변경·unknown 조회 검증
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: approved/rejected/revision_requested/timeout/outcome_unknown을 mock와 reference HTTP가 같은 의미로 재현;
+    정상/정책 deny/승인 없음/본문 변경/source ACL 회수/중복/timeout 7종을 같은 consumer로 실행하고 unsupported contract version
+    명시 오류
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 미인증 callback·승인자/대상/version/hash 불일치·이벤트 replay 거절/멱등 처리; 정책/identity/승인 proof 누락·위조·expired이면
+    보호 동작 0회. 승인 뒤 본문/첨부/대상/policy/source ACL이 바뀌면 재검토
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 게시 timeout은 실패·재게시로 단정하지 않고 원본 status/receipt 대사, run 상태와 분리; 원본 결과 참조로 조회/복구할 때까지 unknown,
+    자동 재게시 0회
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: mock/reference 동일 suite 통과, graph에 URL/auth/MCP SDK 없음; P0 network write 선차단 유지.; mock transport
+    성공은 real OpenShell/MCP/게시 증거가 아니며 model/retrieval/response egress 결정 참조 유지
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - ASGI/MockTransport 공통 parameterized 계약·취소/잘못된 DTO·중복/timeout/unknown→receipt 해소. fixture auth는 합성
+    test secret만 사용하며 `.env.example`에는 넣지 않음.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_http_contract.py
+  - tests/test_callbacks.py
+  - tests/test_consumer_safety.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - approved/rejected/revision_requested/timeout/outcome_unknown을 mock와 reference HTTP가 같은 의미로 재현; 정상/정책
+    deny/승인 없음/본문 변경/source ACL 회수/중복/timeout 7종을 같은 consumer로 실행하고 unsupported contract version 명시 오류
+  - 미인증 callback·승인자/대상/version/hash 불일치·이벤트 replay 거절/멱등 처리; 정책/identity/승인 proof 누락·위조·expired이면 보호
+    동작 0회. 승인 뒤 본문/첨부/대상/policy/source ACL이 바뀌면 재검토
+  - 게시 timeout은 실패·재게시로 단정하지 않고 원본 status/receipt 대사, run 상태와 분리; 원본 결과 참조로 조회/복구할 때까지 unknown, 자동 재게시
+    0회
+  - mock/reference 동일 suite 통과, graph에 URL/auth/MCP SDK 없음; P0 network write 선차단 유지.; mock transport 성공은
+    real OpenShell/MCP/게시 증거가 아니며 model/retrieval/response egress 결정 참조 유지
+  runner: pytest
+evidence_dir: .agent/evidence/P1-008
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 4
+spec_revision: 4
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-008
+  prior_claim: 기존 4-port reference 기반 verified; callback/receipt/TeamSpec 확장 missing/not_run. local transport
+    + simulated=true fixture, real 호환성 미검증. 상대 미제공 시 이 카드 진행 가능; 실제 OpenAPI/auth/idempotency TTL/status
+    항목은 아래 통합 표.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T03:49:31+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

@@ -1,0 +1,4406 @@
+{
+  "baseline_id": "rfa-existing-v1",
+  "derived": true,
+  "digest": "0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0",
+  "fixture_digest": "0b895acecac3276b459115f09a04ca0768d9fa63d1e1e42cbcf9146b4857ddaa",
+  "fixture_file": "fixtures/contracts/reference_cases.json",
+  "json_schema": {
+    "$defs": {
+      "AdapterInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "port": {
+            "title": "Port",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "port",
+          "adapter",
+          "simulated"
+        ],
+        "title": "AdapterInfo",
+        "type": "object"
+      },
+      "AgentSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "allowed_audiences": {
+            "items": {
+              "$ref": "#/$defs/Audience"
+            },
+            "title": "Allowed Audiences",
+            "type": "array"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "instructions_ref": {
+            "title": "Instructions Ref",
+            "type": "string"
+          },
+          "max_steps": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Max Steps",
+            "type": "integer"
+          },
+          "max_tool_calls": {
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Max Tool Calls",
+            "type": "integer"
+          },
+          "memory_namespace": {
+            "title": "Memory Namespace",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_id",
+          "domain_id",
+          "memory_namespace",
+          "capabilities",
+          "allowed_audiences",
+          "instructions_ref",
+          "max_steps",
+          "max_tool_calls"
+        ],
+        "title": "AgentSpec",
+        "type": "object"
+      },
+      "Audience": {
+        "enum": [
+          "private",
+          "owner",
+          "business_unit",
+          "company",
+          "public"
+        ],
+        "title": "Audience",
+        "type": "string"
+      },
+      "DomainId": {
+        "enum": [
+          "triv3",
+          "quantization_research"
+        ],
+        "title": "DomainId",
+        "type": "string"
+      },
+      "DraftBundle": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "allowed_evidence": {
+            "items": {
+              "$ref": "#/$defs/EvidenceRef"
+            },
+            "title": "Allowed Evidence",
+            "type": "array"
+          },
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "draft_id": {
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "content_hash",
+          "target",
+          "audience",
+          "policy_version",
+          "allowed_evidence",
+          "content",
+          "simulated",
+          "adapter"
+        ],
+        "title": "DraftBundle",
+        "type": "object"
+      },
+      "DraftTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "channel": {
+            "default": "preview",
+            "title": "Channel",
+            "type": "string"
+          },
+          "destination": {
+            "default": "local-preview",
+            "title": "Destination",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audience"
+        ],
+        "title": "DraftTarget",
+        "type": "object"
+      },
+      "EvalResult": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "executed": {
+            "title": "Executed",
+            "type": "boolean"
+          },
+          "judge_adapter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Judge Adapter"
+          },
+          "judge_dimensions": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/JudgeDimensions"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "judge_kind": {
+            "enum": [
+              "actual",
+              "mock",
+              "not_run"
+            ],
+            "title": "Judge Kind",
+            "type": "string"
+          },
+          "judge_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Judge Reason"
+          },
+          "judge_score": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Judge Score"
+          },
+          "rule_checks": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Rule Checks",
+            "type": "object"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "case_id",
+          "rule_checks",
+          "judge_kind",
+          "executed",
+          "simulated"
+        ],
+        "title": "EvalResult",
+        "type": "object"
+      },
+      "EvaluationCase": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "expected_behavior": {
+            "title": "Expected Behavior",
+            "type": "string"
+          },
+          "expected_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Expected Evidence",
+            "type": "array"
+          },
+          "forbidden_information": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Forbidden Information",
+            "type": "array"
+          },
+          "input": {
+            "title": "Input",
+            "type": "string"
+          },
+          "material_scope": {
+            "$ref": "#/$defs/EvaluationMaterialScope"
+          },
+          "persona": {
+            "title": "Persona",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_id",
+          "persona",
+          "input",
+          "material_scope",
+          "expected_behavior"
+        ],
+        "title": "EvaluationCase",
+        "type": "object"
+      },
+      "EvaluationMaterialScope": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Source Ids",
+            "type": "array"
+          },
+          "authenticated_principal": {
+            "title": "Authenticated Principal",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "memberships": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Memberships",
+            "type": "array"
+          },
+          "requested_audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain_id",
+          "authenticated_principal",
+          "memberships",
+          "requested_audience",
+          "allowed_source_ids"
+        ],
+        "title": "EvaluationMaterialScope",
+        "type": "object"
+      },
+      "EvidenceBundle": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "insufficient": {
+            "default": false,
+            "title": "Insufficient",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/$defs/EvidenceItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "policy_version",
+          "simulated",
+          "adapter"
+        ],
+        "title": "EvidenceBundle",
+        "type": "object"
+      },
+      "EvidenceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "excerpt": {
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/$defs/SourceLocation"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_revision": {
+            "title": "Source Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "source_revision",
+          "location",
+          "audience",
+          "excerpt",
+          "content_hash",
+          "policy_version"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
+      "EvidenceRef": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/$defs/SourceLocation"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_revision": {
+            "title": "Source Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "source_revision",
+          "location",
+          "audience",
+          "content_hash"
+        ],
+        "title": "EvidenceRef",
+        "type": "object"
+      },
+      "FeedbackCategory": {
+        "enum": [
+          "style_preference",
+          "factual_correction",
+          "personal_disclosure_preference",
+          "official_policy_change_proposal"
+        ],
+        "title": "FeedbackCategory",
+        "type": "string"
+      },
+      "FeedbackEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/$defs/FeedbackCategory"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "draft_id": {
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "draft_version": {
+            "title": "Draft Version",
+            "type": "integer"
+          },
+          "feedback": {
+            "title": "Feedback",
+            "type": "string"
+          },
+          "official_policy_changed": {
+            "default": false,
+            "title": "Official Policy Changed",
+            "type": "boolean"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "draft_id",
+          "draft_version",
+          "category",
+          "feedback"
+        ],
+        "title": "FeedbackEvent",
+        "type": "object"
+      },
+      "JudgeAssessment": {
+        "additionalProperties": false,
+        "description": "Non-authoritative assessment produced by an enabled Judge adapter.",
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "dimensions": {
+            "$ref": "#/$defs/JudgeDimensions"
+          },
+          "kind": {
+            "enum": [
+              "actual",
+              "mock"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "score",
+          "reason",
+          "dimensions",
+          "simulated",
+          "adapter"
+        ],
+        "title": "JudgeAssessment",
+        "type": "object"
+      },
+      "JudgeDimensions": {
+        "additionalProperties": false,
+        "description": "Auxiliary quality dimensions; never authorization or privacy decisions.",
+        "properties": {
+          "evidence_faithfulness": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Evidence Faithfulness",
+            "type": "number"
+          },
+          "question_resolution": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Question Resolution",
+            "type": "number"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "task_candidate_usefulness": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Task Candidate Usefulness",
+            "type": "number"
+          }
+        },
+        "required": [
+          "evidence_faithfulness",
+          "question_resolution",
+          "task_candidate_usefulness"
+        ],
+        "title": "JudgeDimensions",
+        "type": "object"
+      },
+      "KnowledgeDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "business_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Business Unit"
+          },
+          "classification": {
+            "title": "Classification",
+            "type": "string"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Company Id"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "location": {
+            "$ref": "#/$defs/SourceLocation"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner Id"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "privacy_canary": {
+            "default": false,
+            "title": "Privacy Canary",
+            "type": "boolean"
+          },
+          "required_memberships": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Memberships",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_revision": {
+            "title": "Source Revision",
+            "type": "string"
+          },
+          "synthetic": {
+            "default": true,
+            "title": "Synthetic",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "source_revision",
+          "domain_id",
+          "title",
+          "content",
+          "location",
+          "audience",
+          "classification",
+          "policy_version"
+        ],
+        "title": "KnowledgeDocument",
+        "type": "object"
+      },
+      "ModelRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "evidence": {
+            "$ref": "#/$defs/EvidenceBundle"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulation_scenario": {
+            "$ref": "#/$defs/SimulationScenario",
+            "default": "success"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "query",
+          "evidence",
+          "target"
+        ],
+        "title": "ModelRequest",
+        "type": "object"
+      },
+      "ModelResult": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "simulated",
+          "adapter"
+        ],
+        "title": "ModelResult",
+        "type": "object"
+      },
+      "PolicyDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "allowed_audiences": {
+            "items": {
+              "$ref": "#/$defs/Audience"
+            },
+            "title": "Allowed Audiences",
+            "type": "array"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "safe_reason": {
+            "title": "Safe Reason",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "allowed",
+          "code",
+          "safe_reason",
+          "policy_version",
+          "simulated",
+          "adapter"
+        ],
+        "title": "PolicyDecision",
+        "type": "object"
+      },
+      "PolicyRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "principal": {
+            "$ref": "#/$defs/TrustedPrincipal"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "resource_audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "resource_business_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resource Business Unit"
+          },
+          "resource_company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resource Company Id"
+          },
+          "resource_owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resource Owner Id"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "target_audience": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Audience"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "tool_effect": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ToolEffect"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "action",
+          "resource_audience",
+          "principal"
+        ],
+        "title": "PolicyRequest",
+        "type": "object"
+      },
+      "PublicationStatus": {
+        "enum": [
+          "not_requested",
+          "pending",
+          "succeeded",
+          "failed",
+          "outcome_unknown"
+        ],
+        "title": "PublicationStatus",
+        "type": "string"
+      },
+      "ResultStatus": {
+        "enum": [
+          "succeeded",
+          "failed",
+          "denied",
+          "timed_out",
+          "outcome_unknown"
+        ],
+        "title": "ResultStatus",
+        "type": "string"
+      },
+      "RetrievalRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "allowed_audiences": {
+            "items": {
+              "$ref": "#/$defs/Audience"
+            },
+            "title": "Allowed Audiences",
+            "type": "array"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "limit": {
+            "default": 5,
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "principal": {
+            "$ref": "#/$defs/TrustedPrincipal"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulation_scenario": {
+            "$ref": "#/$defs/SimulationScenario",
+            "default": "success"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "query",
+          "allowed_audiences",
+          "principal"
+        ],
+        "title": "RetrievalRequest",
+        "type": "object"
+      },
+      "ReviewDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "decision": {
+            "$ref": "#/$defs/ReviewStatus"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "draft_id": {
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "draft_version": {
+            "minimum": 1,
+            "title": "Draft Version",
+            "type": "integer"
+          },
+          "publication_status": {
+            "$ref": "#/$defs/PublicationStatus",
+            "default": "not_requested"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "safe_reason": {
+            "title": "Safe Reason",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "draft_id",
+          "draft_version",
+          "content_hash",
+          "target",
+          "decision",
+          "safe_reason",
+          "simulated",
+          "adapter"
+        ],
+        "title": "ReviewDecision",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "enum": [
+          "pending",
+          "approved",
+          "revision_requested",
+          "rejected"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "ReviewSubmission": {
+        "additionalProperties": false,
+        "properties": {
+          "draft": {
+            "$ref": "#/$defs/DraftBundle"
+          },
+          "simulation_scenario": {
+            "$ref": "#/$defs/SimulationScenario",
+            "default": "success"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "ReviewSubmission",
+        "type": "object"
+      },
+      "RunResult": {
+        "additionalProperties": false,
+        "properties": {
+          "adapters": {
+            "items": {
+              "$ref": "#/$defs/AdapterInfo"
+            },
+            "title": "Adapters",
+            "type": "array"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DraftBundle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/$defs/StructuredError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "publication_status": {
+            "$ref": "#/$defs/PublicationStatus",
+            "default": "not_requested"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/$defs/WorkStatus"
+          },
+          "stop_reason": {
+            "title": "Stop Reason",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "status",
+          "stop_reason",
+          "simulated",
+          "adapters"
+        ],
+        "title": "RunResult",
+        "type": "object"
+      },
+      "RuntimeSubmission": {
+        "additionalProperties": false,
+        "properties": {
+          "request": {
+            "$ref": "#/$defs/TaskRequest"
+          },
+          "spec": {
+            "$ref": "#/$defs/AgentSpec"
+          }
+        },
+        "required": [
+          "spec",
+          "request"
+        ],
+        "title": "RuntimeSubmission",
+        "type": "object"
+      },
+      "SecretStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "required_for_selected_mode": {
+            "title": "Required For Selected Mode",
+            "type": "boolean"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "configured",
+          "required_for_selected_mode"
+        ],
+        "title": "SecretStatus",
+        "type": "object"
+      },
+      "SimulationScenario": {
+        "enum": [
+          "success",
+          "insufficient_evidence",
+          "policy_denied",
+          "revision_requested",
+          "timeout"
+        ],
+        "title": "SimulationScenario",
+        "type": "string"
+      },
+      "SourceLocation": {
+        "additionalProperties": false,
+        "properties": {
+          "line_start": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Line Start"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Section"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri"
+        ],
+        "title": "SourceLocation",
+        "type": "object"
+      },
+      "StructuredError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "StructuredError",
+        "type": "object"
+      },
+      "TaskRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "task_type": {
+            "title": "Task Type",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "idempotency_key",
+          "task_type",
+          "payload"
+        ],
+        "title": "TaskRequest",
+        "type": "object"
+      },
+      "TaskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/StructuredError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "output": {
+            "additionalProperties": true,
+            "title": "Output",
+            "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/$defs/ResultStatus"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "status",
+          "simulated",
+          "adapter"
+        ],
+        "title": "TaskResult",
+        "type": "object"
+      },
+      "ToolEffect": {
+        "enum": [
+          "read",
+          "write"
+        ],
+        "title": "ToolEffect",
+        "type": "string"
+      },
+      "ToolRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "effect": {
+            "$ref": "#/$defs/ToolEffect"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "idempotency_key",
+          "tool_name",
+          "effect"
+        ],
+        "title": "ToolRequest",
+        "type": "object"
+      },
+      "ToolResult": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/StructuredError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "output": {
+            "additionalProperties": true,
+            "title": "Output",
+            "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/$defs/ResultStatus"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "idempotency_key",
+          "status",
+          "simulated",
+          "adapter"
+        ],
+        "title": "ToolResult",
+        "type": "object"
+      },
+      "TrustedPrincipal": {
+        "additionalProperties": false,
+        "description": "Server-derived identity. Never build this from unverified request claims.",
+        "properties": {
+          "authenticated": {
+            "title": "Authenticated",
+            "type": "boolean"
+          },
+          "business_units": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Business Units",
+            "type": "array",
+            "uniqueItems": true
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Company Id"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array",
+            "uniqueItems": true
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "authenticated"
+        ],
+        "title": "TrustedPrincipal",
+        "type": "object"
+      },
+      "WorkRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "default": "assistant-supervisor",
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Idempotency Key"
+          },
+          "query": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulation_scenario": {
+            "$ref": "#/$defs/SimulationScenario",
+            "default": "success"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "WorkRequest",
+        "type": "object"
+      },
+      "WorkStatus": {
+        "enum": [
+          "created",
+          "running",
+          "waiting_approval",
+          "completed",
+          "failed",
+          "cancelled",
+          "outcome_unknown"
+        ],
+        "title": "WorkStatus",
+        "type": "string"
+      }
+    },
+    "title": "Existing RFA 1.0 contract models (derived)"
+  },
+  "limits": [
+    "This baseline records implemented DTOs only; it is not teammate API agreement.",
+    "Session, TeamInstance, TeamSpec, scheduler and durable effect ledger are planned.",
+    "WorkRequest.run_id is not a development-task or development-attempt identifier.",
+    "Current GET /v1/work/{run_id} does not enforce per-owner lookup authorization.",
+    "Reference callbacks, authenticated approval authority and durable receipts are planned.",
+    "RuntimePort currently exposes run/status/cancel, not team prepare/start/cleanup.",
+    "Reference HTTP tests use ASGI in-process transport, not a live teammate deployment.",
+    "Existing output payload dictionaries are not strongly typed team/worker schemas."
+  ],
+  "openapi": {
+    "core": {
+      "components": {
+        "schemas": {
+          "AdapterInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "port": {
+                "title": "Port",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "port",
+              "adapter",
+              "simulated"
+            ],
+            "title": "AdapterInfo",
+            "type": "object"
+          },
+          "Audience": {
+            "enum": [
+              "private",
+              "owner",
+              "business_unit",
+              "company",
+              "public"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "DomainId": {
+            "enum": [
+              "triv3",
+              "quantization_research"
+            ],
+            "title": "DomainId",
+            "type": "string"
+          },
+          "DraftBundle": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "allowed_evidence": {
+                "items": {
+                  "$ref": "#/components/schemas/EvidenceRef"
+                },
+                "title": "Allowed Evidence",
+                "type": "array"
+              },
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "draft_id": {
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              },
+              "version": {
+                "default": 1,
+                "minimum": 1.0,
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "content_hash",
+              "target",
+              "audience",
+              "policy_version",
+              "allowed_evidence",
+              "content",
+              "simulated",
+              "adapter"
+            ],
+            "title": "DraftBundle",
+            "type": "object"
+          },
+          "DraftTarget": {
+            "additionalProperties": false,
+            "properties": {
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "channel": {
+                "default": "preview",
+                "title": "Channel",
+                "type": "string"
+              },
+              "destination": {
+                "default": "local-preview",
+                "title": "Destination",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "audience"
+            ],
+            "title": "DraftTarget",
+            "type": "object"
+          },
+          "EvidenceRef": {
+            "additionalProperties": false,
+            "properties": {
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "location": {
+                "$ref": "#/components/schemas/SourceLocation"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revision": {
+                "title": "Source Revision",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "source_revision",
+              "location",
+              "audience",
+              "content_hash"
+            ],
+            "title": "EvidenceRef",
+            "type": "object"
+          },
+          "HTTPValidationError": {
+            "properties": {
+              "detail": {
+                "items": {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                "title": "Detail",
+                "type": "array"
+              }
+            },
+            "title": "HTTPValidationError",
+            "type": "object"
+          },
+          "PublicationStatus": {
+            "enum": [
+              "not_requested",
+              "pending",
+              "succeeded",
+              "failed",
+              "outcome_unknown"
+            ],
+            "title": "PublicationStatus",
+            "type": "string"
+          },
+          "ReviewDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "decision": {
+                "$ref": "#/components/schemas/ReviewStatus"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "draft_id": {
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "draft_version": {
+                "minimum": 1.0,
+                "title": "Draft Version",
+                "type": "integer"
+              },
+              "publication_status": {
+                "$ref": "#/components/schemas/PublicationStatus",
+                "default": "not_requested"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "safe_reason": {
+                "title": "Safe Reason",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "draft_id",
+              "draft_version",
+              "content_hash",
+              "target",
+              "decision",
+              "safe_reason",
+              "simulated",
+              "adapter"
+            ],
+            "title": "ReviewDecision",
+            "type": "object"
+          },
+          "ReviewStatus": {
+            "enum": [
+              "pending",
+              "approved",
+              "revision_requested",
+              "rejected"
+            ],
+            "title": "ReviewStatus",
+            "type": "string"
+          },
+          "RunResult": {
+            "additionalProperties": false,
+            "properties": {
+              "adapters": {
+                "items": {
+                  "$ref": "#/components/schemas/AdapterInfo"
+                },
+                "title": "Adapters",
+                "type": "array"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "draft": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DraftBundle"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "errors": {
+                "items": {
+                  "$ref": "#/components/schemas/StructuredError"
+                },
+                "title": "Errors",
+                "type": "array"
+              },
+              "publication_status": {
+                "$ref": "#/components/schemas/PublicationStatus",
+                "default": "not_requested"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "review": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReviewDecision"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "status": {
+                "$ref": "#/components/schemas/WorkStatus"
+              },
+              "stop_reason": {
+                "title": "Stop Reason",
+                "type": "string"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "status",
+              "stop_reason",
+              "simulated",
+              "adapters"
+            ],
+            "title": "RunResult",
+            "type": "object"
+          },
+          "SimulationScenario": {
+            "enum": [
+              "success",
+              "insufficient_evidence",
+              "policy_denied",
+              "revision_requested",
+              "timeout"
+            ],
+            "title": "SimulationScenario",
+            "type": "string"
+          },
+          "SourceLocation": {
+            "additionalProperties": false,
+            "properties": {
+              "line_start": {
+                "anyOf": [
+                  {
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Line Start"
+              },
+              "page": {
+                "anyOf": [
+                  {
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Page"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "section": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Section"
+              },
+              "uri": {
+                "title": "Uri",
+                "type": "string"
+              }
+            },
+            "required": [
+              "uri"
+            ],
+            "title": "SourceLocation",
+            "type": "object"
+          },
+          "StructuredError": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "details": {
+                "additionalProperties": true,
+                "title": "Details",
+                "type": "object"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "retryable": {
+                "default": false,
+                "title": "Retryable",
+                "type": "boolean"
+              },
+              "run_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Run Id"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "trace_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Trace Id"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "StructuredError",
+            "type": "object"
+          },
+          "ValidationError": {
+            "properties": {
+              "ctx": {
+                "title": "Context",
+                "type": "object"
+              },
+              "input": {
+                "title": "Input"
+              },
+              "loc": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "title": "Location",
+                "type": "array"
+              },
+              "msg": {
+                "title": "Message",
+                "type": "string"
+              },
+              "type": {
+                "title": "Error Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "loc",
+              "msg",
+              "type"
+            ],
+            "title": "ValidationError",
+            "type": "object"
+          },
+          "WorkRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "agent_id": {
+                "default": "assistant-supervisor",
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "idempotency_key": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Idempotency Key"
+              },
+              "query": {
+                "maxLength": 10000,
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulation_scenario": {
+                "$ref": "#/components/schemas/SimulationScenario",
+                "default": "success"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "title": "WorkRequest",
+            "type": "object"
+          },
+          "WorkStatus": {
+            "enum": [
+              "created",
+              "running",
+              "waiting_approval",
+              "completed",
+              "failed",
+              "cancelled",
+              "outcome_unknown"
+            ],
+            "title": "WorkStatus",
+            "type": "string"
+          }
+        }
+      },
+      "info": {
+        "summary": "Policy-aware assistant and domain TaskGraph foundation",
+        "title": "RFA MAS",
+        "version": "0.1.0"
+      },
+      "openapi": "3.1.0",
+      "paths": {
+        "/healthz": {
+          "get": {
+            "operationId": "health_healthz_get",
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "additionalProperties": true,
+                      "title": "Response Health Healthz Get",
+                      "type": "object"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              }
+            },
+            "summary": "Health",
+            "tags": [
+              "operations"
+            ]
+          }
+        },
+        "/readyz": {
+          "get": {
+            "operationId": "ready_readyz_get",
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {}
+                  }
+                },
+                "description": "Successful Response"
+              }
+            },
+            "summary": "Ready",
+            "tags": [
+              "operations"
+            ]
+          }
+        },
+        "/v1/work": {
+          "post": {
+            "operationId": "create_work_v1_work_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/WorkRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Create Work",
+            "tags": [
+              "work"
+            ]
+          }
+        },
+        "/v1/work/{run_id}": {
+          "get": {
+            "operationId": "get_work_v1_work__run_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Work",
+            "tags": [
+              "work"
+            ]
+          }
+        }
+      }
+    },
+    "teammate_reference": {
+      "components": {
+        "schemas": {
+          "AgentSpec": {
+            "additionalProperties": false,
+            "properties": {
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "allowed_audiences": {
+                "items": {
+                  "$ref": "#/components/schemas/Audience"
+                },
+                "title": "Allowed Audiences",
+                "type": "array"
+              },
+              "capabilities": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Capabilities",
+                "type": "array"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "instructions_ref": {
+                "title": "Instructions Ref",
+                "type": "string"
+              },
+              "max_steps": {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "title": "Max Steps",
+                "type": "integer"
+              },
+              "max_tool_calls": {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "title": "Max Tool Calls",
+                "type": "integer"
+              },
+              "memory_namespace": {
+                "title": "Memory Namespace",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "agent_id",
+              "domain_id",
+              "memory_namespace",
+              "capabilities",
+              "allowed_audiences",
+              "instructions_ref",
+              "max_steps",
+              "max_tool_calls"
+            ],
+            "title": "AgentSpec",
+            "type": "object"
+          },
+          "Audience": {
+            "enum": [
+              "private",
+              "owner",
+              "business_unit",
+              "company",
+              "public"
+            ],
+            "title": "Audience",
+            "type": "string"
+          },
+          "DomainId": {
+            "enum": [
+              "triv3",
+              "quantization_research"
+            ],
+            "title": "DomainId",
+            "type": "string"
+          },
+          "DraftBundle": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "allowed_evidence": {
+                "items": {
+                  "$ref": "#/components/schemas/EvidenceRef"
+                },
+                "title": "Allowed Evidence",
+                "type": "array"
+              },
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "draft_id": {
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              },
+              "version": {
+                "default": 1,
+                "minimum": 1.0,
+                "title": "Version",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "content_hash",
+              "target",
+              "audience",
+              "policy_version",
+              "allowed_evidence",
+              "content",
+              "simulated",
+              "adapter"
+            ],
+            "title": "DraftBundle",
+            "type": "object"
+          },
+          "DraftTarget": {
+            "additionalProperties": false,
+            "properties": {
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "channel": {
+                "default": "preview",
+                "title": "Channel",
+                "type": "string"
+              },
+              "destination": {
+                "default": "local-preview",
+                "title": "Destination",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "audience"
+            ],
+            "title": "DraftTarget",
+            "type": "object"
+          },
+          "EvidenceRef": {
+            "additionalProperties": false,
+            "properties": {
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "location": {
+                "$ref": "#/components/schemas/SourceLocation"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revision": {
+                "title": "Source Revision",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "source_revision",
+              "location",
+              "audience",
+              "content_hash"
+            ],
+            "title": "EvidenceRef",
+            "type": "object"
+          },
+          "HTTPValidationError": {
+            "properties": {
+              "detail": {
+                "items": {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                "title": "Detail",
+                "type": "array"
+              }
+            },
+            "title": "HTTPValidationError",
+            "type": "object"
+          },
+          "PolicyDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "allowed": {
+                "title": "Allowed",
+                "type": "boolean"
+              },
+              "allowed_audiences": {
+                "items": {
+                  "$ref": "#/components/schemas/Audience"
+                },
+                "title": "Allowed Audiences",
+                "type": "array"
+              },
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "safe_reason": {
+                "title": "Safe Reason",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "allowed",
+              "code",
+              "safe_reason",
+              "policy_version",
+              "simulated",
+              "adapter"
+            ],
+            "title": "PolicyDecision",
+            "type": "object"
+          },
+          "PolicyRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "title": "Action",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "principal": {
+                "$ref": "#/components/schemas/TrustedPrincipal"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "resource_audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "resource_business_unit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Resource Business Unit"
+              },
+              "resource_company_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Resource Company Id"
+              },
+              "resource_owner_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Resource Owner Id"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "target_audience": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Audience"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tool_effect": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ToolEffect"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "action",
+              "resource_audience",
+              "principal"
+            ],
+            "title": "PolicyRequest",
+            "type": "object"
+          },
+          "PublicationStatus": {
+            "enum": [
+              "not_requested",
+              "pending",
+              "succeeded",
+              "failed",
+              "outcome_unknown"
+            ],
+            "title": "PublicationStatus",
+            "type": "string"
+          },
+          "ResultStatus": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "denied",
+              "timed_out",
+              "outcome_unknown"
+            ],
+            "title": "ResultStatus",
+            "type": "string"
+          },
+          "ReviewDecision": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "content_hash": {
+                "title": "Content Hash",
+                "type": "string"
+              },
+              "decision": {
+                "$ref": "#/components/schemas/ReviewStatus"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "draft_id": {
+                "title": "Draft Id",
+                "type": "string"
+              },
+              "draft_version": {
+                "minimum": 1.0,
+                "title": "Draft Version",
+                "type": "integer"
+              },
+              "publication_status": {
+                "$ref": "#/components/schemas/PublicationStatus",
+                "default": "not_requested"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "safe_reason": {
+                "title": "Safe Reason",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "draft_id",
+              "draft_version",
+              "content_hash",
+              "target",
+              "decision",
+              "safe_reason",
+              "simulated",
+              "adapter"
+            ],
+            "title": "ReviewDecision",
+            "type": "object"
+          },
+          "ReviewStatus": {
+            "enum": [
+              "pending",
+              "approved",
+              "revision_requested",
+              "rejected"
+            ],
+            "title": "ReviewStatus",
+            "type": "string"
+          },
+          "ReviewSubmission": {
+            "additionalProperties": false,
+            "properties": {
+              "draft": {
+                "$ref": "#/components/schemas/DraftBundle"
+              },
+              "simulation_scenario": {
+                "$ref": "#/components/schemas/SimulationScenario",
+                "default": "success"
+              }
+            },
+            "required": [
+              "draft"
+            ],
+            "title": "ReviewSubmission",
+            "type": "object"
+          },
+          "RuntimeSubmission": {
+            "additionalProperties": false,
+            "properties": {
+              "request": {
+                "$ref": "#/components/schemas/TaskRequest"
+              },
+              "spec": {
+                "$ref": "#/components/schemas/AgentSpec"
+              }
+            },
+            "required": [
+              "spec",
+              "request"
+            ],
+            "title": "RuntimeSubmission",
+            "type": "object"
+          },
+          "SimulationScenario": {
+            "enum": [
+              "success",
+              "insufficient_evidence",
+              "policy_denied",
+              "revision_requested",
+              "timeout"
+            ],
+            "title": "SimulationScenario",
+            "type": "string"
+          },
+          "SourceLocation": {
+            "additionalProperties": false,
+            "properties": {
+              "line_start": {
+                "anyOf": [
+                  {
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Line Start"
+              },
+              "page": {
+                "anyOf": [
+                  {
+                    "minimum": 1.0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Page"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "section": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Section"
+              },
+              "uri": {
+                "title": "Uri",
+                "type": "string"
+              }
+            },
+            "required": [
+              "uri"
+            ],
+            "title": "SourceLocation",
+            "type": "object"
+          },
+          "StructuredError": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "title": "Code",
+                "type": "string"
+              },
+              "details": {
+                "additionalProperties": true,
+                "title": "Details",
+                "type": "object"
+              },
+              "message": {
+                "title": "Message",
+                "type": "string"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "retryable": {
+                "default": false,
+                "title": "Retryable",
+                "type": "boolean"
+              },
+              "run_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Run Id"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "trace_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Trace Id"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "title": "StructuredError",
+            "type": "object"
+          },
+          "TaskRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "idempotency_key": {
+                "title": "Idempotency Key",
+                "type": "string"
+              },
+              "payload": {
+                "additionalProperties": true,
+                "title": "Payload",
+                "type": "object"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "task_type": {
+                "title": "Task Type",
+                "type": "string"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "idempotency_key",
+              "task_type",
+              "payload"
+            ],
+            "title": "TaskRequest",
+            "type": "object"
+          },
+          "TaskResult": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "error": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StructuredError"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output": {
+                "additionalProperties": true,
+                "title": "Output",
+                "type": "object"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "status": {
+                "$ref": "#/components/schemas/ResultStatus"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "status",
+              "simulated",
+              "adapter"
+            ],
+            "title": "TaskResult",
+            "type": "object"
+          },
+          "ToolEffect": {
+            "enum": [
+              "read",
+              "write"
+            ],
+            "title": "ToolEffect",
+            "type": "string"
+          },
+          "ToolRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "arguments": {
+                "additionalProperties": true,
+                "title": "Arguments",
+                "type": "object"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "effect": {
+                "$ref": "#/components/schemas/ToolEffect"
+              },
+              "idempotency_key": {
+                "title": "Idempotency Key",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "tool_name": {
+                "title": "Tool Name",
+                "type": "string"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "idempotency_key",
+              "tool_name",
+              "effect"
+            ],
+            "title": "ToolRequest",
+            "type": "object"
+          },
+          "ToolResult": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "title": "Adapter",
+                "type": "string"
+              },
+              "agent_id": {
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "error": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StructuredError"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "idempotency_key": {
+                "title": "Idempotency Key",
+                "type": "string"
+              },
+              "output": {
+                "additionalProperties": true,
+                "title": "Output",
+                "type": "object"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "simulated": {
+                "title": "Simulated",
+                "type": "boolean"
+              },
+              "status": {
+                "$ref": "#/components/schemas/ResultStatus"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id",
+              "trace_id",
+              "run_id",
+              "agent_id",
+              "domain_id",
+              "idempotency_key",
+              "status",
+              "simulated",
+              "adapter"
+            ],
+            "title": "ToolResult",
+            "type": "object"
+          },
+          "TrustedPrincipal": {
+            "additionalProperties": false,
+            "description": "Server-derived identity. Never build this from unverified request claims.",
+            "properties": {
+              "authenticated": {
+                "title": "Authenticated",
+                "type": "boolean"
+              },
+              "business_units": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Business Units",
+                "type": "array",
+                "uniqueItems": true
+              },
+              "company_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company Id"
+              },
+              "roles": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Roles",
+                "type": "array",
+                "uniqueItems": true
+              },
+              "schema_version": {
+                "const": "1.0",
+                "default": "1.0",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "user_id": {
+                "title": "User Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "user_id",
+              "authenticated"
+            ],
+            "title": "TrustedPrincipal",
+            "type": "object"
+          },
+          "ValidationError": {
+            "properties": {
+              "ctx": {
+                "title": "Context",
+                "type": "object"
+              },
+              "input": {
+                "title": "Input"
+              },
+              "loc": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    }
+                  ]
+                },
+                "title": "Location",
+                "type": "array"
+              },
+              "msg": {
+                "title": "Message",
+                "type": "string"
+              },
+              "type": {
+                "title": "Error Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "loc",
+              "msg",
+              "type"
+            ],
+            "title": "ValidationError",
+            "type": "object"
+          }
+        }
+      },
+      "info": {
+        "title": "RFA provisional teammate contract fixture",
+        "version": "1.0"
+      },
+      "openapi": "3.1.0",
+      "paths": {
+        "/v1/policy/decisions": {
+          "post": {
+            "operationId": "decide_policy_v1_policy_decisions_post",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PolicyRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/PolicyDecision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Decide Policy"
+          }
+        },
+        "/v1/reviews": {
+          "post": {
+            "operationId": "submit_review_v1_reviews_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "Idempotency-Key",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Idempotency-Key"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ReviewSubmission"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReviewDecision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Submit Review"
+          }
+        },
+        "/v1/reviews/{draft_id}": {
+          "get": {
+            "operationId": "get_review_v1_reviews__draft_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "draft_id",
+                "required": true,
+                "schema": {
+                  "title": "Draft Id",
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReviewDecision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Review"
+          }
+        },
+        "/v1/runtime/tasks": {
+          "post": {
+            "operationId": "run_task_v1_runtime_tasks_post",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RuntimeSubmission"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/TaskResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Run Task"
+          }
+        },
+        "/v1/runtime/tasks/{run_id}": {
+          "get": {
+            "operationId": "task_status_v1_runtime_tasks__run_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/TaskResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Task Status"
+          }
+        },
+        "/v1/runtime/tasks/{run_id}/cancel": {
+          "post": {
+            "operationId": "cancel_task_v1_runtime_tasks__run_id__cancel_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/TaskResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Cancel Task"
+          }
+        },
+        "/v1/tools/execute": {
+          "post": {
+            "operationId": "execute_tool_v1_tools_execute_post",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ToolRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ToolResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Execute Tool"
+          }
+        }
+      }
+    }
+  },
+  "ownership": {
+    "approval_authority": "Seunghee service; local/reference decisions are simulations",
+    "contract_maintenance": "coordinator; consumers must not independently edit shared DTOs",
+    "policy_service_owner": "unresolved; deterministic LocalPolicy and PolicyPort retained",
+    "runtime_authority": "Dayoung service; LocalRuntime is not an OS sandbox"
+  },
+  "ports": {
+    "JudgePort": {
+      "evaluate": "(self, case: 'EvaluationCase', result: 'RunResult') -> 'JudgeAssessment'"
+    },
+    "ModelPort": {
+      "generate": "(self, request: 'ModelRequest') -> 'ModelResult'"
+    },
+    "PolicyPort": {
+      "evaluate": "(self, request: 'PolicyRequest') -> 'PolicyDecision'"
+    },
+    "ResponsePort": {
+      "get_decision": "(self, draft_id: 'str') -> 'ReviewDecision | None'",
+      "submit_draft": "(self, draft: 'DraftBundle', *, idempotency_key: 'str', simulation_scenario: 'SimulationScenario' = <SimulationScenario.SUCCESS: 'success'>) -> 'ReviewDecision'"
+    },
+    "RetrievalPort": {
+      "search": "(self, request: 'RetrievalRequest') -> 'EvidenceBundle'"
+    },
+    "RuntimePort": {
+      "cancel": "(self, run_id: 'str') -> 'TaskResult'",
+      "run": "(self, spec: 'AgentSpec', request: 'TaskRequest') -> 'TaskResult'",
+      "status": "(self, run_id: 'str') -> 'TaskResult | None'"
+    },
+    "ToolPort": {
+      "execute": "(self, request: 'ToolRequest') -> 'ToolResult'"
+    },
+    "TracePort": {
+      "emit": "(self, *, event: 'str', request_id: 'str', trace_id: 'str', run_id: 'str', status: 'str', metadata: 'dict[str, Any] | None' = None) -> 'None'"
+    },
+    "WorkRepositoryPort": {
+      "create_run": "(self, request: 'WorkRequest') -> 'None'",
+      "get_result": "(self, run_id: 'str') -> 'RunResult | None'",
+      "initialize": "(self) -> 'None'",
+      "list_documents": "(self, domain_id: 'str') -> 'list[KnowledgeDocument]'",
+      "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
+      "save_result": "(self, result: 'RunResult') -> 'None'",
+      "transition_run": "(self, run_id: 'str', status: 'WorkStatus') -> 'None'",
+      "upsert_documents": "(self, documents: 'list[KnowledgeDocument]') -> 'None'"
+    }
+  },
+  "public_model_names": [
+    "AdapterInfo",
+    "AgentSpec",
+    "DraftBundle",
+    "DraftTarget",
+    "EvalResult",
+    "EvaluationCase",
+    "EvaluationMaterialScope",
+    "EvidenceBundle",
+    "EvidenceItem",
+    "EvidenceRef",
+    "FeedbackEvent",
+    "JudgeAssessment",
+    "JudgeDimensions",
+    "KnowledgeDocument",
+    "ModelRequest",
+    "ModelResult",
+    "PolicyDecision",
+    "PolicyRequest",
+    "RetrievalRequest",
+    "ReviewDecision",
+    "ReviewSubmission",
+    "RunResult",
+    "RuntimeSubmission",
+    "SecretStatus",
+    "SourceLocation",
+    "StructuredError",
+    "TaskRequest",
+    "TaskResult",
+    "ToolRequest",
+    "ToolResult",
+    "TrustedPrincipal",
+    "WorkRequest"
+  ],
+  "schema_version": "1.0",
+  "source_files": {
+    "src/rfa_mas/api/app.py": "f67e86c859930b374abfce2dbc7d1125a1ea508b03b410babc6793501d5a8f21",
+    "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
+    "src/rfa_mas/contracts/__init__.py": "d061a08af594b068233d386ac8975e4c3e811935ec0146f269d4721414976f14",
+    "src/rfa_mas/contracts/common.py": "43f10e5db223135ffeaa49a32416b4d9a95a184c658b21064ff80900d29225dc",
+    "src/rfa_mas/contracts/models.py": "3c6af978567c35ed883d5602055216cf80fb3adc482deeb26f38c254aafc8322",
+    "src/rfa_mas/ports/interfaces.py": "53c4fa5da97958006ac49627022cfaca0f17df342f6a03f2e8b0e321abdd8910",
+    "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
+  },
+  "source_of_truth": "src/rfa_mas/contracts (Pydantic); API OpenAPI is generated",
+  "status": "repository-local-provisional",
+  "work_state_transitions": {
+    "cancelled": [],
+    "completed": [],
+    "created": [
+      "cancelled",
+      "running"
+    ],
+    "failed": [],
+    "outcome_unknown": [],
+    "running": [
+      "cancelled",
+      "completed",
+      "failed",
+      "outcome_unknown",
+      "waiting_approval"
+    ],
+    "waiting_approval": [
+      "cancelled",
+      "completed",
+      "failed"
+    ]
+  }
+}

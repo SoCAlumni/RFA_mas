@@ -1,0 +1,214 @@
+schema_version: '1.0'
+id: P0-025
+title: UI polling 상태·안전한 이벤트·readiness·registry
+objective: UI가 대기·실패·팀/worker 진행·안전한 결과/알림/검토 참조를 표시한다.
+kind: task
+source_tasks:
+- P0-025
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 0.5
+product_owner: 민섭(계약), 다영(UI 소비)
+execution_class: 팀원 통합(로컬 준비)
+product_mode: 기존 health/ready/work GET만 verified; 확장 missing/not_run. local(false), mock worker/receipt는
+  true. UI/상위 registry 미확인은 P0 blocker 아님, 실제 UI는 P1-008B.
+scope:
+  included:
+  - 기존 GET polling 확장과 cursor event DTO/API(예정), health와 selected provider readiness 분리. 접근 가능한 상위 schema를
+    확인할 수 없으면 service/health/OpenAPI/contract version/capabilities만 가진 provisional 예제 유지.
+  - UI 구현 없이 허용된 source revision/context stage·policy decision·정확한 draft/approval/receipt의 Run 연결 참조를
+    제공. raw evidence·비공개 title/관계·추적 ID를 통한 권한 우회 금지.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/api/app.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/bootstrap.py
+  - registry/service.json
+  - docs/INTEGRATION.md
+  - tests/test_api.py
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/ports/interfaces.py
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths: []
+  shared_resources:
+  - canonical-contracts
+  - composition
+  - contract-docs
+depends_on:
+- id: P0-015
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-020
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-024
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-008
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-025 — UI polling 상태·안전한 이벤트·readiness·registry
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/api/app.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/contracts/models.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/bootstrap.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: registry/service.json
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: A / F/G — 실행 관측 생산자와 UI 안전 참조
+    reason: 평가가 소비할 실제 관측을 core에 연결; 원본 상태·권한 유지
+  handoff: tasks/P0-025/handoff.md
+  dependency_results:
+  - tasks/P0-015/handoff.md
+  - tasks/P0-020/handoff.md
+  - tasks/P0-024/handoff.md
+  - tasks/P1-008/handoff.md
+deliverables:
+- path: src/rfa_mas/api/app.py
+  availability: existing
+  description: 기존 GET polling 확장과 cursor event DTO/API(예정), health와 selected provider readiness 분리. 접근
+    가능한 상위 schema를 확인할 수 없으면 service/health/OpenAPI/contract version/capabilities만 가진 provisional 예제 유지.
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: registry/service.json
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_api.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: task/team/worker/run/검토·receipt ref와 stop reason 표시; 허용 source/policy/draft version/hash/approval/receipt를
+    같은 Run으로 추적 가능, 미발생 ID null
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: owner 권한으로 status/event/notification 조회, private 원문·비밀 없는 응답; private title/요약/관계도 제외, 외부 trace
+    ID 입력으로 조회 권한을 획득하지 못함
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: health가 살아 있어도 선택한 real backend 미준비는 ready=false/정확한 configuration error
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: UI 전체나 SSE를 중복 구현하지 않고 실제 제공 capability만 registry에 등록.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 두 principal polling·cursor 재전송·safe DTO 검사, local readiness와 unavailable real readiness, registry
+    JSON/OpenAPI 대조.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_api.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - task/team/worker/run/검토·receipt ref와 stop reason 표시; 허용 source/policy/draft version/hash/approval/receipt를
+    같은 Run으로 추적 가능, 미발생 ID null
+  - owner 권한으로 status/event/notification 조회, private 원문·비밀 없는 응답; private title/요약/관계도 제외, 외부 trace ID
+    입력으로 조회 권한을 획득하지 못함
+  - health가 살아 있어도 선택한 real backend 미준비는 ready=false/정확한 configuration error
+  - UI 전체나 SSE를 중복 구현하지 않고 실제 제공 capability만 registry에 등록.
+  runner: pytest
+evidence_dir: .agent/evidence/P0-025
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 4
+spec_revision: 4
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-025
+  prior_claim: 기존 health/ready/work GET만 verified; 확장 missing/not_run. local(false), mock worker/receipt는
+    true. UI/상위 registry 미확인은 P0 blocker 아님, 실제 UI는 P1-008B.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T03:49:42+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

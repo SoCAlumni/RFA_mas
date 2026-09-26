@@ -1,0 +1,888 @@
+{
+  "cases": [
+    {
+      "assertions": {
+        "draft_present": true,
+        "error_codes": [],
+        "evidence_audiences": [
+          "public"
+        ],
+        "publication_status": "not_requested",
+        "review_decision": "approved",
+        "simulated": true,
+        "status": "completed"
+      },
+      "category": "normal",
+      "id": "work-normal",
+      "kind": "work",
+      "principal": {
+        "authenticated": true,
+        "business_units": [
+          "triv3-team"
+        ],
+        "company_id": "local-company",
+        "roles": [
+          "company"
+        ],
+        "schema_version": "1.0",
+        "user_id": "fixture-owner-001"
+      },
+      "request": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "idempotency_key": "req-work-normal:work",
+        "query": "TRIV3 공개 근거를 요약해 주세요.",
+        "request_id": "req-work-normal",
+        "run_id": "run-work-normal",
+        "schema_version": "1.0",
+        "simulation_scenario": "success",
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-work-normal"
+      },
+      "response": {
+        "adapters": [
+          {
+            "adapter": "mock-model",
+            "port": "model",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-retrieval",
+            "port": "retrieval",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-response",
+            "port": "response",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "local-runtime",
+            "port": "runtime",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-policy-v1",
+            "port": "policy",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-jsonl-trace",
+            "port": "trace",
+            "schema_version": "1.0",
+            "simulated": false
+          }
+        ],
+        "agent_id": "assistant-supervisor",
+        "created_at": "2026-09-26T00:00:00Z",
+        "domain_id": "triv3",
+        "draft": {
+          "adapter": "domain-taskgraph:mock-model+mock-retrieval",
+          "agent_id": "domain-supervisor:triv3",
+          "allowed_evidence": [
+            {
+              "audience": "public",
+              "content_hash": "136ae5ec383b6426cd0b651ac2ceac770dcc1715babbfb00d15ebcbb75558787",
+              "location": {
+                "line_start": null,
+                "page": null,
+                "schema_version": "1.0",
+                "section": "public-overview",
+                "uri": "fixture://documents/triv3.jsonl"
+              },
+              "schema_version": "1.0",
+              "source_id": "triv3-public-overview",
+              "source_revision": "1"
+            }
+          ],
+          "audience": "public",
+          "content": "요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.",
+          "content_hash": "9fa9baa7e308901d8b254f68110dccc219369e2b86fb15ba7cbf546ac915d5b1",
+          "domain_id": "triv3",
+          "draft_id": "draft-work-normal",
+          "policy_version": "local-v1",
+          "request_id": "req-work-normal",
+          "run_id": "run-work-normal",
+          "schema_version": "1.0",
+          "simulated": true,
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "trace_id": "trace-work-normal",
+          "version": 1
+        },
+        "errors": [],
+        "publication_status": "not_requested",
+        "request_id": "req-work-normal",
+        "review": {
+          "adapter": "mock-response",
+          "agent_id": "domain-supervisor:triv3",
+          "content_hash": "9fa9baa7e308901d8b254f68110dccc219369e2b86fb15ba7cbf546ac915d5b1",
+          "decision": "approved",
+          "domain_id": "triv3",
+          "draft_id": "draft-work-normal",
+          "draft_version": 1,
+          "publication_status": "not_requested",
+          "request_id": "req-work-normal",
+          "run_id": "run-work-normal",
+          "safe_reason": "P0 mock 검토가 초안 버전과 hash를 확인했습니다. 외부 게시 권한은 없습니다.",
+          "schema_version": "1.0",
+          "simulated": true,
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "trace_id": "trace-work-normal"
+        },
+        "run_id": "run-work-normal",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "completed",
+        "stop_reason": "mock_review_completed_no_external_write",
+        "trace_id": "trace-work-normal",
+        "updated_at": "2026-09-26T00:00:00Z"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "draft_present": false,
+        "error_codes": [
+          "policy_denied"
+        ],
+        "evidence_audiences": [],
+        "publication_status": "not_requested",
+        "review_decision": null,
+        "simulated": true,
+        "status": "failed"
+      },
+      "category": "permission_denied",
+      "id": "work-permission_denied",
+      "kind": "work",
+      "principal": {
+        "authenticated": false,
+        "business_units": [],
+        "company_id": null,
+        "roles": [],
+        "schema_version": "1.0",
+        "user_id": "synthetic-outsider"
+      },
+      "request": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "idempotency_key": "req-work-permission_denied:work",
+        "query": "TRIV3 공개 근거를 요약해 주세요.",
+        "request_id": "req-work-permission_denied",
+        "run_id": "run-work-permission_denied",
+        "schema_version": "1.0",
+        "simulation_scenario": "success",
+        "target": {
+          "audience": "owner",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-work-permission_denied"
+      },
+      "response": {
+        "adapters": [
+          {
+            "adapter": "mock-model",
+            "port": "model",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-retrieval",
+            "port": "retrieval",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-response",
+            "port": "response",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "local-runtime",
+            "port": "runtime",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-policy-v1",
+            "port": "policy",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-jsonl-trace",
+            "port": "trace",
+            "schema_version": "1.0",
+            "simulated": false
+          }
+        ],
+        "agent_id": "assistant-supervisor",
+        "created_at": "2026-09-26T00:00:00Z",
+        "domain_id": "triv3",
+        "draft": null,
+        "errors": [
+          {
+            "code": "policy_denied",
+            "details": {},
+            "message": "검증된 identity와 자료 범위가 정책 조건을 충족하지 않습니다.",
+            "request_id": "req-work-permission_denied",
+            "retryable": false,
+            "run_id": "run-work-permission_denied",
+            "schema_version": "1.0",
+            "trace_id": "trace-work-permission_denied"
+          }
+        ],
+        "publication_status": "not_requested",
+        "request_id": "req-work-permission_denied",
+        "review": null,
+        "run_id": "run-work-permission_denied",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "failed",
+        "stop_reason": "policy_denied",
+        "trace_id": "trace-work-permission_denied",
+        "updated_at": "2026-09-26T00:00:00Z"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "draft_present": true,
+        "error_codes": [],
+        "evidence_audiences": [],
+        "publication_status": "not_requested",
+        "review_decision": "revision_requested",
+        "simulated": true,
+        "status": "waiting_approval"
+      },
+      "category": "insufficient",
+      "id": "work-insufficient",
+      "kind": "work",
+      "principal": {
+        "authenticated": true,
+        "business_units": [
+          "triv3-team"
+        ],
+        "company_id": "local-company",
+        "roles": [
+          "company"
+        ],
+        "schema_version": "1.0",
+        "user_id": "fixture-owner-001"
+      },
+      "request": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "idempotency_key": "req-work-insufficient:work",
+        "query": "TRIV3 공개 근거를 요약해 주세요.",
+        "request_id": "req-work-insufficient",
+        "run_id": "run-work-insufficient",
+        "schema_version": "1.0",
+        "simulation_scenario": "insufficient_evidence",
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-work-insufficient"
+      },
+      "response": {
+        "adapters": [
+          {
+            "adapter": "mock-model",
+            "port": "model",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-retrieval",
+            "port": "retrieval",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-response",
+            "port": "response",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "local-runtime",
+            "port": "runtime",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-policy-v1",
+            "port": "policy",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-jsonl-trace",
+            "port": "trace",
+            "schema_version": "1.0",
+            "simulated": false
+          }
+        ],
+        "agent_id": "assistant-supervisor",
+        "created_at": "2026-09-26T00:00:00Z",
+        "domain_id": "triv3",
+        "draft": {
+          "adapter": "domain-taskgraph:mock-model+mock-retrieval",
+          "agent_id": "domain-supervisor:triv3",
+          "allowed_evidence": [],
+          "audience": "public",
+          "content": "요청을 뒷받침할 허용된 근거가 부족합니다. 추가 자료를 제공하거나 공개 범위를 확인해 주세요.",
+          "content_hash": "bbd2af8062bfac2a7ec8670c7846c9f8bf20ab238ceee320c6c290da15a81086",
+          "domain_id": "triv3",
+          "draft_id": "draft-work-insufficient",
+          "policy_version": "local-v1",
+          "request_id": "req-work-insufficient",
+          "run_id": "run-work-insufficient",
+          "schema_version": "1.0",
+          "simulated": true,
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "trace_id": "trace-work-insufficient",
+          "version": 1
+        },
+        "errors": [],
+        "publication_status": "not_requested",
+        "request_id": "req-work-insufficient",
+        "review": {
+          "adapter": "mock-response",
+          "agent_id": "domain-supervisor:triv3",
+          "content_hash": "bbd2af8062bfac2a7ec8670c7846c9f8bf20ab238ceee320c6c290da15a81086",
+          "decision": "revision_requested",
+          "domain_id": "triv3",
+          "draft_id": "draft-work-insufficient",
+          "draft_version": 1,
+          "publication_status": "not_requested",
+          "request_id": "req-work-insufficient",
+          "run_id": "run-work-insufficient",
+          "safe_reason": "허용된 근거와 초안 내용을 보완해야 합니다.",
+          "schema_version": "1.0",
+          "simulated": true,
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "trace_id": "trace-work-insufficient"
+        },
+        "run_id": "run-work-insufficient",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "waiting_approval",
+        "stop_reason": "review_pending_or_revision_required",
+        "trace_id": "trace-work-insufficient",
+        "updated_at": "2026-09-26T00:00:00Z"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "draft_present": true,
+        "error_codes": [
+          "budget_exceeded"
+        ],
+        "evidence_audiences": [
+          "public"
+        ],
+        "publication_status": "not_requested",
+        "review_decision": null,
+        "simulated": true,
+        "status": "failed"
+      },
+      "category": "partial_failure",
+      "id": "work-partial_failure",
+      "kind": "work",
+      "principal": {
+        "authenticated": true,
+        "business_units": [
+          "triv3-team"
+        ],
+        "company_id": "local-company",
+        "roles": [
+          "company"
+        ],
+        "schema_version": "1.0",
+        "user_id": "fixture-owner-001"
+      },
+      "request": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "idempotency_key": "req-work-partial_failure:work",
+        "query": "TRIV3 공개 근거를 요약해 주세요.",
+        "request_id": "req-work-partial_failure",
+        "run_id": "run-work-partial_failure",
+        "schema_version": "1.0",
+        "simulation_scenario": "success",
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-work-partial_failure"
+      },
+      "response": {
+        "adapters": [
+          {
+            "adapter": "mock-model",
+            "port": "model",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-retrieval",
+            "port": "retrieval",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-response",
+            "port": "response",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "local-runtime",
+            "port": "runtime",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-policy-v1",
+            "port": "policy",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-jsonl-trace",
+            "port": "trace",
+            "schema_version": "1.0",
+            "simulated": false
+          }
+        ],
+        "agent_id": "assistant-supervisor",
+        "created_at": "2026-09-26T00:00:00Z",
+        "domain_id": "triv3",
+        "draft": {
+          "adapter": "domain-taskgraph:mock-model+mock-retrieval",
+          "agent_id": "domain-supervisor:triv3",
+          "allowed_evidence": [
+            {
+              "audience": "public",
+              "content_hash": "136ae5ec383b6426cd0b651ac2ceac770dcc1715babbfb00d15ebcbb75558787",
+              "location": {
+                "line_start": null,
+                "page": null,
+                "schema_version": "1.0",
+                "section": "public-overview",
+                "uri": "fixture://documents/triv3.jsonl"
+              },
+              "schema_version": "1.0",
+              "source_id": "triv3-public-overview",
+              "source_revision": "1"
+            }
+          ],
+          "audience": "public",
+          "content": "요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.",
+          "content_hash": "9fa9baa7e308901d8b254f68110dccc219369e2b86fb15ba7cbf546ac915d5b1",
+          "domain_id": "triv3",
+          "draft_id": "draft-work-partial_failure",
+          "policy_version": "local-v1",
+          "request_id": "req-work-partial_failure",
+          "run_id": "run-work-partial_failure",
+          "schema_version": "1.0",
+          "simulated": true,
+          "target": {
+            "audience": "public",
+            "channel": "preview",
+            "destination": "local-preview",
+            "schema_version": "1.0"
+          },
+          "trace_id": "trace-work-partial_failure",
+          "version": 1
+        },
+        "errors": [
+          {
+            "code": "budget_exceeded",
+            "details": {},
+            "message": "검토를 시작할 Supervisor graph step 예산이 부족합니다.",
+            "request_id": "req-work-partial_failure",
+            "retryable": false,
+            "run_id": "run-work-partial_failure",
+            "schema_version": "1.0",
+            "trace_id": "trace-work-partial_failure"
+          }
+        ],
+        "publication_status": "not_requested",
+        "request_id": "req-work-partial_failure",
+        "review": null,
+        "run_id": "run-work-partial_failure",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "failed",
+        "stop_reason": "budget_exceeded",
+        "trace_id": "trace-work-partial_failure",
+        "updated_at": "2026-09-26T00:00:00Z"
+      },
+      "settings": {
+        "max_graph_steps": 5
+      }
+    },
+    {
+      "assertions": {
+        "draft_present": false,
+        "error_codes": [
+          "retrieval_timeout"
+        ],
+        "evidence_audiences": [],
+        "publication_status": "not_requested",
+        "review_decision": null,
+        "simulated": true,
+        "status": "failed"
+      },
+      "category": "timeout",
+      "id": "work-timeout",
+      "kind": "work",
+      "principal": {
+        "authenticated": true,
+        "business_units": [
+          "triv3-team"
+        ],
+        "company_id": "local-company",
+        "roles": [
+          "company"
+        ],
+        "schema_version": "1.0",
+        "user_id": "fixture-owner-001"
+      },
+      "request": {
+        "agent_id": "assistant-supervisor",
+        "domain_id": "triv3",
+        "idempotency_key": "req-work-timeout:work",
+        "query": "TRIV3 공개 근거를 요약해 주세요.",
+        "request_id": "req-work-timeout",
+        "run_id": "run-work-timeout",
+        "schema_version": "1.0",
+        "simulation_scenario": "timeout",
+        "target": {
+          "audience": "public",
+          "channel": "preview",
+          "destination": "local-preview",
+          "schema_version": "1.0"
+        },
+        "trace_id": "trace-work-timeout"
+      },
+      "response": {
+        "adapters": [
+          {
+            "adapter": "mock-model",
+            "port": "model",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-retrieval",
+            "port": "retrieval",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "mock-response",
+            "port": "response",
+            "schema_version": "1.0",
+            "simulated": true
+          },
+          {
+            "adapter": "local-runtime",
+            "port": "runtime",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-policy-v1",
+            "port": "policy",
+            "schema_version": "1.0",
+            "simulated": false
+          },
+          {
+            "adapter": "local-jsonl-trace",
+            "port": "trace",
+            "schema_version": "1.0",
+            "simulated": false
+          }
+        ],
+        "agent_id": "assistant-supervisor",
+        "created_at": "2026-09-26T00:00:00Z",
+        "domain_id": "triv3",
+        "draft": null,
+        "errors": [
+          {
+            "code": "retrieval_timeout",
+            "details": {},
+            "message": "근거 검색 시간이 초과되었습니다.",
+            "request_id": "req-work-timeout",
+            "retryable": true,
+            "run_id": "run-work-timeout",
+            "schema_version": "1.0",
+            "trace_id": "trace-work-timeout"
+          }
+        ],
+        "publication_status": "not_requested",
+        "request_id": "req-work-timeout",
+        "review": null,
+        "run_id": "run-work-timeout",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "failed",
+        "stop_reason": "retrieval_timeout",
+        "trace_id": "trace-work-timeout",
+        "updated_at": "2026-09-26T00:00:00Z"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "error_code": null,
+        "retryable": null,
+        "simulated": true,
+        "status": "succeeded"
+      },
+      "category": "normal",
+      "id": "tool-normal-read",
+      "kind": "tool",
+      "principal": null,
+      "request": {
+        "agent_id": "contract-fixture-agent",
+        "arguments": {
+          "simulate": "",
+          "term": "synthetic"
+        },
+        "domain_id": "triv3",
+        "effect": "read",
+        "idempotency_key": "tool-normal-read",
+        "request_id": "req-tool-normal-read",
+        "run_id": "run-tool-normal-read",
+        "schema_version": "1.0",
+        "tool_name": "lookup",
+        "trace_id": "trace-tool-normal-read"
+      },
+      "response": {
+        "adapter": "mock-tool",
+        "agent_id": "contract-fixture-agent",
+        "domain_id": "triv3",
+        "error": null,
+        "idempotency_key": "tool-normal-read",
+        "output": {
+          "echo": {
+            "simulate": "",
+            "term": "synthetic"
+          },
+          "note": "simulated read-only tool result"
+        },
+        "request_id": "req-tool-normal-read",
+        "run_id": "run-tool-normal-read",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "succeeded",
+        "trace_id": "trace-tool-normal-read"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "error_code": "external_writes_disabled",
+        "retryable": false,
+        "simulated": true,
+        "status": "denied"
+      },
+      "category": "permission_denied",
+      "id": "tool-permission_denied-write",
+      "kind": "tool",
+      "principal": null,
+      "request": {
+        "agent_id": "contract-fixture-agent",
+        "arguments": {
+          "simulate": "",
+          "term": "synthetic"
+        },
+        "domain_id": "triv3",
+        "effect": "write",
+        "idempotency_key": "tool-permission_denied-write",
+        "request_id": "req-tool-permission_denied-write",
+        "run_id": "run-tool-permission_denied-write",
+        "schema_version": "1.0",
+        "tool_name": "publish",
+        "trace_id": "trace-tool-permission_denied-write"
+      },
+      "response": {
+        "adapter": "mock-tool",
+        "agent_id": "contract-fixture-agent",
+        "domain_id": "triv3",
+        "error": {
+          "code": "external_writes_disabled",
+          "details": {},
+          "message": "P0에서는 외부 write를 실행할 수 없습니다.",
+          "request_id": "req-tool-permission_denied-write",
+          "retryable": false,
+          "run_id": "run-tool-permission_denied-write",
+          "schema_version": "1.0",
+          "trace_id": "trace-tool-permission_denied-write"
+        },
+        "idempotency_key": "tool-permission_denied-write",
+        "output": {},
+        "request_id": "req-tool-permission_denied-write",
+        "run_id": "run-tool-permission_denied-write",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "denied",
+        "trace_id": "trace-tool-permission_denied-write"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "error_code": "read_timeout",
+        "retryable": true,
+        "simulated": true,
+        "status": "timed_out"
+      },
+      "category": "timeout",
+      "id": "tool-timeout-read",
+      "kind": "tool",
+      "principal": null,
+      "request": {
+        "agent_id": "contract-fixture-agent",
+        "arguments": {
+          "simulate": "timeout",
+          "term": "synthetic"
+        },
+        "domain_id": "triv3",
+        "effect": "read",
+        "idempotency_key": "tool-timeout-read",
+        "request_id": "req-tool-timeout-read",
+        "run_id": "run-tool-timeout-read",
+        "schema_version": "1.0",
+        "tool_name": "lookup",
+        "trace_id": "trace-tool-timeout-read"
+      },
+      "response": {
+        "adapter": "mock-tool",
+        "agent_id": "contract-fixture-agent",
+        "domain_id": "triv3",
+        "error": {
+          "code": "read_timeout",
+          "details": {},
+          "message": "mock read 시간이 초과되었습니다.",
+          "request_id": "req-tool-timeout-read",
+          "retryable": true,
+          "run_id": "run-tool-timeout-read",
+          "schema_version": "1.0",
+          "trace_id": "trace-tool-timeout-read"
+        },
+        "idempotency_key": "tool-timeout-read",
+        "output": {},
+        "request_id": "req-tool-timeout-read",
+        "run_id": "run-tool-timeout-read",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "timed_out",
+        "trace_id": "trace-tool-timeout-read"
+      },
+      "settings": {}
+    },
+    {
+      "assertions": {
+        "error_code": "outcome_unknown",
+        "retryable": false,
+        "simulated": true,
+        "status": "outcome_unknown"
+      },
+      "category": "timeout",
+      "id": "tool-timeout-write",
+      "kind": "tool",
+      "principal": null,
+      "request": {
+        "agent_id": "contract-fixture-agent",
+        "arguments": {
+          "simulate": "timeout",
+          "term": "synthetic"
+        },
+        "domain_id": "triv3",
+        "effect": "write",
+        "idempotency_key": "tool-timeout-write",
+        "request_id": "req-tool-timeout-write",
+        "run_id": "run-tool-timeout-write",
+        "schema_version": "1.0",
+        "tool_name": "publish",
+        "trace_id": "trace-tool-timeout-write"
+      },
+      "response": {
+        "adapter": "mock-tool",
+        "agent_id": "contract-fixture-agent",
+        "domain_id": "triv3",
+        "error": {
+          "code": "outcome_unknown",
+          "details": {},
+          "message": "write timeout으로 실행 결과를 확정할 수 없습니다.",
+          "request_id": "req-tool-timeout-write",
+          "retryable": false,
+          "run_id": "run-tool-timeout-write",
+          "schema_version": "1.0",
+          "trace_id": "trace-tool-timeout-write"
+        },
+        "idempotency_key": "tool-timeout-write",
+        "output": {},
+        "request_id": "req-tool-timeout-write",
+        "run_id": "run-tool-timeout-write",
+        "schema_version": "1.0",
+        "simulated": true,
+        "status": "outcome_unknown",
+        "trace_id": "trace-tool-timeout-write"
+      },
+      "settings": {}
+    }
+  ],
+  "limits": [
+    "No live provider, teammate service, approval authority or sandbox was exercised.",
+    "Partial failure is the existing graph budget stop after DRAFT creation, not team recovery.",
+    "The simulated tool write timeout performs no external write.",
+    "Fixed specimen timestamps are normalization, not execution evidence timestamps."
+  ],
+  "schema_version": "1.0",
+  "status": "repository-local-provisional",
+  "synthetic": true
+}

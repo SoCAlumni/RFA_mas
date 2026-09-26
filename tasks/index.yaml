@@ -1,0 +1,557 @@
+generated: true
+schema_version: '1.0'
+source_digest: eeca2f4768abd7f84c1597dd46369b5a594f0d83dd91170f93e6393a6e7addeb
+source_revisions:
+  OPS-000: 2
+  OPS-001: 10
+  P0-001: 1
+  P0-002: 1
+  P0-003: 1
+  P0-004: 1
+  P0-005: 1
+  P0-006: 1
+  P0-007: 1
+  P0-008: 1
+  P0-009: 1
+  P0-010: 1
+  P0-011: 1
+  P0-012: 1
+  P0-013: 1
+  P0-014: 4
+  P0-015: 2
+  P0-016: 1
+  P0-017: 3
+  P0-018: 1
+  P0-019: 2
+  P0-020: 3
+  P0-021: 2
+  P0-022: 2
+  P0-023: 1
+  P0-024: 2
+  P0-025: 4
+  P0-026: 4
+  P0-027: 2
+  P0-028: 3
+  P1-001: 2
+  P1-001A: 4
+  P1-001B: 2
+  P1-001C: 2
+  P1-002: 2
+  P1-002A: 1
+  P1-003: 2
+  P1-003A: 1
+  P1-004: 2
+  P1-004A: 4
+  P1-004B: 2
+  P1-005: 4
+  P1-005A: 2
+  P1-005B: 2
+  P1-006: 5
+  P1-006A: 4
+  P1-006B: 3
+  P1-006C: 3
+  P1-006D: 2
+  P1-006E: 2
+  P1-007: 2
+  P1-007A: 1
+  P1-007B: 1
+  P1-008: 4
+  P1-008A: 4
+  P1-008B: 4
+  P1-009: 4
+  P2-001: 2
+  P2-002: 2
+  P2-003: 2
+  P2-004: 2
+  P2-005: 2
+  P2-006: 2
+  P2-007: 2
+  P2-008: 2
+  P2-009: 2
+generated_at: '2026-09-26T03:52:47+00:00'
+tasks:
+- id: OPS-000
+  title: 사용자 변경을 보존한 Git/worktree baseline 등록
+  workstream: contracts/control
+  depends_on: []
+  path: tasks/OPS-000/task.yaml
+- id: OPS-001
+  title: 작업 이관·공통 CLI·병렬 제어 검증
+  workstream: contracts/control
+  depends_on: []
+  path: tasks/OPS-001/task.yaml
+- id: P0-001
+  title: 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정
+  workstream: contracts/control
+  depends_on: []
+  path: tasks/P0-001/task.yaml
+- id: P0-002
+  title: typed settings, `.env.example`, `.gitignore`, secret-safe doctor와 named dev credential 초기화
+  workstream: contracts/control
+  depends_on:
+  - P0-001
+  path: tasks/P0-002/task.yaml
+- id: P0-003
+  title: 공통 Pydantic DTO, async ports, 오류 모델, state transition
+  workstream: contracts/control
+  depends_on:
+  - P0-001
+  path: tasks/P0-003/task.yaml
+- id: P0-004
+  title: composition root와 adapter 주입
+  workstream: contracts/control
+  depends_on:
+  - P0-002
+  - P0-003
+  path: tasks/P0-004/task.yaml
+- id: P0-005
+  title: SQLite 상태, fixture 초기화, checkpoint/KB 책임 분리
+  workstream: knowledge
+  depends_on:
+  - P0-003
+  path: tasks/P0-005/task.yaml
+- id: P0-006
+  title: 합성 문서와 deterministic mock/local adapter
+  workstream: knowledge
+  depends_on:
+  - P0-003
+  - P0-005
+  path: tasks/P0-006/task.yaml
+- id: P0-007
+  title: Supervisor와 공통 Domain TaskGraph, DRAFT, mock 검토
+  workstream: agents
+  depends_on:
+  - P0-004
+  - P0-006
+  path: tasks/P0-007/task.yaml
+- id: P0-008
+  title: FastAPI health/readiness/work API와 OpenAPI export
+  workstream: integration/evaluation
+  depends_on:
+  - P0-007
+  path: tasks/P0-008/task.yaml
+- id: P0-009
+  title: metadata 중심 JSONL trace와 secret redaction
+  workstream: integration/evaluation
+  depends_on:
+  - P0-002
+  - P0-007
+  path: tasks/P0-009/task.yaml
+- id: P0-010
+  title: loopback provisional HTTP contract와 교체 adapter
+  workstream: integration/evaluation
+  depends_on:
+  - P0-003
+  - P0-004
+  path: tasks/P0-010/task.yaml
+- id: P0-011
+  title: LLMOps interface와 24개 합성 평가 사례
+  workstream: integration/evaluation
+  depends_on:
+  - P0-003
+  - P0-006
+  path: tasks/P0-011/task.yaml
+- id: P0-012
+  title: 개발·통합·교육 문서와 provisional registry
+  workstream: contracts/control
+  depends_on:
+  - P0-001
+  - P0-002
+  - P0-003
+  - P0-004
+  - P0-005
+  - P0-006
+  - P0-007
+  - P0-008
+  - P0-009
+  - P0-010
+  - P0-011
+  path: tasks/P0-012/task.yaml
+- id: P0-013
+  title: P0 전체 검증과 근거 기록
+  workstream: contracts/control
+  depends_on:
+  - P0-001
+  - P0-002
+  - P0-003
+  - P0-004
+  - P0-005
+  - P0-006
+  - P0-007
+  - P0-008
+  - P0-009
+  - P0-010
+  - P0-011
+  - P0-012
+  path: tasks/P0-013/task.yaml
+- id: P0-014
+  title: 식별자·소유권·추적/평가 reference 계약 동결
+  workstream: contracts/control
+  depends_on:
+  - P0-003
+  - P0-010
+  path: tasks/P0-014/task.yaml
+- id: P0-015
+  title: 사용자 소유 세션·대화·run 조회
+  workstream: execution
+  depends_on:
+  - P0-014
+  - P0-005
+  - P0-008
+  path: tasks/P0-015/task.yaml
+- id: P0-016
+  title: LangGraph SQLite checkpointer·기본 재개
+  workstream: execution
+  depends_on:
+  - P0-015
+  path: tasks/P0-016/task.yaml
+- id: P0-017
+  title: 후속 설정·readiness 기본값 정리
+  workstream: contracts/control
+  depends_on:
+  - P0-014
+  - P0-016
+  path: tasks/P0-017/task.yaml
+- id: P0-018
+  title: 승인된 팀 template와 규칙 selector
+  workstream: agents
+  depends_on:
+  - P0-014
+  path: tasks/P0-018/task.yaml
+- id: P0-019
+  title: Task 전담 팀·TeamFactory·중복 provisioning 방지
+  workstream: agents
+  depends_on:
+  - P0-018
+  - P0-015
+  path: tasks/P0-019/task.yaml
+- id: P0-020
+  title: 역할별 실행·Supervisor 수집·팀 예산·취소
+  workstream: agents
+  depends_on:
+  - P0-019
+  - P0-017
+  - P1-001A
+  - P1-006D
+  path: tasks/P0-020/task.yaml
+- id: P0-021
+  title: durable 실행 기록·재개 멱등성·결과 대사
+  workstream: execution
+  depends_on:
+  - P0-016
+  - P0-020
+  - P1-005A
+  path: tasks/P0-021/task.yaml
+- id: P0-022
+  title: 안전한 예약 DTO·사용자별 일정 관리
+  workstream: execution
+  depends_on:
+  - P0-014
+  - P0-017
+  - P1-004
+  - P0-021
+  path: tasks/P0-022/task.yaml
+- id: P0-023
+  title: APScheduler 3.x 영속 job store·단일 runner
+  workstream: execution
+  depends_on:
+  - P0-022
+  path: tasks/P0-023/task.yaml
+- id: P0-024
+  title: 변경 이벤트·누락 실행·안전한 알림
+  workstream: execution
+  depends_on:
+  - P0-023
+  - P1-004B
+  - P2-003
+  - P1-005
+  path: tasks/P0-024/task.yaml
+- id: P0-025
+  title: UI polling 상태·안전한 이벤트·readiness·registry
+  workstream: integration/evaluation
+  depends_on:
+  - P0-015
+  - P0-020
+  - P0-024
+  - P1-008
+  path: tasks/P0-025/task.yaml
+- id: P0-026
+  title: 합성 end-to-end 데모·D3 전달 패키지
+  workstream: integration/evaluation
+  depends_on:
+  - P0-021
+  - P0-024
+  - P0-025
+  - P1-006
+  - P1-008
+  - P1-001B
+  - P1-006E
+  path: tasks/P0-026/task.yaml
+- id: P0-027
+  title: NAT/LangGraph 호환성 spike·선택 extra 고정
+  workstream: integration/evaluation
+  depends_on:
+  - P0-001
+  - P0-007
+  path: tasks/P0-027/task.yaml
+- id: P0-028
+  title: NAT 평가 adapter·installed smoke와 native 동등성
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  - P0-027
+  - P1-006D
+  - P0-016
+  path: tasks/P0-028/task.yaml
+- id: P1-001
+  title: 노트·export 입력과 revision 저장
+  workstream: knowledge
+  depends_on:
+  - P0-014
+  - P0-015
+  path: tasks/P1-001/task.yaml
+- id: P1-001A
+  title: 권한 선필터·최신 lexical 검색·무효화
+  workstream: knowledge
+  depends_on:
+  - P1-001
+  path: tasks/P1-001A/task.yaml
+- id: P1-001B
+  title: KB L0/L1/L2 선택적 context loader
+  workstream: knowledge
+  depends_on:
+  - P0-014
+  - P1-001A
+  path: tasks/P1-001B/task.yaml
+- id: P1-001C
+  title: 계층 요약 최적화·context 로딩 비교(후속)
+  workstream: knowledge
+  depends_on:
+  - P1-001B
+  - P1-004A
+  path: tasks/P1-001C/task.yaml
+- id: P1-002
+  title: NVIDIA ModelPort adapter 준비
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  - P0-017
+  - P1-005
+  path: tasks/P1-002/task.yaml
+- id: P1-002A
+  title: NVIDIA 실제 합성 호출 증거
+  workstream: integration/evaluation
+  depends_on:
+  - P1-002
+  path: tasks/P1-002A/task.yaml
+- id: P1-003
+  title: 공식 NeMo Retriever Skill을 Research 도구에 연결
+  workstream: integration/evaluation
+  depends_on:
+  - P0-020
+  - P1-001A
+  - P1-005
+  path: tasks/P1-003/task.yaml
+- id: P1-003A
+  title: 공식 Skill 실제 retrieval 증거
+  workstream: integration/evaluation
+  depends_on:
+  - P1-003
+  path: tasks/P1-003A/task.yaml
+- id: P1-004
+  title: 비서 intent 라우팅과 얇은 실행 경계
+  workstream: agents
+  depends_on:
+  - P0-016
+  - P1-001A
+  path: tasks/P1-004/task.yaml
+- id: P1-004A
+  title: 검토된 지식 축적·provenance
+  workstream: knowledge
+  depends_on:
+  - P0-020
+  - P1-001A
+  path: tasks/P1-004A/task.yaml
+- id: P1-004B
+  title: TodoCandidate 수락·보류·기각·중복 제거
+  workstream: knowledge
+  depends_on:
+  - P1-004A
+  - P0-019
+  path: tasks/P1-004B/task.yaml
+- id: P1-005
+  title: 대상별 DRAFT·읽기/공유/외부 전송 정책
+  workstream: agents
+  depends_on:
+  - P0-020
+  - P1-004A
+  - P1-001B
+  path: tasks/P1-005/task.yaml
+- id: P1-005A
+  title: DRAFT 편집·승인 무효화·안전한 mock 게시 상태
+  workstream: agents
+  depends_on:
+  - P1-005
+  - P0-016
+  path: tasks/P1-005A/task.yaml
+- id: P1-005B
+  title: 피드백 4분류·scope·취소
+  workstream: agents
+  depends_on:
+  - P1-005A
+  path: tasks/P1-005B/task.yaml
+- id: P1-006
+  title: 핵심 12 Persona QA·행위 verifier·Judge 상태 분리
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  - P1-006D
+  path: tasks/P1-006/task.yaml
+- id: P1-006A
+  title: 실제 Judge adapter·품질 평가
+  workstream: integration/evaluation
+  depends_on:
+  - P1-006
+  - P1-002
+  path: tasks/P1-006A/task.yaml
+- id: P1-006B
+  title: Persona 시뮬레이션·버전 회귀 비교
+  workstream: integration/evaluation
+  depends_on:
+  - P1-006
+  path: tasks/P1-006B/task.yaml
+- id: P1-006C
+  title: Langfuse 연결·redaction·보존 확인
+  workstream: integration/evaluation
+  depends_on:
+  - P1-006
+  - P1-006D
+  path: tasks/P1-006C/task.yaml
+- id: P1-006D
+  title: 안전한 trace allowlist·평가 관찰 계약 연결
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  path: tasks/P1-006D/task.yaml
+- id: P1-006E
+  title: Workflow 레드팀 4종·정상 대조 회귀
+  workstream: integration/evaluation
+  depends_on:
+  - P1-006
+  path: tasks/P1-006E/task.yaml
+- id: P1-007
+  title: NemoClaw 지원 경로·교육 연결 설계
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  - P0-025
+  path: tasks/P1-007/task.yaml
+- id: P1-007A
+  title: NemoClaw 운영 경로 실제 시연
+  workstream: integration/evaluation
+  depends_on:
+  - P1-007
+  - P1-008B
+  path: tasks/P1-007A/task.yaml
+- id: P1-007B
+  title: OpenShell 역할별 허용·차단 증거
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008B
+  path: tasks/P1-007B/task.yaml
+- id: P1-008
+  title: Response/Tool/Runtime/Policy reference 계약 완성
+  workstream: integration/evaluation
+  depends_on:
+  - P0-014
+  - P0-020
+  - P0-021
+  - P1-005A
+  - P1-006D
+  path: tasks/P1-008/task.yaml
+- id: P1-008A
+  title: 승희 Response/Tool 실제 교체
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008
+  - P0-026
+  path: tasks/P1-008A/task.yaml
+- id: P1-008B
+  title: 다영 Runtime·UI 실제 교체
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008
+  - P0-025
+  - P0-026
+  path: tasks/P1-008B/task.yaml
+- id: P1-009
+  title: D4 회귀·교육/심사 증거·최종 상태 확정
+  workstream: integration/evaluation
+  depends_on:
+  - P0-026
+  path: tasks/P1-009/task.yaml
+- id: P2-001
+  title: clustering 기반 Task 후보 제안
+  workstream: knowledge
+  depends_on:
+  - P1-004B
+  - P2-003
+  path: tasks/P2-001/task.yaml
+- id: P2-002
+  title: 제한된 DebateLease
+  workstream: agents
+  depends_on:
+  - P2-003
+  - P1-006B
+  - P0-020
+  path: tasks/P2-002/task.yaml
+- id: P2-003
+  title: 설명 가능한 후보 기본 정렬
+  workstream: knowledge
+  depends_on:
+  - P1-004B
+  path: tasks/P2-003/task.yaml
+- id: P2-004
+  title: 추가 connector 한 개의 read-only slice
+  workstream: knowledge
+  depends_on:
+  - P1-001A
+  - P1-008A
+  path: tasks/P2-004/task.yaml
+- id: P2-005
+  title: 실제 GPU benchmark 최소 실행
+  workstream: integration/evaluation
+  depends_on:
+  - P0-020
+  - P1-007B
+  path: tasks/P2-005/task.yaml
+- id: P2-006
+  title: Engineering template 실행 slice
+  workstream: agents
+  depends_on:
+  - P0-020
+  - P1-007B
+  - P1-008A
+  path: tasks/P2-006/task.yaml
+- id: P2-007
+  title: 팀 재구성·template 버전 전환
+  workstream: agents
+  depends_on:
+  - P0-019
+  - P0-021
+  path: tasks/P2-007/task.yaml
+- id: P2-008
+  title: OpenClaw ChannelAdapter 최소 연결
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008A
+  - P0-015
+  path: tasks/P2-008/task.yaml
+- id: P2-009
+  title: 실행 가능한 후보 내 LLM 팀 선택
+  workstream: agents
+  depends_on:
+  - P0-018
+  - P1-002A
+  - P1-006B
+  path: tasks/P2-009/task.yaml

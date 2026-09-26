@@ -1,0 +1,164 @@
+schema_version: '1.0'
+id: P1-001C
+title: 계층 요약 최적화·context 로딩 비교(후속)
+objective: P0 선택 loader를 유지하면서 필요 시 요약 갱신·넓은 질의군의 비용/근거 충실도 비교를 수행한다.
+kind: task
+source_tasks:
+- P1-001B
+requirement_refs:
+- docs/EVALUATION_CONTEXT.md
+priority: P1
+status: deferred
+spec_state: draft
+unresolved:
+- P0-014의 RFA-EXTENDED 1.1 schema/fixture baseline을 수신하고 실제 digest를 고정해야 한다.
+workstream: knowledge
+execution_role: worker
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 본인 LLMOps
+product_mode: local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록
+scope:
+  included:
+  - P0 선택 loader를 유지하면서 필요 시 요약 갱신·넓은 질의군의 비용/근거 충실도 비교를 수행한다.
+  excluded:
+  - 실제 팀원 승인/게시·OpenShell gateway·UI 구현, 외부 게시/배포, 실제 .env 접근
+  - 새 framework/관측 서버/메모리 엔진·core graph 재작성
+  - 공통 DTO/설정/lock 임의 변경; coordinator 계약 변경 절차로 요청
+  owned_paths:
+  - src/rfa_mas/application/context.py
+  - tests/test_context_loading.py
+  - docs/evidence/context-benchmark.md
+  read_only_paths:
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - src/rfa_mas/application/context.py
+  - tests/test_context_loading.py
+  - docs/evidence/context-benchmark.md
+  shared_resources: []
+depends_on:
+- id: P1-001B
+  condition: integrated_done
+  required_output: 동결 계약과 해당 task의 산출물·필수 검증이 대상 baseline에 통합된 done; 직접 handoff/evidence 확인
+- id: P1-004A
+  condition: integrated_done
+  required_output: 동결 계약과 해당 task의 산출물·필수 검증이 대상 baseline에 통합된 done; 직접 handoff/evidence 확인
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/EVALUATION_CONTEXT.md
+    section: 해당 task의 절
+    reason: 확정된 최소 범위·공식 출처·mock/real 구분; 해당 절만 읽기
+  - path: src/rfa_mas/contracts/models.py
+    section: 해당 DTO
+    reason: 기존 계약 확장·중복 원본 금지
+  - path: src/rfa_mas/ports/interfaces.py
+    section: 관련 port
+    reason: 기존 경계 유지
+  handoff: tasks/P1-001C/handoff.md
+  dependency_results:
+  - tasks/P1-001B/handoff.md
+  - tasks/P1-004A/handoff.md
+deliverables:
+- path: src/rfa_mas/application/context.py
+  availability: planned
+  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+- path: tests/test_context_loading.py
+  availability: planned
+  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+- path: docs/evidence/context-benchmark.md
+  availability: planned
+  description: 이 task 범위의 구현/검증 산출물. 지금은 제품 구현·검증 not_run.
+acceptance_criteria:
+- id: AC1
+  given: 버전이 고정된 동일 합성 질의군의 baseline/candidate
+  expect: 실제 두 실행의 loading unit·질의별 coverage·latency·실패를 기록; tokenizer 없으면 token 절감률 없음
+  required: true
+- id: AC2
+  given: 갱신/권한 회수/예산 초과 fixture
+  expect: 요약 최적화 뒤에도 모든 부모 정책·revision 및 필수 지침 보존 회귀 통과
+  required: true
+- id: AC3
+  given: 품질 비교와 opt-in 외부 평가
+  expect: 공개/합성 egress 허가만 사용, Judge 미실행은 semantic not_run; core engine 교체·전체 KB 복제 금지
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 후속 task 구현 후 source worktree에서 실행. 임시 DB/합성 fixture, 실제 .env·외부 credential을 읽지 않음.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_context_loading.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 기존 loader 보안 AC 유지, 실제 비교 2회와 명시된 측정 단위
+  - 외부 Judge 미실행을 품질 향상으로 보고하지 않음
+  runner: pytest
+evidence_dir: .agent/evidence/P1-001C
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 2
+spec_revision: 2
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new
+  source_ref: docs/EVALUATION_CONTEXT.md — 2026-09-26 민섭 기술 고도화 합의
+  prior_claim: 새 후속 작업. 기존 기반의 완료 주장을 변경하지 않음.
+  implementation_facts: 소스/설치 버전 조사만 수행. task의 새 기능·테스트는 아직 없음.
+  previous_evidence: []
+  checks_this_migration:
+  - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
+  judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:49:40+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: 4일 핵심·real gate 이후 별도 용량을 승인한 뒤 P1-001B 결과로 비교 질문/데이터셋을 고정한다.

@@ -1,0 +1,58 @@
+{
+  "registry_schema_version": "provisional-1",
+  "status": "provisional",
+  "provisional_reason": "상위 저장소의 서비스 등록 형식과 팀원 endpoint 계약을 아직 확인하지 못했습니다.",
+  "service": {
+    "name": "rfa-mas",
+    "display_name": "RFA Multi-Agent Assistant",
+    "version": "0.1.0",
+    "owner": "minseop",
+    "description": "Policy-aware assistant Supervisor and domain TaskGraph foundation",
+    "default_base_url": "http://127.0.0.1:8000",
+    "health_url": "http://127.0.0.1:8000/healthz",
+    "readiness_url": "http://127.0.0.1:8000/readyz",
+    "openapi_url": "http://127.0.0.1:8000/openapi.json",
+    "contract_version": "1.0",
+    "domains": [
+      "triv3",
+      "quantization_research"
+    ],
+    "capabilities": [
+      "work.create",
+      "work.read",
+      "domain.route",
+      "evidence.mock_search",
+      "draft.generate",
+      "draft.mock_review",
+      "policy.local_evaluate",
+      "trace.local_metadata"
+    ],
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/v1/work",
+        "request_model": "WorkRequest",
+        "response_model": "RunResult"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/work/{run_id}",
+        "response_model": "RunResult"
+      }
+    ],
+    "default_adapters": {
+      "model": "mock-model",
+      "retrieval": "mock-retrieval",
+      "response": "mock-response",
+      "tool": "mock-tool",
+      "runtime": "local-runtime",
+      "policy": "local-policy-v1",
+      "trace": "local-jsonl-trace",
+      "judge": "mock-judge"
+    },
+    "external_writes": false,
+    "runtime_security": "local-process-not-an-openshell-sandbox",
+    "authentication": "optional bearer on loopback; required for non-loopback bind",
+    "data_classification": "synthetic-or-public-only-in-p0"
+  }
+}

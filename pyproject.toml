@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rfa-mas"
+version = "0.1.0"
+description = "Policy-aware multi-agent assistant foundation for the NVIDIA Korea Agentic AI Hackathon"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.141.1",
+  "httpx==0.28.1",
+  "langgraph==1.2.12",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
+  "uvicorn==0.53.0",
+]
+
+[dependency-groups]
+dev = [
+  "PyYAML==6.0.3",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "ruff==0.16.9",
+]
+
+[project.scripts]
+rfa = "rfa_mas.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rfa_mas"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]

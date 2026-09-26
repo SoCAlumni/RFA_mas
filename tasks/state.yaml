@@ -1,0 +1,1174 @@
+generated: true
+schema_version: '1.0'
+source_digest: eeca2f4768abd7f84c1597dd46369b5a594f0d83dd91170f93e6393a6e7addeb
+source_revisions:
+  OPS-000: 2
+  OPS-001: 10
+  P0-001: 1
+  P0-002: 1
+  P0-003: 1
+  P0-004: 1
+  P0-005: 1
+  P0-006: 1
+  P0-007: 1
+  P0-008: 1
+  P0-009: 1
+  P0-010: 1
+  P0-011: 1
+  P0-012: 1
+  P0-013: 1
+  P0-014: 4
+  P0-015: 2
+  P0-016: 1
+  P0-017: 3
+  P0-018: 1
+  P0-019: 2
+  P0-020: 3
+  P0-021: 2
+  P0-022: 2
+  P0-023: 1
+  P0-024: 2
+  P0-025: 4
+  P0-026: 4
+  P0-027: 2
+  P0-028: 3
+  P1-001: 2
+  P1-001A: 4
+  P1-001B: 2
+  P1-001C: 2
+  P1-002: 2
+  P1-002A: 1
+  P1-003: 2
+  P1-003A: 1
+  P1-004: 2
+  P1-004A: 4
+  P1-004B: 2
+  P1-005: 4
+  P1-005A: 2
+  P1-005B: 2
+  P1-006: 5
+  P1-006A: 4
+  P1-006B: 3
+  P1-006C: 3
+  P1-006D: 2
+  P1-006E: 2
+  P1-007: 2
+  P1-007A: 1
+  P1-007B: 1
+  P1-008: 4
+  P1-008A: 4
+  P1-008B: 4
+  P1-009: 4
+  P2-001: 2
+  P2-002: 2
+  P2-003: 2
+  P2-004: 2
+  P2-005: 2
+  P2-006: 2
+  P2-007: 2
+  P2-008: 2
+  P2-009: 2
+generated_at: '2026-09-26T03:52:47+00:00'
+counts:
+  todo: 36
+  in_progress: 0
+  verifying: 1
+  blocked: 7
+  done: 13
+  deferred: 9
+  cancelled: 0
+final_acceptance:
+  local_product:
+  - id: P0-026
+    passed: false
+  nat_installed_fake_provider:
+  - id: P0-028
+    passed: false
+  real_technology:
+  - id: P1-002A
+    passed: false
+  - id: P1-003A
+    passed: false
+  - id: P1-007A
+    passed: false
+  - id: P1-007B
+    passed: false
+  teammate_modules:
+  - id: P1-008A
+    passed: false
+  - id: P1-008B
+    passed: false
+  final_reporting:
+  - id: P1-009
+    passed: false
+  control_migration:
+  - id: OPS-001
+    passed: false
+tasks:
+- id: OPS-000
+  status: blocked
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: 현재 폴더/상위에 .git이 없어 worktree 통합 baseline 미등록
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - source Git baseline unregistered
+- id: OPS-001
+  status: verifying
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: failed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:verifying
+  - source Git baseline unregistered
+- id: P0-001
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-002
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-003
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-004
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-005
+  status: done
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-006
+  status: done
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-007
+  status: done
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-008
+  status: done
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-009
+  status: done
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-010
+  status: done
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-011
+  status: done
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-012
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-013
+  status: done
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: not_required
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
+  - source Git baseline unregistered
+- id: P0-014
+  status: todo
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: true
+  executable: false
+  reasons:
+  - source Git baseline unregistered
+- id: P0-015
+  status: todo
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - source Git baseline unregistered
+- id: P0-016
+  status: todo
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-015
+  - source Git baseline unregistered
+- id: P0-017
+  status: todo
+  workstream: contracts/control
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P0-016
+  - source Git baseline unregistered
+- id: P0-018
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - source Git baseline unregistered
+- id: P0-019
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-018
+  - dependency:P0-015
+  - source Git baseline unregistered
+- id: P0-020
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-019
+  - dependency:P0-017
+  - dependency:P1-001A
+  - dependency:P1-006D
+  - source Git baseline unregistered
+- id: P0-021
+  status: todo
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-016
+  - dependency:P0-020
+  - dependency:P1-005A
+  - source Git baseline unregistered
+- id: P0-022
+  status: todo
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P0-017
+  - dependency:P1-004
+  - dependency:P0-021
+  - source Git baseline unregistered
+- id: P0-023
+  status: todo
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-022
+  - source Git baseline unregistered
+- id: P0-024
+  status: todo
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-023
+  - dependency:P1-004B
+  - dependency:P2-003
+  - dependency:P1-005
+  - source Git baseline unregistered
+- id: P0-025
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-015
+  - dependency:P0-020
+  - dependency:P0-024
+  - dependency:P1-008
+  - source Git baseline unregistered
+- id: P0-026
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-021
+  - dependency:P0-024
+  - dependency:P0-025
+  - dependency:P1-006
+  - dependency:P1-008
+  - dependency:P1-001B
+  - dependency:P1-006E
+  - source Git baseline unregistered
+- id: P0-027
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: true
+  executable: false
+  reasons:
+  - source Git baseline unregistered
+- id: P0-028
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P0-027
+  - dependency:P1-006D
+  - dependency:P0-016
+  - source Git baseline unregistered
+- id: P1-001
+  status: todo
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P0-015
+  - source Git baseline unregistered
+- id: P1-001A
+  status: todo
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-001
+  - source Git baseline unregistered
+- id: P1-001B
+  status: todo
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P1-001A
+  - source Git baseline unregistered
+- id: P1-001C
+  status: deferred
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-001B
+  - dependency:P1-004A
+  - source Git baseline unregistered
+- id: P1-002
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P0-014
+  - dependency:P0-017
+  - dependency:P1-005
+  - source Git baseline unregistered
+- id: P1-002A
+  status: blocked
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: 'not_run, real 미검증. blocked 사유: 사용할 계정/endpoint의 live readiness 미제공. 현재 가능한 mock은 P1-002; 실제
+    연결에는 사용자가 제공한 credential·네트워크·API quota 필요.'
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - dependency:P1-002
+  - source Git baseline unregistered
+- id: P1-003
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P0-020
+  - dependency:P1-001A
+  - dependency:P1-005
+  - source Git baseline unregistered
+- id: P1-003A
+  status: blocked
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: 'real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은
+    P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요.'
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - dependency:P1-003
+  - source Git baseline unregistered
+- id: P1-004
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-016
+  - dependency:P1-001A
+  - source Git baseline unregistered
+- id: P1-004A
+  status: todo
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-020
+  - dependency:P1-001A
+  - source Git baseline unregistered
+- id: P1-004B
+  status: todo
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-004A
+  - dependency:P0-019
+  - source Git baseline unregistered
+- id: P1-005
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-020
+  - dependency:P1-004A
+  - dependency:P1-001B
+  - source Git baseline unregistered
+- id: P1-005A
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-005
+  - dependency:P0-016
+  - source Git baseline unregistered
+- id: P1-005B
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-005A
+  - source Git baseline unregistered
+- id: P1-006
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P1-006D
+  - source Git baseline unregistered
+- id: P1-006A
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P1-006
+  - dependency:P1-002
+  - source Git baseline unregistered
+- id: P1-006B
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P1-006
+  - source Git baseline unregistered
+- id: P1-006C
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P1-006
+  - dependency:P1-006D
+  - source Git baseline unregistered
+- id: P1-006D
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - source Git baseline unregistered
+- id: P1-006E
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-006
+  - source Git baseline unregistered
+- id: P1-007
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P0-014
+  - dependency:P0-025
+  - source Git baseline unregistered
+- id: P1-007A
+  status: blocked
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: 'real not_run. blocked 사유: 실행 가능한 지원 runtime·접근·네트워크 policy 미확인. P1-007 문서와 reference API는
+    먼저 준비 가능.'
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - dependency:P1-007
+  - dependency:P1-008B
+  - source Git baseline unregistered
+- id: P1-007B
+  status: blocked
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: 'real not_run. blocked 사유: 실제 OpenShell sandbox/role identity/policy 조회 경로 미제공. local denial
+    fixture는 P0 증거일 뿐 이 카드 AC를 충족하지 않음.'
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - dependency:P1-008B
+  - source Git baseline unregistered
+- id: P1-008
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-014
+  - dependency:P0-020
+  - dependency:P0-021
+  - dependency:P1-005A
+  - dependency:P1-006D
+  - source Git baseline unregistered
+- id: P1-008A
+  status: blocked
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: 'live not_run, blocked 사유: 실제 OpenAPI/base URL/auth 방식/receipt·idempotency TTL·시연 대상 미제공. P1-008
+    mock 준비는 계속 가능. 실행 모드는 real이며 일부 모의 결과는 별도 표기.'
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - dependency:P1-008
+  - dependency:P0-026
+  - source Git baseline unregistered
+- id: P1-008B
+  status: blocked
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: 'real not_run. blocked 사유: 상대 endpoint/인증·identity·lifecycle·UI 접속/registry schema 미제공. local/reference
+    계약은 P1-008/P0-025에서 진행 가능.'
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:blocked
+  - spec unresolved
+  - dependency:P1-008
+  - dependency:P0-025
+  - dependency:P0-026
+  - source Git baseline unregistered
+- id: P1-009
+  status: todo
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - dependency:P0-026
+  - source Git baseline unregistered
+- id: P2-001
+  status: deferred
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P1-004B
+  - dependency:P2-003
+  - source Git baseline unregistered
+- id: P2-002
+  status: deferred
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P2-003
+  - dependency:P1-006B
+  - dependency:P0-020
+  - source Git baseline unregistered
+- id: P2-003
+  status: todo
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-004B
+  - source Git baseline unregistered
+- id: P2-004
+  status: deferred
+  workstream: knowledge
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P1-001A
+  - dependency:P1-008A
+  - source Git baseline unregistered
+- id: P2-005
+  status: deferred
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P0-020
+  - dependency:P1-007B
+  - source Git baseline unregistered
+- id: P2-006
+  status: deferred
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P0-020
+  - dependency:P1-007B
+  - dependency:P1-008A
+  - source Git baseline unregistered
+- id: P2-007
+  status: deferred
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P0-019
+  - dependency:P0-021
+  - source Git baseline unregistered
+- id: P2-008
+  status: deferred
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P1-008A
+  - dependency:P0-015
+  - source Git baseline unregistered
+- id: P2-009
+  status: deferred
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:deferred
+  - dependency:P0-018
+  - dependency:P1-002A
+  - dependency:P1-006B
+  - source Git baseline unregistered

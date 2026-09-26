@@ -1,0 +1,144 @@
+schema_version: '1.0'
+id: OPS-000
+title: 사용자 변경을 보존한 Git/worktree baseline 등록
+objective: 사용자 변경을 보존한 Git/worktree baseline 등록
+kind: control
+source_tasks: []
+requirement_refs:
+- TASK_EXECUTION_RULES.md
+- docs/TASK_MIGRATION.md
+priority: P0
+status: blocked
+spec_state: draft
+unresolved:
+- Git은 초기화됐지만 HEAD 커밋 없음; 사용자 변경을 포함한 승인된 integration branch/HEAD와 clean worktree baseline 미등록.
+workstream: contracts/control
+execution_role: coordinator
+estimated_effort: 0.5
+product_owner: 민섭 / coordinator
+execution_class: 개발 운영 체계 — 제품 D1~D4 24h 산정 밖
+product_mode: development-control/local; product AC not_run
+scope:
+  included:
+  - 사용자 변경을 보존한 Git/worktree baseline 등록
+  - '2026-09-26 재조사: git rev-parse --show-toplevel 성공, --verify HEAD 실패, 전체 프로젝트 파일 untracked. 과거 Git
+    없음 기록은 당시 조사 사실로 보존.'
+  excluded:
+  - 제품 기능 구현/외부 게시/배포/사용자 변경 임의 commit
+  owned_paths:
+  - tasks/project.yaml
+  - .agent/control.json
+  - docs/TASK_MIGRATION.md
+  read_only_paths:
+  - AGENTS.md
+  - pyproject.toml
+  - uv.lock
+  planned_paths: []
+  shared_resources:
+  - task-control
+depends_on: []
+contract_refs: []
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/TASK_MIGRATION.md
+    section: 현재 기준/검증
+    reason: 기존 사용자 변경과 제품 상태를 보존
+  handoff: tasks/OPS-000/handoff.md
+  dependency_results: []
+deliverables:
+- path: tasks/project.yaml
+  availability: existing
+  description: 사용자 변경을 보존한 Git/worktree baseline 등록
+- path: .agent/control.json
+  availability: existing
+  description: 사용자 변경을 보존한 Git/worktree baseline 등록
+- path: docs/TASK_MIGRATION.md
+  availability: existing
+  description: 사용자 변경을 보존한 Git/worktree baseline 등록
+acceptance_criteria:
+- id: AC1
+  given: 기존 사용자 파일을 보존한 canonical control root
+  expect: 동일 repository identity의 깨끗한 integration branch/HEAD가 등록된다.
+  required: true
+- id: AC2
+  given: 기존 사용자 파일을 보존한 canonical control root
+  expect: 필요한 기존 파일은 baseline에 포함되고 real .env/secret은 추적되지 않는다.
+  required: true
+- id: AC3
+  given: 기존 사용자 파일을 보존한 canonical control root
+  expect: 서로 다른 feature worktree가 하나의 canonical task 상태를 조회하며 오래된 source baseline claim은 거절된다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: manual
+  availability: available
+  prerequisites:
+  - 테스트는 임시 control directory; 실제 product claim/evidence를 사용하지 않음
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - git status/branch/HEAD와 repository identity를 검사; 미커밋 변경을 자동 stash/commit하지 않음
+  - inspection JSON의 사용자 변경 보존/secret 미추적 확인 후 taskctl adopt-baseline; 결과 기록
+  assertions:
+  - 동일 repository identity의 깨끗한 integration branch/HEAD가 등록된다.
+  - 필요한 기존 파일은 baseline에 포함되고 real .env/secret은 추적되지 않는다.
+  - 서로 다른 feature worktree가 하나의 canonical task 상태를 조회하며 오래된 source baseline claim은 거절된다.
+  runner: manual
+evidence_dir: .agent/evidence/OPS-000
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: not_required
+  target: canonical control root
+  reason: 개발 운영 설정/문서 원본에 직접 반영하는 coordinator 관리 작업이며 제품 branch integration이 아니다. 실제 검증/산출물 gate는 필수.
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 2
+spec_revision: 2
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker:
+  cause: 현재 폴더/상위에 .git이 없어 worktree 통합 baseline 미등록
+  evidence:
+  - docs/TASK_MIGRATION.md
+  resolve_when: 사용자가 올바른 Git checkout 또는 이 폴더 baseline 생성 방침을 지정한 후 coordinator가 adopt-baseline으로 확인
+  affects:
+  - P0-014
+migration:
+  original_status: new_control_task
+  source_ref: 사용자 이번 이관 지시
+  prior_claim: 없음
+  implementation_facts: Git metadata 없음; 사용자 변경의 tracked/dirty 구분 불가.
+  previous_evidence: []
+  checks_this_migration:
+  - 기존 58개 작업과 별도 관리
+  judgment: 제품 기능 scope/시간을 확대하지 않는 운영 작업.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T03:45:30+00:00'
+concise_result: 'Specification changed: Git 초기화 확인, HEAD·승인된 baseline은 여전히 없음; 사용자 변경·미등록 blocker 유지'
+next_action: 사용자가 기존 Git checkout을 지정하거나 이 폴더의 Git 기준 생성/커밋을 승인한 뒤 깨끗한 baseline 검사. 현재는 자동 init/commit하지
+  않는다.

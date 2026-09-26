@@ -1,0 +1,174 @@
+schema_version: "1.0"
+id: "P2-005"
+title: "실제 GPU benchmark 최소 실행"
+objective: "simulated 실험 결과와 비교 가능한 실제 측정을 한 조건에서 확보한다."
+kind: "task"
+source_tasks:
+  - "P2-005"
+requirement_refs:
+  - "docs/PRODUCT_REQUIREMENTS.md"
+  - "docs/archive/TASKS_2026-09-26.md"
+priority: "P2"
+status: "deferred"
+spec_state: "ready"
+unresolved: []
+workstream: "integration/evaluation"
+execution_role: "coordinator"
+estimated_effort: 2
+product_owner: "민섭(실험), 다영(runtime)"
+execution_class: "팀원 통합"
+product_mode: "real missing/not_run; GPU/지원 driver·모델·runtime 자원 미확인. P0에서는 simulated fixture만."
+scope:
+  included:
+    - "하드웨어/driver/model/dataset/seed·측정 방법·실제 artifact를 포함한 ExperimentResult."
+  excluded:
+    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
+    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  owned_paths:
+    - "src/rfa_mas/contracts/models.py"
+    - "src/rfa_mas/application/workers.py"
+    - "tests/integration/test_gpu_benchmark.py"
+    - "docs/evidence/gpu-benchmark.md"
+  read_only_paths:
+    - "AGENTS.md"
+    - "src/rfa_mas/ports/interfaces.py"
+    - "docs/INTEGRATION.md"
+  planned_paths:
+    - "src/rfa_mas/application/workers.py"
+    - "tests/integration/test_gpu_benchmark.py"
+    - "docs/evidence/gpu-benchmark.md"
+  shared_resources:
+    - "canonical-contracts"
+depends_on:
+  -
+    id: "P0-020"
+    condition: "integrated_done"
+    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+  -
+    id: "P1-007B"
+    condition: "integrated_done"
+    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+contract_refs:
+  -
+    id: "RFA-DTO"
+    version: "1.0"
+    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
+    role: "consumer"
+context:
+  global_refs:
+    - "docs/PROJECT_CONTEXT.md"
+    - "TASK_EXECUTION_RULES.md"
+  read:
+    -
+      path: "docs/archive/TASKS_2026-09-26.md"
+      section: "P2-005 — 실제 GPU benchmark 최소 실행"
+      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
+    -
+      path: "src/rfa_mas/contracts/models.py"
+      section: "task에 관련된 정의/호출부"
+      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
+  handoff: "tasks/P2-005/handoff.md"
+  dependency_results:
+    - "tasks/P0-020/handoff.md"
+    - "tasks/P1-007B/handoff.md"
+deliverables:
+  -
+    path: "src/rfa_mas/contracts/models.py"
+    availability: "existing"
+    description: "하드웨어/driver/model/dataset/seed·측정 방법·실제 artifact를 포함한 ExperimentResult."
+  -
+    path: "src/rfa_mas/application/workers.py"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+  -
+    path: "tests/integration/test_gpu_benchmark.py"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+  -
+    path: "docs/evidence/gpu-benchmark.md"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+acceptance_criteria:
+  -
+    id: "AC1"
+    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
+    expect: "승인된 runtime/capability/budget에서 한 실험"
+    required: true
+  -
+    id: "AC2"
+    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
+    expect: "mock 수치와 실제 측정 별도 저장"
+    required: true
+  -
+    id: "AC3"
+    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
+    expect: "실패/취소/재실행 조건·측정 불확실성 표시."
+    required: true
+verification:
+  -
+    id: "V1"
+    ac_ids:
+      - "AC1"
+      - "AC2"
+      - "AC3"
+    type: "command"
+    availability: "planned"
+    prerequisites:
+      - "가용 GPU에서 재현 가능한 opt-in 측정, fixture contract는 GPU 없이 검사."
+      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
+    cwd: "."
+    argv:
+      - ".venv/bin/python"
+      - "-m"
+      - "pytest"
+      - "-q"
+      - "tests/integration/test_gpu_benchmark.py"
+    timeout_seconds: 120
+    procedure: []
+    assertions:
+      - "승인된 runtime/capability/budget에서 한 실험"
+      - "mock 수치와 실제 측정 별도 저장"
+      - "실패/취소/재실행 조건·측정 불확실성 표시."
+    runner: "pytest"
+evidence_dir: ".agent/evidence/P2-005"
+latest_evidence_file: null
+verification_summary:
+  state: "not_run"
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: "pending"
+  target: "canonical integration branch after OPS-000"
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 2
+spec_revision: 2
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+blocker: null
+migration:
+  initial_spec_revision: 2
+  original_status: "deferred"
+  source_ref: "docs/archive/TASKS_2026-09-26.md — P2-005"
+  prior_claim: "real missing/not_run; GPU/지원 driver·모델·runtime 자원 미확인. P0에서는 simulated fixture만."
+  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  previous_evidence: []
+  checks_this_migration:
+    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
+  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
+updated_at: "2026-09-26T03:13:39.816Z"
+concise_result: "이관 완료; 제품 구현/검증 not_run."
+next_action: "가용 GPU에서 재현 가능한 opt-in 측정, fixture contract는 GPU 없이 검사."

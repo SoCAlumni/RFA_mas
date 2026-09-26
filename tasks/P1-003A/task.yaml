@@ -1,0 +1,168 @@
+schema_version: "1.0"
+id: "P1-003A"
+title: "공식 Skill 실제 retrieval 증거"
+objective: "Research worker가 실제 Skill 도구를 사용한 결과를 보여준다."
+kind: "task"
+source_tasks:
+  - "P1-003A"
+requirement_refs:
+  - "docs/PRODUCT_REQUIREMENTS.md"
+  - "docs/archive/TASKS_2026-09-26.md"
+priority: "P1"
+status: "blocked"
+spec_state: "draft"
+unresolved:
+  - "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."
+workstream: "integration/evaluation"
+execution_role: "worker"
+estimated_effort: 0.5
+product_owner: "민섭"
+execution_class: "이 저장소 구현"
+product_mode: "real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요."
+scope:
+  included:
+    - "선택한 CLI/service 버전·index/source·안전한 실행 명령·worker→tool→EvidenceBundle trace. 서비스 인증값 기록 없음; public 계약 변경 없음."
+  excluded:
+    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
+    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  owned_paths:
+    - "docs/EDUCATION_MAPPING.md"
+    - "tests/integration/test_retriever_live.py"
+    - "docs/evidence/nvidia-skill.md"
+  read_only_paths:
+    - "AGENTS.md"
+    - "src/rfa_mas/contracts"
+    - "src/rfa_mas/ports/interfaces.py"
+    - "docs/INTEGRATION.md"
+  planned_paths:
+    - "tests/integration/test_retriever_live.py"
+    - "docs/evidence/nvidia-skill.md"
+  shared_resources: []
+depends_on:
+  -
+    id: "P1-003"
+    condition: "integrated_done"
+    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+contract_refs:
+  -
+    id: "RFA-DTO"
+    version: "1.0"
+    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
+    role: "consumer"
+context:
+  global_refs:
+    - "docs/PROJECT_CONTEXT.md"
+    - "TASK_EXECUTION_RULES.md"
+  read:
+    -
+      path: "docs/archive/TASKS_2026-09-26.md"
+      section: "P1-003A — 공식 Skill 실제 retrieval 증거"
+      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
+    -
+      path: "docs/EDUCATION_MAPPING.md"
+      section: "task에 관련된 정의/호출부"
+      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
+  handoff: "tasks/P1-003A/handoff.md"
+  dependency_results:
+    - "tasks/P1-003/handoff.md"
+deliverables:
+  -
+    path: "docs/EDUCATION_MAPPING.md"
+    availability: "existing"
+    description: "선택한 CLI/service 버전·index/source·안전한 실행 명령·worker→tool→EvidenceBundle trace. 서비스 인증값 기록 없음; public 계약 변경 없음."
+  -
+    path: "tests/integration/test_retriever_live.py"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+  -
+    path: "docs/evidence/nvidia-skill.md"
+    availability: "planned"
+    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+acceptance_criteria:
+  -
+    id: "AC1"
+    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
+    expect: "합성 자료의 ingest/query 또는 준비된 index query 실제 수행"
+    required: true
+  -
+    id: "AC2"
+    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
+    expect: "source/page 근거로 Research 결과 생성"
+    required: true
+  -
+    id: "AC3"
+    given: "합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후"
+    expect: "NVIDIA 추론/Skill API 요구와의 관계를 공식 안내로 확인하고 단순 파일 설치·다른 기술 성공으로 대체하지 않음."
+    required: true
+verification:
+  -
+    id: "V1"
+    ac_ids:
+      - "AC1"
+      - "AC2"
+      - "AC3"
+    type: "command"
+    availability: "planned"
+    prerequisites:
+      - "opt-in 실제 도구 호출·source locator 대조·simulated=false provider 결과 확인."
+      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
+    cwd: "."
+    argv:
+      - ".venv/bin/python"
+      - "-m"
+      - "pytest"
+      - "-q"
+      - "tests/integration/test_retriever_live.py"
+    timeout_seconds: 180
+    procedure: []
+    assertions:
+      - "합성 자료의 ingest/query 또는 준비된 index query 실제 수행"
+      - "source/page 근거로 Research 결과 생성"
+      - "NVIDIA 추론/Skill API 요구와의 관계를 공식 안내로 확인하고 단순 파일 설치·다른 기술 성공으로 대체하지 않음."
+    runner: "pytest"
+evidence_dir: ".agent/evidence/P1-003A"
+latest_evidence_file: null
+verification_summary:
+  state: "not_run"
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: "pending"
+  target: "canonical integration branch after OPS-000"
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+blocker:
+  cause: "real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요."
+  evidence:
+    - "docs/archive/TASKS_2026-09-26.md"
+  resolve_when: "준비 task 완료 + 사용자 제공 실제 설정/권한 + 지원 서비스 접근성 확인. 해당 real 검증만 막으며 P0/local 준비는 계속한다."
+  affects: []
+migration:
+  original_status: "blocked"
+  source_ref: "docs/archive/TASKS_2026-09-26.md — P1-003A"
+  prior_claim: "real not_run. blocked 사유: 사용 가능한 Retriever CLI/index/service와 필요 모델 자원 readiness 미확인. mock은 P1-003에서 가능; remote endpoint 또는 지원 local 자원 필요."
+  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  previous_evidence: []
+  checks_this_migration:
+    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
+  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
+updated_at: "2026-09-26T02:58:21.356Z"
+concise_result: "이관 완료; 제품 구현/검증 not_run."
+next_action: "실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다."

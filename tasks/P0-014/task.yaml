@@ -1,0 +1,267 @@
+schema_version: '1.0'
+id: P0-014
+title: 식별자·소유권·추적/평가 reference 계약 동결
+objective: 같은 session/Task/team/run 의미로 개발하도록 최소 DTO와 변경 규칙을 먼저 고정한다.
+kind: task
+source_tasks:
+- P0-014
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: ready
+unresolved: []
+workstream: contracts/control
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: schema 1.0 기반만 implemented/verified; 확장 missing, 검증 not_run. 계약 local, fixture simulated=true.
+  외부 의존 없음; 상대 스키마 미확인은 provisional 유지.
+scope:
+  included:
+  - Session/Task/TeamTemplate/TeamSpec, caller identity·capability, 승인자/receipt, Schedule DTO 최소 골격과 합성
+    payload. 현재 schema 1.0 호환 여부를 기록하고 breaking 변경은 명시적으로 versioning; 팀원 전용 필드는 mapper에 둔다.
+  - Execution/Trace, Evidence/Context, PolicyDecision, Draft/Approval/Publish, EvaluationCase/EvalResult를
+    기존 Pydantic DTO에 확장. TracePort typed allowlist, stage-aware RetrievalPort 선택 읽기 계약, 현재 정책·다중 부모 revision
+    전달. docs/EVALUATION_CONTEXT.md A의 의미를 단일 원본에서 versioning하고 상태/권한 원본을 복제하지 않음.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/contracts/common.py
+  - src/rfa_mas/ports/interfaces.py
+  - docs/INTEGRATION.md
+  - fixtures/contracts
+  - docs/CONTRACT_CHANGELOG.md
+  - tests/test_contracts.py
+  - scripts/contract_baseline.py
+  - docs/contracts/extended.json
+  - src/rfa_mas/contracts/__init__.py
+  - src/rfa_mas/ports/__init__.py
+  - fixtures/contracts/trace_eval_cases.json
+  - tests/test_trace_eval_contract.py
+  read_only_paths:
+  - AGENTS.md
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - docs/contracts/extended.json
+  - fixtures/contracts/trace_eval_cases.json
+  - tests/test_trace_eval_contract.py
+  shared_resources:
+  - canonical-contracts
+  - contract-docs
+depends_on:
+- id: P0-003
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-010
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: provider
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-014 — 식별자·소유권·최소 reference 계약 동결
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/contracts/models.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/contracts/common.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/ports/interfaces.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/INTEGRATION.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: A — repository-local 계약 변경안
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P0-014/handoff.md
+  dependency_results:
+  - tasks/P0-003/handoff.md
+  - tasks/P0-010/handoff.md
+deliverables:
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: Session/Task/TeamTemplate/TeamSpec, caller identity·capability, 승인자/receipt, Schedule DTO
+    최소 골격과 합성 payload. 현재 schema 1.0 호환 여부를 기록하고 breaking 변경은 명시적으로 versioning; 팀원 전용 필드는 mapper에 둔다.
+- path: src/rfa_mas/contracts/common.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: fixtures/contracts
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/CONTRACT_CHANGELOG.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_contracts.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: scripts/contract_baseline.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/contracts/extended.json
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/contracts/__init__.py
+  availability: existing
+  description: 추가 DTO의 공개 export; 새 원본이 아님
+- path: src/rfa_mas/ports/__init__.py
+  availability: existing
+  description: 기존 port export와 일치
+- path: fixtures/contracts/trace_eval_cases.json
+  availability: planned
+  description: 정상/deny/승인 없음/승인 후 변경/source ACL 변경/replay/write unknown의 합성 schema fixture
+- path: tests/test_trace_eval_contract.py
+  availability: planned
+  description: 새 참조/선택 stage/정책/평가 계약의 null·version·binding 검사; 아직 없는 테스트
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 위 식별자 관계와 상태 원본, 읽기/공유/전송 권한 명시; session/task/team/run/agent/trace와 source revision/location·policy
+    decision·draft/approval/receipt를 join하며 발생 전 단계는 null. trace ID/모델 allow는 인증·정책 증명이 아님
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: direct user와 internal/public channel 진입 DTO 구분, 외부 요청은 Supervisor에만 도달; context stage와 역할/목표/endpoint
+    read/share/egress 판단 및 다중 부모 제한을 전달; 선택 읽기와 권한 선필터 인터페이스를 동결
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: Runtime의 run/status/cancel 유지, prepare/cleanup 보충 계약과 TeamSpec→AgentSpec binding 정의; 승인/게시 원본
+    승희·runtime 원본 다영·Policy 소유 미확정. 본문/첨부 hash·대상·정책·source ACL 변경과 unknown→조회 상태, mock/local/real·실험
+    measured/mock/not_run 구분
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: OpenAPI/예제 round-trip·변경 이력·미구현 route 표기 일치. 정상/deny/미승인/본문 변경/ACL 변경/중복/timeout fixture가 schema와
+    일치. EvalCase/Result는 evaluator/실행·모델·prompt·policy·dataset/source 버전·증거 및 pass/fail/error/not_run를
+    분리; default trace allowlist 밖 raw 값 거절, 미지원 계약 version 명시 거절
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 기존 `tests/test_contracts.py`에 신규 DTO round-trip/unknown field/잘못된 binding 검사, 생성 OpenAPI와 reference
+    예제 대조. 문서만의 새 테스트는 불필요.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_contracts.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 위 식별자 관계와 상태 원본, 읽기/공유/전송 권한 명시; session/task/team/run/agent/trace와 source revision/location·policy
+    decision·draft/approval/receipt를 join하며 발생 전 단계는 null. trace ID/모델 allow는 인증·정책 증명이 아님
+  - direct user와 internal/public channel 진입 DTO 구분, 외부 요청은 Supervisor에만 도달; context stage와 역할/목표/endpoint
+    read/share/egress 판단 및 다중 부모 제한을 전달; 선택 읽기와 권한 선필터 인터페이스를 동결
+  - Runtime의 run/status/cancel 유지, prepare/cleanup 보충 계약과 TeamSpec→AgentSpec binding 정의; 승인/게시 원본 승희·runtime
+    원본 다영·Policy 소유 미확정. 본문/첨부 hash·대상·정책·source ACL 변경과 unknown→조회 상태, mock/local/real·실험 measured/mock/not_run
+    구분
+  - OpenAPI/예제 round-trip·변경 이력·미구현 route 표기 일치. 정상/deny/미승인/본문 변경/ACL 변경/중복/timeout fixture가 schema와
+    일치. EvalCase/Result는 evaluator/실행·모델·prompt·policy·dataset/source 버전·증거 및 pass/fail/error/not_run를
+    분리; default trace allowlist 밖 raw 값 거절, 미지원 계약 version 명시 거절
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 신규 DTO·fixture·test 구현; 기존 docs/contracts/baseline.json 1.0은 수동 변경하지 않음
+  - schema와 fixture의 생성 결과가 일치해야 publish-contract; 팀원 live나 전체 trace export 증거로 대체하지 않음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_trace_eval_contract.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 7종 fixture round-trip·필수/optional/null 관계·위조 allow/version mismatch를 검증
+  - 합성 Run의 연결 및 raw metadata reject; exporter canary는 P1-006D에서 별도 확인
+  runner: pytest
+evidence_dir: .agent/evidence/P0-014
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 4
+spec_revision: 4
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-014
+  prior_claim: schema 1.0 기반만 implemented/verified; 확장 missing, 검증 not_run. 계약 local, fixture simulated=true.
+    외부 의존 없음; 상대 스키마 미확인은 provisional 유지.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T03:49:23+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: 기존 `tests/test_contracts.py`에 신규 DTO round-trip/unknown field/잘못된 binding 검사, 생성 OpenAPI와
+  reference 예제 대조. 문서만의 새 테스트는 불필요.

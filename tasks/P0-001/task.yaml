@@ -1,0 +1,133 @@
+schema_version: "1.0"
+id: "P0-001"
+title: "빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정"
+objective: "빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정"
+kind: "task"
+source_tasks:
+  - "P0-001"
+requirement_refs:
+  - "docs/archive/TASKS_2026-09-26.md"
+priority: "P0"
+status: "done"
+spec_state: "ready"
+unresolved: []
+workstream: "contracts/control"
+execution_role: "coordinator"
+estimated_effort: 0
+product_owner: "민섭"
+execution_class: "이 저장소 구현 — 기존 완료 이력"
+product_mode: "파일 존재·기존 lock/sync 기록; local, simulated N/A"
+scope:
+  included:
+    - "`pyproject.toml`, `.python-version`, `uv.lock`이 일치하고 locked install 가능"
+  excluded:
+    - "확장 P0의 세션·팀·스케줄·실제 외부 통합은 후속 ID로 검증"
+  owned_paths:
+    - "pyproject.toml"
+    - "uv.lock"
+    - ".python-version"
+  read_only_paths:
+    - "AGENTS.md"
+  planned_paths: []
+  shared_resources:
+    - "dependencies-settings"
+depends_on: []
+contract_refs:
+  -
+    id: "RFA-DTO"
+    version: "1.0"
+    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
+    role: "consumer"
+context:
+  global_refs:
+    - "docs/PROJECT_CONTEXT.md"
+    - "TASK_EXECUTION_RULES.md"
+  read:
+    -
+      path: "docs/archive/TASKS_2026-09-26.md"
+      section: "P0 — 완료된 기반 이력 / P0-001 / V-001~V-012"
+      reason: "당시 완료 범위와 검증을 현재 확장 범위로 오인하지 않음"
+  handoff: "tasks/P0-001/handoff.md"
+  dependency_results: []
+deliverables:
+  -
+    path: "pyproject.toml"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+  -
+    path: "uv.lock"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+  -
+    path: ".python-version"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+acceptance_criteria:
+  -
+    id: "AC1"
+    given: "기존 기반 범위와 합성 offline fixture"
+    expect: "`pyproject.toml`, `.python-version`, `uv.lock`이 일치하고 locked install 가능"
+    required: true
+verification:
+  -
+    id: "V1"
+    ac_ids:
+      - "AC1"
+    type: "manual"
+    availability: "available"
+    prerequisites:
+      - "과거 명령/결과의 원본 보존; 현재 환경의 설치/live 실행을 새로 주장하지 않음"
+    cwd: "."
+    argv: []
+    timeout_seconds: 120
+    procedure:
+      - "`uv lock --check`, `uv sync --locked` 통과; Python 3.12.13"
+      - "코드/과거 검증/이번 이관 점검을 분리해 검토"
+    assertions:
+      - "`pyproject.toml`, `.python-version`, `uv.lock`이 일치하고 locked install 가능"
+    runner: "manual"
+evidence_dir: ".agent/evidence/P0-001"
+latest_evidence_file: "docs/archive/TASKS_2026-09-26.md"
+verification_summary:
+  state: "passed"
+  spec_revision: 1
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: "docs/archive/TASKS_2026-09-26.md"
+integration:
+  state: "not_required"
+  target: "pre-Git existing working copy"
+  reason: "이관 전부터 현재 작업 폴더에 반영된 기반이다. Git/commit 증거를 조작하지 않고 과거 로컬 완료만 유지; 신규 변경 통합의 우회 경로가 아님."
+  reservation: false
+  submission_generation: null
+  submission: null
+  result:
+    kind: "legacy_baseline"
+    evidence_scope: "historical local/mock; no Git integration claim"
+  evidence: "docs/archive/TASKS_2026-09-26.md"
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+blocker: null
+migration:
+  original_status: "done"
+  source_ref: "docs/archive/TASKS_2026-09-26.md — P0-001"
+  prior_claim: "`uv lock --check`, `uv sync --locked` 통과; Python 3.12.13"
+  implementation_facts: "`pyproject.toml`, `uv.lock`, `.python-version` / 재현 가능한 설치"
+  previous_evidence:
+    - "`uv lock --check`, `uv sync --locked` 통과; Python 3.12.13"
+    - "V-001~V-012 및 2026-09-26 170 passed 기록; 원문 보존"
+  checks_this_migration:
+    - "관련 소스/테스트 파일 존재·원문 완료 범위/체크 유지 확인"
+  judgment: "기존 구현 및 과거 검증 근거 확인: done 유지. 이번 YAML 이관 자체를 제품 재실행 근거로 만들지 않음."
+updated_at: "2026-09-26T02:58:21.356Z"
+concise_result: "기존 기반 done 유지; 확장/real AC는 후속 task not_run."
+next_action: "재개할 필요 없음. 관련 변경 시 영향 AC만 재검증하고 새 확장 작업을 선택한다."

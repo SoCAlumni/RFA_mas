@@ -1,0 +1,217 @@
+schema_version: '1.0'
+id: P1-008B
+title: 다영 Runtime·UI 실제 교체
+objective: UI에서 전담 팀 상태를 보고 실제 runtime lifecycle과 연결한다.
+kind: task
+source_tasks:
+- P1-008B
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P1
+status: blocked
+spec_state: draft
+unresolved:
+- 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.
+- 다영이 제공할 OpenShell/runtime version·gateway 정책/identity·허용/차단·취소 증거 준비 여부; 로컬 구현으로 대체 금지
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭(adapter/API), 다영(runtime/UI)
+execution_class: 팀원 통합
+product_mode: 'real not_run. blocked 사유: 상대 endpoint/인증·identity·lifecycle·UI 접속/registry schema 미제공.
+  local/reference 계약은 P1-008/P0-025에서 진행 가능.'
+scope:
+  included:
+  - TeamSpec/AgentSpec→상대 DTO mapper, prepare/run/status/cancel/cleanup·identity binding, UI polling 소비·registry
+    실제 스키마 대응.
+  - 실제 peer contract version/주소/auth/readiness/identity 및 승인된 합성 시연 범위·상대 원본 결과를 확인; mock HTTP 성공과 별도
+    evidence. adapter trace 전파는 관측이며 인증 아님.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  - OpenShell Supervisor Middleware gRPC 서비스/gateway 구축·운영 배포, 다영 UI 구현
+  owned_paths:
+  - src/rfa_mas/adapters/http.py
+  - src/rfa_mas/bootstrap.py
+  - registry/service.json
+  - docs/INTEGRATION.md
+  - src/rfa_mas/adapters/teammate_mappers.py
+  - tests/integration/test_runtime_live.py
+  - docs/evidence/runtime-ui.md
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - src/rfa_mas/adapters/teammate_mappers.py
+  - tests/integration/test_runtime_live.py
+  - docs/evidence/runtime-ui.md
+  shared_resources:
+  - composition
+  - contract-docs
+depends_on:
+- id: P1-008
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-025
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-026
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-008B — 다영 Runtime·UI 실제 교체
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/adapters/http.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/bootstrap.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: registry/service.json
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/INTEGRATION.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: F/G — 실제 서비스 gate
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P1-008B/handoff.md
+  dependency_results:
+  - tasks/P1-008/handoff.md
+  - tasks/P0-025/handoff.md
+  - tasks/P0-026/handoff.md
+deliverables:
+- path: src/rfa_mas/adapters/http.py
+  availability: existing
+  description: TeamSpec/AgentSpec→상대 DTO mapper, prepare/run/status/cancel/cleanup·identity binding, UI
+    polling 소비·registry 실제 스키마 대응.
+- path: src/rfa_mas/bootstrap.py
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: registry/service.json
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/adapters/teammate_mappers.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/integration/test_runtime_live.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/evidence/runtime-ui.md
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: 반환 identity·task/team/agent와 허용 capability 일치; 필수 identity/policy/approval proof와 지원 contract
+    version 대조, endpoint credential 값은 evidence에 없음
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: prepare 부분 실패·cancel/status/cleanup 의미 확인, 미지원 real은 오류이며 local fallback 없음
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: UI가 안전한 상태/결과/알림·검토 ref 표시
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 준비 task 및 실제 서비스 readiness 확인 후
+  expect: 상위 schema 미확인 시 registry는 provisional 유지, sandbox 강제 증거는 P1-007B로 분리.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 상대 opt-in contract/lifecycle, role identity mismatch/취소 사례, UI 한 흐름 대조.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/integration/test_runtime_live.py
+  timeout_seconds: 180
+  procedure: []
+  assertions:
+  - 반환 identity·task/team/agent와 허용 capability 일치; 필수 identity/policy/approval proof와 지원 contract version
+    대조, endpoint credential 값은 evidence에 없음
+  - prepare 부분 실패·cancel/status/cleanup 의미 확인, 미지원 real은 오류이며 local fallback 없음
+  - UI가 안전한 상태/결과/알림·검토 ref 표시
+  - 상위 schema 미확인 시 registry는 provisional 유지, sandbox 강제 증거는 P1-007B로 분리.
+  runner: pytest
+evidence_dir: .agent/evidence/P1-008B
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 4
+spec_revision: 4
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker:
+  cause: 'real not_run. blocked 사유: 상대 endpoint/인증·identity·lifecycle·UI 접속/registry schema 미제공. local/reference
+    계약은 P1-008/P0-025에서 진행 가능.'
+  evidence:
+  - docs/archive/TASKS_2026-09-26.md
+  resolve_when: 준비 task 완료 + 사용자 제공 실제 설정/권한 + 지원 서비스 접근성 확인. 해당 real 검증만 막으며 P0/local 준비는 계속한다.
+  affects: []
+migration:
+  original_status: blocked
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-008B
+  prior_claim: 'real not_run. blocked 사유: 상대 endpoint/인증·identity·lifecycle·UI 접속/registry schema 미제공.
+    local/reference 계약은 P1-008/P0-025에서 진행 가능.'
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T03:49:33+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.

@@ -1,0 +1,236 @@
+schema_version: '1.0'
+id: P0-026
+title: 합성 end-to-end 데모·D3 전달 패키지
+objective: 다른 개발자가 문서의 명령만으로 핵심 경로와 실패를 재현한다.
+kind: acceptance
+source_tasks:
+- P0-026
+requirement_refs:
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+- docs/EVALUATION_CONTEXT.md
+priority: P0
+status: todo
+spec_state: draft
+unresolved:
+- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: 기존 query→draft demo만 verified; 새 경로 missing/not_run. local 로직 + mock 결과(true). 외부 의존 없음;
+  팀원 연락/합의 없이 D3 패키지 완료 가능.
+scope:
+  included:
+  - 실험 메모·issue export·내부 잠정 계획·공개 FAQ·개인 1:1·개인 GPU 메모의 합성 fixture, demo 옵션/명령, OpenAPI·설정 이름·오류/cancel/timeout
+    payload·버전 변경 이력·통합 smoke 절차. NVIDIA/Skill resource/readiness 준비 항목 포함, 실제 실행 주장은 별도.
+  - 합성 입력→권한 context 선택→팀 선택/재사용→역할 근거→공격/비공개 처리→public DRAFT→정확한 승인→게시 결과의 safe UI용 report. 기존 복구/예약/canary
+    gate 유지; NAT 없는 local 완주와 installed NAT/real peer는 별도 집계.
+  excluded:
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  owned_paths:
+  - src/rfa_mas/cli.py
+  - README.md
+  - docs/INTEGRATION.md
+  - docs/EDUCATION_MAPPING.md
+  - fixtures/demo/materials.jsonl
+  - tests/test_demo_e2e.py
+  - docs/DEMO.md
+  read_only_paths:
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
+  - docs/EVALUATION_CONTEXT.md
+  planned_paths:
+  - fixtures/demo/materials.jsonl
+  - tests/test_demo_e2e.py
+  - docs/DEMO.md
+  shared_resources:
+  - contract-docs
+depends_on:
+- id: P0-021
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-024
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-025
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-006
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-008
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P1-001B
+  condition: integrated_done
+  required_output: 권한/revision 제한 selective context·read spy 검증
+- id: P1-006E
+  condition: integrated_done
+  required_output: 4종 공격·정상 대조·outbound/write 관찰 verifier 통합
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: null
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P0-026 — 합성 end-to-end 데모·D3 전달 패키지
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: src/rfa_mas/cli.py
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: README.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/INTEGRATION.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EDUCATION_MAPPING.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/EVALUATION_CONTEXT.md
+    section: F/G — 기존 최종 흐름 보강
+    reason: 추가 합의의 관련 절·AC/공식 출처만 읽고 과거 기반 완료 범위 보존
+  handoff: tasks/P0-026/handoff.md
+  dependency_results:
+  - tasks/P0-021/handoff.md
+  - tasks/P0-024/handoff.md
+  - tasks/P0-025/handoff.md
+  - tasks/P1-006/handoff.md
+  - tasks/P1-008/handoff.md
+  - tasks/P1-001B/handoff.md
+  - tasks/P1-006E/handoff.md
+deliverables:
+- path: src/rfa_mas/cli.py
+  availability: existing
+  description: 실험 메모·issue export·내부 잠정 계획·공개 FAQ·개인 1:1·개인 GPU 메모의 합성 fixture, demo 옵션/명령, OpenAPI·설정
+    이름·오류/cancel/timeout payload·버전 변경 이력·통합 smoke 절차. NVIDIA/Skill resource/readiness 준비 항목 포함, 실제 실행
+    주장은 별도.
+- path: README.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/EDUCATION_MAPPING.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: fixtures/demo/materials.jsonl
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: tests/test_demo_e2e.py
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/DEMO.md
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+acceptance_criteria:
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 합성 저장→권한/context 선택→Benchmark/Research 팀 선택·재사용→역할 근거·후보→공개 DRAFT→정확한 mock 승인/게시 결과를 키/GPU/Docker/NAT
+    없이 완주; 실험 measured/mock/not_run 표시
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 새 프로세스 승인 대기·일정 복구, 동일 이벤트 team/tool/draft 중복 없음
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: DRAFT 수정/권한 회수 후 이전 승인 무효, 공개 DTO/알림/trace canary 없음; 동일 입력세트의 정상/공격 경계를 실제 replay하고 주입 도달/성공·차단·unknown·승인
+    위반·outbound/write를 분리, 차단 후 공개 근거로 작업 계속
+  required: true
+- id: AC4
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 제공 명령을 임시 데이터 경로에서 실행 후에만 README에 사용 가능 표시, 증거에 local/mock/real/not_run 기록. Run에 source/policy/approval/receipt가
+    연결된 화면용 DTO/report를 제공(UI 구현 제외). 실제 latency·token 수집 범위/null, code/contract/model/prompt/template/fixture/policy
+    versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - 단일 E2E + 기존 전체 offline suite/lint/lock 확인. OpenAPI/예제 payload·문서 링크 review; 실적 수치 사전 기입 금지.
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_demo_e2e.py
+  timeout_seconds: 120
+  procedure: []
+  assertions:
+  - 합성 저장→권한/context 선택→Benchmark/Research 팀 선택·재사용→역할 근거·후보→공개 DRAFT→정확한 mock 승인/게시 결과를 키/GPU/Docker/NAT
+    없이 완주; 실험 measured/mock/not_run 표시
+  - 새 프로세스 승인 대기·일정 복구, 동일 이벤트 team/tool/draft 중복 없음
+  - DRAFT 수정/권한 회수 후 이전 승인 무효, 공개 DTO/알림/trace canary 없음; 동일 입력세트의 정상/공격 경계를 실제 replay하고 주입 도달/성공·차단·unknown·승인
+    위반·outbound/write를 분리, 차단 후 공개 근거로 작업 계속
+  - 제공 명령을 임시 데이터 경로에서 실행 후에만 README에 사용 가능 표시, 증거에 local/mock/real/not_run 기록. Run에 source/policy/approval/receipt가
+    연결된 화면용 DTO/report를 제공(UI 구현 제외). 실제 latency·token 수집 범위/null, code/contract/model/prompt/template/fixture/policy
+    versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님
+  runner: pytest
+evidence_dir: .agent/evidence/P0-026
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: canonical integration branch after OPS-000
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 4
+spec_revision: 4
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P0-026
+  prior_claim: 기존 query→draft demo만 verified; 새 경로 missing/not_run. local 로직 + mock 결과(true). 외부 의존 없음;
+    팀원 연락/합의 없이 D3 패키지 완료 가능.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
+  previous_evidence: []
+  checks_this_migration:
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-26T03:49:34+00:00'
+concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
+  한다.

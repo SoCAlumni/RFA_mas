@@ -1,0 +1,193 @@
+schema_version: "1.0"
+id: "P0-012"
+title: "개발·통합·교육 문서와 provisional registry"
+objective: "개발·통합·교육 문서와 provisional registry"
+kind: "task"
+source_tasks:
+  - "P0-012"
+requirement_refs:
+  - "docs/archive/TASKS_2026-09-26.md"
+priority: "P0"
+status: "done"
+spec_state: "ready"
+unresolved: []
+workstream: "contracts/control"
+execution_role: "coordinator"
+estimated_effort: 0
+product_owner: "민섭"
+execution_class: "이 저장소 구현 — 기존 완료 이력"
+product_mode: "기존 문서 review; local 문서, simulated N/A. 새 범위는 이 파일 우선"
+scope:
+  included:
+    - "README/TASKS/INTEGRATION/EDUCATION_MAPPING/registry가 구현과 일치하고 live 검증을 과장하지 않음"
+  excluded:
+    - "확장 P0의 세션·팀·스케줄·실제 외부 통합은 후속 ID로 검증"
+  owned_paths:
+    - "README.md"
+    - "docs/INTEGRATION.md"
+    - "docs/EDUCATION_MAPPING.md"
+    - "registry/service.json"
+  read_only_paths:
+    - "AGENTS.md"
+  planned_paths: []
+  shared_resources:
+    - "contract-docs"
+depends_on:
+  -
+    id: "P0-001"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-002"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-003"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-004"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-005"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-006"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-007"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-008"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-009"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-010"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+  -
+    id: "P0-011"
+    condition: "integrated_done"
+    required_output: "기존 기반 완료 산출물과 과거 검증 기록"
+contract_refs:
+  -
+    id: "RFA-DTO"
+    version: "1.0"
+    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
+    role: "consumer"
+context:
+  global_refs:
+    - "docs/PROJECT_CONTEXT.md"
+    - "TASK_EXECUTION_RULES.md"
+  read:
+    -
+      path: "docs/archive/TASKS_2026-09-26.md"
+      section: "P0 — 완료된 기반 이력 / P0-012 / V-001~V-012"
+      reason: "당시 완료 범위와 검증을 현재 확장 범위로 오인하지 않음"
+  handoff: "tasks/P0-012/handoff.md"
+  dependency_results:
+    - "tasks/P0-001/handoff.md"
+    - "tasks/P0-002/handoff.md"
+    - "tasks/P0-003/handoff.md"
+    - "tasks/P0-004/handoff.md"
+    - "tasks/P0-005/handoff.md"
+    - "tasks/P0-006/handoff.md"
+    - "tasks/P0-007/handoff.md"
+    - "tasks/P0-008/handoff.md"
+    - "tasks/P0-009/handoff.md"
+    - "tasks/P0-010/handoff.md"
+    - "tasks/P0-011/handoff.md"
+deliverables:
+  -
+    path: "README.md"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+  -
+    path: "docs/INTEGRATION.md"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+  -
+    path: "docs/EDUCATION_MAPPING.md"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+  -
+    path: "registry/service.json"
+    availability: "existing"
+    description: "기존 기반 산출물, 새 확장 기능 완료 아님"
+acceptance_criteria:
+  -
+    id: "AC1"
+    given: "기존 기반 범위와 합성 offline fixture"
+    expect: "README/TASKS/INTEGRATION/EDUCATION_MAPPING/registry가 구현과 일치하고 live 검증을 과장하지 않음"
+    required: true
+verification:
+  -
+    id: "V1"
+    ac_ids:
+      - "AC1"
+    type: "manual"
+    availability: "available"
+    prerequisites:
+      - "과거 명령/결과의 원본 보존; 현재 환경의 설치/live 실행을 새로 주장하지 않음"
+    cwd: "."
+    argv: []
+    timeout_seconds: 120
+    procedure:
+      - "registry JSON parse, 문서/CLI/OpenAPI 최종 review 통과"
+      - "코드/과거 검증/이번 이관 점검을 분리해 검토"
+    assertions:
+      - "README/TASKS/INTEGRATION/EDUCATION_MAPPING/registry가 구현과 일치하고 live 검증을 과장하지 않음"
+    runner: "manual"
+evidence_dir: ".agent/evidence/P0-012"
+latest_evidence_file: "docs/archive/TASKS_2026-09-26.md"
+verification_summary:
+  state: "passed"
+  spec_revision: 1
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: "docs/archive/TASKS_2026-09-26.md"
+integration:
+  state: "not_required"
+  target: "pre-Git existing working copy"
+  reason: "이관 전부터 현재 작업 폴더에 반영된 기반이다. Git/commit 증거를 조작하지 않고 과거 로컬 완료만 유지; 신규 변경 통합의 우회 경로가 아님."
+  reservation: false
+  submission_generation: null
+  submission: null
+  result:
+    kind: "legacy_baseline"
+    evidence_scope: "historical local/mock; no Git integration claim"
+  evidence: "docs/archive/TASKS_2026-09-26.md"
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+blocker: null
+migration:
+  original_status: "done"
+  source_ref: "docs/archive/TASKS_2026-09-26.md — P0-012"
+  prior_claim: "registry JSON parse, 문서/CLI/OpenAPI 최종 review 통과"
+  implementation_facts: "`README.md`, `TASKS.md`, `docs/INTEGRATION.md`, `docs/EDUCATION_MAPPING.md`, `registry/service.json` / 문서·provisional 등록 예제"
+  previous_evidence:
+    - "registry JSON parse, 문서/CLI/OpenAPI 최종 review 통과"
+    - "V-001~V-012 및 2026-09-26 170 passed 기록; 원문 보존"
+  checks_this_migration:
+    - "관련 소스/테스트 파일 존재·원문 완료 범위/체크 유지 확인"
+  judgment: "기존 구현 및 과거 검증 근거 확인: done 유지. 이번 YAML 이관 자체를 제품 재실행 근거로 만들지 않음."
+updated_at: "2026-09-26T02:58:21.356Z"
+concise_result: "기존 기반 done 유지; 확장/real AC는 후속 task not_run."
+next_action: "재개할 필요 없음. 관련 변경 시 영향 AC만 재검증하고 새 확장 작업을 선택한다."
