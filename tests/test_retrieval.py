@@ -116,7 +116,10 @@ async def test_search_filters_before_body_and_no_match_has_no_fallback(kb,monkey
     assert "PRIVATE_CANARY" not in result.model_dump_json()
     own=await adapter.search(req.model_copy(update={"principal":OWNER}))
     assert {i.source_id for i in own.items}=={r.document.source_id for r in (public,private,company,unit)}
-    assert [i.source_id for i in own.items]==sorted(i.source_id for i in own.items)
+    # P1-001D: BM25 score first (the longer private body scores lower), then the stable
+    # provider/namespace/external_id key; never the random server-generated source_id.
+    assert [i.source_id for i in own.items]==[
+        r.document.source_id for r in (company,public,unit,private)]
     reads.clear()
     missing=await adapter.search(req.model_copy(update={"query":"NO_MATCH_XQZ"}))
     assert missing.insufficient and not missing.items and reads==[]
@@ -380,3 +383,76 @@ async def test_current_outward_result_and_session_redact_without_mutating_draft(
     assert stored_draft()==before
     stored=await container.repository.get_owned_run(result.run_id,principal)
     assert stored.result.draft==result.draft  # Outward projection never re-versions approval content.
+
+
+# -- P1-001D deterministic Korean-aware lexical ranking ----------------------------------
+from rfa_mas.adapters.retrieval import lexical_terms  # noqa: E402
+
+
+def search_request(principal=OWNER, query="needle", **changes):
+    return RetrievalRequest(request_id="r",trace_id="t",run_id="u",agent_id="a",
+        domain_id=DomainId.TRIV3,query=query,allowed_audiences=tuple(Audience),
+        principal=principal,**changes)
+
+
+def test_query_terms_drop_particles_and_request_words_and_bound_short_tokens():
+    query = "B가 A보다 지연이 얼마나 줄었어? issue #17의 담당자와 알려줘"
+    terms = lexical_terms(query)
+    assert terms == tuple(sorted(terms)) == lexical_terms(query)
+    words = {t for t, _ in terms}
+    assert {"지연", "담당자", "담당", "issue"} <= words
+    assert not {"지연이", "담당자와", "b가", "a보다", "보다", "얼마나", "알려줘"} & words
+    assert {("a", True), ("b", True), ("17", True), ("issue", False)} <= set(terms)
+
+
+async def test_particles_no_longer_hide_korean_and_latin_matches(kb):
+    repo,service,_=kb
+    a=await service.write(note("bench-a",title="benchmark A 실행 로그",
+                               content="환경: env-01\n지연: 10.0ms\n정확도: 81.0%"),OWNER)
+    b=await service.write(note("bench-b",title="benchmark B 실행 로그",
+                               content="환경: env-01\n지연: 8.2ms\n정확도: 80.8%"),OWNER)
+    await service.write(note("banana",title="바나나 재고",content="banana bread about crabs"),
+                        OWNER)
+    await service.write(note("other",title="회의록",content="출시 일정과 담당 배정"),OWNER)
+    adapter=LocalRetrieval(repo,policy_version="local-v1")
+    got=await adapter.search(search_request(query="B가 A보다 지연이 얼마나 줄었어?"))
+    # Before P1-001D neither log matched "지연이"/"a보다"/"b가" (insufficient evidence).
+    # A short token matches whole tokens only: "banana"/"about" never count as "a"/"b".
+    assert {i.source_id for i in got.items}=={a.document.source_id,b.document.source_id}
+    exact=await adapter.search(search_request(query="benchmark A의 정확도는 얼마야?"))
+    assert exact.items[0].source_id==a.document.source_id
+
+
+async def test_equal_scores_break_ties_by_provenance_not_random_source_id(tmp_path):
+    orders=[]
+    for attempt, sequence in enumerate((("c","a","b"),("b","c","a"),("a","b","c"))):
+        repo=SqliteWorkRepository(tmp_path / f"tie-{attempt}.db")
+        await repo.initialize()
+        service=KnowledgeService(repo,LocalPolicy())
+        written={}
+        for key in sequence:  # Insertion order and server-generated IDs differ per DB.
+            record=await service.write(
+                note(f"tie-{key}",title="동일 제목",content="같은 지연 기록"),OWNER)
+            written[record.document.source_id]=key
+        result=await LocalRetrieval(repo,policy_version="local-v1").search(
+            search_request(query="지연이 기록된 제목"))
+        orders.append([written[i.source_id] for i in result.items])
+    assert orders==[["a","b","c"]]*3
+
+
+async def test_ranking_runs_after_authorization_and_ignores_unreadable_documents(kb):
+    repo,service,_=kb
+    await service.write(note("public-1",title="공개 지연 안내",content="지연 요약",
+                             acl={"audience":"public"}),OWNER)
+    await service.write(note("public-2",title="공개 일정",content="일정 안내 지연 없음",
+                             acl={"audience":"public"}),OWNER)
+    adapter=LocalRetrieval(repo,policy_version="local-v1")
+    before=await adapter.search(search_request(OTHER,query="지연이 얼마나 있어?"))
+    # Strong matches the other user cannot read must neither appear nor reorder results
+    # (no document-frequency side channel from unauthorized documents).
+    for index in range(5):
+        await service.write(note(f"private-{index}",title="지연 지연 지연",
+                                 content="지연 PRIVATE_CANARY 지연"),OWNER)
+    after=await adapter.search(search_request(OTHER,query="지연이 얼마나 있어?"))
+    assert [i.source_id for i in after.items]==[i.source_id for i in before.items]
+    assert len(after.items)==2 and "PRIVATE_CANARY" not in after.model_dump_json()

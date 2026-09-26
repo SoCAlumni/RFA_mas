@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from rfa_mas.application.state_machine import ensure_effect_transition, ensure_transition
+from rfa_mas.adapters.retrieval import bm25_scores, lexical_terms
 from rfa_mas.application.source_access import (
     LOCAL_ENDPOINTS, ProjectResolver, fresh_principal, no_projects, permitted, project_allowed,
 )
@@ -92,6 +93,16 @@ def _canonical_fingerprint(value: dict[str, Any]) -> str:
         sort_keys=True,
     )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+# P1-001D: fixed SQL (no user input) turning punctuation/whitespace in the lowered document
+# text "t" into spaces, so short tokens such as "a" or "17" match only as whole tokens.
+_TOKEN_BREAKS = "t"
+for _mark in (":", ",", ".", "(", ")", "[", "]", "{", "}", "/", "#", "!", "?", ";", '"', "'",
+              "*", "=", "+", "|", "<", ">", "~", "@", "%", "&", "-", "_"):
+    _TOKEN_BREAKS = f"replace({_TOKEN_BREAKS}, '{_mark.replace(chr(39), chr(39) * 2)}', ' ')"
+for _code in (9, 10, 13):
+    _TOKEN_BREAKS = f"replace({_TOKEN_BREAKS}, char({_code}), ' ')"
 
 
 def _team_definition(spec: TeamSpec) -> dict:
@@ -3378,7 +3389,9 @@ class SqliteWorkRepository:
             with self._connect() as connection:
                 connection.execute("BEGIN")
                 candidates = connection.execute("SELECT source_id FROM kb_sources "
-                    "WHERE domain_id=? AND restricted=0 ORDER BY source_id",(domain_id.value,)).fetchall()
+                    "WHERE domain_id=? AND restricted=0 "
+                    "ORDER BY provider,namespace,external_id,source_id",
+                    (domain_id.value,)).fetchall()
                 allowed = []
                 for row in candidates:
                     try:
@@ -3389,21 +3402,46 @@ class SqliteWorkRepository:
                     allowed.append(meta)
                 if query is None:
                     return allowed[:limit]
-                terms = sorted(set(re.findall(r"[\w-]+",query.lower())))
+                terms = lexical_terms(query)
                 if not terms or not allowed:
                     return []
                 # Rank only authorized IDs INSIDE SQLite. Application receives no
-                # candidate body: only selected source reader accesses full content.
-                expression = " + ".join("(instr(lower(json_extract(document_json,'$.title') "
-                    "|| ' ' || json_extract(document_json,'$.content')),?)>0)" for _ in terms)
+                # candidate body: only per-term counts and lengths leave the query, and
+                # only the selected source reader accesses full content.
+                # Count occurrences only where instr() finds the term (most docs do not).
+                counts = ", ".join(
+                    f"CASE WHEN instr({col}, ?) > 0 THEN "
+                    f"(length({col}) - length(replace({col}, ?, ''))) / ? ELSE 0 END"
+                    for col in ("b" if boundary else "t" for _, boundary in terms))
+                arguments = []
+                for term, boundary in terms:
+                    needle = f" {term} " if boundary else term
+                    arguments += [needle, needle, len(needle)]
                 placeholders = ",".join("?" for _ in allowed)
-                ranked = connection.execute("SELECT source_id,("+expression+") score "
-                    "FROM kb_documents WHERE (source_id,source_revision) IN "
-                    "(SELECT source_id,current_revision FROM kb_sources) AND source_id IN ("
-                    +placeholders+") AND score>0 ORDER BY score DESC,source_id LIMIT ?",
-                    (*terms,*(m.reference.source_id for m in allowed),limit)).fetchall()
+                # The token-boundary text is only built when a short token needs it.
+                boundary_text = (
+                    "' ' || " + _TOKEN_BREAKS + " || ' '" if any(b for _, b in terms) else "''"
+                )
+                rows = connection.execute(
+                    "WITH docs AS (SELECT d.source_id AS source_id, "
+                    "s.provider AS provider, s.namespace AS namespace, "
+                    "s.external_id AS external_id, "
+                    "lower(coalesce(json_extract(d.document_json,'$.title'),'') || ' ' || "
+                    "coalesce(json_extract(d.document_json,'$.content'),'')) AS t "
+                    "FROM kb_documents d JOIN kb_sources s ON s.source_id=d.source_id "
+                    "AND s.current_revision=d.source_revision WHERE d.source_id IN ("
+                    + placeholders + ")), "
+                    "bounded AS (SELECT source_id, provider, namespace, external_id, t, "
+                    + boundary_text + " AS b FROM docs) "
+                    "SELECT source_id, provider, namespace, external_id, length(t), "
+                    + counts + " FROM bounded",
+                    (*(m.reference.source_id for m in allowed), *arguments)).fetchall()
+                scores = bm25_scores([(r[0], r[4], *r[5:]) for r in rows], len(terms))
+                keys = {r[0]: (r[1], r[2], r[3], r[0]) for r in rows}
                 by_id = {m.reference.source_id:m for m in allowed}
-                return [by_id[row[0]] for row in ranked]
+                # Stable tie-break: provider, namespace, external_id (never a random id).
+                ranked = sorted(scores, key=lambda sid: (-scores[sid], *keys[sid]))
+                return [by_id[sid] for sid in ranked[:limit]]
         return await asyncio.to_thread(operation)
 
     async def read_sources(self, domain_id, principal, references, *, audiences=tuple(Audience),

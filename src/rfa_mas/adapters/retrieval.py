@@ -1,4 +1,6 @@
 """Real local lexical search and deliberately bounded, local-only context reader."""
+import math
+import re
 from collections import OrderedDict
 from datetime import UTC, datetime, timedelta
 
@@ -8,6 +10,80 @@ from rfa_mas.contracts import (
     PolicyBindings, PolicyDecisionV11, PolicyRequest, RetrievalRequest, new_id,
 )
 from rfa_mas.errors import RfaError
+
+
+# -- P1-001D: deterministic Korean-aware lexical ranking ---------------------------------
+# Query-side analysis only; documents are matched by substring inside SQLite, so a doc
+# spelling like "지연:" or "지연이" both contain the stripped query term "지연".
+# Scripts are split (Latin/digit vs Hangul) so "a의", "17의", "SDK가" lose their particle.
+_TOKEN = re.compile(r"[a-z0-9]+(?:[-_.][a-z0-9]+)*|[가-힣]+")
+_PARTICLES = tuple(sorted({
+    "으로부터", "에게서", "으로서", "으로써", "에서는", "에서도", "에게는", "까지는", "부터는",
+    "이라고", "라고", "이랑", "에게", "에서", "으로", "까지", "부터", "보다", "처럼", "마다",
+    "조차", "마저", "하고", "이나", "이란", "이며", "이고", "과", "와", "은", "는", "이", "가",
+    "을", "를", "의", "에", "도", "만", "로", "랑",
+}, key=lambda p: (-len(p), p)))
+_PARTICLE_SET = frozenset(_PARTICLES)
+# Generic request words/question words: never evidence about a source.
+_STOPWORDS = frozenset({
+    "알려", "알려줘", "알려주세요", "줘", "주세요", "해줘", "뭐야", "언제야", "얼마야", "얼마나",
+    "어떻게", "거야", "무엇", "어디", "언제", "누구", "얼마", "좀", "보여줘", "말해줘", "설명해",
+    "설명해줘", "요약해", "요약해줘", "정리해", "정리해줘",
+})
+BM25_K1 = 1.2
+BM25_B = 0.75
+
+
+def _strip_particle(word: str) -> str:
+    for particle in _PARTICLES:
+        if word.endswith(particle) and len(word) - len(particle) >= 2:
+            return word[: -len(particle)]
+    return word
+
+
+def lexical_terms(query: str) -> tuple[tuple[str, bool], ...]:
+    """Sorted unique (term, boundary) pairs. boundary=True: whole-token match only.
+
+    Hangul words drop one trailing particle and add character bigrams (the Lucene CJK
+    bigram approach) so "담당자"/"마감일" still meet "담당"/"마감". Short Latin/digit
+    tokens (<=2 chars, e.g. "a", "17") only match as whole tokens, never inside words.
+    """
+    terms: set[tuple[str, bool]] = set()
+    for token in _TOKEN.findall(query.lower()):
+        if token in _STOPWORDS or token in _PARTICLE_SET:
+            continue
+        if "가" <= token[0] <= "힣":
+            word = _strip_particle(token)
+            if len(word) < 2 or word in _STOPWORDS:
+                continue
+            terms.add((word, False))
+            if len(word) >= 3:
+                terms.update((word[i:i + 2], False) for i in range(len(word) - 1))
+        else:
+            terms.add((token, len(token) <= 2))
+    return tuple(sorted(terms))
+
+
+def bm25_scores(rows, term_count: int) -> dict[str, float]:
+    """rows: (source_id, doc_length, tf_1..tf_n) numbers only; returns positive scores."""
+    if not rows:
+        return {}
+    total = len(rows)
+    average = sum(row[1] for row in rows) / total or 1.0
+    frequencies = [sum(1 for row in rows if row[2 + i] > 0) for i in range(term_count)]
+    idf = [math.log(1 + (total - df + 0.5) / (df + 0.5)) for df in frequencies]
+    scores = {}
+    for row in rows:
+        norm = BM25_K1 * (1 - BM25_B + BM25_B * row[1] / average)
+        score = sum(
+            idf[i] * row[2 + i] * (BM25_K1 + 1) / (row[2 + i] + norm)
+            for i in range(term_count)
+            if row[2 + i] > 0
+        )
+        if score > 0:
+            scores[row[0]] = score
+    return scores
+
 
 
 class LocalRetrieval:
