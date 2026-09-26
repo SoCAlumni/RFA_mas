@@ -7,7 +7,6 @@ from pathlib import Path
 import httpx
 
 from rfa_mas.adapters.checkpoints import SqliteCheckpoints
-
 from rfa_mas.adapters.http import (
     PolicyHttpAdapter,
     ReferenceHttpClient,
@@ -23,8 +22,8 @@ from rfa_mas.application.graphs import (
     SupervisorDependencies,
     build_domain_task_handler,
 )
-from rfa_mas.application.service import WorkService
 from rfa_mas.application.resume_policy import ResumePolicy
+from rfa_mas.application.service import WorkService
 from rfa_mas.contracts import AdapterInfo, KnowledgeDocument
 from rfa_mas.errors import BackendNotImplementedError
 from rfa_mas.security import SecretRedactor, configure_logging

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -9,6 +9,7 @@ from langgraph.runtime import Runtime
 from langgraph.types import interrupt
 from pydantic import ValidationError
 
+from rfa_mas.application.graphs.domain import InvocationContext
 from rfa_mas.contracts import (
     AgentSpec,
     Audience,
@@ -25,8 +26,8 @@ from rfa_mas.contracts import (
     WorkRequest,
     WorkStatus,
 )
+from rfa_mas.errors import RfaError
 from rfa_mas.ports import ResponsePort, RuntimePort
-from rfa_mas.application.graphs.domain import InvocationContext
 
 
 @dataclass(frozen=True)
@@ -420,9 +421,34 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
         )
         work, draft = state["work"], state["draft"]
         await deps.validate_resume(draft, runtime.context.principal)
-        raw_decision = await deps.response.get_decision(draft.draft_id)
+        if state["steps"] >= deps.max_graph_steps:
+            return {
+                "error": _error(work, "budget_exceeded", "검토 상태 조회 예산을 초과했습니다."),
+                "status": WorkStatus.FAILED,
+            }
+        steps = state["steps"] + 1
+        try:
+            raw_decision = await deps.response.get_decision(draft.draft_id)
+        except RfaError as exc:
+            if not exc.retryable and exc.code != "outcome_unknown":
+                raise
+            return {
+                "status": WorkStatus.WAITING_APPROVAL,
+                "steps": steps,
+                "error": _error(
+                    work, "review_query_pending", "검토 상태를 확정할 수 없어 재조회를 기다립니다."
+                ),
+            }
+        except TimeoutError:
+            return {
+                "status": WorkStatus.WAITING_APPROVAL,
+                "steps": steps,
+                "error": _error(
+                    work, "review_query_pending", "검토 상태를 확정할 수 없어 재조회를 기다립니다."
+                ),
+            }
         if raw_decision is None:
-            return {"status": WorkStatus.WAITING_APPROVAL}
+            return {"status": WorkStatus.WAITING_APPROVAL, "steps": steps, "error": None}
         decision = ReviewDecision.model_validate(raw_decision)
         if not _review_matches(decision, draft=draft, work=work):
             return {
@@ -430,6 +456,7 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
                     work, "approval_binding_mismatch", "현재 초안과 승인 참조가 일치하지 않습니다."
                 ),
                 "status": WorkStatus.FAILED,
+                "steps": steps,
             }
         if decision.decision == ReviewStatus.APPROVED:
             status = WorkStatus.COMPLETED
@@ -441,6 +468,8 @@ def build_supervisor_graph(deps: SupervisorDependencies, *, checkpointer: Any = 
             "review": decision,
             "status": status,
             "publication_status": decision.publication_status,
+            "steps": steps,
+            "error": None,
         }
 
     def after_review(state: SupervisorState) -> str:

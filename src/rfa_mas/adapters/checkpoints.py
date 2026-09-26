@@ -46,7 +46,12 @@ class SqliteCheckpoints:
             raise RfaError(
                 "configuration_error", "동일-host POSIX thread lock이 필요합니다."
             ) from exc
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if self.path.is_symlink():
+            raise RfaError("configuration_error", "checkpoint 파일은 symlink일 수 없습니다.")
+        # Set the DB mode before WAL/SHM creation so sidecars inherit private mode.
+        self.path.touch(mode=0o600, exist_ok=True)
+        self.path.chmod(0o600)
         stack = AsyncExitStack()
         try:
             connection = await stack.enter_async_context(aiosqlite.connect(str(self.path)))

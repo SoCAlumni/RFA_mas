@@ -1,5 +1,13 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P0-016 영속 review-wakeup 계약 (통합 검증·발행 대기)
+
+- `ResumeRequest` 1.1과 `POST /v1/runs/{run_id}/resume` 추가. 기존 1.0 wire는 유지한다. event는 원본 승인 조회를 깨우는 신호이며 approval bool/임의 thread/principal은 불허한다.
+- 현재 owner를 먼저 확인하고 session thread를 서버에서 결정한다. 실제 승인/게시 원본은 ResponsePort 담당에 남고 core DB/checkpoint가 새 승인 권한을 갖지 않는다.
+- `WorkRepositoryPort.seed_documents_once`는 초기 합성 fixture만 원자적으로 설치한다. 세션별 미완료 Run은 하나이며 동시 실행/새 요청의 thread_busy는 409다. checkpoint 저장은 대화 메타데이터/KB와 별도 파일이다.
+- 영향: session/UI/reference consumer, P0-021 복구 ledger, P0-028 NAT service adapter, KB P1-001/P1-001A 현재 source 정책. domain 중간 복구/실제 게시/runtime 격리는 이 계약의 성공 범위가 아니다.
+- extended schema는 기존 생성 도구로 파생한다. coordinator가 실제 회귀 후 새 digest를 발행하며, 발행 전 소비자 지원/실제 서비스 합의를 주장하지 않는다.
+
 ## 2026-09-26 — P0-015 소유권·세션 API 보강 (coordinator 승인)
 
 - 기존 1.0 WorkRequest/RunResult wire를 변경하지 않고 SessionCreate/SessionMessage/SessionDetail/RunRecord 1.1을 추가했다. session 생성/목록/상세/이어하기와 미완료 run 상태 API를 구현했다. body identity/thread는 불허하고 server principal을 repository 조건까지 전달한다.

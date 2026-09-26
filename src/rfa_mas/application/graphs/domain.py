@@ -242,6 +242,10 @@ def build_domain_task_handler(deps: DomainGraphDependencies) -> Any:
                 steps=0,
             ),
             context=InvocationContext(principal),
+            # 1.2.12 inherits parent sync durability even when checkpointer=False,
+            # then accesses an absent checkpoint future. Explicit exit avoids that
+            # inherited path; this worker remains nonpersistent by design.
+            durability="exit",
         )
         if error := final.get("error"):
             status = ResultStatus.DENIED if error.code == "policy_denied" else ResultStatus.FAILED

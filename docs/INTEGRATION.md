@@ -140,6 +140,47 @@ SQLite `rfa_schema_migrations`의 migration 1은 기존 runs/drafts/KB/checkpoin
 
 ## 상태 소유권
 
+### 영속 승인 대기 재개 (P0-016)
+
+`POST /v1/runs/{run_id}/resume`은 `ResumeRequest` 1.1 (`event_id`,
+`action=refresh_review`)를 받고 기존 `RunResult` 1.0을 반환한다. body의 승인 bool,
+thread/principal 주장은 허용하지 않는다. 인증된 소유자만 서버가 저장한 thread를 조회한다.
+resume 입력은 승인 명령이 아니라 ResponsePort 원본 결정의 재조회 신호다. 승인 ID/
+version/hash/target을 다시 검사하며 원본이 없으면 대기한다. 중복 wakeup은 읽기를 다시
+수행할 수 있지만 이미 끝난 실행은 저장된 결과를 반환하고 재제출/worker 실행을 하지 않는다.
+durable event/write ledger와 crash-window exactly-once는 P0-021에서 별도 제공한다.
+
+LangGraph 1.2.12 + checkpoint 4.2.0 + SQLite saver 3.1.1을 사용한다. 비동기 연결은
+Container lifecycle이 소유한다. `CHECKPOINT_PATH`를 생략/빈칸으로 두면 application DB에
+인접한 `<DB filename>.checkpoints.sqlite`를 사용한다. 메타데이터 `graph_checkpoints`
+테이블이나 memory saver로 재개하지 않는다. 저장 파일은 local 영속 자료이며 암호화나
+sandbox라고 주장하지 않는다. strict MsgPack DTO allowlist와 pickle 비활성화를 적용한다.
+설정/credentials/header/과거 principal은 checkpoint state에 넣지 않고 현재 principal을
+LangGraph Runtime.context에 호출마다 주입한다.
+
+동일-host POSIX flock으로 thread invocation을 배타적으로 보호하며 process 종료 시 OS가
+lock을 해제한다. network filesystem/Windows 실행은 검증하지 않았고 POSIX 미지원은
+명시적 configuration error다. 세션마다 미완료 Run 하나를 허용하고 새 요청은 409
+`thread_busy`로 거절한다. 세션의 후속 Run은 이전 draft/review/error를 초기화한다.
+승인 제출 후 checkpoint된 대기 노드만 재개하며, 임의 과거 checkpoint/time travel/worker
+중간 노드 resume를 API로 제공하지 않는다. Domain graph는 parent saver를 상속하지 않는다.
+
+재개 시 현재 source revision/hash/audience/정책을 검사한다. source 삭제/수정/재분류,
+여러 revision의 모호성, 정책 변경은 보수적으로 재검토를 요구한다. BU는 현행 회사 일치와
+membership을 함께 요구하고 누락 metadata를 권한으로 취급하지 않는다. 거절 응답에는
+이전 draft/근거를 넣지 않는다. KB의 명시적인 최신 revision/ACL pointer 및 과거 모든
+session history의 파생 자료 무효화는 P1-001/P1-001A 후속이다.
+
+기본 MockResponse의 승인 원본은 in-memory이므로 재시작 후 조회가 없으면 대기를 유지한다.
+fresh-process 승인 재개 검증은 별도 simulated ResponsePort fixture 원본을 주입하며 이를
+실제 승희 서비스 검증으로 보고하지 않는다. fixture seed는 installation marker와 한
+transaction으로 한 번만 실행하고, 이후 수정/삭제/권한 회수를 restart가 덮어쓰지 않는다.
+marker 이전의 기존 DB는 자료가 비어 있어도 자동 복원하지 않는다.
+
+공식 API 근거: [SQLite saver 3.1.1](https://pypi.org/project/langgraph-checkpoint-sqlite/3.1.1/),
+[interrupt 재실행 의미](https://docs.langchain.com/oss/python/langgraph/interrupts),
+[Runtime context](https://reference.langchain.com/python/langgraph/runtime/Runtime).
+
 아래 표는 목표 production 원본 소유권이다. 동일 계약의 로컬 구현을 우리가 먼저 만들 수 있지만, 교체 시 차이는 성능뿐 아니라 검색 filter/ranking, 승인자 identity, idempotency, publication receipt와 상태 원본 의미까지 포함할 수 있으므로 contract test로 확인한다.
 
 | 소유 서비스 | 원본으로 소유하는 상태 | 이 서비스와의 교환 |

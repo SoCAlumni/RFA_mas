@@ -4,15 +4,14 @@ import asyncio
 import json
 import os
 import sqlite3
+import stat
 import subprocess
 import sys
 from dataclasses import replace
-from pathlib import Path
 
 import httpx
 import pytest
 
-from scripts.contract_baseline import offline_settings
 from rfa_mas.adapters.checkpoints import SqliteCheckpoints
 from rfa_mas.api.app import create_app, resolve_principal
 from rfa_mas.bootstrap import build_container
@@ -28,6 +27,7 @@ from rfa_mas.contracts import (
     WorkStatus,
 )
 from rfa_mas.errors import RfaError
+from scripts.contract_baseline import offline_settings
 
 
 class ReviewAuthority:
@@ -131,8 +131,9 @@ async def main():
         instance.runtime.run = forbidden
         instance.model.generate = forbidden
         owner = await instance.repository.local_principal()
-        result = await instance.service.resume(sys.argv[2], ResumeRequest(event_id='fresh-process'), owner)
-        replay = await instance.service.resume(sys.argv[2], ResumeRequest(event_id='fresh-process'), owner)
+        wakeup = ResumeRequest(event_id='fresh-process')
+        result = await instance.service.resume(sys.argv[2], wakeup, owner)
+        replay = await instance.service.resume(sys.argv[2], wakeup, owner)
         detail = await instance.repository.get_owned_run(result.run_id, owner)
         print(json.dumps({'status': result.status.value, 'run': result.run_id,
                           'queries': authority.queries, 'replay_equal': result == replay,
@@ -196,6 +197,26 @@ async def test_unknown_authority_stays_pending_after_container_restart(tmp_path)
         assert error.value.code == "thread_busy"
     finally:
         await second.shutdown()
+
+
+async def test_review_query_timeout_stays_resumable_and_later_clears_error(container):
+    authority, owner, result, _ = await pending(container)
+    original = authority.get_decision
+
+    async def timeout(draft_id):
+        raise RfaError("upstream_timeout", "synthetic safe timeout", retryable=True)
+
+    authority.get_decision = timeout
+    timed_out = await container.service.resume(
+        result.run_id, ResumeRequest(event_id="timeout"), owner
+    )
+    assert timed_out.status == WorkStatus.WAITING_APPROVAL
+    assert timed_out.errors[0].code == "review_query_pending"
+    authority.get_decision = original
+    authority.decision = authority.decision.model_copy(update={"decision": ReviewStatus.APPROVED})
+    complete = await container.service.resume(result.run_id, ResumeRequest(event_id="retry"), owner)
+    assert complete.status == WorkStatus.COMPLETED and not complete.errors
+    assert authority.submissions == 1 and authority.queries == 1
 
 
 async def test_resume_authorizes_before_checkpoint_lookup_and_rejects_approval_claims(container):
@@ -417,6 +438,38 @@ async def test_restart_seed_marker_preserves_mutation_and_all_deletions(tmp_path
         await third.shutdown()
 
 
+async def test_upgrade_of_empty_legacy_store_does_not_restore_deleted_fixtures(tmp_path):
+    settings = offline_settings(tmp_path)
+    # The original schema existed but all knowledge had already been deleted.
+    with sqlite3.connect(settings.database_path) as connection:
+        connection.execute("""CREATE TABLE runs (
+            run_id TEXT PRIMARY KEY, request_id TEXT NOT NULL, trace_id TEXT NOT NULL,
+            idempotency_key TEXT NOT NULL UNIQUE, status TEXT NOT NULL,
+            request_json TEXT NOT NULL, result_json TEXT, created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL)""")
+    instance = build_container(settings)
+    await instance.startup()
+    try:
+        assert await instance.repository.list_documents(DomainId.TRIV3.value) == []
+    finally:
+        await instance.shutdown()
+
+
+async def test_two_fresh_container_startups_preserve_single_fixture_seed(tmp_path):
+    first, second = [build_container(offline_settings(tmp_path)) for _ in range(2)]
+    try:
+        await asyncio.gather(first.startup(), second.startup())
+        first_docs = await first.repository.list_documents(DomainId.TRIV3.value)
+        assert first_docs and first_docs == await second.repository.list_documents(
+            DomainId.TRIV3.value
+        )
+        with sqlite3.connect(first.repository.path) as connection:
+            assert connection.execute("SELECT count(*) FROM installation_seeds").fetchone()[0] == 1
+    finally:
+        await first.shutdown()
+        await second.shutdown()
+
+
 async def test_credentials_and_historical_principal_are_not_checkpointed(tmp_path):
     marker = "SYNTHETIC_CREDENTIAL_DO_NOT_PERSIST_7139"
     instance = build_container(
@@ -435,6 +488,9 @@ async def test_credentials_and_historical_principal_are_not_checkpointed(tmp_pat
         assert "roles" not in repr(checkpoint)
         assert instance.checkpoints.saver.serde.pickle_fallback is False
         assert instance.checkpoints.saver.serde._allowed_msgpack_modules is not True
+        for path in tmp_path.glob("*.checkpoints.sqlite*"):
+            if path.is_file():
+                assert stat.S_IMODE(path.stat().st_mode) == 0o600
     finally:
         await instance.shutdown()
     for path in tmp_path.glob("*.checkpoints.sqlite*"):
