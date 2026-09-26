@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.1",
+  "provider": "github_issue",
+  "namespace": "synthetic-rfa/demo",
+  "domain_id": "triv3",
+  "synthetic": true,
+  "rows": [
+    {"number": 17, "revision": "opaque-z", "title": " Synthetic latency issue ", "body": "  Benchmark has not run.\nOpen question: verify the fixture condition.\n", "updated_at": "2026-09-25T08:00:00Z"},
+    {"number": 18, "revision": "opaque-a", "title": "Public FAQ", "body": "Only synthetic results are available.", "acl": {"audience": "public"}}
+  ]
+}

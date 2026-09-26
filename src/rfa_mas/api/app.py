@@ -13,6 +13,12 @@ from rfa_mas.bootstrap import Container, build_container
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
     DirectWorkRequest,
+    DomainId,
+    KnowledgeDelete,
+    KnowledgeExport,
+    KnowledgeImportResult,
+    KnowledgeRevision,
+    KnowledgeWrite,
     ResumeRequest,
     RunRecord,
     RunResult,
@@ -230,5 +236,61 @@ def create_app(
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunResult:
         return await selected_container.service.resume(run_id, wakeup, trusted_principal)
+
+    @app.post(
+        "/v1/knowledge/sources",
+        response_model=KnowledgeRevision,
+        status_code=201,
+        tags=["knowledge"],
+    )
+    async def create_source(
+        body: KnowledgeWrite,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> KnowledgeRevision:
+        return await selected_container.knowledge.write(body, principal)
+
+    @app.get("/v1/knowledge/sources", response_model=list[KnowledgeRevision], tags=["knowledge"])
+    async def list_sources(
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        domain_id: DomainId | None = None,
+    ) -> list[KnowledgeRevision]:
+        return await selected_container.knowledge.list(principal, domain_id=domain_id)
+
+    @app.get(
+        "/v1/knowledge/sources/{source_id}", response_model=KnowledgeRevision, tags=["knowledge"]
+    )
+    async def get_source(
+        source_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        revision: str | None = None,
+    ) -> KnowledgeRevision:
+        return await selected_container.knowledge.get(source_id, principal, revision=revision)
+
+    @app.put(
+        "/v1/knowledge/sources/{source_id}", response_model=KnowledgeRevision, tags=["knowledge"]
+    )
+    async def update_source(
+        source_id: str,
+        body: KnowledgeWrite,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> KnowledgeRevision:
+        return await selected_container.knowledge.write(body, principal, source_id=source_id)
+
+    @app.delete(
+        "/v1/knowledge/sources/{source_id}", response_model=KnowledgeRevision, tags=["knowledge"]
+    )
+    async def delete_source(
+        source_id: str,
+        body: KnowledgeDelete,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> KnowledgeRevision:
+        return await selected_container.knowledge.delete(source_id, body, principal)
+
+    @app.post("/v1/knowledge/imports", response_model=KnowledgeImportResult, tags=["knowledge"])
+    async def import_sources(
+        body: KnowledgeExport,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> KnowledgeImportResult:
+        return await selected_container.knowledge.import_export(body, principal)
 
     return app

@@ -1,5 +1,12 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P1-001 KB 원문·revision 저장 1.1 (통합·발행 대기)
+
+- KnowledgeDocumentV11/KnowledgeAcl/KnowledgeWrite/KnowledgeDelete/KnowledgeRevision 및 export/행별 receipt DTO, owner 관리 CRUD/import API를 additive로 추가한다. 기존 1.0 DTO/route는 보존하고 정확한 원문 공백·provenance를 1.1에서 유지한다.
+- SQLite migration4는 원문 이력, 명시 current head와 opaque provider revision 멱등 receipt를 분리한다. 수정·ACL·삭제는 CAS와 새 서버 revision으로 연결하며 재전송은 head를 되돌리지 않는다. 기존 seed/restart와 모호한 legacy의 제한을 유지하고 mutable upsert overwrite를 거절한다.
+- 영향 consumer: P1-001A의 ACL-before-content/current 검색 및 과거 결과 무효화, P1-001B context loading, P0-020의 역할별 근거, P1-005 draft/egress. 이 구현이 검색 전체·승인 원본·외부 전송을 구현하지 않는다. 안전한 private DB/sidecar 보호와 API 의미는 INTEGRATION.md를 따른다.
+- Pydantic/ports 원본에서 extended만 재생성한다. 검증은 새로운 task evidence에 기록하고 coordinator가 통합/검증 후 발행한다. 작업 이전 증거 또는 mock 성공을 이번 저장 기능의 완료 증거로 재사용하지 않는다.
+
 ## 2026-09-26 — P1-006D typed observation 1.1 (통합·발행 대기)
 
 - `ObservationRecord/ObservationCoverage/ObservationLedger`, WorkRepository 관측 메서드, `TracePort.emit_observation` 추가. Pydantic이 원본이며 extended만 재생성한다. frozen 1.0 모델/route는 유지하고 validation error도 기존 detail list shape의 고정 안전한 값으로 반환한다.

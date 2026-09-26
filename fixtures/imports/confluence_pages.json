@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.1",
+  "provider": "confluence",
+  "namespace": "SYNTHETIC-RFA",
+  "domain_id": "triv3",
+  "synthetic": true,
+  "rows": [
+    {"id": "plan-1", "version": "opaque-9", "title": "Internal tentative plan", "body": "Tentative only; no release date is confirmed.\n", "updated_at": "2026-09-25T09:00:00+09:00"},
+    {"id": "private-1", "version": "opaque-1", "title": "Synthetic personal memo", "body": "SYNTHETIC_PRIVATE_CANARY_KB_IMPORT\nPrivate 1:1 and GPU notes are not public evidence."}
+  ]
+}

@@ -24,6 +24,7 @@ from rfa_mas.application.graphs import (
     SupervisorDependencies,
     build_domain_task_handler,
 )
+from rfa_mas.application.knowledge import KnowledgeService
 from rfa_mas.application.observations import Observations, ObservedPort
 from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.service import WorkService
@@ -154,6 +155,7 @@ class Container:
     adapters: tuple[AdapterInfo, ...]
     checkpoints: SqliteCheckpoints
     team_factory: TeamFactory
+    knowledge: KnowledgeService
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
@@ -388,6 +390,7 @@ def build_container(settings: Settings | None = None) -> Container:
         settings=settings,
         repository=repository,
         service=service,
+        knowledge=KnowledgeService(repository, policy),
         model=model,
         retrieval=retrieval,
         response=response,

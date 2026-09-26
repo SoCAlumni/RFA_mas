@@ -271,7 +271,22 @@ async def test_changed_source_fails_closed_without_exposing_old_draft(container,
             "audience": {"audience": Audience.PRIVATE, "owner_id": "someone-else"},
             "policy": {"policy_version": "new-policy"},
         }[change]
-        await container.repository.upsert_documents([document.model_copy(update=updates)])
+        if change == "revision":
+            # A second opaque legacy revision is ambiguous, never sorted into a head.
+            await container.repository.upsert_documents([document.model_copy(update=updates)])
+        else:
+            # Explicit test-only corruption of the historical source bypasses storage
+            # invariants to exercise resume's independent integrity/ACL checks.
+            with sqlite3.connect(container.repository.path) as connection:
+                connection.execute(
+                    "UPDATE kb_documents SET document_json=? "
+                    "WHERE source_id=? AND source_revision=?",
+                    (
+                        document.model_copy(update=updates).model_dump_json(),
+                        document.source_id,
+                        document.source_revision,
+                    ),
+                )
     authority.decision = authority.decision.model_copy(update={"decision": ReviewStatus.APPROVED})
     resumed = await container.service.resume(
         result.run_id, ResumeRequest(event_id="changed"), owner
@@ -296,7 +311,18 @@ async def test_fresh_principal_and_company_scoped_bu_required_on_resume(containe
         connection.execute("DELETE FROM kb_documents")
     document = next(item for item in documents if item.audience == Audience.BUSINESS_UNIT)
     document = document.model_copy(update={"company_id": "company-a", "content": "TRIV3 BU CANARY"})
-    await container.repository.upsert_documents([document])
+    # Test-only historical fixture construction, not a second product write API.
+    with sqlite3.connect(container.repository.path) as connection:
+        connection.execute(
+            "INSERT INTO kb_documents VALUES (?, ?, ?, ?, ?)",
+            (
+                document.source_id,
+                document.source_revision,
+                document.domain_id.value,
+                document.model_dump_json(),
+                "2026-09-26T00:00:00+00:00",
+            ),
+        )
     authority, _, result, _ = await pending(
         container, owner, target=DraftTarget(audience=Audience.BUSINESS_UNIT)
     )
@@ -306,9 +332,15 @@ async def test_fresh_principal_and_company_scoped_bu_required_on_resume(containe
         fresh = owner.model_copy(update={"company_id": "company-b"})
     else:
         fresh = owner
-        await container.repository.upsert_documents(
-            [document.model_copy(update={"company_id": None})]
-        )
+        # Test-only corruption verifies missing company metadata still fails closed.
+        with sqlite3.connect(container.repository.path) as connection:
+            connection.execute(
+                "UPDATE kb_documents SET document_json=? WHERE source_id=?",
+                (
+                    document.model_copy(update={"company_id": None}).model_dump_json(),
+                    document.source_id,
+                ),
+            )
     authority.decision = authority.decision.model_copy(update={"decision": ReviewStatus.APPROVED})
     resumed = await container.service.resume(
         result.run_id, ResumeRequest(event_id="revoked"), fresh
@@ -416,9 +448,31 @@ async def test_new_turn_clears_previous_failure_and_draft_state(container):
 async def test_restart_seed_marker_preserves_mutation_and_all_deletions(tmp_path):
     first = build_container(offline_settings(tmp_path))
     await first.startup()
-    documents = await first.repository.list_documents(DomainId.TRIV3.value)
-    changed = documents[0].model_copy(update={"audience": Audience.PRIVATE, "owner_id": "revoked"})
-    await first.repository.upsert_documents([changed])
+    from rfa_mas.contracts import KnowledgeWrite
+
+    owner = await first.repository.local_principal()
+    original = KnowledgeWrite(
+        domain_id=DomainId.TRIV3,
+        provenance={"provider": "note", "namespace": "seed-regression", "external_id": "one"},
+        provider_revision="initial",
+        title="Synthetic restart source",
+        content="Private revision",
+        acl={"audience": "public"},
+        synthetic=True,
+    )
+    receipt = await first.knowledge.write(original, owner)
+    changed = (
+        await first.knowledge.write(
+            original.model_copy(
+                update={
+                    "provider_revision": "revoked",
+                    "expected_revision": receipt.document.source_revision,
+                    "acl": original.acl.model_copy(update={"audience": Audience.PRIVATE}),
+                }
+            ),
+            owner,
+        )
+    ).document
     await first.shutdown()
     second = build_container(offline_settings(tmp_path))
     await second.startup()

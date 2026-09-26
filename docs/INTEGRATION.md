@@ -43,6 +43,27 @@ P0-014의 additive RFA-EXTENDED 1.1 DTO는 `contracts/models.py`에 있으며 �
 
 ## 의존성 방향과 composition
 
+### KB 입력·원문 revision (P1-001, repository-local 1.1)
+
+`KnowledgeService`는 기존 인증된 `resolve_principal`과 `WorkRepositoryPort`를 사용한다. 노트의 기본 ACL은 private이며 본문/title 공백을 보존한다. owner는 body가 아닌 서버 identity에서 정한다. 조직 공유는 현재 principal의 company/membership 이내이며, 조회·수정·삭제 API는 owner 관리용이다. 공유 사용자 검색·선필터와 archived 결과 무효화는 P1-001A의 별도 후속 경계다.
+
+| 경로 | 입력 / 결과 |
+| --- | --- |
+| `POST /v1/knowledge/sources` | `KnowledgeWrite` → `KnowledgeRevision` (201) |
+| `GET /v1/knowledge/sources` | 선택 `domain_id` → owner의 현재 nondeleted revision 목록 |
+| `GET /v1/knowledge/sources/{source_id}` | 선택 `revision` → owner의 현재 또는 불변 과거 원문 |
+| `PUT /v1/knowledge/sources/{source_id}` | 같은 provenance/domain + `expected_revision` → 새 revision 또는 기존 replay receipt |
+| `DELETE /v1/knowledge/sources/{source_id}` | `KnowledgeDelete(expected_revision, mutation_id)` → 이력을 보존하는 tombstone |
+| `POST /v1/knowledge/imports` | `KnowledgeExport` → 입력 순서대로 실제 accepted/rejected 행 receipt |
+
+source ID와 서버 revision은 랜덤 발급이다. `(owner, domain, provider, namespace, external_id)`가 출처 식별자이며 같은 내용의 다른 출처를 병합하지 않는다. provider revision은 순서 없는 opaque 값이다. 동일 provider revision/동일 payload 재전송은 과거 receipt만 반환하고 최신 head를 되돌리거나 삭제를 복원하지 않는다. 같은 revision의 다른 payload, 최신 head와 다른 CAS는 409다. 본문/ACL 변경은 모두 새 서버 revision/ACL revision이다. `source_modified_at`은 외부에서 받은 시각이고 서버 `created_at`과 구분한다. `synthetic`은 입력 자료의 표시이지 인증·외부 전송 허가가 아니다.
+
+고정 GitHub/Confluence export 형식은 `fixtures/imports/*.json`과 mapper가 정의한다. live connector/API 호출이 아니다. 각 행은 별도 transaction이며 잘못된 행은 안전한 오류 코드만 반환한다. 저장소/인증 장애는 성공한 부분 import로 위장하지 않는다. `kb_documents` 원문은 INSERT-only, migration4의 `kb_sources`가 명시 current head를, `kb_source_revisions`가 provenance/receipt를 보존한다. 구 `upsert_documents`는 동일 revision overwrite를 거절한다. legacy 여러 revision/알 수 없는 비공개 owner는 최신/소유자를 추정하지 않고 제한한다. 설치 시점의 합성 fixture는 기존 seed marker 아래 한 번만 설치되며 사용자 변경/삭제 뒤 재생성하지 않는다.
+
+application DB와 존재하는 WAL/SHM은 연결 전에 소유자·일반 파일·단일 hardlink를 검사하고 0600으로 제한하며 symlink/FIFO를 거절한다. 새 DB 파일도 처음부터 0600이다. 기존 디렉터리는 임의 chmod하지 않는다. 이는 same-host 파일 보호이며 악성 동일 사용자/상위 디렉터리 교체를 막는 OS sandbox가 아니다. 삭제는 감사/재개 근거를 위한 논리 삭제이며 역사 원문을 물리적으로 지우지 않는다. 실제 source 삭제/보존 정책과 검색 고도화는 후속 작업이며 현재 원문 보존을 익명화라고 주장하지 않는다.
+
+새 API/DTO는 local reference이고 frozen 1.0은 변경하지 않는다. `extended.json`은 기존 exporter로 파생하며 검증 증거와 발행 상태는 P1-001 task/evidence 및 coordinator registry를 따른다. 상대 서비스 합의·실제 모델/게시·검색 정책 전체 성공을 뜻하지 않는다.
+
 ```text
 FastAPI / CLI
       |

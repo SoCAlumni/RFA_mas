@@ -21,7 +21,11 @@ from rfa_mas.contracts import (
     DomainId,
     ExecutionContext,
     ExecutionMode,
+    KnowledgeDelete,
     KnowledgeDocument,
+    KnowledgeDocumentV11,
+    KnowledgeRevision,
+    KnowledgeWrite,
     MemberLifecycle,
     ObservationRecord,
     PersistentTask,
@@ -133,19 +137,60 @@ class SqliteWorkRepository:
     def __init__(self, path: Path) -> None:
         self.path = path
 
+    def _private_files(self, *, create: bool = False) -> None:
+        # Harden the application DB itself, not just the separate checkpointer.
+        # Same-user hostile directory replacement is not an OS sandbox boundary.
+        for path in (self.path, Path(str(self.path) + "-wal"), Path(str(self.path) + "-shm")):
+            flags = os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK
+            if path == self.path and create:
+                flags |= os.O_CREAT
+            try:
+                fd = os.open(path, flags, 0o600)
+            except FileNotFoundError:
+                if path == self.path:
+                    raise RfaError(
+                        "configuration_error", "자료 저장소가 초기화되지 않았습니다."
+                    ) from None
+                continue
+            except OSError:
+                raise RfaError(
+                    "configuration_error", "안전한 자료 저장 파일이 필요합니다."
+                ) from None
+            try:
+                info = os.fstat(fd)
+                # SQLite removes sidecars when its final connection closes. An
+                # already opened descriptor may therefore have no directory link.
+                # The primary DB must never disappear or gain another hardlink.
+                allowed_links = {1} if path == self.path else {0, 1}
+                if (
+                    not stat.S_ISREG(info.st_mode)
+                    or info.st_uid != os.getuid()
+                    or info.st_nlink not in allowed_links
+                ):
+                    raise RfaError(
+                        "configuration_error", "자료 저장 파일 형식/소유권이 올바르지 않습니다."
+                    )
+                os.fchmod(fd, 0o600)
+            finally:
+                os.close(fd)
+
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
+        self._private_files(create=True)
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         try:
             connection.execute("PRAGMA foreign_keys=ON")
+            self._private_files()
             with connection:
                 yield connection
         finally:
             connection.close()
 
     async def initialize(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        # Validate before path.resolve() in the shared startup guard.
+        self._private_files(create=True)
 
         def operation() -> None:
             # WAL persists in the DB. Switching it on every connection can
@@ -314,6 +359,29 @@ class SqliteWorkRepository:
                         connection.execute(statement)
                     connection.execute(
                         "INSERT INTO rfa_schema_migrations VALUES (3, ?)",
+                        (datetime.now(UTC).isoformat(),),
+                    )
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version = 4"
+                ).fetchone():
+                    connection.execute(
+                        "CREATE TABLE kb_sources (source_id TEXT PRIMARY KEY, owner_id TEXT, "
+                        "domain_id TEXT NOT NULL, provider TEXT NOT NULL, namespace TEXT NOT NULL, "
+                        "external_id TEXT NOT NULL, current_revision TEXT, "
+                        "restricted INTEGER NOT NULL, "
+                        "UNIQUE(owner_id, domain_id, provider, namespace, external_id))"
+                    )
+                    connection.execute(
+                        "CREATE TABLE kb_source_revisions (source_id TEXT NOT NULL REFERENCES "
+                        "kb_sources(source_id), source_revision TEXT NOT NULL, "
+                        "metadata_json TEXT NOT NULL, operation TEXT NOT NULL, "
+                        "provider_revision TEXT NOT NULL, fingerprint TEXT NOT NULL, "
+                        "PRIMARY KEY(source_id, source_revision), "
+                        "UNIQUE(source_id, operation, provider_revision))"
+                    )
+                    self._index_legacy_documents(connection)
+                    connection.execute(
+                        "INSERT INTO rfa_schema_migrations VALUES (4, ?)",
                         (datetime.now(UTC).isoformat(),),
                     )
                 # Credentials authenticate this installation's owner, not a fixture
@@ -1099,6 +1167,314 @@ class SqliteWorkRepository:
 
         await asyncio.to_thread(operation)
 
+    @staticmethod
+    def _index_legacy_documents(connection, *, trusted_fixture: bool = False) -> None:
+        sources = connection.execute(
+            "SELECT DISTINCT source_id FROM kb_documents WHERE source_id NOT IN "
+            "(SELECT source_id FROM kb_sources)"
+        ).fetchall()
+        for (source_id,) in sources:
+            rows = connection.execute(
+                "SELECT source_revision, document_json FROM kb_documents WHERE source_id=?",
+                (source_id,),
+            ).fetchall()
+            doc = KnowledgeDocument.model_validate_json(rows[0][1])
+            ambiguous = len(rows) != 1 or (
+                doc.owner_id is None and doc.audience != Audience.PUBLIC and not trusted_fixture
+            )
+            connection.execute(
+                "INSERT INTO kb_sources VALUES (?, ?, ?, ?, 'local', ?, ?, ?)",
+                (
+                    source_id,
+                    doc.owner_id,
+                    doc.domain_id.value,
+                    "fixture" if trusted_fixture else "legacy",
+                    source_id,
+                    None if ambiguous else rows[0][0],
+                    int(ambiguous),
+                ),
+            )
+
+    @staticmethod
+    def _knowledge_principal(principal: TrustedPrincipal) -> TrustedPrincipal:
+        try:
+            value = TrustedPrincipal.model_validate(principal.model_dump(), strict=True)
+            if value.authenticated is not True or not value.user_id:
+                raise ValueError("authentication required")
+            return value
+        except (ValueError, AttributeError):
+            raise RfaError("authentication_required", "자료 접근에 인증이 필요합니다.") from None
+
+    @staticmethod
+    def _knowledge_owner(connection, source_id, principal):
+        row = connection.execute(
+            "SELECT * FROM kb_sources WHERE source_id=? AND owner_id=? AND restricted=0 "
+            "AND provider IN ('note','github_issue','confluence')",
+            (source_id, principal.user_id),
+        ).fetchone()
+        if row is None:
+            # Legacy rows are read-only, never adopted by the current installation owner.
+            raise ResourceNotFoundError("source")
+        return row
+
+    @staticmethod
+    def _knowledge_revision(connection, source_id, revision) -> KnowledgeRevision:
+        row = connection.execute(
+            "SELECT d.document_json, r.metadata_json FROM kb_source_revisions r "
+            "JOIN kb_documents d USING(source_id, source_revision) "
+            "WHERE r.source_id=? AND r.source_revision=?",
+            (source_id, revision),
+        ).fetchone()
+        if row is None:
+            raise ResourceNotFoundError("source")
+        return KnowledgeRevision.model_validate(
+            json.loads(row[1]) | {"document": json.loads(row[0])}
+        )
+
+    @staticmethod
+    def _store_knowledge_revision(connection, record, *, operation, fingerprint) -> None:
+        doc = record.document
+        connection.execute(
+            "INSERT INTO kb_documents VALUES (?, ?, ?, ?, ?)",
+            (
+                doc.source_id,
+                doc.source_revision,
+                doc.domain_id.value,
+                doc.model_dump_json(),
+                record.created_at.isoformat(),
+            ),
+        )
+        connection.execute(
+            "INSERT INTO kb_source_revisions VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                doc.source_id,
+                doc.source_revision,
+                record.model_dump_json(exclude={"document"}),
+                operation,
+                record.provider_revision,
+                fingerprint,
+            ),
+        )
+
+    async def write_knowledge(
+        self,
+        request: KnowledgeWrite,
+        principal: TrustedPrincipal,
+        *,
+        policy_version: str,
+        source_id: str | None = None,
+    ) -> KnowledgeRevision:
+        principal = self._knowledge_principal(principal)
+        request = KnowledgeWrite.model_validate_json(request.model_dump_json(), strict=True)
+        acl = request.acl
+        if acl.audience in {Audience.COMPANY, Audience.BUSINESS_UNIT} and (
+            not principal.company_id
+            or acl.company_id != principal.company_id
+            or not set(acl.memberships) <= principal.business_units
+        ):
+            raise RfaError("policy_denied", "현재 조직 권한으로 공유할 수 없습니다.")
+        fingerprint = _canonical_fingerprint(
+            request.model_dump(mode="json", exclude={"expected_revision"})
+        )
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                origin = request.provenance
+                existing = connection.execute(
+                    "SELECT * FROM kb_sources WHERE owner_id=? AND domain_id=? AND provider=? "
+                    "AND namespace=? AND external_id=?",
+                    (
+                        principal.user_id,
+                        request.domain_id.value,
+                        origin.provider,
+                        origin.namespace,
+                        origin.external_id,
+                    ),
+                ).fetchone()
+                if source_id is not None:
+                    owned = self._knowledge_owner(connection, source_id, principal)
+                    if existing is None or existing["source_id"] != owned["source_id"]:
+                        raise RfaError(
+                            "idempotency_conflict", "자료의 출처/도메인은 변경할 수 없습니다."
+                        )
+                if existing is not None:
+                    identity = existing["source_id"]
+                    replay = connection.execute(
+                        "SELECT source_revision, fingerprint FROM kb_source_revisions "
+                        "WHERE source_id=? AND operation='write' AND provider_revision=?",
+                        (identity, request.provider_revision),
+                    ).fetchone()
+                    if replay:
+                        if replay[1] != fingerprint:
+                            raise RfaError(
+                                "idempotency_conflict", "동일 출처 revision의 내용이 다릅니다."
+                            )
+                        # Historical receipt only. Never reset current head on replay.
+                        return self._knowledge_revision(connection, identity, replay[0])
+                    if request.expected_revision != existing["current_revision"]:
+                        raise RfaError("idempotency_conflict", "최신 자료 revision이 필요합니다.")
+                    previous = self._knowledge_revision(
+                        connection, identity, existing["current_revision"]
+                    )
+                    if previous.deleted:
+                        raise ResourceNotFoundError("source")
+                    number = previous.revision_number + 1
+                else:
+                    if request.expected_revision is not None or source_id is not None:
+                        raise ResourceNotFoundError("source")
+                    identity, number = new_id("source"), 1
+                    connection.execute(
+                        "INSERT INTO kb_sources VALUES (?, ?, ?, ?, ?, ?, NULL, 0)",
+                        (
+                            identity,
+                            principal.user_id,
+                            request.domain_id.value,
+                            origin.provider,
+                            origin.namespace,
+                            origin.external_id,
+                        ),
+                    )
+                revision = new_id("revision")
+                record = KnowledgeRevision(
+                    document=KnowledgeDocumentV11(
+                        source_id=identity,
+                        source_revision=revision,
+                        domain_id=request.domain_id,
+                        title=request.title,
+                        content=request.content,
+                        location={"uri": f"rfa://sources/{identity}"},
+                        audience=acl.audience,
+                        classification=acl.audience.value,
+                        policy_version=policy_version,
+                        required_memberships=acl.memberships,
+                        owner_id=principal.user_id,
+                        company_id=acl.company_id,
+                        business_unit=acl.memberships[0] if len(acl.memberships) == 1 else None,
+                        synthetic=request.synthetic,
+                    ),
+                    provenance=origin,
+                    provider_revision=request.provider_revision,
+                    revision_number=number,
+                    acl_revision=revision,
+                    deleted=False,
+                    created_at=datetime.now(UTC),
+                    source_modified_at=request.source_modified_at,
+                )
+                self._store_knowledge_revision(
+                    connection, record, operation="write", fingerprint=fingerprint
+                )
+                updated = connection.execute(
+                    "UPDATE kb_sources SET current_revision=? "
+                    "WHERE source_id=? AND current_revision IS ?",
+                    (revision, identity, request.expected_revision),
+                ).rowcount
+                if updated != 1:
+                    raise RfaError("idempotency_conflict", "자료 revision이 변경되었습니다.")
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def delete_knowledge(
+        self,
+        source_id: str,
+        request: KnowledgeDelete,
+        principal: TrustedPrincipal,
+    ) -> KnowledgeRevision:
+        principal = self._knowledge_principal(principal)
+        request = KnowledgeDelete.model_validate_json(request.model_dump_json(), strict=True)
+        fingerprint = _canonical_fingerprint(request.model_dump(mode="json"))
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                source = self._knowledge_owner(connection, source_id, principal)
+                replay = connection.execute(
+                    "SELECT source_revision, fingerprint FROM kb_source_revisions "
+                    "WHERE source_id=? AND operation='delete' AND provider_revision=?",
+                    (source_id, request.mutation_id),
+                ).fetchone()
+                if replay:
+                    if replay[1] != fingerprint:
+                        raise RfaError("idempotency_conflict", "삭제 요청 내용이 다릅니다.")
+                    return self._knowledge_revision(connection, source_id, replay[0])
+                if source["current_revision"] != request.expected_revision:
+                    raise RfaError("idempotency_conflict", "최신 자료 revision이 필요합니다.")
+                old = self._knowledge_revision(connection, source_id, source["current_revision"])
+                if old.deleted:
+                    raise ResourceNotFoundError("source")
+                revision = new_id("revision")
+                record = KnowledgeRevision.model_validate(
+                    old.model_dump()
+                    | {
+                        "document": old.document.model_dump() | {"source_revision": revision},
+                        "provider_revision": request.mutation_id,
+                        "acl_revision": revision,
+                        "revision_number": old.revision_number + 1,
+                        "deleted": True,
+                        "created_at": datetime.now(UTC),
+                    }
+                )
+                self._store_knowledge_revision(
+                    connection, record, operation="delete", fingerprint=fingerprint
+                )
+                updated = connection.execute(
+                    "UPDATE kb_sources SET current_revision=? "
+                    "WHERE source_id=? AND current_revision=?",
+                    (revision, source_id, request.expected_revision),
+                ).rowcount
+                if updated != 1:
+                    raise RfaError("idempotency_conflict", "자료 revision이 변경되었습니다.")
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def get_knowledge(
+        self,
+        source_id: str,
+        principal: TrustedPrincipal,
+        *,
+        revision: str | None = None,
+    ) -> KnowledgeRevision:
+        principal = self._knowledge_principal(principal)
+
+        def operation():
+            with self._connect() as connection:
+                source = self._knowledge_owner(connection, source_id, principal)
+                record = self._knowledge_revision(
+                    connection, source_id, revision or source["current_revision"]
+                )
+                if revision is None and record.deleted:
+                    raise ResourceNotFoundError("source")
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def list_knowledge(
+        self,
+        principal: TrustedPrincipal,
+        *,
+        domain_id: DomainId | None = None,
+    ) -> list[KnowledgeRevision]:
+        principal = self._knowledge_principal(principal)
+
+        def operation():
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT source_id, current_revision FROM kb_sources WHERE owner_id=? "
+                    "AND restricted=0 AND provider IN ('note','github_issue','confluence') "
+                    "AND (? IS NULL OR domain_id=?) ORDER BY source_id",
+                    (
+                        principal.user_id,
+                        domain_id.value if domain_id else None,
+                        domain_id.value if domain_id else None,
+                    ),
+                ).fetchall()
+                records = [self._knowledge_revision(connection, *row) for row in rows]
+                return [record for record in records if not record.deleted]
+
+        return await asyncio.to_thread(operation)
+
     async def seed_documents_once(self, documents: list[KnowledgeDocument]) -> None:
         def operation() -> None:
             with self._connect() as connection:
@@ -1127,6 +1503,7 @@ class SqliteWorkRepository:
                             for d in documents
                         ],
                     )
+                    self._index_legacy_documents(connection, trusted_fixture=True)
                 connection.execute(
                     "INSERT INTO installation_seeds VALUES ('synthetic-fixtures-v1', ?)", (now,)
                 )
@@ -1137,23 +1514,46 @@ class SqliteWorkRepository:
         def operation() -> None:
             now = datetime.now(UTC).isoformat()
             with self._connect() as connection:
-                connection.executemany(
-                    """
-                    INSERT OR REPLACE INTO kb_documents (
-                        source_id, source_revision, domain_id, document_json, updated_at
-                    ) VALUES (?, ?, ?, ?, ?)
-                    """,
-                    [
+                connection.execute("BEGIN IMMEDIATE")
+                for item in documents:
+                    item = KnowledgeDocument.model_validate(item.model_dump())
+                    old = connection.execute(
+                        "SELECT document_json FROM kb_documents "
+                        "WHERE source_id=? AND source_revision=?",
+                        (item.source_id, item.source_revision),
+                    ).fetchone()
+                    if old:
+                        if json.loads(old[0]) != item.model_dump(mode="json"):
+                            raise RfaError(
+                                "idempotency_conflict", "원문 revision은 변경할 수 없습니다."
+                            )
+                        continue
+                    source = connection.execute(
+                        "SELECT provider FROM kb_sources WHERE source_id=?",
+                        (item.source_id,),
+                    ).fetchone()
+                    if source and source[0] not in {"legacy", "fixture"}:
+                        raise RfaError(
+                            "idempotency_conflict", "인증된 revision 저장 경로가 필요합니다."
+                        )
+                    connection.execute(
+                        "INSERT INTO kb_documents VALUES (?, ?, ?, ?, ?)",
                         (
                             item.source_id,
                             item.source_revision,
                             item.domain_id.value,
                             item.model_dump_json(),
                             now,
+                        ),
+                    )
+                    if source:
+                        # This legacy interface has no CAS/current-head assertion.
+                        connection.execute(
+                            "UPDATE kb_sources SET current_revision=NULL, restricted=1 "
+                            "WHERE source_id=?",
+                            (item.source_id,),
                         )
-                        for item in documents
-                    ],
-                )
+                self._index_legacy_documents(connection)
 
         await asyncio.to_thread(operation)
 
@@ -1162,12 +1562,25 @@ class SqliteWorkRepository:
             with self._connect() as connection:
                 rows = connection.execute(
                     """
-                    SELECT document_json FROM kb_documents
-                    WHERE domain_id = ? ORDER BY source_id, source_revision
+                    SELECT d.document_json FROM kb_documents d
+                    JOIN kb_sources s ON s.source_id=d.source_id
+                        AND s.current_revision=d.source_revision
+                    LEFT JOIN kb_source_revisions r ON r.source_id=d.source_id
+                        AND r.source_revision=d.source_revision
+                    WHERE s.domain_id = ? AND s.restricted=0
+                    AND (r.metadata_json IS NULL OR json_extract(r.metadata_json, '$.deleted')=0)
+                    ORDER BY d.source_id
                     """,
                     (domain_id,),
                 ).fetchall()
-                return [KnowledgeDocument.model_validate_json(row["document_json"]) for row in rows]
+                return [
+                    (
+                        KnowledgeDocumentV11
+                        if json.loads(row[0]).get("schema_version") == "1.1"
+                        else KnowledgeDocument
+                    ).model_validate_json(row[0])
+                    for row in rows
+                ]
 
         return await asyncio.to_thread(operation)
 

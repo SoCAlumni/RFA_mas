@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "a57a5b651895c9275d4a5fbbc7b6d5eb2e9c8ac884e64f87b0f8fde22918f294",
+  "digest": "1925ea65c05d315a8a192987f9f3198fda0f88721479b6cb3a7065c246d36afc",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -326,6 +326,517 @@
               }
             },
             "title": "HTTPValidationError",
+            "type": "object"
+          },
+          "KnowledgeAcl": {
+            "additionalProperties": false,
+            "properties": {
+              "audience": {
+                "$ref": "#/components/schemas/Audience",
+                "default": "private"
+              },
+              "company_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company Id"
+              },
+              "memberships": {
+                "default": [],
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                  "type": "string"
+                },
+                "title": "Memberships",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "title": "KnowledgeAcl",
+            "type": "object"
+          },
+          "KnowledgeDelete": {
+            "additionalProperties": false,
+            "properties": {
+              "expected_revision": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Expected Revision",
+                "type": "string"
+              },
+              "mutation_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Mutation Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "expected_revision",
+              "mutation_id"
+            ],
+            "title": "KnowledgeDelete",
+            "type": "object"
+          },
+          "KnowledgeDocumentV11": {
+            "additionalProperties": false,
+            "description": "Exact stored text; legacy 1.0 validation/whitespace behavior is unchanged.",
+            "properties": {
+              "audience": {
+                "$ref": "#/components/schemas/Audience"
+              },
+              "business_unit": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Business Unit"
+              },
+              "classification": {
+                "title": "Classification",
+                "type": "string"
+              },
+              "company_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company Id"
+              },
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "location": {
+                "$ref": "#/components/schemas/SourceLocation"
+              },
+              "owner_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Owner Id"
+              },
+              "policy_version": {
+                "title": "Policy Version",
+                "type": "string"
+              },
+              "privacy_canary": {
+                "default": false,
+                "title": "Privacy Canary",
+                "type": "boolean"
+              },
+              "required_memberships": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Required Memberships",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "title": "Source Id",
+                "type": "string"
+              },
+              "source_revision": {
+                "title": "Source Revision",
+                "type": "string"
+              },
+              "synthetic": {
+                "default": true,
+                "title": "Synthetic",
+                "type": "boolean"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id",
+              "source_revision",
+              "domain_id",
+              "title",
+              "content",
+              "location",
+              "audience",
+              "classification",
+              "policy_version"
+            ],
+            "title": "KnowledgeDocumentV11",
+            "type": "object"
+          },
+          "KnowledgeExport": {
+            "additionalProperties": false,
+            "properties": {
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "namespace": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Namespace",
+                "type": "string"
+              },
+              "provider": {
+                "enum": [
+                  "github_issue",
+                  "confluence"
+                ],
+                "title": "Provider",
+                "type": "string"
+              },
+              "rows": {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "maxItems": 100,
+                "minItems": 1,
+                "title": "Rows",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "synthetic": {
+                "default": false,
+                "title": "Synthetic",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "provider",
+              "namespace",
+              "domain_id",
+              "rows"
+            ],
+            "title": "KnowledgeExport",
+            "type": "object"
+          },
+          "KnowledgeImportResult": {
+            "additionalProperties": false,
+            "properties": {
+              "rows": {
+                "items": {
+                  "$ref": "#/components/schemas/KnowledgeImportRow"
+                },
+                "title": "Rows",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "rows"
+            ],
+            "title": "KnowledgeImportResult",
+            "type": "object"
+          },
+          "KnowledgeImportRow": {
+            "additionalProperties": false,
+            "properties": {
+              "error_code": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "invalid_input",
+                      "policy_denied",
+                      "idempotency_conflict",
+                      "not_found"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Error Code"
+              },
+              "row": {
+                "minimum": 0.0,
+                "title": "Row",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Id"
+              },
+              "source_revision": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Revision"
+              },
+              "status": {
+                "enum": [
+                  "accepted",
+                  "rejected"
+                ],
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "row",
+              "status"
+            ],
+            "title": "KnowledgeImportRow",
+            "type": "object"
+          },
+          "KnowledgeProvenance": {
+            "additionalProperties": false,
+            "properties": {
+              "external_id": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "External Id",
+                "type": "string"
+              },
+              "namespace": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Namespace",
+                "type": "string"
+              },
+              "provider": {
+                "enum": [
+                  "note",
+                  "github_issue",
+                  "confluence"
+                ],
+                "title": "Provider",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "provider",
+              "namespace",
+              "external_id"
+            ],
+            "title": "KnowledgeProvenance",
+            "type": "object"
+          },
+          "KnowledgeRevision": {
+            "additionalProperties": false,
+            "properties": {
+              "acl_revision": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Acl Revision",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "deleted": {
+                "title": "Deleted",
+                "type": "boolean"
+              },
+              "document": {
+                "$ref": "#/components/schemas/KnowledgeDocumentV11"
+              },
+              "provenance": {
+                "$ref": "#/components/schemas/KnowledgeProvenance"
+              },
+              "provider_revision": {
+                "title": "Provider Revision",
+                "type": "string"
+              },
+              "revision_number": {
+                "minimum": 1.0,
+                "title": "Revision Number",
+                "type": "integer"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_modified_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Modified At"
+              }
+            },
+            "required": [
+              "document",
+              "provenance",
+              "provider_revision",
+              "revision_number",
+              "acl_revision",
+              "deleted",
+              "created_at"
+            ],
+            "title": "KnowledgeRevision",
+            "type": "object"
+          },
+          "KnowledgeWrite": {
+            "additionalProperties": false,
+            "properties": {
+              "acl": {
+                "$ref": "#/components/schemas/KnowledgeAcl"
+              },
+              "content": {
+                "maxLength": 200000,
+                "title": "Content",
+                "type": "string"
+              },
+              "domain_id": {
+                "$ref": "#/components/schemas/DomainId"
+              },
+              "expected_revision": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Expected Revision"
+              },
+              "provenance": {
+                "$ref": "#/components/schemas/KnowledgeProvenance"
+              },
+              "provider_revision": {
+                "maxLength": 200,
+                "minLength": 1,
+                "title": "Provider Revision",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_modified_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Source Modified At"
+              },
+              "synthetic": {
+                "default": false,
+                "title": "Synthetic",
+                "type": "boolean"
+              },
+              "title": {
+                "maxLength": 1000,
+                "minLength": 1,
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "domain_id",
+              "provenance",
+              "provider_revision",
+              "title",
+              "content"
+            ],
+            "title": "KnowledgeWrite",
             "type": "object"
           },
           "PublicationStatus": {
@@ -1186,6 +1697,397 @@
             "summary": "Ready",
             "tags": [
               "operations"
+            ]
+          }
+        },
+        "/v1/knowledge/imports": {
+          "post": {
+            "operationId": "import_sources_v1_knowledge_imports_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/KnowledgeExport"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/KnowledgeImportResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Import Sources",
+            "tags": [
+              "knowledge"
+            ]
+          }
+        },
+        "/v1/knowledge/sources": {
+          "get": {
+            "operationId": "list_sources_v1_knowledge_sources_get",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "domain_id",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DomainId"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Domain Id"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/KnowledgeRevision"
+                      },
+                      "title": "Response List Sources V1 Knowledge Sources Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Sources",
+            "tags": [
+              "knowledge"
+            ]
+          },
+          "post": {
+            "operationId": "create_source_v1_knowledge_sources_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/KnowledgeWrite"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/KnowledgeRevision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Create Source",
+            "tags": [
+              "knowledge"
+            ]
+          }
+        },
+        "/v1/knowledge/sources/{source_id}": {
+          "delete": {
+            "operationId": "delete_source_v1_knowledge_sources__source_id__delete",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "source_id",
+                "required": true,
+                "schema": {
+                  "title": "Source Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/KnowledgeDelete"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/KnowledgeRevision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Delete Source",
+            "tags": [
+              "knowledge"
+            ]
+          },
+          "get": {
+            "operationId": "get_source_v1_knowledge_sources__source_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "source_id",
+                "required": true,
+                "schema": {
+                  "title": "Source Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "query",
+                "name": "revision",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Revision"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/KnowledgeRevision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Source",
+            "tags": [
+              "knowledge"
+            ]
+          },
+          "put": {
+            "operationId": "update_source_v1_knowledge_sources__source_id__put",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "source_id",
+                "required": true,
+                "schema": {
+                  "title": "Source Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/KnowledgeWrite"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/KnowledgeRevision"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Update Source",
+            "tags": [
+              "knowledge"
             ]
           }
         },
@@ -4664,6 +5566,527 @@
         "title": "JudgeDimensions",
         "type": "object"
       },
+      "KnowledgeAcl": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "$ref": "#/$defs/Audience",
+            "default": "private"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Company Id"
+          },
+          "memberships": {
+            "default": [],
+            "items": {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+              "type": "string"
+            },
+            "title": "Memberships",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "title": "KnowledgeAcl",
+        "type": "object"
+      },
+      "KnowledgeDelete": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Expected Revision",
+            "type": "string"
+          },
+          "mutation_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Mutation Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "mutation_id"
+        ],
+        "title": "KnowledgeDelete",
+        "type": "object"
+      },
+      "KnowledgeDocumentV11": {
+        "additionalProperties": false,
+        "description": "Exact stored text; legacy 1.0 validation/whitespace behavior is unchanged.",
+        "properties": {
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "business_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Business Unit"
+          },
+          "classification": {
+            "title": "Classification",
+            "type": "string"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Company Id"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "location": {
+            "$ref": "#/$defs/SourceLocation"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner Id"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "privacy_canary": {
+            "default": false,
+            "title": "Privacy Canary",
+            "type": "boolean"
+          },
+          "required_memberships": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Memberships",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_revision": {
+            "title": "Source Revision",
+            "type": "string"
+          },
+          "synthetic": {
+            "default": true,
+            "title": "Synthetic",
+            "type": "boolean"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "source_revision",
+          "domain_id",
+          "title",
+          "content",
+          "location",
+          "audience",
+          "classification",
+          "policy_version"
+        ],
+        "title": "KnowledgeDocumentV11",
+        "type": "object"
+      },
+      "KnowledgeExport": {
+        "additionalProperties": false,
+        "properties": {
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "namespace": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Namespace",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "github_issue",
+              "confluence"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "synthetic": {
+            "default": false,
+            "title": "Synthetic",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "provider",
+          "namespace",
+          "domain_id",
+          "rows"
+        ],
+        "title": "KnowledgeExport",
+        "type": "object"
+      },
+      "KnowledgeImportResult": {
+        "additionalProperties": false,
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/$defs/KnowledgeImportRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "KnowledgeImportResult",
+        "type": "object"
+      },
+      "KnowledgeImportRow": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "invalid_input",
+                  "policy_denied",
+                  "idempotency_conflict",
+                  "not_found"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Code"
+          },
+          "row": {
+            "minimum": 0,
+            "title": "Row",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Id"
+          },
+          "source_revision": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Revision"
+          },
+          "status": {
+            "enum": [
+              "accepted",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "status"
+        ],
+        "title": "KnowledgeImportRow",
+        "type": "object"
+      },
+      "KnowledgeProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "external_id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "External Id",
+            "type": "string"
+          },
+          "namespace": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Namespace",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "note",
+              "github_issue",
+              "confluence"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "namespace",
+          "external_id"
+        ],
+        "title": "KnowledgeProvenance",
+        "type": "object"
+      },
+      "KnowledgeRevision": {
+        "additionalProperties": false,
+        "properties": {
+          "acl_revision": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Acl Revision",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "document": {
+            "$ref": "#/$defs/KnowledgeDocumentV11"
+          },
+          "provenance": {
+            "$ref": "#/$defs/KnowledgeProvenance"
+          },
+          "provider_revision": {
+            "title": "Provider Revision",
+            "type": "string"
+          },
+          "revision_number": {
+            "minimum": 1,
+            "title": "Revision Number",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_modified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Modified At"
+          }
+        },
+        "required": [
+          "document",
+          "provenance",
+          "provider_revision",
+          "revision_number",
+          "acl_revision",
+          "deleted",
+          "created_at"
+        ],
+        "title": "KnowledgeRevision",
+        "type": "object"
+      },
+      "KnowledgeWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "acl": {
+            "$ref": "#/$defs/KnowledgeAcl"
+          },
+          "content": {
+            "maxLength": 200000,
+            "title": "Content",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revision"
+          },
+          "provenance": {
+            "$ref": "#/$defs/KnowledgeProvenance"
+          },
+          "provider_revision": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Provider Revision",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_modified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Modified At"
+          },
+          "synthetic": {
+            "default": false,
+            "title": "Synthetic",
+            "type": "boolean"
+          },
+          "title": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "domain_id",
+          "provenance",
+          "provider_revision",
+          "title",
+          "content"
+        ],
+        "title": "KnowledgeWrite",
+        "type": "object"
+      },
       "MemberLifecycle": {
         "additionalProperties": false,
         "properties": {
@@ -7095,7 +8518,9 @@
       "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None) -> 'SessionRecord'",
       "create_run": "(self, request: 'WorkRequest') -> 'None'",
       "create_session": "(self, principal: 'TrustedPrincipal') -> 'SessionRecord'",
+      "delete_knowledge": "(self, source_id: 'str', request: 'KnowledgeDelete', principal: 'TrustedPrincipal') -> 'KnowledgeRevision'",
       "finish_team_operation": "(self, task_id: 'str', principal: 'TrustedPrincipal', *, generation: 'int', instance: 'TeamInstance', reason: 'str') -> 'TeamLifecycle'",
+      "get_knowledge": "(self, source_id: 'str', principal: 'TrustedPrincipal', *, revision: 'str | None' = None) -> 'KnowledgeRevision'",
       "get_observation": "(self, observation_id: 'str') -> 'ObservationRecord | None'",
       "get_owned_run": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'RunRecord'",
       "get_result": "(self, run_id: 'str') -> 'RunResult | None'",
@@ -7103,6 +8528,7 @@
       "get_team_lifecycle": "(self, task_id: 'str', principal: 'TrustedPrincipal') -> 'TeamLifecycle'",
       "initialize": "(self) -> 'None'",
       "list_documents": "(self, domain_id: 'str') -> 'list[KnowledgeDocument]'",
+      "list_knowledge": "(self, principal: 'TrustedPrincipal', *, domain_id: 'DomainId | None' = None) -> 'list[KnowledgeRevision]'",
       "list_observations": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[ObservationRecord, ...]'",
       "list_sessions": "(self, principal: 'TrustedPrincipal') -> 'list[SessionRecord]'",
       "local_principal": "(self) -> 'TrustedPrincipal'",
@@ -7115,10 +8541,20 @@
       "seed_documents_once": "(self, documents: 'list[KnowledgeDocument]') -> 'None'",
       "start_team_cleanup": "(self, task_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[TeamLifecycle, bool]'",
       "transition_run": "(self, run_id: 'str', status: 'WorkStatus') -> 'None'",
-      "upsert_documents": "(self, documents: 'list[KnowledgeDocument]') -> 'None'"
+      "upsert_documents": "(self, documents: 'list[KnowledgeDocument]') -> 'None'",
+      "write_knowledge": "(self, request: 'KnowledgeWrite', principal: 'TrustedPrincipal', *, policy_version: 'str', source_id: 'str | None' = None) -> 'KnowledgeRevision'"
     }
   },
   "public_model_names": [
+    "KnowledgeAcl",
+    "KnowledgeDelete",
+    "KnowledgeDocumentV11",
+    "KnowledgeExport",
+    "KnowledgeImportResult",
+    "KnowledgeImportRow",
+    "KnowledgeProvenance",
+    "KnowledgeRevision",
+    "KnowledgeWrite",
     "MemberLifecycle",
     "TeamLifecycle",
     "ObservationRecord",
@@ -7161,12 +8597,12 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
-    "src/rfa_mas/api/app.py": "d62bb50ad4e152ae515610229a419114314e3106ab3a7c4042886312e86d7dee",
+    "src/rfa_mas/api/app.py": "13de2d148a5f2f8ff0f79b0f6b3e9c87fe9e5ccfb4952fc67da084db966fd70b",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "da53981b4d88e7cc1ffc4db6a0bd3c29c7595c5fbc3c9c39ba43f45877898ce1",
+    "src/rfa_mas/contracts/__init__.py": "dc7e944fd0339b62c4713bd862376670bfc36fd25095e3a041a7a168ceef1a0a",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "512bd30312e42ae33634286b5223b14c5a157844432cca7ce74d08f542daa65e",
-    "src/rfa_mas/ports/interfaces.py": "82102aeea03942dc69767301bdab0839fcb8bed4b8286369781c4c6a6e0c85b1",
+    "src/rfa_mas/contracts/models.py": "c83fb6549ac9d6d3e908722495e0f4a05e800537f2637b01de668ee7f3e7127a",
+    "src/rfa_mas/ports/interfaces.py": "7d89ce52846321ed8da264e0e5ece6ce1c47a5038abdbe84d08553c5263f2ad1",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",
