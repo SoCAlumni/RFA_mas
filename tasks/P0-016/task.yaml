@@ -10,10 +10,8 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
 status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: execution
 execution_role: coordinator
 estimated_effort: 1.5
@@ -25,9 +23,17 @@ scope:
   included:
   - 기존 LangGraph/checkpoint와 호환되는 `langgraph-checkpoint-sqlite`를 resolver·공식 async API로 확인 후 exact pin.
     lifecycle에서 async SQLite saver 주입. 세션 thread·worker namespace와 안전한 resume 이벤트 계약; DB/KB는 별도 책임 유지.
+  - 공식 sqlite3.1.1 async saver/explicit strict serializer/lifespan을 사용. Runtime.context로 현재 principal을
+    주입하고 checkpoint metadata에는 서버 ID만 둠. Session root thread마다 하나의 미완료 Run; per-thread 동일-host lock은 프로세스
+    종료 시 풀리며 local runtime sandbox 주장이 아님.
+  - review 제출과 interrupt 대기를 분리. resume는 인증된 재조회 신호이며 ResponsePort 원본 결정의 ID/version/hash/target 및 현재
+    source/policy를 재검사한다. approval bool 입력은 권한이 아님. 새 실행의 이전 draft/error 상태를 초기화.
+  - fixture 초기 seed를 원자적인 한 번 동작으로 바꾸어 restart가 수정/삭제/권한회수를 덮어쓰지 않게 한다. 아직 최신 revision pointer가 없는 모호한
+    근거는 fail closed.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  - worker 실행 중 crash-window 부작용 exactly-once 및 모든 노드 복구 주장은 P0-021/P0-026에서 별도 검증; 승인 원본 재구현·실제 게시 금지
   owned_paths:
   - pyproject.toml
   - uv.lock
@@ -39,18 +45,36 @@ scope:
   - .env.example
   - src/rfa_mas/adapters/checkpoints.py
   - tests/test_resume.py
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/api/app.py
+  - src/rfa_mas/contracts/models.py
+  - src/rfa_mas/contracts/__init__.py
+  - src/rfa_mas/ports/interfaces.py
+  - src/rfa_mas/ports/__init__.py
+  - src/rfa_mas/application/graphs/__init__.py
+  - docs/contracts/extended.json
+  - docs/INTEGRATION.md
+  - docs/CONTRACT_CHANGELOG.md
+  - tests/test_graph.py
+  - tests/test_api.py
+  - tests/test_settings.py
+  - src/rfa_mas/application/resume_policy.py
   read_only_paths:
   - AGENTS.md
-  - src/rfa_mas/contracts
-  - src/rfa_mas/ports/interfaces.py
-  - docs/INTEGRATION.md
+  - src/rfa_mas/contracts/common.py
+  - src/rfa_mas/application/state_machine.py
+  - src/rfa_mas/errors.py
+  - scripts/contract_baseline.py
   planned_paths:
-  - .env.example
   - src/rfa_mas/adapters/checkpoints.py
   - tests/test_resume.py
+  - src/rfa_mas/application/resume_policy.py
   shared_resources:
   - composition
   - dependencies-settings
+  - canonical-contracts
+  - sqlite-migrations
+  - contract-docs
 depends_on:
 - id: P0-015
   condition: integrated_done
@@ -62,8 +86,8 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
-  role: consumer
+  digest: 3a6d70524d532866780288d2105c49f133fdd2a57e3309c783dd8a26a2aed3c3
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -84,6 +108,18 @@ context:
   - path: src/rfa_mas/settings.py
     section: task에 관련된 정의/호출부
     reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: src/rfa_mas/application/service.py
+    section: P0-015 session ownership / graph projection
+    reason: 이미 통합한 HTTP/server identity 및 downstream idempotency 보존
+  - path: src/rfa_mas/adapters/local.py
+    section: session/thread/run metadata와 fixture upsert
+    reason: 현재 소유권 및 한 번 seed/미완료 run 검사 재사용
+  - path: src/rfa_mas/adapters/mock.py
+    section: MockResponse pending/decision
+    reason: 재시작 검증은 명시적인 simulated ResponsePort 원본 fixture 사용; approval bool 권한 금지
+  - path: docs/INTEGRATION.md
+    section: session 1.1 endpoints and ownership
+    reason: 현재 계약을 확장하고 별도 digest 발행
   handoff: tasks/P0-016/handoff.md
   dependency_results:
   - tasks/P0-015/handoff.md
@@ -112,7 +148,7 @@ deliverables:
   availability: existing
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 - path: .env.example
-  availability: planned
+  availability: existing
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 - path: src/rfa_mas/adapters/checkpoints.py
   availability: planned
@@ -120,6 +156,48 @@ deliverables:
 - path: tests/test_resume.py
   availability: planned
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/api/app.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/contracts/models.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/contracts/__init__.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/ports/__init__.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/application/graphs/__init__.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: docs/contracts/extended.json
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: docs/CONTRACT_CHANGELOG.md
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: tests/test_graph.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: tests/test_api.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: tests/test_settings.py
+  availability: existing
+  description: 영속 승인 대기 재개와 현재 신원/근거 재검사에 필요한 최소 연결; canonical 계약은 coordinator 발행
+- path: src/rfa_mas/application/resume_policy.py
+  availability: planned
+  description: 현재 source revision/hash/audience와 PolicyPort 재검사; 모호성은 fail closed
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -186,8 +264,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 2
-spec_revision: 2
+revision: 4
+spec_revision: 4
 claim_generation: 0
 claim: null
 attempts:
@@ -209,7 +287,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T06:46:42+00:00'
-concise_result: 이관 완료; 제품 구현/검증 not_run.
+updated_at: '2026-09-26T07:27:14+00:00'
+concise_result: 'Specification changed: Accept verified P0-015 additive baseline; bound independent selector
+  and official persistent resume integration with trusted identity and current policy checks'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

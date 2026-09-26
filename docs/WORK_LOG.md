@@ -154,3 +154,32 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   OpenShell/NemoClaw CLI는 PATH에 없다. 설치·기동·실제 sandbox 결과는 아직 없음.
   `docs/DEVELOPMENT.md` 탐색은 파일 없음으로 종료했고 `rg --files docs`로 실제
   문서 목록을 확인했다. 이 진단은 제품 테스트 실패나 remote 서비스 요구가 아니다.
+
+## P0-015 / OPS-002 통합 — 2026-09-26T07:25Z
+
+- 세션 WIP `8fcb6f6` → HTTP 보강 `4549651` → reviewed baseline 정상 merge
+  `dc3c595`를 main에 통합했다. 서버 run ID·사용자별 downstream 멱등 키·proxy 인증,
+  원자적 세션/Task/run 관계와 owner 미상 legacy 자료 보존을 구현했다.
+- sessions-http-01: 26 passed(1.23초), 기존 회귀 34 passed(0.62초).
+  통합 `sessions-integrated-01`: 26 passed(1.40초). 기존 route-absence assertion은
+  `2f50bb4`에서 실제 SessionRecord/SessionDetail/RunRecord 응답 schema 검사로 교체.
+- OPS-002 `bd1e340`: integrated stale task의 명시적 clean-baseline 재검증,
+  이전 claim/증거 보존, 미통합 baseline 소실 거절, canonical migration 감사 수정.
+  worker 66+17 passed; current target 66 passed(47.18초)+17 passed(5.00초).
+- 첫 OPS 통합 검사 중 P0-015 merge로 source가 바뀌어 evidence 등록이 거절됐다.
+  66/17 자동 통과 관찰은 invalidated.json에 stale로 보존했다. target을 고정한
+  새 capture로 재검증하여 완료했다. source 변경 전 검증을 새 commit에 쓰지 않았다.
+- P0-015 최초 integration capture는 미발행 contract digest 때문에 거절됐다.
+  root에서 frozen/extended schema·fixture와 50개 계약 테스트를 확인한 뒤
+  1.1 digest `3a6d70524d532866780288d2105c49f133fdd2a57e3309c783dd8a26a2aed3c3`
+  발행 후 capture/검증했다. 미지원 상대 API가 확정되었다는 의미는 아니다.
+- 안정된 main `2f50bb4`의 전체 offline 회귀: **363 passed(57.46초)**.
+  key 없는 기본 환경·설치 NAT fake-provider만 포함하며 실제 NVIDIA/전체 E2E는 별도다.
+- P0-014/P0-027은 기존 구현을 다시 쓰지 않고 신규 안전 recovery로 현재 source를
+  재검증했다. 계약 14+50 passed, NAT 8 passed, 별도 NAT 미설치 core 2 passed.
+  최초/실패/과거 통합 증거와 source commit을 모두 유지했다.
+- 보고서 orchestration의 한 JS 구문 오류는 파일/상태 변경 전에 발생했다.
+  배열 구성을 분리한 한 번의 수정으로 해결했다. worker submit의 handoff 인자
+  누락도 parser를 확인해 한 번 수정했으며 제품 성공 숫자에 포함하지 않는다.
+- 다음: P0-016 공식 async SQLite checkpointer/인증된 재조회 resume와 P0-018
+  순수 팀 selector를 별도 worktree에 배정. 선택적 NAT/관측 경로를 필수화하지 않는다.

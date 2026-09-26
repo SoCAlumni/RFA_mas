@@ -11,3 +11,7 @@
 증거: .agent/evidence/P0-014/contracts-01 및 contracts-02. 정상/오류 fixture 자체 EvalResult는 not_run이며 제품 실행 증거와 다르다. 제품 E2E/NVIDIA/팀원 live gate 미실행.
 
 다음 첫 행동: coordinator가 scoped commit을 main에 통합 → 동일 V1/V2와 전체 회귀 → RFA-EXTENDED 1.1 digest publish-contract → 직접 consumer의 scope/선행/계약 수락. P0-015 세션과 독립 P1-006D trace를 우선하며 공통 local.py/config 소유권을 직렬 관리한다.
+
+## Post-P0-015 revalidation — 2026-09-26
+
+Explicit integrated_revalidation recovery issued generation2 from clean current main2f50bb4, preserving original submission/integration/evidence in attempts.approaches. No source rewrite. Current contract suites14+50passed; additive session DTO/API baseline digest3a6d70524d532866780288d2105c49f133fdd2a57e3309c783dd8a26a2aed3c3. New source evidence: post-sessions-01. Next: current-target integration verification then close; historical results remain historical, no full RFA E2E or real-service claim.

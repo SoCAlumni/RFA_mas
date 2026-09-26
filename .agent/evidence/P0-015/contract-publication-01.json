@@ -1,0 +1,13 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "3a6d70524d532866780288d2105c49f133fdd2a57e3309c783dd8a26a2aed3c3",
+  "reviewer": "rfa-coordinator",
+  "source_commit": "2f50bb4",
+  "commands": [
+    {"argv": [".venv/bin/python", "scripts/contract_baseline.py", "check"], "exit_code": 0, "observed": "Frozen 1.0 schema/OpenAPI, 9 fixture shapes valid"},
+    {"argv": [".venv/bin/python", "scripts/contract_baseline.py", "check-extended"], "exit_code": 0, "observed": "7 extended fixture shapes valid"},
+    {"argv": [".venv/bin/python", "-m", "pytest", "-q", "tests/test_trace_eval_contract.py"], "exit_code": 0, "observed": "50 passed in 0.56s"}
+  ],
+  "boundary": "Repository-local additive session DTO/API contract only. Original wire schema preserved; HTTP run IDs are now server allocated and proxy access requires authentication. Product integration evidence follows separately; no teammate support or durable graph resume claim."
+}

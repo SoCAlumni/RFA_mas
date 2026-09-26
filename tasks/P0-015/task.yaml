@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: execution
@@ -169,47 +169,74 @@ verification:
   - 다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회.
   runner: pytest
 evidence_dir: .agent/evidence/P0-015
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-015/sessions-integrated-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 5
+  spec_digest: a09b75a3eb474eadf0ef26d146349d6e6a5a3b7a66c67132e72d898267d31558
+  contract_digest: 7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b
+  source_fingerprint: 7cc8adbd1889c0523cc84526cbcd9e0d12415c87ba73f4fa1fb66a2f97016983
+  evidence: .agent/evidence/P0-015/sessions-integrated-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 10
+  submission_generation: 4
+  submission:
+    head: dc3c595e6016cc9d45fea5705aa1d3897d91d73d
+    baseline_head: ac817e3a6a6dc2313a702b0e22e637ddb3728cf2
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-015
+    branch: task/P0-015
+    evidence: .agent/evidence/P0-015/sessions-http-01/result.json
+    changed_files:
+      docs/CONTRACT_CHANGELOG.md: 98fb2e793e0f113ffc863b261c99ced761f2a3c8663600595c29313c9f960375
+      docs/INTEGRATION.md: dfa3d08f0450d661ddd1b7dbcb619f7b76f7ba18cadd4aafb8367c0e7521e8e2
+      docs/contracts/extended.json: 3a6d70524d532866780288d2105c49f133fdd2a57e3309c783dd8a26a2aed3c3
+      scripts/contract_baseline.py: eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28
+      src/rfa_mas/adapters/local.py: f7764be70c367151f6bedb3c5c2a9a77cba81f5fa888633b0685aa331996546e
+      src/rfa_mas/api/app.py: df6bf5a1c8aac7d9aac9aa26dfb802b1a7738fe6a86605b980903cb6293bfb62
+      src/rfa_mas/application/service.py: 11c74f8dc3d92681a1969042935709d6e0079dca8cfc8604ff67fd7d1e797643
+      src/rfa_mas/application/sessions.py: 5eb3d31eeca79a905ee774d2faabb9cf5d7f90f70e4160f7eb1b6511a58cd7e0
+      src/rfa_mas/contracts/__init__.py: 6931c77145aee5c2dde2f081435ddb946485ea3f95c4b2a968340498c923b497
+      src/rfa_mas/contracts/models.py: 301ff0f77596d62011f78fc4ebf49dd90e300fceff9f46d69f66981f2e1aebfe
+      src/rfa_mas/ports/interfaces.py: 97a6c08ccecb92a9a92f382198d7e3d2d37305e21d01a085594c6a94f855e080
+      tests/test_api.py: 6f297fcf1920626f2a9182f8ca1f5d43143cd1a208ba2e4dbff21ac83b3d7434
+      tests/test_graph.py: d7b347b89037ccbc59eb6ea32563b920980de296742c0042f83d811864e1384d
+      tests/test_sessions.py: 859df13de282215974dbb18da38c690a2f0b8484add2234083f948a4b316a3c8
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 5
+      spec_digest: a09b75a3eb474eadf0ef26d146349d6e6a5a3b7a66c67132e72d898267d31558
+      contract_digest: 7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b
+      source_fingerprint: 7cc8adbd1889c0523cc84526cbcd9e0d12415c87ba73f4fa1fb66a2f97016983
+      evidence: .agent/evidence/P0-015/sessions-integrated-01/result.json
+    head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
+  evidence: .agent/evidence/P0-015/sessions-integrated-01/result.json
+revision: 29
 spec_revision: 5
-claim_generation: 3
-claim:
-  session_id: rfa-coordinator
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-015
-  branch: task/P0-015
-  generation: 3
-  claimed_at: '2026-09-26T06:52:22+00:00'
-  heartbeat_at: '2026-09-26T06:57:15+00:00'
-  lease_expires_at: '2026-09-26T07:12:15+00:00'
-  baseline_head: 8b0372dfe6901656c3408b2074191ee545a1b84a
-  recovery_required: false
-  context_digest: b890e42063c115e19f25f2a354ceb3192829dfe838635526efe630f4a8ec0667
+claim_generation: 4
+claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 5
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: sessions-integrated-01
+  evidence_refs:
+  - .agent/evidence/P0-015/sessions-01/result.json
+  - .agent/evidence/P0-015/sessions-02/result.json
+  - .agent/evidence/P0-015/sessions-03/result.json
+  - .agent/evidence/P0-015/sessions-http-01/result.json
   approaches:
   - reason: clean 조사 상태에서 typed session API 계약 범위 승인; old claim만 fencing, 코드 삭제 없음
     at: '2026-09-26T06:52:17+00:00'
     cycles: 0
+    no_progress_count: 0
+  - reason: 'Reviewed failed sessions-03 and clean WIP8fcb6f6: new HTTP-boundary approach assigns server
+      run IDs and requires proxy authentication; preserve prior three cycles and fixed errors'
+    at: '2026-09-26T07:12:10+00:00'
+    cycles: 3
     no_progress_count: 0
 blocker: null
 migration:
@@ -223,8 +250,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T06:57:15+00:00'
-concise_result: 'Specification changed: 실제 API/typed history의 최소 계약 확장과 owner 보안 회귀; coordinator가 schema
-  export와 버전 발행 관리'
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T07:21:25+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: Submit verifying; coordinator updates historical route expectation and validates integrated
+  source before close

@@ -11,3 +11,7 @@ Decisions: reuse official released wrapper externally. It needs messages, serial
 Failures retained: upstream guessed langgraph_wrapper.py 404 corrected using release tree; initial lint 3 ASYNC240 + E501 corrected by module-level path; inherited uv environment warning ignored root venv as expected. Supplemental full feature-worktree pytest: 9 failed, 255 passed in 28.21s, all nine migration tests use Store(ROOT) and correctly reject copied control root. Do not bypass marker or claim full suite pass. No repeated attempt without changed evidence. Coordinator notified; canonical-root integration regression required.
 
 Next exact action: coordinator review feature commit scope and immutable evidence, merge without control copies, sync optional nat environment for integration, re-run eight-test spike and canonical full regression. Then P0-028 uses the compatibility table and trusted outer WorkService mapping; KB/evaluation tasks do not depend on NAT success.
+
+## Post-P0-015 revalidation — 2026-09-26
+
+Explicit integrated_revalidation recovery issued generation2 from clean current main2f50bb4, preserving original submission/integration/evidence in attempts.approaches. No source rewrite. Current optional NAT smoke8passed and independent default-only core2passed; installed NAT1.8.0/LangGraph1.2.12 verified. No interactive/HITL support claim. New source evidence: post-sessions-01. Next: current-target integration verification then close; historical results remain historical, no full RFA E2E or real-service claim.

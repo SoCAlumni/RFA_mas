@@ -1,0 +1,82 @@
+{
+  "attempt_id": "recovery-01",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "개발 control local; 임시 protocol fixture는 simulated이며 제품 AC 증거 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_taskctl.py"
+        ],
+        "assertions": [
+          "통합된 task의 현재 clean baseline 재검증과 최초 provenance 보존을 실제 temp Git 이력으로 확인",
+          "미통합/dirty/old branch·old claim·미검증 close 우회 불가"
+        ],
+        "counts": {
+          "collected": 66,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 66,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "66 passed in 45.40s",
+        "observed": "Temporary Git/control fixtures: old integrated A -> subsequent related A + unrelated B -> stale/reserved -> explicit current clean recovery -> new worker and target evidence -> close releases dependency. Parameterized no-op and owned-fix submissions, dirty/old branch/pending/history/fencing guards.",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_task_migration.py"
+        ],
+        "assertions": [
+          "canonical 원문/task/DAG/ID/생성 view와 현재 공수·final gate가 일치",
+          "source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 17,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "17 passed in 9.13s",
+        "observed": "TASK_CONTROL_ROOT explicitly selected canonical root. Read-only audit and locked view check; copied root refused. Approved D3 11h, P0-026 4h, technical increment 4.5h and final gates unchanged.",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T07:14:41.092Z",
+    "preflight": {
+      "command": ".venv/bin/python -m ruff check scripts/tasklib/cli.py tests/test_taskctl.py tests/test_task_migration.py",
+      "correction": "ruff format on only three owned Python files; one retry passed: All checks passed!",
+      "error": "9 E501 Line too long: cli.py 564; test_task_migration.py 134; test_taskctl.py 1101/1108/1111/1130/1141/1159/1169",
+      "initial_result": "failed",
+      "retry_count": 1
+    },
+    "reviewer": "worker-control",
+    "scope": "Development control tests only; RFA product acceptance and external services not run",
+    "started_at": "2026-09-26T07:13:07.271Z"
+  },
+  "result": "passed",
+  "source_fingerprint": "ea98dc09bb4729f486d3571ffddbc003b107d6ddd91808c9f25b1237857db88c",
+  "source_manifest": ".agent/evidence/OPS-002/recovery-01/source.json",
+  "spec_digest": "96abc4190be5b5be658e62d2b2974eb8eb00c49acaf958cbf47d4722a9deda3f",
+  "spec_revision": 1,
+  "task_id": "OPS-002"
+}

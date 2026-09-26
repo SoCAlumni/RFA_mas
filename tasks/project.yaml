@@ -1,7 +1,7 @@
 schema_version: '1.0'
 repository_id: rfa-mas-2026-local
 control_root: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas
-updated_at: '2026-09-26T06:46:42+00:00'
+updated_at: '2026-09-26T07:19:53+00:00'
 global_context:
 - AGENTS.md
 - docs/PROJECT_CONTEXT.md
@@ -84,7 +84,7 @@ contracts:
   RFA-EXTENDED:
     version: '1.1'
     path: docs/contracts/extended.json
-    digest: 59d6b352dc9c074f0387b2ec81d834ab50a030a37802ce8d7c5c4b85c057c007
+    digest: 3a6d70524d532866780288d2105c49f133fdd2a57e3309c783dd8a26a2aed3c3
     state: ready
     owner_task: P0-014
     provisional: true
@@ -239,6 +239,41 @@ contract_changes:
   evidence: .agent/evidence/P0-014/contracts-integrated-01/publication.json
   affected:
   - P0-015
+  - P0-016
+  - P0-017
+  - P0-018
+  - P0-019
+  - P0-020
+  - P0-021
+  - P0-022
+  - P0-023
+  - P0-024
+  - P0-025
+  - P0-026
+  - P0-028
+  - P1-001
+  - P1-001A
+  - P1-001B
+  - P1-001C
+  - P1-004
+  - P1-004A
+  - P1-004B
+  - P1-005
+  - P1-005A
+  - P1-005B
+  - P1-006
+  - P1-006D
+  - P1-006E
+  - P1-008
+  - P2-003
+- id: RFA-EXTENDED
+  at: '2026-09-26T07:19:53+00:00'
+  reason: P0-015 implements authorized session/history/run metadata APIs with server run IDs
+  compatibility: Additive 1.1 session DTO/routes; frozen 1.0 schema preserved; HTTP run_id is server assigned
+  migration: Existing SQLite rows preserved with unknown owners restricted; consumers reread new API/schema
+    digest; teammate contract remains provisional
+  evidence: .agent/evidence/P0-015/contract-publication-01.json
+  affected:
   - P0-016
   - P0-017
   - P0-018

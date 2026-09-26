@@ -163,26 +163,26 @@ verification:
   - NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음
   runner: pytest
 evidence_dir: .agent/evidence/P0-027
-latest_evidence_file: .agent/evidence/P0-027/nat-contracts-02/result.json
+latest_evidence_file: .agent/evidence/P0-027/post-sessions-integrated-01/result.json
 verification_summary:
   state: passed
   spec_revision: 2
   spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: 430607c47432ed1e7aa1115384957801bb8cad140b748163ad19e51da10ba4a4
-  evidence: .agent/evidence/P0-027/nat-contracts-02/result.json
+  source_fingerprint: 0d325f09d42780ab10f2acd02b1dd3ece715c2ff0c4306f373591e08f0dc7763
+  evidence: .agent/evidence/P0-027/post-sessions-integrated-01/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: 1
+  submission_generation: 2
   submission:
-    head: c6a764bd8ce86daa817fc989209adbb00096c838
-    baseline_head: 1df64542799cdd65bbf85f7e49fa571c860af78a
+    head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
+    baseline_head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027
     branch: task/P0-027
-    evidence: .agent/evidence/P0-027/nat-spike-01/result.json
+    evidence: .agent/evidence/P0-027/post-sessions-01/result.json
     changed_files:
       docs/NAT_COMPATIBILITY.md: 136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897
       pyproject.toml: 1670f7da24d530a11fd9e148e7c9aee5b2537b4777f55880288ce4197836a44e
@@ -194,22 +194,67 @@ integration:
       spec_revision: 2
       spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: 430607c47432ed1e7aa1115384957801bb8cad140b748163ad19e51da10ba4a4
-      evidence: .agent/evidence/P0-027/nat-contracts-02/result.json
-    head: c3f3212967353d6ae21c4e28f4c90f2e6aac0d79
-  evidence: .agent/evidence/P0-027/nat-contracts-02/result.json
-revision: 17
+      source_fingerprint: 0d325f09d42780ab10f2acd02b1dd3ece715c2ff0c4306f373591e08f0dc7763
+      evidence: .agent/evidence/P0-027/post-sessions-integrated-01/result.json
+    head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
+  evidence: .agent/evidence/P0-027/post-sessions-integrated-01/result.json
+revision: 26
 spec_revision: 2
-claim_generation: 1
+claim_generation: 2
 claim: null
 attempts:
-  count: 3
+  count: 5
   cycles: 1
   no_progress_count: 0
-  latest_attempt: nat-contracts-02
+  latest_attempt: post-sessions-integrated-01
   evidence_refs:
   - .agent/evidence/P0-027/nat-spike-01/result.json
-  approaches: []
+  - .agent/evidence/P0-027/post-sessions-01/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 2f50bb4def87adbd2050db415ad99c4dea27bb72
+    reason: Explicit integrated revalidation after P0-015 additive session API and OPS-002; clean current
+      source and original evidence preserved
+    at: '2026-09-26T07:22:05+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: c6a764bd8ce86daa817fc989209adbb00096c838
+        baseline_head: 1df64542799cdd65bbf85f7e49fa571c860af78a
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027
+        branch: task/P0-027
+        evidence: .agent/evidence/P0-027/nat-spike-01/result.json
+        changed_files:
+          docs/NAT_COMPATIBILITY.md: 136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897
+          pyproject.toml: 1670f7da24d530a11fd9e148e7c9aee5b2537b4777f55880288ce4197836a44e
+          tests/spikes/test_nat_compatibility.py: baee7649f3aa5ef6021824719f42af1a4e0487db93249d2cf347c93e4f4ca41a
+          uv.lock: 96e8d00fd59e50b97bb833a721386928a1647956e3511b369b2f39e2a394aaba
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 2
+          spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
+          contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+          source_fingerprint: 430607c47432ed1e7aa1115384957801bb8cad140b748163ad19e51da10ba4a4
+          evidence: .agent/evidence/P0-027/nat-contracts-02/result.json
+        head: c3f3212967353d6ae21c4e28f4c90f2e6aac0d79
+      evidence: .agent/evidence/P0-027/nat-contracts-02/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 2
+      spec_digest: ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 430607c47432ed1e7aa1115384957801bb8cad140b748163ad19e51da10ba4a4
+      evidence: .agent/evidence/P0-027/nat-contracts-02/result.json
+    latest_evidence_file: .agent/evidence/P0-027/nat-contracts-02/result.json
 blocker: null
 migration:
   original_status: new
@@ -221,7 +266,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T06:44:48+00:00'
+updated_at: '2026-09-26T07:25:51+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'
