@@ -1,0 +1,23 @@
+# E2E-05 research role (paper_scout stand-in). Synthetic, local only.
+# {{HOST_IP}} and {{ALLOWED_PORT}} are rendered by scripts/openshell_e2e05.py.
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only: [/usr, /lib, /bin, /etc, /proc, /dev/urandom]
+  read_write: [/tmp, /dev/null]
+landlock:
+  compatibility: hard_requirement
+network_policies:
+  rfa_public_docs:
+    name: rfa_public_docs
+    endpoints:
+      - host: "{{HOST_IP}}"
+        port: {{ALLOWED_PORT}}
+        protocol: rest
+        enforcement: enforce
+        # Explicit private-host trust for exactly this host address.
+        allowed_ips: ["{{HOST_IP}}/32"]
+        rules:
+          - allow: { method: GET, path: "/public/**" }
+    binaries:
+      - path: /usr/local/bin/python3.12

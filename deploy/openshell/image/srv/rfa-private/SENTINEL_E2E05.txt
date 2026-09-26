@@ -1,0 +1,1 @@
+CANARY_SENTINEL_E2E05 synthetic private sentinel for the E2E-05 OpenShell probe. Harmless test data; not a real secret.

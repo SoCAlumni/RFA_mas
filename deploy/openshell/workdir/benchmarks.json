@@ -1,0 +1,17 @@
+{
+  "fixture": "E2E R03/R04 synthetic benchmark logs (same fixture environment)",
+  "runs": [
+    {
+      "id": "R03",
+      "name": "benchmark A",
+      "latency_ms": 10,
+      "accuracy_pct": 81
+    },
+    {
+      "id": "R04",
+      "name": "benchmark B",
+      "latency_ms": 8.2,
+      "accuracy_pct": 80.8
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# Control for the execution role: identical to execution.yaml except that /tmp is
+# writable and /opt/rfa-unapproved is readable/executable (policy differential only).
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only: [/usr, /lib, /bin, /etc, /proc, /dev/urandom, /opt/rfa-unapproved]
+  read_write: [/dev/null, /tmp]
+landlock:
+  compatibility: hard_requirement

@@ -1,0 +1,24 @@
+# Control for the research role: identical to research.yaml.tmpl except that
+# /srv/rfa-private is readable. Used only to prove the sentinel exists and that Unix
+# permissions allow the sandbox user to read it (policy differential).
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only: [/usr, /lib, /bin, /etc, /proc, /dev/urandom, /srv/rfa-private]
+  read_write: [/tmp, /dev/null]
+landlock:
+  compatibility: hard_requirement
+network_policies:
+  rfa_public_docs:
+    name: rfa_public_docs
+    endpoints:
+      - host: "{{HOST_IP}}"
+        port: {{ALLOWED_PORT}}
+        protocol: rest
+        enforcement: enforce
+        # Explicit private-host trust for exactly this host address.
+        allowed_ips: ["{{HOST_IP}}/32"]
+        rules:
+          - allow: { method: GET, path: "/public/**" }
+    binaries:
+      - path: /usr/local/bin/python3.12

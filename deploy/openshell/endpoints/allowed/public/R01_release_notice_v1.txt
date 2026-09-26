@@ -1,0 +1,1 @@
+R01 (synthetic, TRIV-DEMO) public release notice v1: official SDK release date 2026-10-20.

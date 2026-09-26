@@ -1,0 +1,1 @@
+Synthetic non-allowed service (E2E-05 negative control). No real data.
