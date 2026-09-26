@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P1
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -134,43 +134,51 @@ verification:
   - 출력·evidence에 key/Authorization/reasoning_content 없음
   runner: pytest
 evidence_dir: .agent/evidence/P1-002A
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-002A/v1-live-target-a1/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 2
+  spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: 1d08622fc8e338654885aca3d9e59d22835c327ba2d764cb6b5ed0772d2dea5c
+  evidence: .agent/evidence/P1-002A/v1-live-target-a1/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 8
+  submission_generation: 1
+  submission:
+    head: a3055c9b98e9c17415f29b1480255634b9128d4d
+    baseline_head: 47f002f98567847bb7c2ab69d252799fab716f09
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-002A
+    branch: task/P1-002A
+    evidence: .agent/evidence/P1-002A/v1-live-a1/result.json
+    changed_files:
+      docs/EDUCATION_MAPPING.md: c247095904a0a901a73690ce803b27bfdf38f536a82ce6c5c5067b17f68af5e3
+      docs/evidence/nvidia-model.md: e636995aa92a3a79d48f6a99552af80da81c256ad56401317cf0c655fb4070d1
+      tests/integration/test_nvidia_live.py: cb442c345da51af5c926f42404ec15e6f8cf7665e91105d23f17ab685eb5d582
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 2
+      spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 1d08622fc8e338654885aca3d9e59d22835c327ba2d764cb6b5ed0772d2dea5c
+      evidence: .agent/evidence/P1-002A/v1-live-target-a1/result.json
+    head: 2c880f2af36485dd7044740525813451d14d0f59
+  evidence: .agent/evidence/P1-002A/v1-live-target-a1/result.json
+revision: 14
 spec_revision: 2
 claim_generation: 1
-claim:
-  session_id: worker-nvidia-1
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-002A
-  branch: task/P1-002A
-  generation: 1
-  claimed_at: '2026-09-26T13:56:19+00:00'
-  heartbeat_at: '2026-09-26T14:08:25+00:00'
-  lease_expires_at: '2026-09-26T14:23:25+00:00'
-  baseline_head: 47f002f98567847bb7c2ab69d252799fab716f09
-  recovery_required: false
-  context_digest: b4fad6b37a4e26caac0b0f175b16fb2c29c2d70fe7f57f89a1dfe859057018a1
+claim: null
 attempts:
-  count: 1
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: v1-live-a1
-  evidence_refs: []
+  latest_attempt: v1-live-target-a1
+  evidence_refs:
+  - .agent/evidence/P1-002A/v1-live-a1/result.json
   approaches: []
 blocker: null
 migration:
@@ -184,7 +192,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:08:27+00:00'
-concise_result: 'Unblocked by coordinator: Spec r2 removes P1-002 dependency; user-supplied NVIDIA_API_KEY
-  is configured in .env.dev (value not inspected) and hosted endpoint is reachable'
+updated_at: '2026-09-26T14:12:37+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 실제 provider/상대 서비스의 접근 가능한 스키마·주소·readiness를 해당 준비 task 결과로 확인해야 한다.

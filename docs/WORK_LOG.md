@@ -770,3 +770,17 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   기본 runtime을 OpenShell 격리로 주장하지 않는다. 실제 모듈/OS 강제 gate는 별도로 유지한다.
 - 해당 기존 task의 scope·분할/실제 gate를 확인하여 반영할 예정이며, 현재 검색 개발을
   중단하지 않는다. 새 framework나 중복 MSA가 아닌 기존 adapter 교체 지점을 사용한다.
+
+## P1-002A NVIDIA hosted live 증거 — 2026-09-26 14:30 UTC
+
+- 사용자가 NVIDIA 호출 증거를 먼저 진행하도록 우선순위를 바꿨다. P1-002A spec r2로 P1-002 의존을
+  제거하고 고정 합성 한국어 요청만 보내는 direct hosted smoke로 범위를 한정했다. 제품 코드와 공유
+  파일은 변경하지 않았고 제품 ModelPort 경로는 not_run(P1-002)이다.
+- hosted `nvidia/nemotron-3.5-lightning-30b-a3b`에서 한국어 근거 답변+[E1] 인용, 근거 밖 '근거 부족',
+  json_object Pydantic 검증, named tool_choice 제안(실행 0회)을 확인했다. worker v1-live-a1 4 passed
+  38.7s, target(main 2c880f2) v1-live-target-a1 4 passed 117.2s, 재시도 0.
+- 오류와 수정: 첫 순차 개발 실행은 hosted 지연으로 2건 ReadTimeout(150s). 4요청 동시 전송과
+  timeout/429/5xx 1회 재시도, 실패 시도 기록으로 바꾼 뒤 통과했다. 지연은 1~117초로 편차가 크다.
+- 키는 Settings(_env_file) SecretStr 안에서만 사용했고 로그·evidence·control 파일에 없음을 값 출력 없이
+  검사했다. integrate/close 완료. 다음: P1-002 제품 adapter가 이 관측(지연 편차, reasoning token 비용,
+  thinking off+json_object)을 반영한다.
