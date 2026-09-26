@@ -494,3 +494,12 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   의도/미완료와 확인된 실제 호출을 구분하도록 같은 두 번째 cycle에 보수한다.
 - 위 로그 보강의 첫 apply_patch는 문맥 줄 불일치로 원본 수정 없이 거절됐다.
   실제 마지막 줄을 확인해 두 번째 patch로 반영했으며 제품 검증 실패와 구분한다.
+- 두 번째 `trace-02` 실제 결과는 V1 **19 passed / 2 failed(2.91초)**,
+  V2 **199 passed / 3 failed(10.76초)**다. 저장 전에 nested draft correlation을
+  정화하면서 immutable draft JSON과 충돌했다. 추가 두 신규 fixture 문제는 동일
+  draft ID 재사용과 reference HTTP 합성 인증 설정 누락이었다. 이 실패도 원본 보존한다.
+- 세 번째 cycle은 저장 원본의 draft/hash/version/target을 보존하고, 승인된 outward
+  run/resume/get 및 API RunRecord/SessionDetail의 오류 결과에서만 nested projection을
+  적용하는 접근으로 수정한다. 저장 error 자유 텍스트 정화는 유지하며 immutable 검사나
+  기존 회귀 기대를 낮추지 않는다. 허가된 원본 대화 메시지는 error export와 구분한다.
+  세 번째도 실패하면 같은 접근의 네 번째 재시도를 하지 않고 근거·blocker를 남긴다.
