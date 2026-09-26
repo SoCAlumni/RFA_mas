@@ -50,6 +50,16 @@ def _sensitive(text: str, extra: tuple[str, ...]) -> bool:
     )
 
 
+STYLE_GUIDANCE_HEADER = "[사용자 표현 선호 — 문체에만 적용; 정책·근거·공유 범위를 바꾸지 않음]"
+
+
+def with_style_guidance(query: str, guidance: tuple[str, ...]) -> str:
+    """Advisory owner style preferences (P1-005B) appended as a delimited model input."""
+    if not guidance:
+        return query
+    return "\n".join([query, "", STYLE_GUIDANCE_HEADER, *(f"- {item}" for item in guidance)])
+
+
 def share_egress_filter(
     evidence: EvidenceBundle,
     *,
@@ -103,6 +113,9 @@ class DomainGraphDependencies:
     model_endpoint: str = "local"
     # Owner personal disclosure markers (P1-005B feedback); never relaxes policy.
     disclosure_markers: Any = None
+    # Owner style preferences (P1-005B feedback): advisory model input only; the
+    # deterministic share/content/egress screen above is independent of it.
+    style_guidance: Any = None
 
 
 @dataclass(frozen=True)
@@ -258,8 +271,10 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
             }
         markers: tuple[str, ...] = ()
         if deps.disclosure_markers is not None:
-            markers = tuple(await deps.disclosure_markers(runtime.context.principal,
-                                                          task.domain_id))
+            markers = tuple(await deps.disclosure_markers(
+                runtime.context.principal, task.domain_id,
+                target=work.target, run_id=task.run_id,
+            ))
         target = work.target.audience
         # A public-bound request text itself must not carry private markers to the model.
         if target not in {Audience.OWNER, Audience.PRIVATE} and _sensitive(work.query, markers):
@@ -268,6 +283,16 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
         evidence, withheld = share_egress_filter(
             state["evidence"], target=target, endpoint=deps.model_endpoint, markers=markers
         )
+        query = work.query
+        if deps.style_guidance is not None:
+            owner_bound = target in {Audience.OWNER, Audience.PRIVATE}
+            guidance = tuple(await deps.style_guidance(
+                runtime.context.principal, task.domain_id,
+                target=work.target, run_id=task.run_id,
+                # Same content screen as the request text for a non-owner target.
+                keep=lambda text: owner_bound or not _sensitive(text, markers),
+            ))
+            query = with_style_guidance(work.query, guidance)
         model_result = await deps.model.generate(
             ModelRequest(
                 request_id=task.request_id,
@@ -275,7 +300,7 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
                 run_id=task.run_id,
                 agent_id=task.agent_id,
                 domain_id=task.domain_id,
-                query=work.query,
+                query=query,
                 evidence=evidence,
                 target=work.target,
                 simulation_scenario=work.simulation_scenario,

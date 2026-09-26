@@ -119,6 +119,13 @@ from rfa_mas.contracts.models import (
     EvaluationCaseV11,
     ExecutionContext,
     ExperimentEvidence,
+    FeedbackApplication,
+    FeedbackClassification,
+    FeedbackCreate,
+    FeedbackRecord,
+    FeedbackRevoke,
+    FeedbackScope,
+    FeedbackSource,
     IntentDecision,
     JobRun,
     KnowledgeAcl,
@@ -175,6 +182,13 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "FeedbackScope",
+    "FeedbackSource",
+    "FeedbackCreate",
+    "FeedbackClassification",
+    "FeedbackRevoke",
+    "FeedbackRecord",
+    "FeedbackApplication",
     "DraftEditRequest",
     "PublishRequest",
     "DraftState",
@@ -251,6 +265,13 @@ EXTENDED_MODEL_NAMES = (
     "VersionReferences",
 )
 __all__ += [
+    "FeedbackApplication",
+    "FeedbackClassification",
+    "FeedbackCreate",
+    "FeedbackRecord",
+    "FeedbackRevoke",
+    "FeedbackScope",
+    "FeedbackSource",
     "JobRun",
     "Notification",
     "NotificationItem",

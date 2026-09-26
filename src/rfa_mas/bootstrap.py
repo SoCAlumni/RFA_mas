@@ -36,6 +36,7 @@ from rfa_mas.adapters.mock import (
 )
 from rfa_mas.adapters.scheduler import ApschedulerTriggers, ManualClock, SchedulerRunner
 from rfa_mas.application.drafts import DraftLifecycle
+from rfa_mas.application.feedback import FeedbackService
 from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
 from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
 from rfa_mas.application.graphs import (
@@ -510,6 +511,8 @@ def build_container(
         staged_context = StagedContextBoundary(
             _staged_context(repository, policy, settings, observer)
         )
+        # P1-005B: owner feedback memory. Markers only narrow; style is advisory model input.
+        feedback = FeedbackService(repository)
         runtime.register(
             "domain_task",
             build_domain_task_handler(
@@ -521,6 +524,8 @@ def build_container(
                         principal, work, request
                     ),
                     model_endpoint="local" if settings.model_provider == "mock" else "cloud",
+                    disclosure_markers=feedback.disclosure_markers,
+                    style_guidance=feedback.style_guidance,
                 )
             ),
         )

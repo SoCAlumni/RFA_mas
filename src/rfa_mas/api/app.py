@@ -2,7 +2,7 @@ import hmac
 import ipaddress
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, Header, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from rfa_mas.application.observations import safe_error_code
 from rfa_mas.application.candidates import CandidateService
+from rfa_mas.application.feedback import FeedbackService
 from rfa_mas.bootstrap import Container, build_container
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
@@ -21,6 +22,12 @@ from rfa_mas.contracts import (
     DomainId,
     DraftEditRequest,
     DraftState,
+    FeedbackApplication,
+    FeedbackCategory,
+    FeedbackClassification,
+    FeedbackCreate,
+    FeedbackRecord,
+    FeedbackRevoke,
     JobRun,
     KnowledgeDelete,
     KnowledgeExport,
@@ -372,6 +379,85 @@ def create_app(
         principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> TodoCandidate:
         return await candidates.decide(candidate_id, body, principal)
+
+    # P1-005B: owner feedback memory (4 categories, scope, revocation, application log).
+    feedback = FeedbackService(selected_container.repository)
+
+    @app.post(
+        "/v1/feedback/classify", response_model=FeedbackClassification, tags=["feedback"]
+    )
+    async def classify_feedback(
+        body: FeedbackCreate,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> FeedbackClassification:
+        # Preview only: nothing is stored until the owner submits (confirms) a category.
+        return feedback.classify(body)
+
+    @app.post(
+        "/v1/feedback", response_model=FeedbackRecord, status_code=201, tags=["feedback"]
+    )
+    async def submit_feedback(
+        body: FeedbackCreate,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> FeedbackRecord:
+        return await feedback.submit(body, principal)
+
+    @app.get("/v1/feedback", response_model=list[FeedbackRecord], tags=["feedback"])
+    async def list_feedback(
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        domain_id: DomainId | None = None,
+        state: Literal["active", "revoked"] | None = None,
+        category: FeedbackCategory | None = None,
+    ) -> list[FeedbackRecord]:
+        return await feedback.list(principal, domain_id=domain_id, state=state, category=category)
+
+    @app.get("/v1/feedback/{feedback_id}", response_model=FeedbackRecord, tags=["feedback"])
+    async def get_feedback(
+        feedback_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> FeedbackRecord:
+        return await feedback.get(feedback_id, principal)
+
+    @app.get(
+        "/v1/feedback/{feedback_id}/revisions",
+        response_model=list[FeedbackRecord],
+        tags=["feedback"],
+    )
+    async def feedback_revisions(
+        feedback_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[FeedbackRecord]:
+        return await feedback.revisions(feedback_id, principal)
+
+    @app.get(
+        "/v1/feedback/{feedback_id}/applications",
+        response_model=list[FeedbackApplication],
+        tags=["feedback"],
+    )
+    async def feedback_item_applications(
+        feedback_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[FeedbackApplication]:
+        return await feedback.applications(principal, feedback_id=feedback_id)
+
+    @app.post(
+        "/v1/feedback/{feedback_id}/revoke", response_model=FeedbackRecord, tags=["feedback"]
+    )
+    async def revoke_feedback(
+        feedback_id: str,
+        body: FeedbackRevoke,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> FeedbackRecord:
+        return await feedback.revoke(feedback_id, body, principal)
+
+    @app.get(
+        "/v1/runs/{run_id}/feedback", response_model=list[FeedbackApplication], tags=["feedback"]
+    )
+    async def run_feedback_applications(
+        run_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[FeedbackApplication]:
+        return await feedback.applications(principal, run_id=run_id)
 
     # P1-005A: immutable DRAFT versions, approval validity and (mock) publication state.
     def _drafts():

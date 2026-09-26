@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AwareDatetime,
@@ -1429,6 +1429,140 @@ class DraftState(ExtendedContractModel):
     publication: PublicationReceipt | None = None
     publication_status: PublicationStatus = PublicationStatus.NOT_REQUESTED
     publication_mode: ExecutionMode | None = None
+
+# -- P1-005B owner feedback memory (4 categories, scope, revocation) --------------------
+FeedbackState = Literal["active", "revoked"]
+FeedbackDisposition = Literal[
+    "applied_in_scope", "narrowing_only", "pending_evidence_review", "proposal_only"
+]
+FEEDBACK_DISPOSITION: dict[FeedbackCategory, str] = {
+    FeedbackCategory.STYLE_PREFERENCE: "applied_in_scope",
+    FeedbackCategory.PERSONAL_DISCLOSURE_PREFERENCE: "narrowing_only",
+    FeedbackCategory.FACTUAL_CORRECTION: "pending_evidence_review",
+    FeedbackCategory.OFFICIAL_POLICY_CHANGE_PROPOSAL: "proposal_only",
+}
+WithholdMarker = Annotated[str, Field(min_length=2, max_length=200)]
+
+
+class FeedbackScope(ExtendedContractModel):
+    """Where a feedback item may apply. The user is always the authenticated caller.
+
+    None means "any" for that dimension. No field can name another user or widen access.
+    """
+
+    domain_id: DomainId | None = None
+    target_audience: Audience | None = None
+    target_channel: str | None = Field(default=None, min_length=1, max_length=128)
+
+
+class FeedbackSource(ExtendedContractModel):
+    """Provenance only. A referenced run/draft must belong to the caller."""
+
+    kind: Literal["user_statement", "draft_review"] = "user_statement"
+    run_id: OpaqueId | None = None
+    draft_id: OpaqueId | None = None
+    draft_version: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def bound_reference(self) -> FeedbackSource:
+        if self.kind == "draft_review" and self.run_id is None:
+            raise ValueError("draft_review feedback requires run_id")
+        if (self.draft_id is None) != (self.draft_version is None):
+            raise ValueError("draft_id and draft_version go together")
+        if self.draft_id is not None and self.run_id is None:
+            raise ValueError("a draft reference requires its run_id")
+        return self
+
+
+class FeedbackCreate(ExtendedContractModel):
+    """Owner feedback. category=None asks the deterministic local classifier."""
+
+    text: str = Field(min_length=1, max_length=2000)
+    category: FeedbackCategory | None = None
+    scope: FeedbackScope = Field(default_factory=FeedbackScope)
+    source: FeedbackSource = Field(default_factory=FeedbackSource)
+    # Personal disclosure preference only: terms to withhold from non-owner targets.
+    withhold_markers: tuple[WithholdMarker, ...] = Field(default=(), max_length=32)
+
+    @model_validator(mode="after")
+    def markers_only_narrow_disclosure(self) -> FeedbackCreate:
+        if self.withhold_markers and self.category not in {
+            None, FeedbackCategory.PERSONAL_DISCLOSURE_PREFERENCE
+        }:
+            raise ValueError("withhold markers belong to personal disclosure preferences")
+        return self
+
+
+class FeedbackClassification(ExtendedContractModel):
+    """Classification preview; nothing is stored."""
+
+    category: FeedbackCategory | None
+    classified_by: Literal["user", "rule"]
+    rule: OpaqueId
+    disposition: FeedbackDisposition | None = None
+    withhold_markers: tuple[str, ...] = ()
+
+
+class FeedbackRevoke(ExtendedContractModel):
+    expected_revision: int = Field(ge=1)
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class FeedbackRecord(ExtendedContractModel):
+    """Owner-scoped feedback memory item (revisioned; revocation is a new revision).
+
+    Only style (advisory model guidance) and personal disclosure (withhold markers that can
+    only narrow sharing) are ever applied. A factual correction stays tentative until an
+    evidence review; an official-policy change is a proposal and never changes policy.
+    """
+
+    feedback_id: OpaqueId
+    revision: int = Field(ge=1)
+    category: FeedbackCategory
+    classified_by: Literal["user", "rule"]
+    classification_rule: OpaqueId
+    text: str = Field(min_length=1, max_length=2000)
+    scope: FeedbackScope
+    source: FeedbackSource
+    withhold_markers: tuple[str, ...] = ()
+    state: FeedbackState = "active"
+    disposition: FeedbackDisposition
+    epistemic_state: EpistemicState | None = None
+    official_policy_changed: Literal[False] = False
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    revoked_reason: str | None = Field(default=None, max_length=500)
+    history: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def category_invariants(self) -> FeedbackRecord:
+        if self.disposition != FEEDBACK_DISPOSITION[self.category]:
+            raise ValueError("disposition does not match the feedback category")
+        disclosure = self.category == FeedbackCategory.PERSONAL_DISCLOSURE_PREFERENCE
+        if disclosure != bool(self.withhold_markers):
+            raise ValueError("only a disclosure preference carries (non-empty) markers")
+        factual = self.category == FeedbackCategory.FACTUAL_CORRECTION
+        if factual != (self.epistemic_state == "tentative") or (
+            not factual and self.epistemic_state is not None
+        ):
+            raise ValueError("a factual correction is tentative until evidence review")
+        if (self.state == "revoked") != (self.revoked_reason is not None):
+            raise ValueError("revocation reason is recorded exactly for revoked items")
+        return self
+
+
+class FeedbackApplication(ExtendedContractModel):
+    """Which feedback revision a run's generation actually received."""
+
+    feedback_id: OpaqueId
+    feedback_revision: int = Field(ge=1)
+    run_id: OpaqueId
+    effect: Literal["style_guidance", "withhold_markers"]
+    domain_id: DomainId
+    target_audience: Audience
+    target_channel: str
+    applied_at: AwareDatetime
+
 
 
 class ToolInvocation(ToolRequest):

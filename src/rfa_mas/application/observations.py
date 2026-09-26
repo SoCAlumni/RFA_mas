@@ -74,6 +74,9 @@ SAFE_ERROR_CODES = frozenset(
         "permission_revoked",
         "effect_in_progress",
         "retry_exists",
+        # P1-005B feedback memory (fixed codes).
+        "feedback_unclassified",
+        "feedback_invalid",
     }
 )
 TEAM_ROLES = frozenset(

@@ -25,6 +25,8 @@ from rfa_mas.contracts import (
     DraftBundle,
     ExecutionContext,
     ExecutionMode,
+    FeedbackApplication,
+    FeedbackRecord,
     JobRun,
     KnowledgeDelete,
     KnowledgeDocument,
@@ -576,6 +578,36 @@ class SqliteWorkRepository:
                         (datetime.now(UTC).isoformat(),),
                     )
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (11, ?)",
+                                       (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=12"
+                ).fetchone():
+                    # P1-005B: owner feedback memory, revision history and application log.
+                    # (After 9 P0-021, 10 P0-022 and 11 P0-024; each migration is independent.)
+                    for statement in (
+                        "CREATE TABLE feedback_items (feedback_id TEXT PRIMARY KEY, "
+                        "owner_id TEXT NOT NULL, category TEXT NOT NULL, "
+                        "state TEXT NOT NULL CHECK (state IN ('active', 'revoked')), "
+                        "revision INTEGER NOT NULL, domain_id TEXT, target_audience TEXT, "
+                        "target_channel TEXT, record_json TEXT NOT NULL, "
+                        "created_at TEXT NOT NULL, updated_at TEXT NOT NULL)",
+                        "CREATE INDEX feedback_items_owner ON feedback_items"
+                        "(owner_id, state, category)",
+                        "CREATE TABLE feedback_item_revisions (feedback_id TEXT NOT NULL "
+                        "REFERENCES feedback_items(feedback_id), revision INTEGER NOT NULL, "
+                        "record_json TEXT NOT NULL, created_at TEXT NOT NULL, "
+                        "PRIMARY KEY(feedback_id, revision))",
+                        "CREATE TABLE feedback_applications (feedback_id TEXT NOT NULL "
+                        "REFERENCES feedback_items(feedback_id), feedback_revision INTEGER "
+                        "NOT NULL, owner_id TEXT NOT NULL, run_id TEXT NOT NULL, "
+                        "effect TEXT NOT NULL, application_json TEXT NOT NULL, "
+                        "applied_at TEXT NOT NULL, "
+                        "PRIMARY KEY(feedback_id, feedback_revision, run_id, effect))",
+                        "CREATE INDEX feedback_applications_run ON feedback_applications"
+                        "(owner_id, run_id)",
+                    ):
+                        connection.execute(statement)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (12, ?)",
                                        (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
@@ -1732,6 +1764,199 @@ class SqliteWorkRepository:
 
         return await asyncio.to_thread(operation)
 
+
+    # -- P1-005B owner feedback memory ---------------------------------------------------
+    async def create_feedback(
+        self, record: FeedbackRecord, principal: TrustedPrincipal
+    ) -> FeedbackRecord:
+        owner = self._authenticated(principal)
+        record = FeedbackRecord.model_validate(record.model_dump())
+
+        def operation() -> FeedbackRecord:
+            with self._connect() as connection:
+                connection.execute(
+                    "INSERT INTO feedback_items VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (record.feedback_id, owner, record.category.value, record.state,
+                     record.revision, record.scope.domain_id, record.scope.target_audience,
+                     record.scope.target_channel, record.model_dump_json(),
+                     record.created_at.isoformat(), record.updated_at.isoformat()),
+                )
+                connection.execute(
+                    "INSERT INTO feedback_item_revisions VALUES (?, ?, ?, ?)",
+                    (record.feedback_id, record.revision, record.model_dump_json(),
+                     record.updated_at.isoformat()),
+                )
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def get_feedback(self, feedback_id: str, principal: TrustedPrincipal) -> FeedbackRecord:
+        owner = self._authenticated(principal)
+
+        def operation() -> FeedbackRecord:
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT record_json FROM feedback_items WHERE feedback_id=? AND owner_id=?",
+                    (feedback_id, owner),
+                ).fetchone()
+                if row is None:
+                    raise ResourceNotFoundError("feedback")
+                return FeedbackRecord.model_validate_json(row[0])
+
+        return await asyncio.to_thread(operation)
+
+    async def list_feedback(
+        self,
+        principal: TrustedPrincipal,
+        *,
+        domain_id: DomainId | None = None,
+        state: str | None = None,
+        category: str | None = None,
+    ) -> list[FeedbackRecord]:
+        owner = self._authenticated(principal)
+
+        def operation() -> list[FeedbackRecord]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT record_json FROM feedback_items WHERE owner_id=? "
+                    "AND (? IS NULL OR domain_id IS NULL OR domain_id=?) "
+                    "AND (? IS NULL OR state=?) AND (? IS NULL OR category=?) "
+                    "ORDER BY created_at, feedback_id",
+                    (owner, domain_id, domain_id, state, state, category, category),
+                ).fetchall()
+                return [FeedbackRecord.model_validate_json(row[0]) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    async def feedback_revisions(
+        self, feedback_id: str, principal: TrustedPrincipal
+    ) -> list[FeedbackRecord]:
+        await self.get_feedback(feedback_id, principal)
+
+        def operation() -> list[FeedbackRecord]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT record_json FROM feedback_item_revisions WHERE feedback_id=? "
+                    "ORDER BY revision",
+                    (feedback_id,),
+                ).fetchall()
+                return [FeedbackRecord.model_validate_json(row[0]) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    async def replace_feedback(
+        self, record: FeedbackRecord, principal: TrustedPrincipal, *, expected_revision: int
+    ) -> FeedbackRecord:
+        """CAS: store revision N+1 only if N is current and the item is still active."""
+        owner = self._authenticated(principal)
+        record = FeedbackRecord.model_validate(record.model_dump())
+
+        def operation() -> FeedbackRecord:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                current = connection.execute(
+                    "SELECT revision, state FROM feedback_items WHERE feedback_id=? AND owner_id=?",
+                    (record.feedback_id, owner),
+                ).fetchone()
+                if current is None:
+                    raise ResourceNotFoundError("feedback")
+                if (
+                    current[0] != expected_revision
+                    or record.revision != expected_revision + 1
+                    or current[1] != "active"
+                ):
+                    raise RfaError("invalid_state_transition", "피드백 revision이 변경되었습니다.")
+                connection.execute(
+                    "UPDATE feedback_items SET state=?, revision=?, record_json=?, updated_at=? "
+                    "WHERE feedback_id=?",
+                    (record.state, record.revision, record.model_dump_json(),
+                     record.updated_at.isoformat(), record.feedback_id),
+                )
+                connection.execute(
+                    "INSERT INTO feedback_item_revisions VALUES (?, ?, ?, ?)",
+                    (record.feedback_id, record.revision, record.model_dump_json(),
+                     record.updated_at.isoformat()),
+                )
+                return record
+
+        return await asyncio.to_thread(operation)
+
+    async def apply_feedback(
+        self,
+        principal: TrustedPrincipal,
+        *,
+        effect: str,
+        domain_id: DomainId,
+        target_audience: str,
+        target_channel: str,
+        run_id: str | None,
+        keep: Any = None,
+    ) -> list[FeedbackRecord]:
+        """Select in-scope ACTIVE items and record their application in ONE transaction.
+
+        Only style guidance and disclosure markers are ever applicable; factual corrections
+        and policy proposals are not selectable here. A committed revocation is never read.
+        """
+        owner = self._authenticated(principal)
+        category = {
+            "style_guidance": "style_preference",
+            "withhold_markers": "personal_disclosure_preference",
+        }[effect]
+        now = datetime.now(UTC)
+
+        def operation() -> list[FeedbackRecord]:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                rows = connection.execute(
+                    "SELECT record_json FROM feedback_items WHERE owner_id=? AND state='active' "
+                    "AND category=? AND (domain_id IS NULL OR domain_id=?) "
+                    "AND (target_audience IS NULL OR target_audience=?) "
+                    "AND (target_channel IS NULL OR target_channel=?) "
+                    "ORDER BY created_at, feedback_id",
+                    (owner, category, domain_id, target_audience, target_channel),
+                ).fetchall()
+                records = [FeedbackRecord.model_validate_json(row[0]) for row in rows]
+                if keep is not None:
+                    records = [item for item in records if keep(item)]
+                if run_id is not None:
+                    for item in records:
+                        application = FeedbackApplication(
+                            feedback_id=item.feedback_id, feedback_revision=item.revision,
+                            run_id=run_id, effect=effect, domain_id=domain_id,
+                            target_audience=target_audience, target_channel=target_channel,
+                            applied_at=now,
+                        )
+                        # Replay of the same generation step records nothing new.
+                        connection.execute(
+                            "INSERT OR IGNORE INTO feedback_applications VALUES "
+                            "(?, ?, ?, ?, ?, ?, ?)",
+                            (item.feedback_id, item.revision, owner, run_id, effect,
+                             application.model_dump_json(), now.isoformat()),
+                        )
+                return records
+
+        return await asyncio.to_thread(operation)
+
+    async def feedback_applications(
+        self,
+        principal: TrustedPrincipal,
+        *,
+        run_id: str | None = None,
+        feedback_id: str | None = None,
+    ) -> list[FeedbackApplication]:
+        owner = self._authenticated(principal)
+
+        def operation() -> list[FeedbackApplication]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT application_json FROM feedback_applications WHERE owner_id=? "
+                    "AND (? IS NULL OR run_id=?) AND (? IS NULL OR feedback_id=?) "
+                    "ORDER BY applied_at, feedback_id, effect",
+                    (owner, run_id, run_id, feedback_id, feedback_id),
+                ).fetchall()
+                return [FeedbackApplication.model_validate_json(row[0]) for row in rows]
+
+        return await asyncio.to_thread(operation)
 
     async def run_team_binding(
         self, run_id: str, principal: TrustedPrincipal
