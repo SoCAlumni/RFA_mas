@@ -5,8 +5,10 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from rfa_mas.application.observations import safe_error_code
 from rfa_mas.bootstrap import Container, build_container
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
@@ -86,6 +88,26 @@ def create_app(
     )
     app.state.container = selected_container
 
+    async def present_record(record: RunRecord, principal: TrustedPrincipal) -> RunRecord:
+        if record.result is None:
+            return record
+        result = await selected_container.service.present_result(record.result, principal)
+        return record.model_copy(
+            update={"request_id": result.request_id, "trace_id": result.trace_id, "result": result}
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def handle_validation_error(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        # Even loc/extra-field names may be private attacker input. Never echo them.
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [{"loc": ["body"], "msg": "Invalid request", "type": "value_error"}]
+            },
+        )
+
     @app.exception_handler(RfaError)
     async def handle_domain_error(request: Request, exc: RfaError) -> JSONResponse:
         status_code = {
@@ -101,10 +123,9 @@ def create_app(
             "resume_unavailable": status.HTTP_409_CONFLICT,
         }.get(exc.code, status.HTTP_400_BAD_REQUEST)
         error = StructuredError(
-            code=exc.code,
-            retryable=exc.retryable,
-            message=exc.safe_message,
-            request_id=request.headers.get("X-Request-Id"),
+            code=safe_error_code(exc.code),
+            retryable=False,
+            message="요청을 안전하게 처리할 수 없습니다.",
         )
         return JSONResponse(status_code=status_code, content=error.model_dump(mode="json"))
 
@@ -165,7 +186,14 @@ def create_app(
         session_id: str,
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> SessionDetail:
-        return await selected_container.service.sessions.get(session_id, trusted_principal)
+        detail = await selected_container.service.sessions.get(session_id, trusted_principal)
+        return detail.model_copy(
+            update={
+                "runs": tuple(
+                    [await present_record(record, trusted_principal) for record in detail.runs]
+                )
+            }
+        )
 
     @app.post(
         "/v1/sessions/{session_id}/work",
@@ -192,7 +220,8 @@ def create_app(
         run_id: str,
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunRecord:
-        return await selected_container.service.sessions.get_run(run_id, trusted_principal)
+        record = await selected_container.service.sessions.get_run(run_id, trusted_principal)
+        return await present_record(record, trusted_principal)
 
     @app.post("/v1/runs/{run_id}/resume", response_model=RunResult, tags=["work"])
     async def resume_run(

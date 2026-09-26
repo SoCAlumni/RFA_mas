@@ -1,5 +1,12 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P1-006D typed observation 1.1 (통합·발행 대기)
+
+- `ObservationRecord/ObservationCoverage/ObservationLedger`, WorkRepository 관측 메서드, `TracePort.emit_observation` 추가. Pydantic이 원본이며 extended만 재생성한다. frozen 1.0 모델/route는 유지하고 validation error도 기존 detail list shape의 고정 안전한 값으로 반환한다.
+- SQLite migration 2는 durable random alias·원자적 순번·불변 관측 원장을 추가하며 migration 1/기존 실행은 보존한다. 관측 참조는 인증·승인 권한이 아니다. 원본 stage ID가 없는 adapter에는 이를 만들어 넣지 않는다.
+- legacy arbitrary emit은 더 이상 파일을 쓰지 않는다. 기본 native tracing의 외부 ambient export는 억제한다. typed local export와 보존 범위/복구 제한은 INTEGRATION.md를 따른다. LangSmith는 기존 lock의 0.14.0을 공개 tracing guard용 직접 의존성으로 승격한다.
+- 영향 consumer는 P0-028 NAT, P1-006 계열 평가/레드팀 및 후속 team/runtime observer 확장이다. 실제 NVIDIA/NAT/승인 서비스/OpenShell 실행 gate는 이 로컬 관측의 성공과 별개다. 실제 검증은 task evidence에 기록하며 coordinator 통합 후 새 digest를 발행한다.
+
 ## 2026-09-26 — P0-016 영속 review-wakeup 계약 (통합 검증·발행 대기)
 
 - `ResumeRequest` 1.1과 `POST /v1/runs/{run_id}/resume` 추가. 기존 1.0 wire는 유지한다. event는 원본 승인 조회를 깨우는 신호이며 approval bool/임의 thread/principal은 불허한다.

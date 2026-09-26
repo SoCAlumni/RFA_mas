@@ -10,6 +10,7 @@ from langgraph.types import Command
 
 from rfa_mas.application.graphs.domain import InvocationContext
 from rfa_mas.application.graphs.supervisor import build_supervisor_graph
+from rfa_mas.application.observations import Observations, native_trace_guard, safe_error_code
 from rfa_mas.application.sessions import SessionService
 from rfa_mas.contracts import (
     AdapterInfo,
@@ -21,6 +22,7 @@ from rfa_mas.contracts import (
     TrustedPrincipal,
     WorkRequest,
     WorkStatus,
+    new_id,
     sha256_text,
 )
 from rfa_mas.errors import OutcomeUnknownError, PolicyDeniedError, ResourceNotFoundError, RfaError
@@ -36,6 +38,7 @@ class WorkService:
         supervisor_dependencies: Any,
         adapters: tuple[AdapterInfo, ...],
         guard_thread: Callable[[str], AbstractContextManager[None]],
+        observations: Observations,
     ) -> None:
         self._repository = repository
         self.sessions = SessionService(repository)
@@ -44,6 +47,7 @@ class WorkService:
         self._graph = None
         self._guard_thread = guard_thread
         self._adapters = adapters
+        self.observations = observations
 
     def start(self, checkpointer: Any) -> None:
         self._graph = build_supervisor_graph(self._dependencies, checkpointer=checkpointer)
@@ -56,6 +60,7 @@ class WorkService:
         # Metadata/configurable scalar values can be persisted. No auth/context here.
         return {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
 
+    @native_trace_guard
     async def run(self, request: WorkRequest, principal: TrustedPrincipal) -> RunResult:
         created_at = datetime.now(UTC)
         if not principal.authenticated:
@@ -86,21 +91,85 @@ class WorkService:
         thread_id: str,
         created_at: datetime,
     ) -> RunResult:
-        await self._repository.transition_run(request.run_id, WorkStatus.RUNNING)
-        await self._trace.emit(
-            event="work_started",
-            request_id=request.request_id,
-            trace_id=request.trace_id,
-            run_id=request.run_id,
-            status=WorkStatus.RUNNING.value,
-            metadata={
-                "requested_domain": request.domain_id.value if request.domain_id else None,
-                "target_audience": request.target.audience.value,
-                "scenario": request.simulation_scenario.value,
-                "simulated": any(item.simulated for item in self._adapters),
-                "adapters": [item.model_dump(mode="json") for item in self._adapters],
-            },
+        async with self.observations.scope(request.run_id, principal):
+            await self.observations.record("request", "started", origin="service")
+            result = await self._execute_inner(request, principal, thread_id, created_at)
+            await self.observations.record(
+                "stop",
+                self._trace_status(result.status),
+                origin="service",
+                mode="mock" if result.simulated else "local",
+                draft_id=result.draft.draft_id if result.draft else None,
+            )
+            return await self.present_result(result, principal)
+
+    @staticmethod
+    def _trace_status(status: WorkStatus) -> str:
+        return {
+            WorkStatus.COMPLETED: "succeeded",
+            WorkStatus.WAITING_APPROVAL: "waiting",
+            WorkStatus.CANCELLED: "cancelled",
+            WorkStatus.OUTCOME_UNKNOWN: "outcome_unknown",
+        }.get(status, "failed")
+
+    async def _project_error(
+        self, result: RunResult, principal: TrustedPrincipal, *, outward: bool = False
+    ) -> RunResult:
+        if not result.errors and result.status != WorkStatus.FAILED:
+            return result
+        context = await self._repository.observation_context(result.run_id, principal)
+        errors = tuple(
+            StructuredError(
+                code=safe_error_code(error.code),
+                message="작업을 안전하게 중단했습니다.",
+                request_id=context.request_id,
+                trace_id=context.trace_id,
+                run_id=result.run_id,
+                retryable=False,
+            )
+            for error in result.errors
         )
+        # Preserve authorized partial output and its content binding; only the
+        # error-facing correlation fields and free-text review reason are projected.
+        correlation = dict(
+            request_id=context.request_id, trace_id=context.trace_id, agent_id=context.agent_id
+        )
+        draft = result.draft
+        if outward and draft is not None:
+            draft = draft.model_copy(update=correlation)
+        review = (
+            result.review.model_copy(
+                update={**correlation, "safe_reason": "검토 상태를 확인하세요."}
+            )
+            if outward and result.review
+            else result.review
+        )
+
+        return result.model_copy(
+            update=dict(
+                request_id=context.request_id,
+                trace_id=context.trace_id,
+                agent_id="assistant-supervisor",
+                errors=errors,
+                draft=draft,
+                review=review,
+                stop_reason=errors[0].code if errors else "internal_error",
+            )
+        )
+
+    async def present_result(self, result: RunResult, principal: TrustedPrincipal) -> RunResult:
+        """Owner-authorized error view; never persist its modified draft metadata."""
+        await self._repository.get_owned_run(result.run_id, principal)
+        return await self._project_error(result, principal, outward=True)
+
+    async def _execute_inner(
+        self,
+        request: WorkRequest,
+        principal: TrustedPrincipal,
+        thread_id: str,
+        created_at: datetime,
+    ) -> RunResult:
+        await self._repository.transition_run(request.run_id, WorkStatus.RUNNING)
         try:
             # The current worker payload is the frozen 1.0 WorkRequest. Keep the
             # session/task binding durably in the repository, and adapt only this
@@ -168,6 +237,7 @@ class WorkService:
                 ),
             )
 
+        result = await self._project_error(result, principal)
         await self._repository.transition_run(request.run_id, result.status)
         await self._repository.save_result(result)
         await self._repository.save_checkpoint(
@@ -181,25 +251,25 @@ class WorkService:
                 "evidence_count": len(result.draft.allowed_evidence) if result.draft else 0,
             },
         )
-        await self._trace.emit(
-            event="work_finished",
-            request_id=request.request_id,
-            trace_id=request.trace_id,
-            run_id=request.run_id,
-            status=result.status.value,
-            metadata={
-                "domain_id": result.domain_id.value if result.domain_id else None,
-                "draft_id": result.draft.draft_id if result.draft else None,
-                "content_hash": result.draft.content_hash if result.draft else None,
-                "review": result.review.decision.value if result.review else None,
-                "publication_status": result.publication_status.value,
-                "simulated": result.simulated,
-                "adapters": [item.model_dump(mode="json") for item in result.adapters],
-            },
-        )
         return result
 
+    @native_trace_guard
     async def resume(
+        self, run_id: str, wakeup: ResumeRequest, principal: TrustedPrincipal
+    ) -> RunResult:
+        async with self.observations.scope(run_id, principal):
+            await self.observations.record("request", "started", origin="service")
+            result = await self._resume_inner(run_id, wakeup, principal)
+            await self.observations.record(
+                "stop",
+                self._trace_status(result.status),
+                origin="service",
+                mode="mock" if result.simulated else "local",
+                draft_id=result.draft.draft_id if result.draft else None,
+            )
+            return await self.present_result(result, principal)
+
+    async def _resume_inner(
         self, run_id: str, wakeup: ResumeRequest, principal: TrustedPrincipal
     ) -> RunResult:
         # Authorize before looking up ANY checkpoint. Never accept client thread IDs.
@@ -258,24 +328,17 @@ class WorkService:
                     record.created_at,
                     RfaError("resume_error", "재개 중 오류가 발생하여 안전하게 중단했습니다."),
                 )
+            result = await self._project_error(result, principal)
             if result.status != record.status:
                 await self._repository.transition_run(run_id, result.status)
             await self._repository.save_result(result)
-            await self._trace.emit(
-                event="work_resumed",
-                request_id=result.request_id,
-                trace_id=result.trace_id,
-                run_id=result.run_id,
-                status=result.status.value,
-                metadata={"simulated": result.simulated},
-            )
             return result
 
     async def get(self, run_id: str, principal: TrustedPrincipal) -> RunResult:
         record = await self._repository.get_owned_run(run_id, principal)
         if record.result is None:
             raise ResourceNotFoundError("run result")
-        return record.result
+        return await self.present_result(record.result, principal)
 
     def _failed_result(
         self, request: WorkRequest, created_at: datetime, error: RfaError
@@ -291,18 +354,18 @@ class WorkService:
         status: WorkStatus,
     ) -> RunResult:
         structured = StructuredError(
-            code=error.code,
-            retryable=error.retryable,
-            message=error.safe_message,
-            request_id=request.request_id,
-            trace_id=request.trace_id,
+            code=safe_error_code(error.code),
+            retryable=False,
+            message="작업을 안전하게 중단했습니다.",
+            request_id=new_id("error"),
+            trace_id=new_id("error"),
             run_id=request.run_id,
         )
         return RunResult(
-            request_id=request.request_id,
-            trace_id=request.trace_id,
+            request_id=structured.request_id,
+            trace_id=structured.trace_id,
             run_id=request.run_id,
-            agent_id=request.agent_id,
+            agent_id="assistant-supervisor",
             status=status,
             errors=(structured,),
             stop_reason=structured.code,

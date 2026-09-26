@@ -295,6 +295,20 @@ P0의 canary redact는 최후 방어선이며 사전 authorization을 대체하�
 
 ## 팀 통합 전 확인 목록
 
+### P1-006D 로컬 관측 소비 경계 (통합·발행 대기)
+
+- `container.service.observations.ledger(run_id, principal)`은 소유권 확인 후 1.1 `ObservationLedger`를 반환한다. 저장된 run/session/task 연결에서 만든 random alias는 SQLite migration 2에 보존하며 재시작·resume에서 동일하다. raw caller ID/hash를 익명화라고 주장하지 않는다. alias↔원본 매핑과 원장은 접근 제한된 실행 DB이며 외부 공개 API가 아니다.
+- `ObservationRecord.observation_id`와 run별 원자적 `sequence`는 실제 수집 순서를 식별한다. 실행 thread의 내부 노드 순서까지 추론하지 않는다. `transport=returned/raised`는 포트 호출 결과이며 `TraceEvent.status`의 정책 거절·승인 대기와 별개다. 원본 정책 결정/승인/게시 ID가 없는 현재 1.0 adapter는 해당 ID를 null로 둔다. 저장된 draft만 alias로 연결한다.
+- `started`는 호출 의도이며 port call_count를 올리지 않는다. 반환/예외 관측이 실제 호출을 확인한다. 시작만 남은 crash/export 오류는 `coverage=incomplete/calls=null`로 표시한다. runtime의 denied/timed_out/outcome_unknown과 결과 불명 예외는 성공으로 바꾸지 않는다. domain을 생략한 요청은 검증된 Runtime AgentSpec의 서버 선택 domain에 관측을 영속 결합한다.
+- native run/resume의 Model/Retrieval/Policy/Runtime/Response 경계만 명시적 decorator로 수집한다. `provider_kind=reference_http`는 설정에서 선택한 loopback reference adapter, `mode=local`은 그 로컬 경로다. 이는 실제 팀원 승인 원본/OpenShell 증거가 아니다. builtin mock은 mock, local runtime은 local이며 sandbox를 주장하지 않는다. provider가 제공하지 않는 token은 null. ToolPort·게시·내부 노드 미수집은 `uncollected/calls=null`이며 호출 0회와 다르다.
+- 테스트 sink는 실제 합성 payload를 수신/기록한 후 활성 `observations.scope(run_id, principal)` 안에서 `record_test_sink(received=True)`를 호출한다. 이 trusted in-process instrumentation은 `origin=test_sink/provider_kind=test`로 별도 집계하며 실제 게시·승인을 만들지 않는다. payload와 승인 결합 검증은 후속 평가 consumer가 보호된 fixture/실행 기록으로 별도 수행한다.
+- 기본 export는 allowlist DTO + DB의 동일 불변 record 확인을 요구한다. legacy `emit`/임의 `emit_event`는 거절한다. raw prompt/context/인자·헤더·provider 자유 텍스트·caller ID는 export하지 않는다. 오류 DTO는 고정 code/message로 투영하며 422의 loc/msg/type은 고정값만 사용한다. 정상 응답의 기존 request/trace correlation은 유지한다.
+- native LangGraph 실행/재개는 공개 LangSmith `tracing_context(enabled=False, parent=False)`로 환경변수 기반 raw tracing을 억제한다. NAT 외부 wrapper는 별도 P0-028 검증 대상이다. 새 관측 서버나 외부 exporter는 활성화하지 않는다.
+- `TRACE_RETENTION_DAYS`는 **`TRACE_DIR/rfa-observations-v1`의 private 소유 manifest에 등록된 제품 JSONL 파일만** 다음 export 때 정리한다. SQLite 원장·run metadata·alias는 삭제하지 않으며 별도 DB 보존 정책은 미구현이다. legacy 파일, symlink, `.agent/evidence`, source manifest는 관리하지 않는다. manifest/log는 0600, 소유 디렉터리는 0700; 이는 같은 OS 사용자에 대한 sandbox가 아니다.
+- 파일 생성 전 manifest에 소유권을 예약한다. 예약 후 crash는 다음 export가 파일을 생성해 복구한다. append 후 crash/re-export는 중복 line을 만들 수 있으므로 `observation_id`로 중복 제거한다. DB 원장이 원본이며 여러 파일 rename을 단일 transaction이라고 주장하지 않는다. 미등록/변조 파일은 채택·삭제하지 않고 안전한 configuration error로 중단하므로 운영자가 별도 보존/복구해야 한다.
+
+### 실제 서비스 확인
+
 - 상대 OpenAPI와 `schema_version`/contract version
 - base URL, 인증 방식, token audience와 rotation 책임
 - idempotency key 보존 기간과 충돌 응답

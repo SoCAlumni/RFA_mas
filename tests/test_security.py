@@ -10,7 +10,7 @@ import pytest
 
 from rfa_mas.adapters.local import LocalJsonlTrace
 from rfa_mas.cli import _doctor
-from rfa_mas.errors import ConfigurationError
+from rfa_mas.errors import ConfigurationError, RfaError
 from rfa_mas.security import RedactingLogFilter, SecretRedactor
 from rfa_mas.settings import Settings
 
@@ -97,21 +97,20 @@ async def test_known_fake_secret_is_absent_from_trace_output(tmp_path: Path) -> 
         SecretRedactor(settings.secret_values()),
     )
 
-    await trace.emit(
-        event="redaction_test",
-        request_id="req_test",
-        trace_id="trace_test",
-        run_id="run_test",
-        status="completed",
-        metadata={
-            "authorization": f"Bearer {KNOWN_FAKE_SECRET}",
-            "nested": {"token": KNOWN_FAKE_SECRET},
-        },
-    )
+    with pytest.raises(RfaError, match="recorder"):
+        await trace.emit(
+            event="redaction_test",
+            request_id="req_test",
+            trace_id="trace_test",
+            run_id="run_test",
+            status="completed",
+            metadata={
+                "authorization": f"Bearer {KNOWN_FAKE_SECRET}",
+                "nested": {"token": KNOWN_FAKE_SECRET},
+            },
+        )
 
-    rendered = (tmp_path / "traces" / "events.jsonl").read_text(encoding="utf-8")
-    assert KNOWN_FAKE_SECRET not in rendered
-    assert "[REDACTED]" in rendered
+    assert not (tmp_path / "traces").exists()
 
 
 @pytest.mark.asyncio
@@ -122,30 +121,22 @@ async def test_unregistered_credentials_are_redacted_from_trace_without_losing_m
     unregistered_token = "trace-token-not-in-settings"
     trace = LocalJsonlTrace(tmp_path / "traces", SecretRedactor())
 
-    await trace.emit(
-        event="unregistered_redaction_test",
-        request_id="req_test",
-        trace_id="trace_test",
-        run_id="run_test",
-        status="completed",
-        metadata={
-            "Authorization": f"Bearer {unregistered_bearer}",
-            "apiToken": unregistered_token,
-            "metrics": {"token_count": 31, "latency_ms": 7, "ok": True},
-        },
-    )
+    with pytest.raises(RfaError, match="recorder"):
+        await trace.emit(
+            event="unregistered_redaction_test",
+            request_id="req_test",
+            trace_id="trace_test",
+            run_id="run_test",
+            status="completed",
+            metadata={
+                "Authorization": f"Bearer {unregistered_bearer}",
+                "apiToken": unregistered_token,
+                "metrics": {"token_count": 31, "latency_ms": 7, "ok": True},
+            },
+        )
 
-    rendered = (tmp_path / "traces" / "events.jsonl").read_text(encoding="utf-8")
-    record = json.loads(rendered)
-    assert unregistered_bearer not in rendered
-    assert unregistered_token not in rendered
-    assert record["metadata"]["Authorization"] == "[REDACTED]"
-    assert record["metadata"]["apiToken"] == "[REDACTED]"
-    assert record["metadata"]["metrics"] == {
-        "latency_ms": 7,
-        "ok": True,
-        "token_count": 31,
-    }
+    # Legacy arbitrary metrics are not silently relabeled as measured usage.
+    assert not (tmp_path / "traces").exists()
 
 
 def test_known_fake_secret_is_absent_from_error_and_doctor_output(
