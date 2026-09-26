@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -121,33 +121,51 @@ verification:
   - Engineering·미승인 버전·실행 불가 후보는 선택 불가. LLM 선택은 P2-009에서 후보 내부로만 허용.
   runner: pytest
 evidence_dir: .agent/evidence/P0-018
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P0-018/selector-integrated-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 4
+  spec_digest: 21e7570a35f03fda45041e744193aa1b86ab85dc2c0452b195410ba004c31fa9
+  contract_digest: 7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b
+  source_fingerprint: 3cd3ce3914feff66c7de4e063bc94581aca46716654142980a10d8bec05f9e73
+  evidence: .agent/evidence/P0-018/selector-integrated-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 4
+  submission_generation: 1
+  submission:
+    head: 6973cfef25d26fd6030ac5c698b379642e181535
+    baseline_head: 67ce4f099325c60fda1c0c010dd001c9f2619f27
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018
+    branch: task/P0-018
+    evidence: .agent/evidence/P0-018/selector-01/result.json
+    changed_files:
+      fixtures/teams/templates.json: ed8950b9c00e2313f1e60e4e8e3527f75a1d165c6a749a895c1f71914cddeab6
+      src/rfa_mas/application/team_selector.py: 45462aece673679b2901155ea75edf578934492b5513f70c2f6874332dacaf76
+      tests/test_team_selector.py: efc23b032b5b6b534b518779e018b6837d5e7515972b07db0a55b396d0a6105b
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: 21e7570a35f03fda45041e744193aa1b86ab85dc2c0452b195410ba004c31fa9
+      contract_digest: 7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b
+      source_fingerprint: 3cd3ce3914feff66c7de4e063bc94581aca46716654142980a10d8bec05f9e73
+      evidence: .agent/evidence/P0-018/selector-integrated-01/result.json
+    head: 48064670a95d3639041f02babf454411579b9455
+  evidence: .agent/evidence/P0-018/selector-integrated-01/result.json
+revision: 17
 spec_revision: 4
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: selector-integrated-01
+  evidence_refs:
+  - .agent/evidence/P0-018/selector-01/result.json
   approaches: []
 blocker: null
 migration:
@@ -162,8 +180,6 @@ migration:
   judgment: ID/AC 유지. 순수 selector를 신규 team_selector.py로 격리해 P1-004 의존 제거; graph 연결은 P0-020, 공통 DTO는 P0-014가
     소유. 공유 파일 동시 수정 금지.
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:27:17+00:00'
-concise_result: 'Specification changed: Accept verified P0-015 additive baseline; bound independent selector
-  and official persistent resume integration with trusted identity and current policy checks'
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+updated_at: '2026-09-26T07:48:09+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: Final independent review then begin-evidence and execute V1

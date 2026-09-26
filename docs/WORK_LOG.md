@@ -183,3 +183,20 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   누락도 parser를 확인해 한 번 수정했으며 제품 성공 숫자에 포함하지 않는다.
 - 다음: P0-016 공식 async SQLite checkpointer/인증된 재조회 resume와 P0-018
   순수 팀 selector를 별도 worktree에 배정. 선택적 NAT/관측 경로를 필수화하지 않는다.
+
+## P0-018 통합 / P0-016 범위 인계 — 2026-09-26T07:50Z
+
+- P0-018 `6973cfe`의 순수 TeamSelector·승인 template 2개·테스트를 main에 통합했다.
+  worker V1 53 passed, 통합 V1 53 passed(0.05초), 기존 계약 회귀 64 passed(0.57초),
+  extended fixture 7개 검사가 통과했다. selector-01 / selector-integrated-01 증거 보존.
+- 사전 독립 검토의 정수 예산 bool/string/float coercion, 인증 bool coercion,
+  registry 생성자의 승인 pin 우회, 큰 timeout OverflowError를 수정하고 음성 회귀를
+  추가했다. 선택 결과가 runtime 권한을 부여하지 않으며 실제 팀 실행은 P0-019/020이다.
+  TeamFactory는 실행 예산을 적용하고 최신 권한·runtime·승인 template를 다시 확인한다.
+- P0-016은 테스트 helper 추가 scope가 필요해 미검증 WIP `d50de92`를 보존했다.
+  old 프로세스 중단·clean worktree를 확인한 뒤 이전 claim을 fence하고
+  `tests/test_supervisor_boundaries.py`만 추가 승인했다. 새 `task/P0-016-r2`에
+  WIP를 정상 cherry-pick(`28ffd58`)했고 generation 3으로 계속한다.
+  이전 worktree/commit/기록은 삭제하지 않았다. 아직 제품 검증 cycle은 시작 전이다.
+- 새 resume 환경의 `uv sync --locked`는 성공했다. SQLite saver 설치를 재시작
+  복구·승인 검증 완료로 표현하지 않는다. 전체 E2E/실제 NVIDIA·OpenShell gate는 미실행이다.
