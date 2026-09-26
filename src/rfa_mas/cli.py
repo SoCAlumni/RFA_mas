@@ -6,15 +6,22 @@ import json
 import re
 import signal
 import sqlite3
+import tempfile
 from dataclasses import asdict
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
+from zoneinfo import ZoneInfo
 
+import httpx
 import uvicorn
 from pydantic import ValidationError
 from pydantic_settings import SettingsError
 
+from rfa_mas.adapters.scheduler import ManualClock
 from rfa_mas.api.app import create_app
 from rfa_mas.bootstrap import (
+    PROJECT_ROOT,
     build_container,
     build_scheduler_runner,
     inspect_configuration,
@@ -24,6 +31,8 @@ from rfa_mas.contracts import (
     Audience,
     DomainId,
     DraftTarget,
+    KnowledgeExport,
+    KnowledgeWrite,
     SimulationScenario,
     TrustedPrincipal,
     WorkRequest,
@@ -71,6 +80,23 @@ def _parser() -> argparse.ArgumentParser:
         default=SimulationScenario.SUCCESS.value,
     )
     demo.add_argument("--query", default=None)
+    demo.add_argument(
+        "--full",
+        action="store_true",
+        help="Run the synthetic end-to-end story on a temp data dir (mock/local, offline)",
+    )
+    demo.add_argument(
+        "--data-dir",
+        type=Path,
+        default=None,
+        help="--full only: empty or new directory for the demo DB (default: a new temp dir)",
+    )
+    demo.add_argument(
+        "--materials",
+        type=Path,
+        default=None,
+        help="--full only: synthetic materials JSONL (default: fixtures/demo/materials.jsonl)",
+    )
 
     subparsers.add_parser("doctor", help="Show configured/missing variable names without values")
 
@@ -149,6 +175,623 @@ async def _demo(args: argparse.Namespace, settings: Settings) -> int:
         return 0 if result.status.value in {"completed", "waiting_approval"} else 1
     finally:
         await container.shutdown()
+
+
+# -- P0-026: `rfa demo --full` synthetic end-to-end story ---------------------------------
+# Offline composition only: temp SQLite data dir, mock model/review/publication, local
+# retrieval/policy/runtime/trace, manual-clock scheduler. No key, GPU, Docker or network; the
+# in-process app is called over an ASGI transport as the installation's own local owner.
+DEMO_MATERIALS = PROJECT_ROOT / "fixtures" / "demo" / "materials.jsonl"
+DEMO_DOMAIN = DomainId.TRIV3.value
+DEMO_BENCHMARK_GOAL = "TRIV-DEMO benchmark 로그를 검증하고 A/B 결과를 비교해줘."
+DEMO_FOLLOW_UP = "같은 작업의 benchmark 결과를 다시 분석해줘."
+DEMO_OWNER_QUERY = "TRIV-DEMO SDK 출시 준비 상태와 내부 검증 일정을 알려줘."
+DEMO_EXTERNAL_REQUEST = "TRIV-DEMO SDK 공식 출시일과 설치 명령을 고객 문의에 답변해 주세요."
+DEMO_FULL_SETTINGS = {
+    "_env_file": None,
+    "app_api_key": None,
+    "log_level": "WARNING",
+    "model_provider": "mock",
+    "retriever_backend": "local",
+    "response_backend": "mock",
+    "tool_backend": "mock",
+    "runtime_backend": "local",
+    "policy_backend": "local",
+    "trace_backend": "local",
+    "enable_judge": False,
+    "enable_nat": False,
+    "enable_debate": False,
+    "enable_auto_domain_creation": False,
+    "scheduler_enabled": True,
+    "allow_external_writes": False,
+    "allow_external_egress": False,
+}
+DEMO_NOT_RUN = {
+    "real_model": "P1-002A (opt-in NVIDIA gate; this demo uses the mock model)",
+    "real_publication_or_teammate_service": "P1-008A (this demo publishes to the mock sink)",
+    "openshell_sandbox_runtime": "P1-007B/P1-007C (this demo uses the local role runtime)",
+    "installed_nat": "P0-028",
+    "ui": "P0-025A (API/report only)",
+}
+
+
+def _demo_data_dir(value: Path | None) -> Path:
+    if value is None:
+        return Path(tempfile.mkdtemp(prefix="rfa-demo-")).resolve()
+    root = value.expanduser().resolve()
+    if root.exists() and (not root.is_dir() or any(root.iterdir())):
+        raise RfaError("demo_data_dir_not_empty", "빈 데모 데이터 경로가 필요합니다.")
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _demo_materials(path: Path) -> list[dict[str, Any]]:
+    materials = [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    for item in materials:
+        model = KnowledgeWrite if item["channel"] == "note" else KnowledgeExport
+        model.model_validate(item["request"])
+    return materials
+
+
+def _demo_next_fire() -> datetime:
+    """The next 09:00 Asia/Seoul at least a day ahead (the schedule's own cron time)."""
+    local = datetime.now(ZoneInfo("Asia/Seoul")) + timedelta(days=1)
+    return local.replace(hour=9, minute=0, second=0, microsecond=0)
+
+
+class _DemoApi:
+    """In-process calls to the product API as the installation owner (loopback, keyless).
+
+    Every response body is kept for the privacy scan except ingest acknowledgements, which
+    only echo the owner's own input.
+    """
+
+    def __init__(self, container) -> None:
+        self.outputs: list[str] = []
+        self.public: list[str] = []
+        transport = httpx.ASGITransport(
+            app=create_app(container=container), client=("127.0.0.1", 1)
+        )
+        self.client = httpx.AsyncClient(transport=transport, base_url="http://rfa.demo")
+
+    async def __call__(self, method, path, *, body=None, params=None, echo=False, public=False):
+        response = await self.client.request(method, path, json=body, params=params)
+        if not echo:
+            self.outputs.append(response.text)
+        if public:
+            self.public.append(response.text)
+        return response.status_code, response.json()
+
+    async def aclose(self) -> None:
+        await self.client.aclose()
+
+
+def _demo_team(team: dict[str, Any], names: dict[str, str]) -> dict[str, Any]:
+    findings = team.get("findings") or {}
+    runner = findings.get("experiment_runner") or {}
+    analyst = findings.get("result_analyst") or {}
+    return {
+        "task_id": team.get("task_id"),
+        "team_id": team.get("team_id"),
+        "pattern": team.get("pattern"),
+        "status": team.get("status"),
+        "roles": [[r.get("role"), r.get("status")] for r in team.get("roles", [])],
+        "experiment": {
+            "mode": runner.get("mode"),
+            "simulated_experiment": runner.get("simulated_experiment"),
+            "runs": [
+                {
+                    "label": r.get("label"),
+                    "material": names.get(r.get("source_id"), "other"),
+                    "source_revision": r.get("source_revision"),
+                    "latency_ms": r.get("latency_ms"),
+                    "accuracy_pct": r.get("accuracy_pct"),
+                    "tentative": r.get("tentative"),
+                }
+                for r in runner.get("runs", [])
+            ],
+        },
+        "comparisons": [
+            {
+                "latency_change_pct": c.get("latency_change_pct"),
+                "accuracy_delta_pp": c.get("accuracy_delta_pp"),
+                "same_environment": c.get("same_environment"),
+            }
+            for c in analyst.get("comparisons", [])
+        ],
+        "analysis_simulated": analyst.get("simulated_experiment"),
+        "tokens": (team.get("usage") or {}).get("tokens"),
+    }
+
+
+def _demo_evidence(run: dict[str, Any], names: dict[str, str]) -> list[dict[str, Any]]:
+    draft = run.get("draft") or {}
+    return [
+        {
+            "material": names.get(e.get("source_id"), "builtin:" + str(e.get("source_id"))),
+            "source_id": e.get("source_id"),
+            "source_revision": e.get("source_revision"),
+            "audience": e.get("audience"),
+        }
+        for e in draft.get("allowed_evidence", [])
+    ]
+
+
+def _demo_run(run: dict[str, Any], names: dict[str, str]) -> dict[str, Any]:
+    draft = run.get("draft") or {}
+    return {
+        "run_id": run.get("run_id"),
+        "status": run.get("status"),
+        "stop_reason": run.get("stop_reason"),
+        "simulated": run.get("simulated"),
+        "target": (draft.get("target") or {}).get("audience"),
+        "draft_adapter": draft.get("adapter"),
+        "policy_version": draft.get("policy_version"),
+        "evidence": _demo_evidence(run, names),
+    }
+
+
+def _demo_review(review: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not review:
+        return None
+    return {
+        key: review.get(key) for key in ("draft_id", "draft_version", "decision", "content_hash")
+    }
+
+
+def _demo_counts(database: Path) -> dict[str, int]:
+    """Read-only counts from the demo's own database, after every container is closed."""
+    queries = {
+        "publications": "SELECT count(*) FROM publications",
+        "publication_ledger_entries": (
+            "SELECT count(*) FROM effect_ledger WHERE operation_key LIKE 'publication:%'"
+        ),
+        "product_tasks": "SELECT count(*) FROM product_tasks",
+        "run_team_bindings": "SELECT count(*) FROM run_team_bindings",
+        "runs": "SELECT count(*) FROM runs",
+    }
+    connection = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+    try:
+        return {name: connection.execute(sql).fetchone()[0] for name, sql in queries.items()}
+    finally:
+        connection.close()
+
+
+async def _demo_full(args: argparse.Namespace) -> int:
+    root = _demo_data_dir(args.data_dir)
+    materials = _demo_materials(args.materials)
+    settings = Settings(
+        database_url=f"sqlite:///{root / 'rfa.db'}", trace_dir=root / "traces", **DEMO_FULL_SETTINGS
+    )
+    private = sorted({m for i in materials for m in i.get("markers", {}).get("private", [])})
+    internal = sorted({m for i in materials for m in i.get("markers", {}).get("internal", [])})
+    steps: list[dict[str, Any]] = []
+    checks: dict[str, bool] = {}
+    names: dict[str, str] = {}
+    outputs: list[str] = []
+    public: list[str] = []
+
+    def step(number: int, name: str, mode: str, **fields: Any) -> None:
+        steps.append({"step": number, "name": name, "mode": mode, **fields})
+
+    container = build_container(settings)
+    await container.startup()
+    adapters = [item.model_dump(mode="json") for item in container.adapters]
+    model_mode = (
+        "mock" if any(a["port"] == "model" and a["simulated"] for a in adapters) else "real"
+    )
+    api = _DemoApi(container)
+    try:
+        # 1. ingest the six synthetic materials through the knowledge API.
+        ingested: dict[str, dict[str, Any]] = {}
+        for item in materials:
+            if item["channel"] == "note":
+                code, body = await api(
+                    "POST", "/v1/knowledge/sources", body=item["request"], echo=True
+                )
+                document = body.get("document") or {}
+                receipt = {
+                    "status": "accepted" if code == 201 else f"http_{code}",
+                    "source_id": document.get("source_id"),
+                    "source_revision": document.get("source_revision"),
+                }
+                audience = item["request"]["acl"]["audience"]
+            else:
+                code, body = await api(
+                    "POST", "/v1/knowledge/imports", body=item["request"], echo=True
+                )
+                row = (body.get("rows") or [{}])[0]
+                receipt = {key: row.get(key) for key in ("status", "source_id", "source_revision")}
+                audience = item["request"]["rows"][0]["acl"]["audience"]
+            ingested[item["material"]] = {
+                "channel": item["channel"],
+                "audience": audience,
+                **receipt,
+            }
+            if receipt["source_id"]:
+                names[receipt["source_id"]] = item["material"]
+        checks["materials_ingested"] = len(ingested) == len(materials) and all(
+            r["status"] == "accepted" and r["source_id"] for r in ingested.values()
+        )
+        step(1, "ingest", "local", materials=ingested)
+
+        # 2. derived decisions/claims and Todo candidates (deterministic rules, no model).
+        code, derived = await api("POST", "/v1/knowledge/derive", params={"domain_id": DEMO_DOMAIN})
+        code2, found = await api(
+            "POST", "/v1/candidates/discover", params={"domain_id": DEMO_DOMAIN}
+        )
+        code3, listed = await api("GET", "/v1/knowledge/derived", params={"domain_id": DEMO_DOMAIN})
+        for item in listed if isinstance(listed, list) else []:
+            parents = sorted({names.get(p["source_id"], "builtin") for p in item["parents"]})
+            names[item["reference"]["source_id"]] = "derived:" + "+".join(parents)
+        accepted = [i for i in derived.get("items", []) if i.get("review_state") == "accepted"]
+        candidates = (
+            [
+                {
+                    "candidate_id": c["candidate_id"],
+                    "kind": c["kind"],
+                    "state": c["state"],
+                    "due_date": c.get("due_date"),
+                    "blocker": c.get("blocker"),
+                    "parents": sorted({names.get(p["source_id"], "builtin") for p in c["parents"]}),
+                }
+                for c in found
+            ]
+            if isinstance(found, list)
+            else []
+        )
+        checks["derive_and_candidates_ran"] = code == code2 == 200 and bool(candidates)
+        step(
+            2,
+            "derive_and_candidates",
+            "local",
+            rules="deterministic cue rules, no model",
+            derived={
+                "accepted": len(accepted),
+                "kinds": sorted({i["kind"] for i in accepted}),
+                "parents": sorted(
+                    {
+                        names.get(p["source_id"], "builtin")
+                        for i in accepted
+                        for p in i.get("parents", [])
+                    }
+                ),
+            },
+            candidates=candidates,
+        )
+
+        # 3. a Benchmark team task (roles on the local runtime; numbers from synthetic logs).
+        code, session = await api("POST", "/v1/sessions")
+        session_id = session["session_id"]
+        team_body = {
+            "schema_version": "1.1",
+            "query": DEMO_BENCHMARK_GOAL,
+            "domain_id": DEMO_DOMAIN,
+            "target": {"audience": "owner"},
+            "team": {"goal": DEMO_BENCHMARK_GOAL, "outputs": ["benchmark_report"]},
+        }
+        code, bench = await api("POST", f"/v1/sessions/{session_id}/work", body=team_body)
+        code, team = await api("GET", f"/v1/runs/{bench['run_id']}/team")
+        first = _demo_team(team, names)
+        checks["benchmark_team_completed_and_labelled_simulated"] = (
+            bench.get("status") == "completed"
+            and first["pattern"] == "benchmark"
+            and first["experiment"]["simulated_experiment"] is True
+            and first["experiment"]["mode"] == "fixture_log_parse"
+            and bench.get("simulated") is True
+        )
+        step(
+            3,
+            "benchmark_team_task",
+            "simulated",
+            session_id=session_id,
+            run=_demo_run(bench, names),
+            team=first,
+            note="local role runtime and synthetic log parsing; not a GPU/model measurement",
+        )
+
+        # 4. a follow-up in the same session and Task reuses the Task's team.
+        follow_body = {**team_body, "query": DEMO_FOLLOW_UP, "task_id": first["task_id"]}
+        code, follow = await api("POST", f"/v1/sessions/{session_id}/work", body=follow_body)
+        code, follow_team = await api("GET", f"/v1/runs/{follow['run_id']}/team")
+        second = _demo_team(follow_team, names)
+        checks["follow_up_reuses_the_team"] = (
+            follow.get("status") == "completed"
+            and follow["run_id"] != bench["run_id"]
+            and (second["task_id"], second["team_id"]) == (first["task_id"], first["team_id"])
+        )
+        step(4, "follow_up_reuses_team", "simulated", run=_demo_run(follow, names), team=second)
+
+        # 5. the owner's internal status answer (owner target; private notes never used).
+        code, owner_run = await api(
+            "POST",
+            "/v1/work",
+            body={
+                "query": DEMO_OWNER_QUERY,
+                "domain_id": DEMO_DOMAIN,
+                "target": {"audience": "owner"},
+            },
+        )
+        owner_view = _demo_run(owner_run, names)
+        checks["owner_answer_uses_internal_not_private_evidence"] = (
+            owner_run.get("status") == "completed"
+            and any(e["audience"] == "owner" for e in owner_view["evidence"])
+            and all(e["audience"] != "private" for e in owner_view["evidence"])
+        )
+        step(5, "owner_internal_status_answer", model_mode, run=owner_view)
+
+        # 6. an external request becomes a public DRAFT from the public FAQ only.
+        code, assisted = await api(
+            "POST",
+            "/v1/assistant",
+            public=True,
+            body={"text": DEMO_EXTERNAL_REQUEST, "domain_id": DEMO_DOMAIN, "ingress": "public"},
+        )
+        external = assisted.get("run") or {}
+        run_id = external.get("run_id")
+        external_view = _demo_run(external, names)
+        checks["external_public_draft_from_public_faq_only"] = (
+            (assisted.get("decision") or {}).get("intent") == "external_draft"
+            and external.get("status") == "completed"
+            and external_view["target"] == "public"
+            and bool(external_view["evidence"])
+            and all(e["audience"] == "public" for e in external_view["evidence"])
+            # The FAQ itself, or items derived only from it (staged context uses summaries).
+            and {e["material"] for e in external_view["evidence"]}
+            <= {"public_faq", "derived:public_faq"}
+        )
+        step(
+            6,
+            "external_public_draft",
+            model_mode,
+            intent=(assisted.get("decision") or {}).get("intent"),
+            run=external_view,
+        )
+
+        # 7. an edit invalidates the approval; a publish attempt is refused.
+        code, before = await api("GET", f"/v1/runs/{run_id}/draft", public=True)
+        code, edited = await api(
+            "POST",
+            f"/v1/runs/{run_id}/draft/edits",
+            public=True,
+            body={
+                "expected_version": before["current_version"],
+                "content": before["draft"]["content"] + "\n(공개 FAQ 기준 문구 수정)",
+            },
+        )
+        refused_code, refused = await api(
+            "POST",
+            f"/v1/runs/{run_id}/publication",
+            public=True,
+            body={"idempotency_key": "demo-before-review"},
+        )
+        checks["edit_invalidates_the_approval"] = (
+            before["approval_valid"] is True
+            and edited["approval_valid"] is False
+            and edited["invalid_reason"] == "draft_changed"
+            and refused_code == 409
+            and refused.get("code") == "approval_required"
+        )
+        step(
+            7,
+            "edit_invalidates_approval",
+            "mock",
+            before={
+                "version": before["current_version"],
+                "approval_valid": before["approval_valid"],
+                "approval": _demo_review(before.get("review")),
+            },
+            after={
+                "version": edited["current_version"],
+                "approval_valid": edited["approval_valid"],
+                "invalid_reason": edited["invalid_reason"],
+            },
+            publish_attempt={"http_status": refused_code, "code": refused.get("code")},
+        )
+
+        # 8. re-review binds the edited version.
+        code, reviewed = await api("POST", f"/v1/runs/{run_id}/draft/review", public=True)
+        review = reviewed.get("review") or {}
+        checks["re_review_binds_the_latest_version"] = (
+            reviewed["approval_valid"] is True
+            and review.get("draft_version")
+            == reviewed["current_version"]
+            == edited["current_version"]
+        )
+        step(
+            8,
+            "re_review",
+            "mock",
+            version=reviewed["current_version"],
+            approval_valid=reviewed["approval_valid"],
+            approval=_demo_review(review),
+        )
+
+        # 9. exactly one mock publication (replay returns the same receipt).
+        code, receipt = await api(
+            "POST",
+            f"/v1/runs/{run_id}/publication",
+            public=True,
+            body={"idempotency_key": "demo-publish"},
+        )
+        code, replay = await api(
+            "POST",
+            f"/v1/runs/{run_id}/publication",
+            public=True,
+            body={"idempotency_key": "demo-publish"},
+        )
+        other_code, other = await api(
+            "POST",
+            f"/v1/runs/{run_id}/publication",
+            public=True,
+            body={"idempotency_key": "demo-publish-again"},
+        )
+        checks["single_mock_publication"] = (
+            receipt.get("status") == "succeeded"
+            and receipt.get("mode") == "mock"
+            and replay.get("publication_id") == receipt.get("publication_id")
+            and other_code == 409
+            and other.get("code") == "publication_exists"
+        )
+        step(
+            9,
+            "publication",
+            receipt.get("mode") or "mock",
+            receipt={
+                "publication_id": receipt.get("publication_id"),
+                "status": receipt.get("status"),
+                "mode": receipt.get("mode"),
+                "approval_ref": receipt.get("approval_id"),
+                "version": (receipt.get("binding") or {}).get("version"),
+                "external_result_ref": receipt.get("external_result_ref"),
+            },
+            replay_same_receipt=replay.get("publication_id") == receipt.get("publication_id"),
+            second_key={"http_status": other_code, "code": other.get("code")},
+        )
+
+        # 10. a scheduled briefing fired by the manual-clock scheduler runner (duplicate tick).
+        code, schedule = await api(
+            "POST",
+            "/v1/schedules",
+            body={
+                "job_type": "briefing",
+                "domain_id": DEMO_DOMAIN,
+                "cron": "0 9 * * *",
+                "timezone": "Asia/Seoul",
+            },
+        )
+        fire = _demo_next_fire()
+        clock = ManualClock(fire - timedelta(minutes=30))
+        runner = build_scheduler_runner(
+            settings, container, clock=clock, sync_interval_seconds=None
+        )
+        await runner.start()
+        try:
+            clock.set(fire)
+            await runner.tick()
+            await runner.tick()  # the same fire delivered again
+        finally:
+            await runner.stop()
+        code, fired = await api("GET", f"/v1/schedules/{schedule['schedule_id']}/runs")
+        code, notices = await api("GET", "/v1/notifications")
+        briefings = [n for n in notices if n.get("kind") == "briefing"]
+        checks["briefing_fired_once"] = (
+            [r.get("status") for r in fired] == ["succeeded"]
+            and len(briefings) == 1
+            and all(n.get("audience") == "owner" for n in notices)
+        )
+        step(
+            10,
+            "scheduled_briefing",
+            "local",
+            clock="manual (P0-023 ManualClock adapter)",
+            schedule_id=schedule["schedule_id"],
+            fire_time=fire.isoformat(),
+            runs=[
+                {"status": r.get("status"), "scheduled_fire_time": r.get("scheduled_fire_time")}
+                for r in fired
+            ],
+            briefing_items=[
+                {
+                    "candidate_id": i.get("candidate_id"),
+                    "rank": i.get("rank"),
+                    "due_date": i.get("due_date"),
+                    "blocker": i.get("blocker"),
+                }
+                for n in briefings
+                for i in n.get("items", [])
+            ],
+        )
+    finally:
+        outputs += api.outputs
+        public += api.public
+        await api.aclose()
+        await container.shutdown()
+
+    # 11. restart: a fresh container on the same database keeps every durable record.
+    container = build_container(settings)
+    await container.startup()
+    api = _DemoApi(container)
+    try:
+        code, sessions = await api("GET", "/v1/sessions")
+        code, record = await api("GET", f"/v1/runs/{bench['run_id']}")
+        code, team_after = await api("GET", f"/v1/runs/{bench['run_id']}/team")
+        code, state_after = await api("GET", f"/v1/runs/{run_id}/draft", public=True)
+        code, receipt_after = await api("GET", f"/v1/runs/{run_id}/publication", public=True)
+        code, replay_after = await api(
+            "POST",
+            f"/v1/runs/{run_id}/publication",
+            public=True,
+            body={"idempotency_key": "demo-publish"},
+        )
+        code, fired_after = await api("GET", f"/v1/schedules/{schedule['schedule_id']}/runs")
+        checks["restart_preserves_state"] = (
+            session_id in {s.get("session_id") for s in sessions}
+            and record.get("status") == "completed"
+            and (team_after.get("task_id"), team_after.get("team_id"))
+            == (first["task_id"], first["team_id"])
+            and state_after.get("publication_status") == "succeeded"
+            and state_after.get("current_version") == reviewed["current_version"]
+            and receipt_after.get("publication_id") == receipt.get("publication_id")
+            and replay_after.get("publication_id") == receipt.get("publication_id")
+            and len(fired_after) == len(fired)
+        )
+        restart = {
+            "session_listed": session_id in {s.get("session_id") for s in sessions},
+            "benchmark_run_status": record.get("status"),
+            "team_ref": [team_after.get("task_id"), team_after.get("team_id")],
+            "draft_version": state_after.get("current_version"),
+            "publication_status": state_after.get("publication_status"),
+            "publication_id": receipt_after.get("publication_id"),
+            "replay_same_receipt": replay_after.get("publication_id")
+            == receipt.get("publication_id"),
+            "schedule_runs": len(fired_after),
+        }
+    finally:
+        outputs += api.outputs
+        public += api.public
+        await api.aclose()
+        await container.shutdown()
+    counts = _demo_counts(root / "rfa.db")
+    checks["exactly_one_publication_record"] = (
+        counts["publications"] == 1 and counts["publication_ledger_entries"] == 1
+    )
+    step(11, "restart_same_database", "local", after_restart=restart, database_counts=counts)
+
+    traces = [
+        p.read_text(encoding="utf-8", errors="replace")
+        for p in sorted((root / "traces").rglob("*"))
+        if p.is_file()
+    ]
+    report: dict[str, Any] = {
+        "demo": "rfa-demo-full/1",
+        "data_dir": str(root),
+        "identity": "installation owner (keyless loopback, local development)",
+        "adapters": adapters,
+        "steps": steps,
+        "not_run": DEMO_NOT_RUN,
+    }
+    rendered = json.dumps(report, ensure_ascii=False)
+    scanned = [*outputs, *traces, rendered]
+    private_hits = {m: sum(text.count(m) for text in scanned) for m in private}
+    public_hits = {m: sum(text.count(m) for text in public) for m in [*private, *internal]}
+    checks["no_private_canary_in_any_output"] = not any(private_hits.values())
+    checks["no_internal_or_private_fact_in_public_outputs"] = not any(public_hits.values())
+    report["privacy"] = {
+        "scope": "every API response except ingest acknowledgements (echo of the owner's own "
+        "input), every trace file and this report",
+        "responses_scanned": len(outputs),
+        "trace_files_scanned": len(traces),
+        "public_responses_scanned": len(public),
+        "private_marker_hits": sum(private_hits.values()),
+        "public_output_internal_or_private_hits": sum(public_hits.values()),
+    }
+    report["checks"] = checks
+    report["ok"] = all(checks.values())
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report["ok"] else 1
 
 
 async def _scheduler(args: argparse.Namespace, settings: Settings) -> int:
@@ -370,6 +1013,21 @@ def main() -> None:
             )
         )
         return
+    if args.command == "demo" and args.full:
+        # Fixed offline composition on its own data dir: dispatched BEFORE Settings() so no
+        # .env or --env-file is read; errors print codes only, never inputs or content.
+        if args.env_file is not None or args.query is not None:
+            print(json.dumps({"code": "demo_configuration_rejected"}))
+            raise SystemExit(2)
+        args.materials = args.materials or DEMO_MATERIALS
+        try:
+            raise SystemExit(asyncio.run(_demo_full(args)))
+        except RfaError as exc:
+            print(json.dumps({"code": exc.code, "message": exc.safe_message}, ensure_ascii=False))
+            raise SystemExit(2) from None
+        except (OSError, ValueError, KeyError, TypeError, ValidationError) as exc:
+            print(json.dumps({"code": "demo_failed", "error": type(exc).__name__}))
+            raise SystemExit(2) from None
     if args.env_file is not None and (args.env_file.is_symlink() or not args.env_file.is_file()):
         parser.error("--env-file must point to an existing regular file")
     try:

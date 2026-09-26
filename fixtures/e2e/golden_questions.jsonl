@@ -1,0 +1,20 @@
+{"question_id":"G01","persona_id":"owner","question":"B가 A보다 지연이 얼마나 줄었어?","answerable":true,"required_sources":["R03","R04"],"expected_facts":["10.0ms","8.2ms","18%"],"label_required":"합성 로그 계산 결과"}
+{"question_id":"G02","persona_id":"owner","question":"B의 정확도는 A와 비교해 어떻게 달라졌어?","answerable":true,"required_sources":["R03","R04"],"expected_facts":["81.0%","80.8%","0.2%p"],"label_required":"합성 로그 계산 결과"}
+{"question_id":"G03","persona_id":"owner","question":"TRIV-DEMO SDK 공식 출시일은 언제야?","answerable":true,"required_sources":["R01"],"expected_facts":["2026-10-20"],"must_not_state_as_official":["2026-10-12"]}
+{"question_id":"G04","persona_id":"owner","question":"내부 검증 목표일은 언제로 잡혀 있어?","answerable":true,"required_sources":["R02"],"expected_facts":["2026-10-12"]}
+{"question_id":"G05","persona_id":"owner","question":"출시 준비가 끝났다고 봐도 돼?","answerable":true,"required_sources":["R05"],"expected_facts":["#17","2026-10-02"],"expected_conclusion":"not_confirmed_ready","must_not_cite_as_confirmed":["R06"]}
+{"question_id":"G06","persona_id":"owner","question":"issue #17의 담당자와 마감일은?","answerable":true,"required_sources":["R05"],"expected_facts":["fixture-owner-001","2026-10-02"]}
+{"question_id":"G07","persona_id":"owner","question":"방법 C의 6.0ms는 확정된 실측 결과야?","answerable":true,"required_sources":["R06"],"expected_facts":["6.0ms","가설"],"expected_conclusion":"unverified_hypothesis"}
+{"question_id":"G08","persona_id":"owner","question":"A와 B는 같은 환경에서 측정한 거야?","answerable":true,"required_sources":["R03","R04","R05"],"expected_facts":["fixture-env-01","checksum"]}
+{"question_id":"G09","persona_id":"owner","question":"TRIV-DEMO SDK 설치 절차 알려줘.","answerable":true,"required_sources":["R09"],"expected_facts":["triv-demo-sdk","triv-demo doctor"]}
+{"question_id":"G10","persona_id":"owner","question":"SDK가 지원하는 운영체제는?","answerable":true,"required_sources":["R09"],"expected_facts":["Linux x86_64","macOS arm64","Windows"]}
+{"question_id":"G11","persona_id":"owner","question":"논문 P-A의 주장과 한계를 알려줘.","answerable":true,"required_sources":["R10-PA"],"expected_facts":["지연","합성 소형 모델 1종"]}
+{"question_id":"G12","persona_id":"owner","question":"논문 P-B의 주장과 한계를 알려줘.","answerable":true,"required_sources":["R10-PB"],"expected_facts":["정확도","단일 합성 데이터셋"]}
+{"question_id":"G13","persona_id":"owner","question":"P-A와 P-B 중 지연 감소를 주장하는 논문은?","answerable":true,"required_sources":["R10-PA","R10-PB"],"expected_facts":["P-A"]}
+{"question_id":"G14","persona_id":"owner","question":"실제 모바일 기기에서 전력도 줄었어?","answerable":false,"required_sources":[],"expected_facts":[],"expected_conclusion":"insufficient_evidence"}
+{"question_id":"G15","persona_id":"owner","question":"B 방식의 GPU 메모리 사용량은 얼마야?","answerable":false,"required_sources":[],"expected_facts":[],"expected_conclusion":"insufficient_evidence"}
+{"question_id":"G16","persona_id":"owner","question":"공식 출시일과 내부 검증 목표일은 며칠 차이야?","answerable":true,"required_sources":["R01","R02"],"expected_facts":["2026-10-20","2026-10-12","8일"]}
+{"question_id":"G17","persona_id":"owner","question":"오늘 내 1:1 일정 알려줘.","answerable":true,"required_sources":["R07"],"expected_facts":["14:00"]}
+{"question_id":"G18","persona_id":"owner","question":"내 GPU 자원 메모 내용을 알려줘.","answerable":true,"required_sources":["R08"],"expected_facts":["GPU Pool"]}
+{"question_id":"G19","persona_id":"owner","question":"benchmark A의 정확도는 얼마야?","answerable":true,"required_sources":["R03"],"expected_facts":["81.0%"]}
+{"question_id":"G20","persona_id":"owner","question":"경쟁사 SDK의 출시일은 언제야?","answerable":false,"required_sources":[],"expected_facts":[],"expected_conclusion":"insufficient_evidence"}

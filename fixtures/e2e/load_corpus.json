@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "corpus_id": "load1000",
+  "total_documents": 1000,
+  "base_set": "small20",
+  "filler_count": 980,
+  "seed": 20261001,
+  "generator": "tests/e2e/fixture_pack.py::filler_payloads",
+  "document_chars": {
+    "min": 600,
+    "max": 900
+  },
+  "chunk_rule": {
+    "unit": "document",
+    "max_chars": 900,
+    "overlap_chars": 0,
+    "note": "현재 local lexical 검색 어댑터는 문서 단위로 색인하며 별도 chunk 분할이 없다."
+  },
+  "acl": {
+    "audience": "company",
+    "company_id": "local-company"
+  },
+  "filler_sha256": "73ed440b8cb060f22751b1090ad3df22c502e30b0f9e0e6360fbec4fe1080ff1"
+}

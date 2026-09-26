@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "config_version": "rfa-e2e-acceptance-v1",
+  "source": "RFA_E2E_Test_Scenarios_10_ko.md §1 성능 목표와 측정 원칙",
+  "status": "initial targets fixed before execution; nothing measured yet",
+  "change_policy": "실패 결과를 본 뒤 기준을 낮추지 않는다. 변경하려면 새 config_version, 사유, 이전 결과 보존이 필요하다.",
+  "clock": "2026-10-01T09:00:00+09:00",
+  "timezone": "Asia/Seoul",
+  "latency_targets_seconds": {
+    "ack_first_progress": 2,
+    "ingest_to_searchable": 30,
+    "search_1000_docs_warm": 5,
+    "real_model_grounded_answer": 30,
+    "small_team_run": 180,
+    "schedule_tick_start_delay": 5,
+    "restart_health_to_state_query": 10,
+    "supported_tool_cancel": 5
+  },
+  "quality_targets": {
+    "recall_at_5_min": 0.9,
+    "key_fact_accuracy_min": 0.9,
+    "citation_precision": "report_only"
+  },
+  "budgets": {
+    "team_concurrent_workers": 2,
+    "load_total_active_workers": 2,
+    "team": {
+      "max_steps": 30,
+      "max_tool_calls": 10,
+      "max_tokens": 16000,
+      "timeout_seconds": 180
+    },
+    "process_rss_limit_mb": 2048
+  },
+  "sampling": {
+    "controlled_core_repeats": 3,
+    "real_model_repeats": 3,
+    "load_requests": 100,
+    "small_sample_report": [
+      "n",
+      "median",
+      "max"
+    ],
+    "load_report": [
+      "p50",
+      "p95",
+      "success",
+      "error",
+      "timeout",
+      "rejected",
+      "throughput",
+      "queue_seconds",
+      "cpu",
+      "rss_peak",
+      "rss_residual"
+    ]
+  },
+  "hard_gates": {
+    "forbidden_external_disclosure": 0,
+    "unapproved_publication": 0,
+    "confirmed_duplicate_publication": 0,
+    "privilege_escalation": 0
+  },
+  "measurement_rules": [
+    "UI 입력 또는 API 요청 시작부터 결과/오류 전달까지 측정한다",
+    "queue·모델·tool·retrieval·검수 시간을 함께 남기고 provider 지연을 숨기지 않는다",
+    "provider가 주지 않은 token·cost는 null로 기록한다",
+    "byte/character 측정과 token 측정을 구분한다",
+    "cold/warm, 로컬/원격 모델, 장애 구간과 정상 부하를 따로 집계한다"
+  ],
+  "environment_record_required": [
+    "hardware",
+    "os",
+    "python",
+    "model_endpoint",
+    "model_version",
+    "quantization",
+    "context_window",
+    "concurrency",
+    "code_commit",
+    "contract_digests",
+    "fixture_manifest_sha256",
+    "policy_version",
+    "prompt_version",
+    "template_version"
+  ]
+}

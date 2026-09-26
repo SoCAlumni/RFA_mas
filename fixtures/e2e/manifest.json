@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "rfa-e2e",
+  "dataset_version": "rfa-e2e-v1",
+  "source_spec": "RFA_E2E_Test_Scenarios_10_ko.md",
+  "synthetic": true,
+  "product": "TRIV-DEMO (가상 제품)",
+  "clock": "2026-10-01T09:00:00+09:00",
+  "timezone": "Asia/Seoul",
+  "seed": 20261001,
+  "domain_id": "triv3",
+  "company_id": "local-company",
+  "memberships": {
+    "team": "triv3-team",
+    "business_unit": "triv3-bu",
+    "other_business_unit": "search-bu"
+  },
+  "execution_status": "fixture pack only; no E2E scenario has been executed",
+  "change_rule": "fixture를 바꾸면 dataset_version과 아래 digest를 함께 갱신하고 이전 결과와 섞지 않는다.",
+  "files": {
+    "acceptance_config.json": "ef45a7ead9449bee83779a06dcc70e9be83f07b7521254e0a3f829d46f80c2e7",
+    "access_matrix.json": "0e20b7af8c1dc24bf45d5a62d5a2201adcb8d993280bff698546c023b010101c",
+    "golden_questions.jsonl": "9fad979df4435e911b5ebd4a9efed295ae402154b75fe576aed0f676fd20982a",
+    "ingest/confluence_pages.json": "075a9b332d023ab73c05308f82a75bfc5069a12cdbf07d6cd11b3dcdc2ebac50",
+    "ingest/github_issues.json": "528b3a74d8b44e959b235ca19bbb482f718cfd6d5874f749475a2044664e8336",
+    "ingest/notes.jsonl": "2a3a3561ec97bf9c25d58cd753ff7c1b6066f8a47f7d41e5ec9b0bbc4d3bb83b",
+    "load_corpus.json": "1e77dead0902e23ce33289a21647fb6bc7a1341251e72cf088f169ae47d99ec8",
+    "materials_v1.json": "a08e5c573e7af26155d633ec19a1174f9cac933c5a54992fadb6b33b7c5d3fa6",
+    "personas.json": "f48fd2c7f75f8ac7251032a97486b882dd33784059ef8b4f7e49478c7b854e7e",
+    "scenarios.json": "fe2931d54c0bf985b8cca60e4f9c3b703e440d029363d9e73489ad53667178b8",
+    "sources.json": "a3a5757ce2b90a26353bb6f7b8ffca5a086686a9f3da1a0eff2f841fc2622d80",
+    "variants.json": "b7f2d0250b165fc878cad3beb201ec1c865aff45c855276751793f1dcd54afc5"
+  }
+}

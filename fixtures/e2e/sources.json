@@ -1,0 +1,400 @@
+{
+  "schema_version": "1.0",
+  "dataset_version": "rfa-e2e-v1",
+  "files": {
+    "note": "ingest/notes.jsonl",
+    "confluence": "ingest/confluence_pages.json",
+    "github_issue": "ingest/github_issues.json"
+  },
+  "scope_acl": {
+    "public": {
+      "audience": "public"
+    },
+    "company": {
+      "audience": "company",
+      "company_id": "local-company"
+    },
+    "business_unit": {
+      "audience": "business_unit",
+      "company_id": "local-company",
+      "memberships": [
+        "triv3-bu"
+      ]
+    },
+    "team": {
+      "audience": "business_unit",
+      "company_id": "local-company",
+      "memberships": [
+        "triv3-team"
+      ]
+    },
+    "owner_private": {
+      "audience": "private"
+    }
+  },
+  "sources": [
+    {
+      "fixture_id": "R01",
+      "channel": "confluence",
+      "external_id": "release-notice",
+      "provider_revision": "v1",
+      "scope": "public",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "official_sdk_release_date": "2026-10-20"
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R02",
+      "channel": "confluence",
+      "external_id": "roadmap-q4",
+      "provider_revision": "v3",
+      "scope": "business_unit",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "internal_validation_target_date": "2026-10-12"
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R03",
+      "channel": "note",
+      "external_id": "bench-a-log",
+      "provider_revision": "1",
+      "scope": "team",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "environment": "fixture-env-01",
+        "latency_ms": 10,
+        "accuracy_pct": 81
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R04",
+      "channel": "note",
+      "external_id": "bench-b-log",
+      "provider_revision": "1",
+      "scope": "team",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "environment": "fixture-env-01",
+        "latency_ms": 8.2,
+        "accuracy_pct": 80.8
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R05",
+      "channel": "github_issue",
+      "external_id": "17",
+      "provider_revision": "r1",
+      "scope": "team",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "issue": 17,
+        "state": "open",
+        "assignee": "fixture-owner-001",
+        "due_date": "2026-10-02"
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R06",
+      "channel": "note",
+      "external_id": "research-memo-c",
+      "provider_revision": "1",
+      "scope": "team",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "claimed_latency_ms": 6,
+        "status": "unverified_hypothesis",
+        "deadline": null
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R07",
+      "channel": "note",
+      "external_id": "private-1on1",
+      "provider_revision": "1",
+      "scope": "owner_private",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "event": "1:1",
+        "start": "2026-10-01T14:00:00+09:00"
+      },
+      "canaries": [
+        "SYNTHETIC_PRIVATE_CANARY_1ON1_Q7"
+      ]
+    },
+    {
+      "fixture_id": "R08",
+      "channel": "note",
+      "external_id": "private-gpu-memo",
+      "provider_revision": "1",
+      "scope": "owner_private",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "topic": "GPU Pool"
+      },
+      "canaries": [
+        "SYNTHETIC_PRIVATE_CANARY_GPU_R9"
+      ]
+    },
+    {
+      "fixture_id": "R09",
+      "channel": "confluence",
+      "external_id": "sdk-faq",
+      "provider_revision": "v2",
+      "scope": "company",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "supported_platforms": [
+          "Linux x86_64",
+          "macOS arm64"
+        ],
+        "unsupported_platforms": [
+          "Windows"
+        ]
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R10-PA",
+      "channel": "note",
+      "external_id": "paper-pa",
+      "provider_revision": "1",
+      "scope": "public",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "claim": "저정밀 가중치 양자화로 추론 지연 감소",
+        "limitation": "합성 소형 모델 1종"
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R10-PB",
+      "channel": "note",
+      "external_id": "paper-pb",
+      "provider_revision": "1",
+      "scope": "public",
+      "sets": [
+        "core",
+        "small20"
+      ],
+      "facts": {
+        "claim": "보정 데이터 부족 시 정확도 저하",
+        "limitation": "단일 합성 데이터셋, 지연 미측정"
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "N01",
+      "channel": "note",
+      "external_id": "misc-cafeteria",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N02",
+      "channel": "note",
+      "external_id": "misc-meeting-room",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N03",
+      "channel": "note",
+      "external_id": "misc-security-training",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N04",
+      "channel": "note",
+      "external_id": "misc-parking",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N05",
+      "channel": "note",
+      "external_id": "misc-build-server",
+      "provider_revision": "1",
+      "scope": "team",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N06",
+      "channel": "note",
+      "external_id": "misc-doc-template",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N07",
+      "channel": "note",
+      "external_id": "misc-club",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N08",
+      "channel": "note",
+      "external_id": "misc-supplies",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "N09",
+      "channel": "note",
+      "external_id": "misc-onboarding",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "small20",
+        "irrelevant"
+      ],
+      "facts": {},
+      "canaries": []
+    },
+    {
+      "fixture_id": "D01",
+      "channel": "note",
+      "external_id": "faq-copy",
+      "provider_revision": "1",
+      "scope": "company",
+      "sets": [
+        "e2e01_extra"
+      ],
+      "facts": {},
+      "canaries": [],
+      "same_body_as": "R09"
+    },
+    {
+      "fixture_id": "R04-run2",
+      "channel": "note",
+      "external_id": "bench-b-log-run2",
+      "provider_revision": "1",
+      "scope": "team",
+      "sets": [
+        "e2e03_extra"
+      ],
+      "facts": {
+        "environment": "fixture-env-01",
+        "latency_ms": 8.4,
+        "accuracy_pct": 80.9
+      },
+      "canaries": []
+    },
+    {
+      "fixture_id": "R05-dup",
+      "channel": "note",
+      "external_id": "weekly-sync-memo",
+      "provider_revision": "1",
+      "scope": "team",
+      "sets": [
+        "e2e04_extra"
+      ],
+      "facts": {
+        "mentions_issue": 17
+      },
+      "canaries": [],
+      "duplicate_of": "R05"
+    },
+    {
+      "fixture_id": "I15",
+      "channel": "github_issue",
+      "external_id": "15",
+      "provider_revision": "r2",
+      "scope": "team",
+      "sets": [
+        "e2e04_extra"
+      ],
+      "facts": {
+        "issue": 15,
+        "state": "closed"
+      },
+      "canaries": []
+    }
+  ]
+}

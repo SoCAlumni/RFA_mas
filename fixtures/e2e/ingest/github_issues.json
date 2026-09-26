@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.1",
+  "provider": "github_issue",
+  "namespace": "synthetic-rfa/triv-demo",
+  "domain_id": "triv3",
+  "synthetic": true,
+  "rows": [
+    {
+      "number": 17,
+      "revision": "r1",
+      "title": "B 결과 환경 checksum 확인",
+      "body": "[합성 fixture R05] 상태: open\n담당: fixture-owner-001(본인)\n마감: 2026-10-02\n내용: benchmark B 결과의 실행 환경 checksum을 확인해야 한다. 확인 전에는 B 결과를 출시 판단의 확정 근거로 쓰지 않는다.",
+      "updated_at": "2026-09-30T18:00:00+09:00",
+      "acl": {
+        "audience": "business_unit",
+        "company_id": "local-company",
+        "memberships": [
+          "triv3-team"
+        ]
+      }
+    },
+    {
+      "number": 15,
+      "revision": "r2",
+      "title": "benchmark A 로그 수집",
+      "body": "[합성 fixture I15] 상태: closed\n담당: fixture-owner-001(본인)\n완료: 2026-09-27\n내용: benchmark A 로그 수집을 완료했다.",
+      "updated_at": "2026-09-27T17:00:00+09:00",
+      "acl": {
+        "audience": "business_unit",
+        "company_id": "local-company",
+        "memberships": [
+          "triv3-team"
+        ]
+      }
+    }
+  ]
+}

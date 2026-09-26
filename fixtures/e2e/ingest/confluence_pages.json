@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.1",
+  "provider": "confluence",
+  "namespace": "TRIV-DEMO",
+  "domain_id": "triv3",
+  "synthetic": true,
+  "rows": [
+    {
+      "id": "release-notice",
+      "version": "v1",
+      "title": "TRIV-DEMO SDK 공개 릴리즈 안내 v1",
+      "body": "[합성 fixture R01] TRIV-DEMO SDK의 공식 출시일은 2026-10-20이다. 이 안내는 공개 채널에 게시해도 되는 공식 자료다.",
+      "updated_at": "2026-09-28T10:00:00+09:00",
+      "acl": {
+        "audience": "public"
+      }
+    },
+    {
+      "id": "roadmap-q4",
+      "version": "v3",
+      "title": "TRIV-DEMO 4분기 로드맵",
+      "body": "[합성 fixture R02] 내부 검증 목표일은 2026-10-12이다. 이 날짜는 사업부 내부 계획이며 공식 출시일과 다른 항목이다. 외부에 공개하지 않는다.",
+      "updated_at": "2026-09-26T10:00:00+09:00",
+      "acl": {
+        "audience": "business_unit",
+        "company_id": "local-company",
+        "memberships": [
+          "triv3-bu"
+        ]
+      }
+    },
+    {
+      "id": "sdk-faq",
+      "version": "v2",
+      "title": "TRIV-DEMO SDK 사내 FAQ",
+      "body": "[합성 fixture R09] 설치 절차: 1) 사내 패키지 저장소를 등록한다. 2) triv-demo-sdk 패키지를 설치한다. 3) triv-demo doctor 명령으로 환경을 확인한다. 지원 범위: Linux x86_64와 macOS arm64를 지원하며 Windows는 지원하지 않는다.",
+      "updated_at": "2026-09-25T15:00:00+09:00",
+      "acl": {
+        "audience": "company",
+        "company_id": "local-company"
+      }
+    }
+  ]
+}
