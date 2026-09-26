@@ -1,0 +1,73 @@
+{
+  "attempt_id": "contract-recovery-01",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "개발 control local; 임시 protocol fixture는 simulated이며 제품 AC 증거 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_taskctl.py"
+        ],
+        "assertions": [],
+        "counts": {
+          "collected": 92,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 92,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "independent_review": "Parent confirmed an actual temporary Git/control fixture reproduction by read-only reviewer; no canonical product consumer was mutated. New negative case was not yet in these 92 tests.",
+        "log_excerpt": "92 passed in 99.69s (0:01:39). Overall AC1 failed independently: two sequentially integrated consumers owning the same synthetic source both become inactive stale integrated reservations; both historical guards pass but each explicit revalidation recovery fails with Recovery conflicts with another reservation. Pytest observations are preserved and not relabeled as test failures.",
+        "result": "failed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_task_migration.py"
+        ],
+        "assertions": [
+          "canonical 원문/task/DAG/ID/생성 view와 현재 공수·final gate가 일치",
+          "source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 17,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "environment": {
+          "TASK_CONTROL_ROOT": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas"
+        },
+        "exit_code": 0,
+        "id": "V2",
+        "log_excerpt": "17 passed in 10.86s. Read-only canonical migration audit; mutation checks use temporary control fixtures only.",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T08:09:12+00:00",
+    "reviewer": "worker-control with coordinator and independent read-only reviewer",
+    "started_at": "2026-09-26T08:05:37+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "c6c166007b3b9d79df7de8c35eddbfb3ae5ce1397d61bc7cba6a8daea5ba569a",
+  "source_manifest": ".agent/evidence/OPS-002/contract-recovery-01/source.json",
+  "spec_digest": "dec5fa924d6efb42681a55c9ce30d10be71173fab91239f5c3780222697b5805",
+  "spec_revision": 2,
+  "task_id": "OPS-002"
+}

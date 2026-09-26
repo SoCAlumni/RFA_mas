@@ -27,6 +27,11 @@ scope:
     reserved.
   - NAT/evaluation 선택·로컬 trace/evidence·Judge endpoint·egress 정책 누락만 planned로 보충. 기존 ENABLE_JUDGE/JUDGE_*/TRACE_DIR/TRACE_BACKEND/LANGFUSE_*
     등 재사용; 실제 읽지 않는 설정을 지원 목록에 추가하지 않음. NAT dependency pin은 P0-027 coordinator 소유와 순차 통합.
+  - doctor와 bootstrap이 동일한 부작용 없는 configuration/implementation 검사를 사용한다. configured, implemented, local
+    lifecycle readiness, live probe not_run을 분리하며 PostgreSQL URL·미지원 non-loopback HTTP를 ready라고 표시하지 않는다.
+  - P0-016 CHECKPOINT_PATH와 기존 ENABLE_JUDGE/JUDGE_*/TRACE_*를 재사용한다. 미구현 scheduler/NAT/retention은 reserved/planned로
+    명시하며 dependency 설치/키 보유를 실제 기능·egress 권한 증거로 취급하지 않는다. dev_env 생성 credential은 실제 서비스 등록이 아님을 표시하고
+    기존 실제 프로필을 수정하지 않는다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -181,8 +186,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 5
-spec_revision: 5
+revision: 6
+spec_revision: 6
 claim_generation: 0
 claim: null
 attempts:
@@ -203,7 +208,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:19:53+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T08:05:38+00:00'
+concise_result: 'Specification changed: Read-only synthetic preflight reproduced doctor true vs bootstrap
+  configuration failures; reuse checkpoint and require truthful per-feature readiness without env mutation'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

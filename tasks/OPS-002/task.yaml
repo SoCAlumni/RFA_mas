@@ -157,14 +157,14 @@ verification:
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
-latest_evidence_file: .agent/evidence/OPS-002/recovery-integrated-02/result.json
+latest_evidence_file: .agent/evidence/OPS-002/contract-recovery-01/result.json
 verification_summary:
-  state: stale
-  spec_revision: 1
-  spec_digest: 96abc4190be5b5be658e62d2b2974eb8eb00c49acaf958cbf47d4722a9deda3f
+  state: failed
+  spec_revision: 2
+  spec_digest: dec5fa924d6efb42681a55c9ce30d10be71173fab91239f5c3780222697b5805
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-  source_fingerprint: 124a973b85030c7201a3e6e4faf98ff80377c6018c091ffd9d841de08b2658b9
-  evidence: .agent/evidence/OPS-002/recovery-integrated-02/result.json
+  source_fingerprint: c6c166007b3b9d79df7de8c35eddbfb3ae5ce1397d61bc7cba6a8daea5ba569a
+  evidence: .agent/evidence/OPS-002/contract-recovery-01/result.json
 integration:
   state: pending
   target: canonical main
@@ -174,7 +174,7 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 18
+revision: 22
 spec_revision: 2
 claim_generation: 3
 claim:
@@ -183,18 +183,19 @@ claim:
   branch: task/OPS-002-r2
   generation: 3
   claimed_at: '2026-09-26T07:55:40+00:00'
-  heartbeat_at: '2026-09-26T08:02:27+00:00'
-  lease_expires_at: '2026-09-26T08:17:27+00:00'
+  heartbeat_at: '2026-09-26T08:07:58+00:00'
+  lease_expires_at: '2026-09-26T08:22:58+00:00'
   baseline_head: a612fc3360a6f2920b309d8056b7607aa6859194
   recovery_required: false
   context_digest: 54474dec8ea4c649909631543a195cee2621945c73259c99e681ca8fd5a039d6
 attempts:
-  count: 3
-  cycles: 0
+  count: 4
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: recovery-integrated-02
+  latest_attempt: contract-recovery-01
   evidence_refs:
   - .agent/evidence/OPS-002/recovery-01/result.json
+  - .agent/evidence/OPS-002/contract-recovery-01/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -252,9 +253,8 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T08:02:27+00:00'
-concise_result: 'Specification changed: Preserve original AC and add deadlock regression for inactive
-  already-integrated consumer contract publication/acceptance; no new framework or bypass of integration
-  evidence'
-next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
-  AC'
+updated_at: '2026-09-26T08:09:26+00:00'
+concise_result: Reproduced contract deadlock in isolated fixture; implemented narrow historical-bound
+  acceptance and notice lifecycle fixes; required tests not_run
+next_action: Independent notice lifecycle review then frozen-source V1/V2 attempt; no product acceptance
+  claim

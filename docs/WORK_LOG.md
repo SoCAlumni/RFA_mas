@@ -257,3 +257,21 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - OPS-002 사전 독립 검토는 v2→v3 연속 계약 발행 뒤 자동 notice가 누적되면
   최신 수락도 막히는 추가 경계를 재현했다. 발행 이력에 기록된 동일 계약 notice만
   처리하는 최소 수정과 음성 검증을 진행한다. 무관 blocker 삭제는 허용하지 않는다.
+
+## OPS-002 검증 1회 실패 / 설정 preflight — 2026-09-26T08:10Z
+
+- contract-recovery-01 자동 결과는 control 92 passed(99.69초), migration
+  17 passed(10.86초)였지만 AC1은 실패로 봉인했다. 별도 실제 임시 Git fixture에서
+  동일 source를 소유했던 두 완료 task가 함께 stale/reserved가 되면 양쪽 recovery가
+  서로를 막는 사례를 재현했다. 자동 통과 숫자를 근거로 전체 AC를 통과 처리하지 않았다.
+- 명시 integrated_revalidation만, 상대가 claim 없이 stale이고 실제 과거 통합 증거가
+  유효할 때 예약을 보존하며 첫 재검증을 허용하도록 고친다. 첫 claim 뒤에는 두 번째를
+  거절해 직렬성을 유지한다. active/expired claim·미통합 제출·위조 이력은 계속 거절.
+  실패 증거를 보존하고 최대 3 cycles 내 두 번째 정식 검증을 진행한다.
+- P0-017 read-only 합성 probe는 doctor의 ready=true와 bootstrap 실패 차이를
+  PostgreSQL URL 및 비-loopback HTTP 설정에서 재현했다. 실제 env나 네트워크를
+  읽거나 변경하지 않았다. 설정/구현 가능성 검사를 공유하고 live probe not_run과
+  local readiness를 분리하도록 원본 scope에 반영했다. 비밀 예제 값 9개는 빈칸이다.
+- dev_env의 로컬 생성 토큰은 상대 서비스에 등록된 credential이 아니다. 이번 후속
+  설정 task는 기존 실제 env 프로필을 수정하지 않으며, 예약된 scheduler/NAT/retention
+  설정을 실제 기능이 완성된 것처럼 표시하지 않는다.

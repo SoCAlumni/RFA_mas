@@ -1,10 +1,10 @@
 generated: true
 schema_version: '1.0'
-source_digest: bf646325875e15f86ad64d92fd240131fea91b0537d83bba5a0804c94f9ef308
+source_digest: 88667ff2ee9f03478d67c7cc2d0c9b80ee00800ae27e55ab349d4b8d49943d7e
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 18
+  OPS-002: 22
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -21,7 +21,7 @@ source_revisions:
   P0-014: 24
   P0-015: 29
   P0-016: 15
-  P0-017: 5
+  P0-017: 6
   P0-018: 17
   P0-019: 4
   P0-020: 5
@@ -69,7 +69,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T08:03:06+00:00'
+generated_at: '2026-09-26T08:09:26+00:00'
 counts:
   todo: 31
   in_progress: 1
@@ -142,7 +142,7 @@ tasks:
   integration: pending
   reserved: false
   blocker: null
-  verification: stale
+  verification: failed
   planning_ready: false
   executable: false
   reasons:

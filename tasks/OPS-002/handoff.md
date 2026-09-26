@@ -1,7 +1,13 @@
-# OPS-002 — 계약 발행 후 통합 task 재검증 후속 보수
+# OPS-002 — inactive integrated consumer contract recovery
 
-기존 recovery/일정 보수는 bd1e340으로 main 통합되고 worker 66+17, target 66+17 테스트가 통과했다. 기존 evidence와 통합 결과는 approaches에 보존한다. 현재 stale는 후속 WORK_LOG 변화로 생겼다.
+Goal / AC: preserve AC1–4 and resolve AC5 contract publication/acceptance deadlock without weakening active claims, integration reservations, source/evidence binding, or completion gates.
 
-새 조사: execute의 reconcile이 완료 consumer를 verifying/reserved로 바꾼 뒤 publish-contract가 모든 reservation을 거절해 새 계약 발행이 불가하다. edit-spec도 같은 예약을 무조건 거절해 현재 contract digest 수락을 못한다. active claim/미통합 제출 보호는 유지하면서 역사적 통합 증거가 있는 비활성 stale consumer의 발행/명시 계약 수락만 허용해야 한다. 관찰은 코드 검토이며 temporary protocol fixture 재현과 수정 검증이 다음 행동이다.
+Current implementation facts: source worktree OPS-002-r2 on baseline a612fc3 modifies only scripts/tasklib/cli.py, tests/test_taskctl.py and docs/TASK_REVALIDATION.md. Existing revalidation_baseline checks historical submission/result/source manifest and canonical target commit ancestry. New contract_revalidation_guard allows only no-claim stale integrated reservations; it also checks canonical target branch. Reserved edit-spec accepts only preserved contract ID/role with the actually published file/version/digest, plus readiness and publisher-owned notice cleanup. Scope/AC/dependency edits, roles/ref deletion and unrelated unresolved removal stay denied. Publisher history records exact notices to safely accept v3 after skipped v2; ref acceptance must clear its notices atomically. Existing evidence and reservation remain until explicit recovery and new worker/target verification.
 
-이전 source worktree clean/실행자 중단을 확인했다. 미통합 제품 변경이나 외부 부작용은 없다. 새 source=../rfa_mas_worktrees/OPS-002-r2, baseline a612fc3. 새 도구·framework를 만들지 않고 기존 cli/tests/TASK_REVALIDATION 문서 scope 안에서 고친다. 기존 AC는 유지하고 실제 old-token/미검증 close/dependency gate가 그대로인 음성 회귀를 추가한다. source를 고정한 뒤 evidence를 수집한다.
+Investigation / errors: an isolated Git/control probe reproduced both publish-contract and edit-spec rejection after completed consumer contract change. First probe used macOS /var temporary alias and was rejected by existing symlink input protection; corrected to /private/tmp, no protection removed. This was a temporary diagnostic, not product or required V1 verification. Independent read-only review found intermediate-version and partial-ref notice lifecycle deadlocks before the first formal attempt; code and regression cases address both. No .env was read and no real control consumer was mutated in probes.
+
+Verification: ruff check passed for the two changed Python files. Required V1/V2 are not_run as of this handoff. Prior OPS-002 worker/target evidence remains in canonical approaches; this new source does not reuse it as current success. Independent tiny fixture probes are not pytest/product E2E evidence.
+
+Interfaces / limitations: no new CLI command, server, framework or auto merge. A same-host trusted coordinator must supply publication proof, explicit acceptance, inspection and new evidence. Historical notices without publisher provenance are not cleared by text prefix. P1-006D remains read-only design work, not an implemented trace integration.
+
+Next first action: finish independent notice-lifecycle review, freeze source, begin a new immutable attempt, run exact V1 and V2 (V2 with explicit canonical TASK_CONTROL_ROOT), record actual results, then commit owned source and submit verifying. Parent handles WORK_LOG and target integration.
