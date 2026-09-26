@@ -371,3 +371,129 @@ async def test_restart_unknown_role_receipt_is_not_success_or_replayed(tmp_path)
         assert late.value.code == "invalid_state_transition"
     finally:
         await container.shutdown()
+
+
+# -- P0-020A deterministic follow-up comparison -------------------------------------------
+from types import SimpleNamespace  # noqa: E402
+
+from rfa_mas.contracts import TeamBudget as _Budget  # noqa: E402
+
+
+def _run(label, source_id, revision, title, latency, tentative=False):
+    return {"source_id": source_id, "source_revision": revision, "label": label, "title": title,
+            "latency_ms": latency, "accuracy_pct": 80.0, "environment": "fixture-env-1",
+            "tentative": tentative}
+
+
+class FakeAnalystRunner:
+    def __init__(self):
+        self.pairs = []
+
+    async def tool(self, context, name, arguments):
+        context.budget.charge_tool()
+        self.pairs.append((arguments["baseline"]["source_id"],
+                           arguments["candidate"]["source_id"]))
+        return {"latency_change_pct": 0.0, "accuracy_delta_pp": 0.0, "same_environment": True}
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+async def test_result_analyst_compares_baseline_with_every_candidate_in_content_order(reverse):
+    runs = [
+        _run("B", "src-z", "rev-9", "합성 benchmark B 로그", 8.2),
+        _run("A", "src-y", "rev-1", "합성 benchmark A 로그", 10.0),
+        _run("B", "src-a", "rev-3", "합성 benchmark B 로그 2회차", 8.4),
+        _run("C", "src-m", "rev-2", "메모", 6.0, tentative=True),
+    ]
+    if reverse:
+        runs.reverse()  # Input order (e.g. retrieval order) must not matter.
+    runner = FakeAnalystRunner()
+    context = SimpleNamespace(
+        inputs={"experiment_runner": {"runs": runs}},
+        budget=TeamBudgetState(_Budget(max_steps=10, max_tool_calls=10, timeout_seconds=30)),
+    )
+    output = await workers._result_analyst(runner, context)
+    # Content order, not the random source_id: the original B log, then its follow-up.
+    assert runner.pairs == [("src-y", "src-z"), ("src-y", "src-a")]
+    assert [(c["baseline"], c["candidate"], c["candidate_source_id"],
+             c["candidate_source_revision"]) for c in output["comparisons"]] == [
+        ("A", "B", "src-z", "rev-9"), ("A", "B", "src-a", "rev-3")]
+    assert all(c["baseline_source_id"] == "src-y" for c in output["comparisons"])
+    assert output["skipped"] == [] and output["unverified"] == ["C"]
+
+
+async def test_result_analyst_stops_at_the_tool_budget_and_reports_skipped_candidates():
+    runs = [_run("A", "a", "1", "A 로그", 10.0), _run("B", "b1", "1", "B 로그", 8.2),
+            _run("B", "b2", "1", "B 로그 2회차", 8.4)]
+    budget = TeamBudgetState(_Budget(max_steps=10, max_tool_calls=3, timeout_seconds=30))
+    budget.tool_calls = 2  # Earlier roles already used two of the shared team calls.
+    runner = FakeAnalystRunner()
+    output = await workers._result_analyst(
+        runner, SimpleNamespace(inputs={"experiment_runner": {"runs": runs}}, budget=budget))
+    assert runner.pairs == [("a", "b1")] and budget.tool_calls == 3
+    assert [c["candidate_source_id"] for c in output["comparisons"]] == ["b1"]
+    assert output["skipped"] == [{
+        "candidate": "B", "baseline_source_id": "a", "baseline_source_revision": "1",
+        "candidate_source_id": "b2", "candidate_source_revision": "1", "reason": "tool_budget"}]
+
+
+FOLLOW_UP_NOTES = {
+    "a": ("합성 benchmark A 로그",
+          "합성 benchmark A 로그. 환경 fixture-env-1, 지연 10.0ms, 정확도 81.0%"),
+    "b": ("합성 benchmark B 로그",
+          "합성 benchmark B 로그. 환경 fixture-env-1, 지연 8.2ms, 정확도 80.8%"),
+    "b2": ("합성 benchmark B 로그 2회차",
+           "합성 benchmark B 로그 2회차. 환경 fixture-env-1, 지연 8.4ms, 정확도 80.9%"),
+    "memo": ("연구 메모 benchmark", "다른 방법의 benchmark 지연 6.0ms는 검증 전 가설이다."),
+}
+
+
+async def test_follow_up_log_is_compared_deterministically_through_the_team(tmp_path):
+    seen = []
+    for attempt, order in enumerate((("a", "b", "b2", "memo"), ("b2", "memo", "b", "a"))):
+        container = build_container(Settings(
+            _env_file=None, database_url=f"sqlite:///{tmp_path / f'follow-{attempt}.db'}",
+            trace_dir=(tmp_path / f"traces-{attempt}").resolve(), max_tool_calls=10))
+        await container.startup()
+        try:
+            owner = await container.repository.local_principal()
+            written = {}
+            for key in order:  # Different insertion order and server-generated IDs per run.
+                record = await container.knowledge.write(note(key, *FOLLOW_UP_NOTES[key]), owner)
+                written[record.document.source_id] = (key, record.document.source_revision)
+            result = await container.service.run(request(), owner)
+            assert result.status == WorkStatus.COMPLETED, result.errors
+            team = await container.service.team_result(result.run_id, owner)
+            comparisons = team.findings["result_analyst"]["comparisons"]
+            assert team.findings["result_analyst"]["skipped"] == []
+            for item in comparisons:
+                assert item["candidate_source_revision"] == written[item["candidate_source_id"]][1]
+            seen.append([(c["baseline"], written[c["candidate_source_id"]][0],
+                          c["latency_change_pct"]) for c in comparisons])
+        finally:
+            await container.shutdown()
+    assert seen[0] == seen[1] == [("A", "b", -18.0), ("A", "b2", -16.0)]
+
+
+async def test_default_budget_skips_follow_up_comparisons_explicitly(tmp_path):
+    # Default ceiling (6 tool calls): 2 searches + 4 log parses leave none for comparisons.
+    # The analyst reports each skipped candidate; before P0-020A the role failed instead.
+    container = build_container(Settings(
+        _env_file=None, database_url=f"sqlite:///{tmp_path / 'default.db'}",
+        trace_dir=(tmp_path / "traces").resolve()))
+    await container.startup()
+    try:
+        owner = await container.repository.local_principal()
+        for key in ("a", "b", "b2", "memo"):
+            await container.knowledge.write(note(key, *FOLLOW_UP_NOTES[key]), owner)
+        result = await container.service.run(request(), owner)
+        assert result.status == WorkStatus.COMPLETED, result.errors
+        team = await container.service.team_result(result.run_id, owner)
+        analyst = team.findings["result_analyst"]
+        assert team.usage.tool_calls == team.usage.limits.max_tool_calls == 6
+        assert analyst["comparisons"] == [] and analyst["insufficient"] is True
+        assert [s["reason"] for s in analyst["skipped"]] == ["tool_budget", "tool_budget"]
+        assert all(s["candidate_source_id"] and s["candidate_source_revision"]
+                   for s in analyst["skipped"])
+        assert "비교 생략: 도구 예산 소진" in result.draft.content
+    finally:
+        await container.shutdown()

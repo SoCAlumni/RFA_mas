@@ -566,12 +566,13 @@ async def _experiment_runner(runner: TeamRunner, context: RoleContext) -> dict[s
             "source_id": item.source_id,
             "source_revision": item.source_revision,
             "label": _label(f"{_title(item)} {item.excerpt}", item.source_id),
+            "title": _title(item),
             "latency_ms": parsed.get("latency_ms"),
             "accuracy_pct": parsed.get("accuracy_pct"),
             "environment": parsed.get("environment"),
             "tentative": any(t in item.excerpt.lower() for t in TENTATIVE_TERMS),
         })
-    runs.sort(key=lambda r: (r["label"], r["source_id"]))
+    runs.sort(key=_run_order)
     return {
         "runs": runs,
         "mode": "fixture_log_parse",
@@ -581,20 +582,52 @@ async def _experiment_runner(runner: TeamRunner, context: RoleContext) -> dict[s
     }
 
 
+def _run_order(run: dict[str, Any]) -> tuple:
+    """Content-derived order. Server-generated IDs only break exact content duplicates."""
+
+    def number(value: Any) -> tuple[bool, float]:
+        return (value is None, float(value) if isinstance(value, (int, float)) else 0.0)
+
+    return (
+        run.get("label") or "",
+        run.get("title") or "",
+        run.get("environment") or "",
+        number(run.get("latency_ms")),
+        number(run.get("accuracy_pct")),
+        run.get("source_revision") or "",
+        run.get("source_id") or "",
+    )
+
+
 async def _result_analyst(runner: TeamRunner, context: RoleContext) -> dict[str, Any]:
-    runs = [r for r in context.inputs.get("experiment_runner", {}).get("runs", [])
-            if not r.get("tentative")]
-    comparisons = []
+    runs = sorted(
+        (r for r in context.inputs.get("experiment_runner", {}).get("runs", [])
+         if not r.get("tentative")),
+        key=_run_order,
+    )
+    comparisons, skipped = [], []
     if len(runs) >= 2:
-        baseline, candidate = runs[0], runs[1]
-        compared = await runner.tool(
-            context, "metric_compare", {"baseline": baseline, "candidate": candidate}
-        )
-        comparisons.append({"baseline": baseline["label"], "candidate": candidate["label"],
-                            **compared})
+        # The baseline against EVERY non-tentative candidate (e.g. a follow-up log with the
+        # same label), in a deterministic order, until the shared team tool budget is used.
+        baseline = runs[0]
+        for candidate in runs[1:]:
+            refs = {
+                "baseline_source_id": baseline["source_id"],
+                "baseline_source_revision": baseline["source_revision"],
+                "candidate_source_id": candidate["source_id"],
+                "candidate_source_revision": candidate["source_revision"],
+            }
+            if context.budget.tool_calls >= context.budget.limits.max_tool_calls:
+                skipped.append({"candidate": candidate["label"], **refs, "reason": "tool_budget"})
+                continue
+            compared = await runner.tool(
+                context, "metric_compare", {"baseline": baseline, "candidate": candidate}
+            )
+            comparisons.append({"baseline": baseline["label"], "candidate": candidate["label"],
+                                **refs, **compared})
     unverified = [r["label"] for r in context.inputs.get("experiment_runner", {}).get("runs", [])
                   if r.get("tentative")]
-    return {"comparisons": comparisons, "unverified": unverified,
+    return {"comparisons": comparisons, "skipped": skipped, "unverified": unverified,
             "insufficient": not comparisons, "simulated_experiment": True}
 
 
@@ -624,8 +657,11 @@ async def _supervisor(runner: TeamRunner, context: RoleContext) -> dict[str, Any
     for item in context.inputs.get("result_analyst", {}).get("comparisons", []):
         lines.append(
             f"- {item['baseline']}→{item['candidate']}: 지연 {item['latency_change_pct']}% 변화, "
-            f"정확도 {item['accuracy_delta_pp']}%p 변화 [합성 로그 계산]"
+            f"정확도 {item['accuracy_delta_pp']}%p 변화 [합성 로그 계산; 후보 "
+            f"{item.get('candidate_source_id')}@{item.get('candidate_source_revision')}]"
         )
+    for item in context.inputs.get("result_analyst", {}).get("skipped", []):
+        lines.append(f"- {item['candidate']} 비교 생략: 도구 예산 소진 (미비교, 결과 아님)")
     reviewed = context.inputs.get("evidence_reviewer", {}).get("reviewed", [])
     if reviewed:
         tentative = sum(r["epistemic_state"] == "tentative" for r in reviewed)
