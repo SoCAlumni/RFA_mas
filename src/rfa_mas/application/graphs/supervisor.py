@@ -120,8 +120,9 @@ NEXT_OPTIONS = {
     "schedule": ("반복 주기와 시각을 함께 적어 주세요. 예: '매일 오전 9시 TRIV3 브리핑', "
                  "'매주 월요일 18시 할 일 후보 정리', 'cron 0 9 * * mon-fri'.",
                  "구조화된 예약은 /v1/schedules로 직접 만들 수 있습니다."),
-    "feedback": ("피드백 분류·적용(P1-005B)이 준비되면 같은 요청을 다시 보내세요.",
-                 "초안 수정은 검토 단계에서 요청할 수 있습니다."),
+    "feedback": ("피드백은 말투 선호, 사실 정정, 개인 공개 범위, 공식 정책 변경 제안 중 하나로 "
+                 "분류할 수 있게 구체적으로 적어 주세요.",
+                 "분류를 직접 지정하려면 /v1/feedback을 사용하세요."),
     "destructive-or-external-action": ("삭제·배포·결제는 비서가 수행하지 않습니다.",
                                        "자료 수정은 지식 관리 화면/API의 소유자 변경을 사용하세요."),
     "channel-scope": ("외부/내부 채널은 질의와 공개 답변 초안만 요청할 수 있습니다.",),
@@ -207,9 +208,12 @@ def route_intent(text: str, *, domain_id: DomainId | None, task_id: str | None,
         return decision | {"intent": "unsupported", "rule": "channel-scope", "supported": False,
                            "limitations": ("channel_scope",),
                            "next_options": NEXT_OPTIONS["channel-scope"]}
-    if intent in {"feedback", "unsupported"}:
-        return decision | {"supported": False, "limitations": (f"{intent}_not_available",),
-                           "next_options": NEXT_OPTIONS[rule if intent == "unsupported" else intent]}
+    if intent == "unsupported":
+        return decision | {"supported": False, "limitations": ("unsupported_not_available",),
+                           "next_options": NEXT_OPTIONS[rule]}
+    if intent == "feedback":
+        # P1-005B: owner feedback memory. The resolved domain (if any) only narrows scope.
+        return decision
     if domain is None:
         return decision | {"supported": False, "limitations": ("domain_not_resolved",),
                            "next_options": NEXT_OPTIONS["domain-required"]}

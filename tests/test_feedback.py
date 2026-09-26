@@ -387,3 +387,53 @@ async def test_m01_http_flow_traces_the_applied_revision_in_a_new_session(env):
         foreign_run = await api.get("/v1/runs/run-absent/feedback")
         assert foreign_run.status_code == 404
 
+
+
+# -- P1-005B: the P1-004 "feedback" intent is classified and stored by FeedbackService -------
+async def test_assistant_feedback_intent_stores_classified_owner_feedback(env):
+    from rfa_mas.contracts import AssistantRequest
+
+    container, owner, seen, feedback = env
+    style = "앞으로는 TRIV3 외부 답변은 세 문장 이내로 짧게 써줘"
+    first = await container.service.assist(AssistantRequest(text=style), owner,
+                                           feedback=feedback)
+    again = await container.service.assist(AssistantRequest(text=style), owner,
+                                           feedback=feedback)
+    assert first.status == again.status == "feedback_recorded" and first.run is None
+    assert first.feedback.feedback_id == again.feedback.feedback_id  # one item, not two
+    assert (first.feedback.category, first.feedback.scope.domain_id) == (STYLE, DomainId.TRIV3)
+    # Relaxation language is only a proposal; it never changes policy or its version.
+    policy_before = container.policy.policy_version
+    proposal = await container.service.assist(
+        AssistantRequest(text="앞으로는 TRIV3 내부 노트는 공개해도 돼"), owner, feedback=feedback)
+    assert proposal.status == "feedback_recorded"
+    assert proposal.feedback.category == POLICY
+    assert proposal.feedback.disposition == "proposal_only"
+    assert proposal.feedback.official_policy_changed is False
+    assert container.policy.policy_version == policy_before
+    vague = await container.service.assist(AssistantRequest(text="다음부터 음 그렇군요"), owner,
+                                           feedback=feedback)
+    assert vague.status == "unsupported" and vague.stop_reason == "feedback_unclassified"
+    assert vague.next_options
+    channel = await container.service.assist(
+        AssistantRequest(text=style, ingress="internal"), owner, feedback=feedback)
+    assert channel.status == "unsupported" and channel.decision.rule == "channel-scope"
+    missing = await container.service.assist(AssistantRequest(text=style), owner)
+    assert missing.status == "unsupported" and missing.stop_reason == "feedback_not_available"
+    assert len(await feedback.list(owner)) == 2 and seen == []  # no model/run involved
+
+
+async def test_assistant_route_passes_the_feedback_service(env):
+    from rfa_mas.api.app import resolve_principal
+
+    container, owner, _, _ = env
+    app = create_app(container=container)
+    app.dependency_overrides[resolve_principal] = lambda: owner
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                 base_url="http://test") as api:
+        made = await api.post("/v1/assistant",
+                              json={"text": "앞으로는 TRIV3 외부 답변은 세 문장 이내로 짧게 써줘"})
+        assert made.status_code == 201 and made.json()["status"] == "feedback_recorded"
+        listed = await api.get("/v1/feedback")
+        assert [f["feedback_id"] for f in listed.json()] == [made.json()["feedback"]["feedback_id"]]
+

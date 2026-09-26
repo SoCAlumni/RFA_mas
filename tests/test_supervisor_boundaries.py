@@ -366,8 +366,10 @@ def test_intent_routing_is_deterministic_with_limits_and_next_options(text, inte
     assert first["intent"] == intent
     if pattern:
         assert first["task_candidate"]["pattern"] == pattern and first["task_ref"] is None
-    if intent in {"schedule", "feedback", "unsupported"}:
+    if intent in {"schedule", "unsupported"}:
         assert first["supported"] is False and first["limitations"] and first["next_options"]
+    if intent == "feedback":  # P1-005B: stored through FeedbackService, never a permission.
+        assert first["supported"] is True and not first.get("limitations")
     no_domain = route_intent("안녕하세요", domain_id=None, task_id=None, ingress="direct")
     assert no_domain["supported"] is False and "domain_not_resolved" in no_domain["limitations"]
 

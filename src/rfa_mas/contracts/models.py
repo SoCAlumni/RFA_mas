@@ -925,12 +925,13 @@ class AssistantResponse(ExtendedContractModel):
     decision: IntentDecision
     status: Literal[
         "stored", "completed", "waiting_approval", "failed", "cancelled", "partial",
-        "unsupported", "scheduled",
+        "unsupported", "scheduled", "feedback_recorded",
     ]
     run: RunResult | None = None
     stored_source_id: OpaqueId | None = None
     stored_revision: OpaqueId | None = None
     schedule: Schedule | None = None
+    feedback: FeedbackRecord | None = None
     task_id: OpaqueId | None = None
     team_id: OpaqueId | None = None
     stop_reason: OpaqueId | None = None
@@ -1175,11 +1176,6 @@ class Schedule(ExtendedContractModel):
     @classmethod
     def as_utc(cls, value: datetime | None) -> datetime | None:
         return _utc(value)
-
-
-# P0-022: the assistant DTOs reference the schedule models defined above.
-IntentDecision.model_rebuild()
-AssistantResponse.model_rebuild()
 
 
 class JobRun(ExtendedContractModel):
@@ -1730,3 +1726,8 @@ class EvalResultV11(EvalResult):
         ):
             raise ValueError("rule outcome requires observation evidence")
         return self
+
+
+# P0-022/P1-005B: the assistant DTOs reference schedule/feedback models defined later.
+IntentDecision.model_rebuild()
+AssistantResponse.model_rebuild()

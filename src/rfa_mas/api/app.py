@@ -211,6 +211,7 @@ def create_app(
         return await selected_container.service.assist(
             body, trusted_principal, knowledge=selected_container.knowledge,
             schedules=selected_container.schedules,
+            feedback=feedback,
         )
 
     @app.get("/v1/work/{run_id}", response_model=RunResult, tags=["work"])

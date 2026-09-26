@@ -499,11 +499,12 @@ class WorkService:
 
     # -- P1-004 thin assistant execution boundary ---------------------------------------
     async def assist(self, request, principal: TrustedPrincipal, *, knowledge=None,
-                     schedules=None):
+                     schedules=None, feedback=None):
         """Route untrusted text deterministically, then run exactly one existing path.
 
         store/query never create a Task or team; task_run uses the explicit team path;
         schedule stores owner intent through ScheduleService (P0-022; never runs a job);
+        feedback is classified and stored by FeedbackService (P1-005B; never widens access);
         channel ingress may only query or draft for a public target through this Supervisor.
         """
         from rfa_mas.application.graphs.supervisor import PATTERN_OUTPUTS, route_intent
@@ -528,6 +529,8 @@ class WorkService:
                                      else "unsupported", next_options=decision.next_options)
         if decision.intent == "schedule":
             return await self._assist_schedule(decision, principal, schedules)
+        if decision.intent == "feedback":
+            return await self._assist_feedback(decision, request, principal, feedback)
         if decision.intent == "store_note":
             if knowledge is None:
                 raise RfaError("not_implemented", "노트 저장 경로가 구성되지 않았습니다.")
@@ -640,6 +643,35 @@ class WorkService:
                                          "주기는 15분 이상, 요일은 이름(mon..sun)으로 적어 주세요.",
                                      ))
         return AssistantResponse(decision=decision, status="scheduled", schedule=created)
+
+    async def _assist_feedback(self, decision, request, principal: TrustedPrincipal, feedback):
+        """P1-005B: classify and store owner feedback; one item per identical sentence."""
+        from rfa_mas.application.graphs.supervisor import NEXT_OPTIONS
+        from rfa_mas.contracts import AssistantResponse, FeedbackCreate, FeedbackScope
+
+        if feedback is None:
+            return AssistantResponse(
+                decision=decision, status="unsupported", stop_reason="feedback_not_available",
+                next_options=("분류를 지정한 피드백은 /v1/feedback으로 보낼 수 있습니다.",),
+            )
+        body = FeedbackCreate(text=request.text[:2000],
+                              scope=FeedbackScope(domain_id=decision.domain_id))
+        for existing in await feedback.list(principal, domain_id=decision.domain_id,
+                                            state="active"):
+            if (existing.text, existing.scope, existing.source) == (
+                body.text, body.scope, body.source
+            ):
+                return AssistantResponse(decision=decision, status="feedback_recorded",
+                                         feedback=existing)
+        try:
+            record = await feedback.submit(body, principal)
+        except RfaError as exc:
+            if exc.code not in {"feedback_unclassified", "feedback_invalid"}:
+                raise
+            return AssistantResponse(decision=decision, status="unsupported",
+                                     stop_reason=exc.code,
+                                     next_options=NEXT_OPTIONS["feedback"])
+        return AssistantResponse(decision=decision, status="feedback_recorded", feedback=record)
 
     async def team_result(self, run_id: str, principal: TrustedPrincipal):
         """Owner-authorized team receipt (roles, partial results, budget usage)."""
