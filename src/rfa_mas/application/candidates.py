@@ -27,6 +27,7 @@ DATE_ISO = re.compile(r"(20\d\d)-(\d\d)-(\d\d)")
 DATE_KO = re.compile(r"(\d{1,2})월\s*(\d{1,2})일")
 BLOCKER_TERMS = ("확인 필요", "선행", "blocker", "막힘", "blocked", "전에 확인")
 CLOSED_TERMS = ("closed", "완료", "해결됨", "resolved", "done")
+TENTATIVE_TERMS = ("가설", "검증 전", "미검증", "잠정", "추정", "tentative", "unverified")
 
 
 def _normalized(text: str) -> str:
@@ -60,10 +61,25 @@ class CandidateService:
         proposals = await self.accumulator.extract(domain_id, principal, origin_ref="candidates")
         existing = {c.fingerprint: c for c in
                     await self.repository.list_candidates(principal, domain_id)}
-        seen: set[str] = set()
+        # Group mentions of the same change first; keep the richest statement (explicit
+        # due date, then longest text) and the union of parents, independent of order.
+        grouped: dict[str, list] = {}
         for proposal in proposals:
-            if proposal.kind not in {"todo", "issue"}:
-                continue
+            if proposal.kind in {"todo", "issue"}:
+                key = fingerprint(proposal.kind, proposal.content,
+                                  [p.source_id for p in proposal.parents])
+                grouped.setdefault(key, []).append(proposal)
+        merged = []
+        for key, group in sorted(grouped.items()):
+            best = sorted(group, key=lambda p: (explicit_due(p.content, now.year) is None,
+                                                -len(p.content), p.content))[0]
+            parents = {(p.source_id, p.source_revision): p for g in group for p in g.parents}
+            merged.append(best.model_copy(update={
+                "parents": tuple(parents[k] for k in sorted(parents))[:32],
+                "content": best.content,
+            }))
+        seen: set[str] = set()
+        for proposal in merged:
             text = proposal.content
             closed = any(term in _normalized(text) for term in CLOSED_TERMS)
             key = fingerprint(proposal.kind, text, [p.source_id for p in proposal.parents])
@@ -79,7 +95,10 @@ class CandidateService:
                     candidate_id=new_id("candidate"), domain_id=domain_id,
                     owner_id=principal.user_id, kind=proposal.kind,
                     title=proposal.title, content=text, fingerprint=key,
-                    parents=proposal.parents, epistemic_state=proposal.epistemic_state,
+                    parents=proposal.parents,
+                    epistemic_state="tentative" if any(
+                        term in _normalized(text) for term in TENTATIVE_TERMS
+                    ) else proposal.epistemic_state,
                     due_date=explicit_due(text, now.year),
                     blocker=any(t in _normalized(text) for t in BLOCKER_TERMS),
                     history=(f"{now.isoformat()} proposed",), created_at=now, updated_at=now,
@@ -146,4 +165,3 @@ class CandidateService:
             "resurface_on_new_evidence": decision.resurface_on_new_evidence,
             "updated_at": now, "history": current.history + (f"{now.isoformat()} {state}",),
         }), principal, expected_state=current.state)
-
