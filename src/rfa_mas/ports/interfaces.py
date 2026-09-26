@@ -5,6 +5,7 @@ from typing import Any, Protocol
 
 from rfa_mas.contracts import (
     AgentSpec,
+    Audience,
     ContextBundle,
     ContextRequest,
     DomainId,
@@ -17,6 +18,9 @@ from rfa_mas.contracts import (
     KnowledgeDocument,
     KnowledgeRevision,
     KnowledgeWrite,
+    SourceMetadata,
+    SourceRead,
+    SourceRevisionRef,
     ModelRequest,
     ModelResult,
     ObservationRecord,
@@ -255,6 +259,18 @@ class WorkRepositoryPort(Protocol):
         ...
 
     async def list_documents(self, domain_id: str) -> list[KnowledgeDocument]: ...
+
+    async def authorized_metadata(self, domain_id, principal, *, audiences=tuple(Audience),
+        target=Audience.OWNER, endpoint="local-preview", policy_version="local-v1",
+        query=None, limit=100) -> list[SourceMetadata]: ...
+
+    async def read_sources(self, domain_id, principal, references, *, audiences=tuple(Audience),
+        target=Audience.OWNER, endpoint="local-preview", policy_version="local-v1",
+        metadata_only=False) -> list[SourceRead] | list[SourceMetadata]: ...
+
+    async def write_derived_knowledge(self, request: KnowledgeWrite, principal: TrustedPrincipal,
+        *, parents: tuple[SourceRevisionRef, ...], policy_version: str,
+        epistemic_state="inferred") -> KnowledgeRevision: ...
 
 
 class TracePort(Protocol):

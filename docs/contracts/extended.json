@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "1925ea65c05d315a8a192987f9f3198fda0f88721479b6cb3a7065c246d36afc",
+  "digest": "28fc4df544ea6b7d0ade44dd9318621dc58da7a5fb7c34df24fa1fe0f7648cf4",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -360,6 +360,20 @@
                 "title": "Memberships",
                 "type": "array"
               },
+              "project_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Project Id"
+              },
               "schema_version": {
                 "const": "1.1",
                 "default": "1.1",
@@ -463,6 +477,20 @@
                 "default": false,
                 "title": "Privacy Canary",
                 "type": "boolean"
+              },
+              "project_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Project Id"
               },
               "required_memberships": {
                 "items": {
@@ -4496,6 +4524,17 @@
             "title": "Max Characters",
             "type": "integer"
           },
+          "policies": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/PolicyBindings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "principal": {
             "$ref": "#/$defs/TrustedPrincipal"
           },
@@ -5599,6 +5638,21 @@
             "title": "Memberships",
             "type": "array"
           },
+          "project_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Project Id"
+          },
           "schema_version": {
             "const": "1.1",
             "default": "1.1",
@@ -5705,6 +5759,21 @@
             "default": false,
             "title": "Privacy Canary",
             "type": "boolean"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Project Id"
           },
           "required_memberships": {
             "items": {
@@ -7391,6 +7460,124 @@
         "title": "SourceLocation",
         "type": "object"
       },
+      "SourceMetadata": {
+        "additionalProperties": false,
+        "description": "Only returned after current ACL and every parent have been authorized.",
+        "properties": {
+          "character_count": {
+            "minimum": 0,
+            "title": "Character Count",
+            "type": "integer"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Company Id"
+          },
+          "epistemic_state": {
+            "default": "cited",
+            "enum": [
+              "cited",
+              "inferred",
+              "tentative",
+              "conflicting"
+            ],
+            "title": "Epistemic State",
+            "type": "string"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner Id"
+          },
+          "parents": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/SourceRevisionRef"
+            },
+            "title": "Parents",
+            "type": "array"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Project Id"
+          },
+          "reference": {
+            "$ref": "#/$defs/SourceRevisionRef"
+          },
+          "required_memberships": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Required Memberships",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference",
+          "title",
+          "character_count"
+        ],
+        "title": "SourceMetadata",
+        "type": "object"
+      },
+      "SourceRead": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/$defs/SourceMetadata"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metadata",
+          "content"
+        ],
+        "title": "SourceRead",
+        "type": "object"
+      },
       "SourceRevisionRef": {
         "additionalProperties": false,
         "properties": {
@@ -8515,6 +8702,7 @@
     },
     "WorkRepositoryPort": {
       "append_observation": "(self, run_id: 'str', principal: 'TrustedPrincipal', event: 'TraceEvent', *, origin: 'str', provider_ref: 'str', transport: 'str | None' = None, provider_kind: 'str' = 'builtin') -> 'ObservationRecord'",
+      "authorized_metadata": "(self, domain_id, principal, *, audiences=(<Audience.PRIVATE: 'private'>, <Audience.OWNER: 'owner'>, <Audience.BUSINESS_UNIT: 'business_unit'>, <Audience.COMPANY: 'company'>, <Audience.PUBLIC: 'public'>), target=<Audience.OWNER: 'owner'>, endpoint='local-preview', policy_version='local-v1', query=None, limit=100) -> 'list[SourceMetadata]'",
       "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None) -> 'SessionRecord'",
       "create_run": "(self, request: 'WorkRequest') -> 'None'",
       "create_session": "(self, principal: 'TrustedPrincipal') -> 'SessionRecord'",
@@ -8534,6 +8722,7 @@
       "local_principal": "(self) -> 'TrustedPrincipal'",
       "observation_alias": "(self, run_id: 'str', principal: 'TrustedPrincipal', kind: 'str', reference: 'str' = '') -> 'str'",
       "observation_context": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'ExecutionContext'",
+      "read_sources": "(self, domain_id, principal, references, *, audiences=(<Audience.PRIVATE: 'private'>, <Audience.OWNER: 'owner'>, <Audience.BUSINESS_UNIT: 'business_unit'>, <Audience.COMPANY: 'company'>, <Audience.PUBLIC: 'public'>), target=<Audience.OWNER: 'owner'>, endpoint='local-preview', policy_version='local-v1', metadata_only=False) -> 'list[SourceRead] | list[SourceMetadata]'",
       "register_task_owner": "(self, task: 'PersistentTask') -> 'None'",
       "reserve_team": "(self, task: 'PersistentTask', spec: 'TeamSpec', principal: 'TrustedPrincipal', *, idempotency_key: 'str', request_fingerprint: 'str', mode: 'str', existing_task_id: 'str | None') -> 'tuple[TeamLifecycle, bool]'",
       "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
@@ -8542,10 +8731,13 @@
       "start_team_cleanup": "(self, task_id: 'str', principal: 'TrustedPrincipal') -> 'tuple[TeamLifecycle, bool]'",
       "transition_run": "(self, run_id: 'str', status: 'WorkStatus') -> 'None'",
       "upsert_documents": "(self, documents: 'list[KnowledgeDocument]') -> 'None'",
+      "write_derived_knowledge": "(self, request: 'KnowledgeWrite', principal: 'TrustedPrincipal', *, parents: 'tuple[SourceRevisionRef, ...]', policy_version: 'str', epistemic_state='inferred') -> 'KnowledgeRevision'",
       "write_knowledge": "(self, request: 'KnowledgeWrite', principal: 'TrustedPrincipal', *, policy_version: 'str', source_id: 'str | None' = None) -> 'KnowledgeRevision'"
     }
   },
   "public_model_names": [
+    "SourceMetadata",
+    "SourceRead",
     "KnowledgeAcl",
     "KnowledgeDelete",
     "KnowledgeDocumentV11",
@@ -8596,13 +8788,13 @@
   ],
   "schema_version": "1.1",
   "source_files": {
-    "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
-    "src/rfa_mas/api/app.py": "13de2d148a5f2f8ff0f79b0f6b3e9c87fe9e5ccfb4952fc67da084db966fd70b",
+    "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
+    "src/rfa_mas/api/app.py": "c501c81bb697b8a5b068014b38bfc3ea910add98c691d3e00c62c297a35cf94c",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "dc7e944fd0339b62c4713bd862376670bfc36fd25095e3a041a7a168ceef1a0a",
+    "src/rfa_mas/contracts/__init__.py": "bc24bd0a354d27151f91b8eceefc51ee65755d5da8df68201de8cd1725ce8dde",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "c83fb6549ac9d6d3e908722495e0f4a05e800537f2637b01de668ee7f3e7127a",
-    "src/rfa_mas/ports/interfaces.py": "7d89ce52846321ed8da264e0e5ece6ce1c47a5038abdbe84d08553c5263f2ad1",
+    "src/rfa_mas/contracts/models.py": "88a74db5ed3823096963c3ca7b1124d4031dba924331c92249471dbe8b469d13",
+    "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",

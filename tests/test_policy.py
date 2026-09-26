@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import pytest
 
 from rfa_mas.adapters.local import LocalPolicy
+from rfa_mas.adapters.local import SqliteWorkRepository
 from rfa_mas.adapters.mock import MockRetrieval
 from rfa_mas.contracts import (
     Audience,
@@ -95,10 +94,10 @@ def _policy_request(
             False,
         ),
         (
-            _principal(business_units=frozenset({"triv3-team"})),
+            _principal(company_id="company-a",business_units=frozenset({"triv3-team"})),
             Audience.BUSINESS_UNIT,
             Audience.BUSINESS_UNIT,
-            {"resource_business_unit": "triv3-team"},
+            {"resource_business_unit": "triv3-team", "resource_company_id":"company-a"},
             True,
         ),
         (
@@ -251,15 +250,7 @@ async def test_non_public_target_requires_matching_trusted_membership(
     assert decision.allowed_audiences == ()
 
 
-class _DocumentRepository:
-    def __init__(self, documents: Sequence[KnowledgeDocument]) -> None:
-        self._documents = tuple(documents)
-
-    async def list_documents(self, domain_id: str) -> list[KnowledgeDocument]:
-        return [item for item in self._documents if item.domain_id.value == domain_id]
-
-
-async def test_public_policy_scope_prevents_private_canary_retrieval() -> None:
+async def test_public_policy_scope_prevents_private_canary_retrieval(tmp_path) -> None:
     canary = "SYNTHETIC_PRIVATE_CANARY_TRIV3_TEST_DO_NOT_DISCLOSE"
     documents = (
         KnowledgeDocument(
@@ -304,8 +295,11 @@ async def test_public_policy_scope_prevents_private_canary_retrieval() -> None:
     assert decision.allowed is True
     assert decision.allowed_audiences == (Audience.PUBLIC,)
 
+    repository = SqliteWorkRepository(tmp_path / "policy.db")
+    await repository.initialize()
+    await repository.upsert_documents(list(documents))
     retrieval = MockRetrieval(
-        _DocumentRepository(documents),
+        repository,
         policy_version=decision.policy_version,
     )
     evidence = await retrieval.search(
@@ -327,7 +321,7 @@ async def test_public_policy_scope_prevents_private_canary_retrieval() -> None:
     assert "triv3-private-test" not in evidence.model_dump_json()
 
 
-async def test_retrieval_requires_matching_company_membership() -> None:
+async def test_retrieval_requires_matching_company_membership(tmp_path) -> None:
     document = KnowledgeDocument(
         source_id="company-a-document",
         source_revision="1",
@@ -340,7 +334,10 @@ async def test_retrieval_requires_matching_company_membership() -> None:
         policy_version="local-v1",
         company_id="company-a",
     )
-    retrieval = MockRetrieval(_DocumentRepository((document,)), policy_version="local-v1")
+    repository = SqliteWorkRepository(tmp_path / "company.db")
+    await repository.initialize()
+    await repository.upsert_documents([document])
+    retrieval = MockRetrieval(repository, policy_version="local-v1")
 
     evidence = await retrieval.search(
         RetrievalRequest(

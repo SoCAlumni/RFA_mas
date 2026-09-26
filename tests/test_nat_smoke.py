@@ -5,15 +5,37 @@ import socket
 import sys
 
 import pytest
+import pytest_asyncio
 
 from rfa_mas.adapters import nat_eval
+from rfa_mas.bootstrap import build_container
 from rfa_mas.contracts import Audience, DomainId, DraftTarget, WorkRequest
+from rfa_mas.settings import Settings
 
 try:
     importlib.metadata.version("nvidia-nat-langchain")
     NAT_INSTALLED = True
 except importlib.metadata.PackageNotFoundError:
     NAT_INSTALLED = False
+
+
+@pytest_asyncio.fixture
+async def container(tmp_path):
+    # NAT synthetic evaluation accepts only the explicit mock retriever fixture;
+    # the product default is the local lexical reader (P1-001A).
+    instance = build_container(
+        Settings(
+            _env_file=None,
+            database_url=f"sqlite:///{tmp_path / 'smoke.db'}",
+            trace_dir=tmp_path / "traces",
+            retriever_backend="mock",
+        )
+    )
+    await instance.startup()
+    try:
+        yield instance
+    finally:
+        await instance.shutdown()
 
 
 @pytest.fixture(autouse=True)

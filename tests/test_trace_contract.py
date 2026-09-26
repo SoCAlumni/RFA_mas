@@ -75,7 +75,13 @@ async def test_actual_calls_aliases_allowlist_and_unknown_coverage(container, pr
         r.event.approval_id is r.event.policy_decision_id is r.event.publication_id is None
         for r in rows
     )
-    assert rows[-1].event.draft_id is not None and rows[-1].event.draft_id != result.draft.draft_id
+    stop = [r for r in rows if r.event.event == "stop"]
+    assert len(stop) == 1
+    assert stop[0].event.draft_id is not None and stop[0].event.draft_id != result.draft.draft_id
+    # P1-001A: the outward view re-checks current source policy after the graph stop;
+    # those are actual policy calls, never a model/response/tool re-execution.
+    after = rows[rows.index(stop[0]) + 1 :]
+    assert after and all(r.event.event == "policy" for r in after)
     assert any(r.event.versions.sources for r in rows)
     coverage = {item.boundary: item for item in ledger.coverage}
     for name in ("request", "model", "retrieval", "policy", "runtime", "approval"):

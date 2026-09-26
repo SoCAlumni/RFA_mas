@@ -21,6 +21,7 @@ from rfa_mas.contracts import (
     DirectWorkRequest,
     DomainId,
     DraftTarget,
+    KnowledgeWrite,
     ResumeRequest,
     ReviewDecision,
     ReviewStatus,
@@ -305,27 +306,32 @@ async def test_fresh_principal_and_company_scoped_bu_required_on_resume(containe
         company_id="company-a",
         business_units=frozenset({"triv3-team"}),
     )
-    documents = await container.repository.list_documents(DomainId.TRIV3.value)
-    # Use a single synthetic BU source so generated draft necessarily binds it.
-    with sqlite3.connect(container.repository.path) as connection:
-        connection.execute("DELETE FROM kb_documents")
-    document = next(item for item in documents if item.audience == Audience.BUSINESS_UNIT)
-    document = document.model_copy(update={"company_id": "company-a", "content": "TRIV3 BU CANARY"})
-    # Test-only historical fixture construction, not a second product write API.
-    with sqlite3.connect(container.repository.path) as connection:
-        connection.execute(
-            "INSERT INTO kb_documents VALUES (?, ?, ?, ?, ?)",
-            (
-                document.source_id,
-                document.source_revision,
-                document.domain_id.value,
-                document.model_dump_json(),
-                "2026-09-26T00:00:00+00:00",
-            ),
-        )
-    authority, _, result, _ = await pending(
-        container, owner, target=DraftTarget(audience=Audience.BUSINESS_UNIT)
+    # A single owner-written BU source with a unique token so the draft necessarily binds it.
+    # Raw SQL body edits of an existing revision are now detected as tampering, so the
+    # fixture uses the product KB write path (immutable revision + context metadata).
+    written = await container.knowledge.write(
+        KnowledgeWrite.model_validate(
+            {
+                "domain_id": "triv3",
+                "provenance": {"provider": "note", "namespace": "resume", "external_id": "bu"},
+                "provider_revision": "bu-1",
+                "title": "BUCANARY source",
+                "content": "BUCANARY TRIV3 BU CANARY",
+                "synthetic": True,
+                "acl": {
+                    "audience": "business_unit",
+                    "company_id": "company-a",
+                    "memberships": ["triv3-team"],
+                },
+            }
+        ),
+        owner,
     )
+    document = written.document
+    authority, _, result, _ = await pending(
+        container, owner, query="BUCANARY", target=DraftTarget(audience=Audience.BUSINESS_UNIT)
+    )
+    assert "TRIV3 BU CANARY" in result.draft.content
     if change == "membership":
         fresh = owner.model_copy(update={"business_units": frozenset()})
     elif change == "other_company":
@@ -334,12 +340,14 @@ async def test_fresh_principal_and_company_scoped_bu_required_on_resume(containe
         fresh = owner
         # Test-only corruption verifies missing company metadata still fails closed.
         with sqlite3.connect(container.repository.path) as connection:
+            stored = connection.execute(
+                "SELECT document_json FROM kb_documents WHERE source_id=? AND source_revision=?",
+                (document.source_id, document.source_revision),
+            ).fetchone()[0]
+            corrupted = json.loads(stored) | {"company_id": None}
             connection.execute(
-                "UPDATE kb_documents SET document_json=? WHERE source_id=?",
-                (
-                    document.model_copy(update={"company_id": None}).model_dump_json(),
-                    document.source_id,
-                ),
+                "UPDATE kb_documents SET document_json=? WHERE source_id=? AND source_revision=?",
+                (json.dumps(corrupted), document.source_id, document.source_revision),
             )
     authority.decision = authority.decision.model_copy(update={"decision": ReviewStatus.APPROVED})
     resumed = await container.service.resume(

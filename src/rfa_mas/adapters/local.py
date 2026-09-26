@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Any
 
 from rfa_mas.application.state_machine import ensure_transition
+from rfa_mas.application.source_access import (
+    LOCAL_ENDPOINTS, ProjectResolver, fresh_principal, no_projects, permitted, project_allowed,
+)
 from rfa_mas.contracts import (
     AgentSpec,
     Audience,
@@ -37,6 +40,9 @@ from rfa_mas.contracts import (
     SessionDetail,
     SessionMessage,
     SessionRecord,
+    SourceMetadata,
+    SourceRead,
+    SourceRevisionRef,
     StructuredError,
     TaskRequest,
     TaskResult,
@@ -49,6 +55,7 @@ from rfa_mas.contracts import (
     WorkRequest,
     WorkStatus,
     new_id,
+    sha256_text,
 )
 from rfa_mas.errors import ResourceNotFoundError, RfaError
 from rfa_mas.ports import TaskHandler
@@ -134,8 +141,9 @@ def _sqlite_setup_guard(
 
 
 class SqliteWorkRepository:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, project_resolver: ProjectResolver = no_projects) -> None:
         self.path = path
+        self.project_resolver = project_resolver
 
     def _private_files(self, *, create: bool = False) -> None:
         # Harden the application DB itself, not just the separate checkpointer.
@@ -384,6 +392,20 @@ class SqliteWorkRepository:
                         "INSERT INTO rfa_schema_migrations VALUES (4, ?)",
                         (datetime.now(UTC).isoformat(),),
                     )
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=5"
+                ).fetchone():
+                    connection.execute(
+                        "CREATE TABLE kb_revision_context (source_id TEXT NOT NULL, "
+                        "source_revision TEXT NOT NULL, content_hash TEXT NOT NULL, "
+                        "character_count INTEGER NOT NULL, epistemic_state TEXT NOT NULL, "
+                        "parent_refs TEXT NOT NULL, PRIMARY KEY(source_id,source_revision), "
+                        "FOREIGN KEY(source_id,source_revision) "
+                        "REFERENCES kb_documents(source_id,source_revision))"
+                    )
+                    self._backfill_context(connection)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (5, ?)",
+                                       (datetime.now(UTC).isoformat(),))
                 # Credentials authenticate this installation's owner, not a fixture
                 # or a user ID supplied in a request. No membership is implied.
                 connection.execute(
@@ -1205,8 +1227,7 @@ class SqliteWorkRepository:
         except (ValueError, AttributeError):
             raise RfaError("authentication_required", "자료 접근에 인증이 필요합니다.") from None
 
-    @staticmethod
-    def _knowledge_owner(connection, source_id, principal):
+    def _knowledge_owner(self, connection, source_id, principal):
         row = connection.execute(
             "SELECT * FROM kb_sources WHERE source_id=? AND owner_id=? AND restricted=0 "
             "AND provider IN ('note','github_issue','confluence')",
@@ -1215,7 +1236,18 @@ class SqliteWorkRepository:
         if row is None:
             # Legacy rows are read-only, never adopted by the current installation owner.
             raise ResourceNotFoundError("source")
+        self._project_guard(connection, source_id, row["current_revision"], principal)
+        self._stored_parent_guard(connection, source_id, row["current_revision"], principal)
         return row
+
+    def _project_guard(self, connection, source_id, revision, principal):
+        row = connection.execute(
+            "SELECT json_extract(document_json,'$.project_id'), "
+            "json_extract(document_json,'$.company_id') FROM kb_documents "
+            "WHERE source_id=? AND source_revision=?", (source_id, revision),
+        ).fetchone()
+        if row is None or not project_allowed(*row, principal, self.project_resolver):
+            raise ResourceNotFoundError("source")
 
     @staticmethod
     def _knowledge_revision(connection, source_id, revision) -> KnowledgeRevision:
@@ -1230,6 +1262,25 @@ class SqliteWorkRepository:
         return KnowledgeRevision.model_validate(
             json.loads(row[1]) | {"document": json.loads(row[0])}
         )
+
+    def _stored_parent_guard(self, connection, source_id, revision, principal):
+        row = connection.execute(
+            "SELECT d.domain_id,json_extract(d.document_json,'$.policy_version'), "
+            "c.parent_refs,c.epistemic_state FROM kb_documents d "
+            "JOIN kb_revision_context c USING(source_id,source_revision) "
+            "WHERE d.source_id=? AND d.source_revision=?", (source_id,revision),
+        ).fetchone()
+        if row is None:
+            raise ResourceNotFoundError("source")
+        try:
+            parents=tuple(SourceRevisionRef.model_validate(p) for p in json.loads(row[2]))
+            if row[3] != "cited" and not parents:
+                raise ValueError("missing lineage")
+            for parent in parents:
+                self._current_closure(connection,parent.source_id,DomainId(row[0]),principal,
+                    tuple(Audience),Audience.OWNER,row[1],expected=parent,path=(source_id,))
+        except (RfaError,ValueError,TypeError):
+            raise ResourceNotFoundError("source") from None
 
     @staticmethod
     def _store_knowledge_revision(connection, record, *, operation, fingerprint) -> None:
@@ -1263,19 +1314,27 @@ class SqliteWorkRepository:
         *,
         policy_version: str,
         source_id: str | None = None,
+        _parents: tuple[SourceRevisionRef, ...] = (),
+        _epistemic_state: str = "cited",
     ) -> KnowledgeRevision:
         principal = self._knowledge_principal(principal)
         request = KnowledgeWrite.model_validate_json(request.model_dump_json(), strict=True)
         acl = request.acl
+        if not project_allowed(acl.project_id, acl.company_id, principal, self.project_resolver):
+            raise RfaError("policy_denied", "현재 프로젝트 권한으로 저장할 수 없습니다.")
         if acl.audience in {Audience.COMPANY, Audience.BUSINESS_UNIT} and (
             not principal.company_id
             or acl.company_id != principal.company_id
             or not set(acl.memberships) <= principal.business_units
         ):
             raise RfaError("policy_denied", "현재 조직 권한으로 공유할 수 없습니다.")
-        fingerprint = _canonical_fingerprint(
-            request.model_dump(mode="json", exclude={"expected_revision"})
-        )
+        payload = request.model_dump(mode="json", exclude={"expected_revision"})
+        if acl.project_id is None:
+            payload["acl"].pop("project_id", None)  # Only the new None field; preserve old nulls.
+        if _parents:
+            payload["derived"] = {"parents": [r.model_dump(mode="json") for r in _parents],
+                                  "epistemic_state": _epistemic_state}
+        fingerprint = _canonical_fingerprint(payload)
 
         def operation():
             with self._connect() as connection:
@@ -1300,6 +1359,7 @@ class SqliteWorkRepository:
                         )
                 if existing is not None:
                     identity = existing["source_id"]
+                    self._knowledge_owner(connection, identity, principal)
                     replay = connection.execute(
                         "SELECT source_revision, fingerprint FROM kb_source_revisions "
                         "WHERE source_id=? AND operation='write' AND provider_revision=?",
@@ -1311,6 +1371,8 @@ class SqliteWorkRepository:
                                 "idempotency_conflict", "동일 출처 revision의 내용이 다릅니다."
                             )
                         # Historical receipt only. Never reset current head on replay.
+                        self._project_guard(connection, identity, replay[0], principal)
+                        self._stored_parent_guard(connection, identity, replay[0], principal)
                         return self._knowledge_revision(connection, identity, replay[0])
                     if request.expected_revision != existing["current_revision"]:
                         raise RfaError("idempotency_conflict", "최신 자료 revision이 필요합니다.")
@@ -1336,6 +1398,9 @@ class SqliteWorkRepository:
                         ),
                     )
                 revision = new_id("revision")
+                for parent in _parents:
+                    self._current_closure(connection, parent.source_id, request.domain_id,
+                        principal, tuple(Audience), Audience.OWNER, policy_version, expected=parent)
                 record = KnowledgeRevision(
                     document=KnowledgeDocumentV11(
                         source_id=identity,
@@ -1352,6 +1417,7 @@ class SqliteWorkRepository:
                         company_id=acl.company_id,
                         business_unit=acl.memberships[0] if len(acl.memberships) == 1 else None,
                         synthetic=request.synthetic,
+                        project_id=acl.project_id,
                     ),
                     provenance=origin,
                     provider_revision=request.provider_revision,
@@ -1364,6 +1430,7 @@ class SqliteWorkRepository:
                 self._store_knowledge_revision(
                     connection, record, operation="write", fingerprint=fingerprint
                 )
+                self._insert_context(connection, record.document, _parents, _epistemic_state)
                 updated = connection.execute(
                     "UPDATE kb_sources SET current_revision=? "
                     "WHERE source_id=? AND current_revision IS ?",
@@ -1374,6 +1441,17 @@ class SqliteWorkRepository:
                 return record
 
         return await asyncio.to_thread(operation)
+
+    async def write_derived_knowledge(self, request, principal, *, parents, policy_version,
+                                      epistemic_state="inferred"):
+        parents = tuple(SourceRevisionRef.model_validate_json(p.model_dump_json(), strict=True)
+                        for p in parents)
+        if not parents or len(parents) > 32 or len({(p.source_id,p.source_revision) for p in parents}) != len(parents):
+            raise RfaError("policy_denied", "전체 부모 근거가 필요합니다.")
+        if epistemic_state not in {"inferred", "tentative", "conflicting"}:
+            raise RfaError("policy_denied", "파생 자료 상태가 올바르지 않습니다.")
+        return await self.write_knowledge(request, principal, policy_version=policy_version,
+                                         _parents=parents, _epistemic_state=epistemic_state)
 
     async def delete_knowledge(
         self,
@@ -1418,6 +1496,7 @@ class SqliteWorkRepository:
                 self._store_knowledge_revision(
                     connection, record, operation="delete", fingerprint=fingerprint
                 )
+                self._insert_context(connection, record.document)
                 updated = connection.execute(
                     "UPDATE kb_sources SET current_revision=? "
                     "WHERE source_id=? AND current_revision=?",
@@ -1440,7 +1519,11 @@ class SqliteWorkRepository:
 
         def operation():
             with self._connect() as connection:
+                connection.execute("BEGIN")
                 source = self._knowledge_owner(connection, source_id, principal)
+                if revision is not None:
+                    self._project_guard(connection, source_id, revision, principal)
+                    self._stored_parent_guard(connection, source_id, revision, principal)
                 record = self._knowledge_revision(
                     connection, source_id, revision or source["current_revision"]
                 )
@@ -1460,6 +1543,7 @@ class SqliteWorkRepository:
 
         def operation():
             with self._connect() as connection:
+                connection.execute("BEGIN")
                 rows = connection.execute(
                     "SELECT source_id, current_revision FROM kb_sources WHERE owner_id=? "
                     "AND restricted=0 AND provider IN ('note','github_issue','confluence') "
@@ -1470,7 +1554,14 @@ class SqliteWorkRepository:
                         domain_id.value if domain_id else None,
                     ),
                 ).fetchall()
-                records = [self._knowledge_revision(connection, *row) for row in rows]
+                records = []
+                for row in rows:
+                    try:
+                        self._project_guard(connection, *row, principal)
+                        self._stored_parent_guard(connection, *row, principal)
+                    except ResourceNotFoundError:
+                        continue
+                    records.append(self._knowledge_revision(connection, *row))
                 return [record for record in records if not record.deleted]
 
         return await asyncio.to_thread(operation)
@@ -1504,6 +1595,7 @@ class SqliteWorkRepository:
                         ],
                     )
                     self._index_legacy_documents(connection, trusted_fixture=True)
+                    self._backfill_context(connection)
                 connection.execute(
                     "INSERT INTO installation_seeds VALUES ('synthetic-fixtures-v1', ?)", (now,)
                 )
@@ -1546,6 +1638,7 @@ class SqliteWorkRepository:
                             now,
                         ),
                     )
+                    self._insert_context(connection, item)
                     if source:
                         # This legacy interface has no CAS/current-head assertion.
                         connection.execute(
@@ -1556,6 +1649,158 @@ class SqliteWorkRepository:
                 self._index_legacy_documents(connection)
 
         await asyncio.to_thread(operation)
+
+    @staticmethod
+    def _insert_context(connection, document, parents=(), epistemic_state="cited"):
+        connection.execute("INSERT INTO kb_revision_context VALUES (?,?,?,?,?,?)", (
+            document.source_id, document.source_revision, sha256_text(document.content),
+            len(document.content), epistemic_state,
+            json.dumps([p.model_dump(mode="json") for p in parents], ensure_ascii=False),
+        ))
+
+    @staticmethod
+    def _backfill_context(connection):
+        # Migration/fixture system boundary only. Never silently repair missing
+        # context on a subsequent read (which could erase missing lineage).
+        rows = connection.execute("SELECT d.document_json FROM kb_documents d "
+            "LEFT JOIN kb_revision_context c USING(source_id,source_revision) "
+            "WHERE c.source_id IS NULL").fetchall()
+        for row in rows:
+            data = json.loads(row[0])
+            cls = KnowledgeDocumentV11 if data.get("schema_version") == "1.1" else KnowledgeDocument
+            SqliteWorkRepository._insert_context(connection, cls.model_validate(data))
+
+    def _current_acl(self, connection, source_id, domain_id):
+        row = connection.execute("""
+            SELECT d.source_id,d.source_revision,
+                json_extract(d.document_json,'$.audience') audience,
+                json_extract(d.document_json,'$.owner_id') owner_id,
+                json_extract(d.document_json,'$.company_id') company_id,
+                json_extract(d.document_json,'$.project_id') project_id,
+                json_extract(d.document_json,'$.required_memberships') memberships,
+                json_extract(d.document_json,'$.policy_version') policy_version,
+                c.content_hash,c.character_count,c.epistemic_state,c.parent_refs
+            FROM kb_sources s JOIN kb_documents d ON s.source_id=d.source_id
+                AND s.current_revision=d.source_revision
+            JOIN kb_revision_context c USING(source_id,source_revision)
+            LEFT JOIN kb_source_revisions r USING(source_id,source_revision)
+            WHERE s.source_id=? AND s.domain_id=? AND s.restricted=0
+                AND (r.metadata_json IS NULL OR json_extract(r.metadata_json,'$.deleted')=0)
+            """, (source_id,domain_id.value)).fetchone()
+        if row is None:
+            raise RfaError("resume_review_required", "현재 근거를 확인할 수 없습니다.")
+        data = dict(row)
+        data["memberships"] = json.loads(data["memberships"] or "[]")
+        return data
+
+    def _current_closure(self, connection, source_id, domain_id, principal, audiences,
+                         target, policy_version, *, expected=None, path=(), counter=None):
+        counter = counter if counter is not None else [0]
+        counter[0] += 1
+        if len(path) >= 16 or counter[0] > 128 or source_id in path:
+            raise RfaError("policy_denied", "근거 범위를 확인할 수 없습니다.")
+        row = self._current_acl(connection, source_id, domain_id)
+        if not permitted(row, principal, self.project_resolver, target, audiences, policy_version):
+            raise RfaError("policy_denied", "현재 자료 권한이 충분하지 않습니다.")
+        # ACL first; only now inspect source metadata. Never return an unapproved title/URI.
+        detail = connection.execute(
+            "SELECT json_extract(document_json,'$.title'), "
+            "json_extract(document_json,'$.location') FROM kb_documents "
+            "WHERE source_id=? AND source_revision=?", (source_id,row["source_revision"]),
+        ).fetchone()
+        reference = SourceRevisionRef(source_id=source_id, source_revision=row["source_revision"],
+            location=json.loads(detail[1]), audience=row["audience"],
+            content_hash=row["content_hash"], acl_revision=row["source_revision"],
+            policy_version=row["policy_version"])
+        if expected is not None:
+            # Compare every supplied field; legacy1.0 ref has no policy/ACL fields.
+            if any(getattr(reference,k) != getattr(expected,k) for k in
+                   ("source_id","source_revision","location","audience","content_hash")):
+                raise RfaError("resume_review_required", "근거가 변경되어 새 검토가 필요합니다.")
+            if isinstance(expected, SourceRevisionRef) and reference != expected:
+                raise RfaError("resume_review_required", "현재 근거 판정이 필요합니다.")
+        try:
+            parents = tuple(SourceRevisionRef.model_validate(p) for p in json.loads(row["parent_refs"]))
+        except (ValueError, TypeError):
+            raise RfaError("policy_denied", "근거 범위를 확인할 수 없습니다.") from None
+        if row["epistemic_state"] != "cited" and not parents:
+            raise RfaError("policy_denied", "파생 근거가 누락되었습니다.")
+        # No source-only visited set: a diamond must validate BOTH referenced revisions.
+        for parent in parents:
+            self._current_closure(connection,parent.source_id,domain_id,principal,audiences,
+                target,policy_version,expected=parent,path=(*path,source_id),counter=counter)
+        return SourceMetadata(reference=reference,title=detail[0],
+            character_count=row["character_count"],epistemic_state=row["epistemic_state"],parents=parents,
+            owner_id=row["owner_id"],company_id=row["company_id"],
+            required_memberships=tuple(row["memberships"]),project_id=row["project_id"])
+
+    @staticmethod
+    def _read_source_body(connection, metadata):
+        reference = metadata.reference
+        row = connection.execute("SELECT json_extract(document_json,'$.content') "
+            "FROM kb_documents WHERE source_id=? AND source_revision=?",
+            (reference.source_id,reference.source_revision)).fetchone()
+        if row is None or sha256_text(row[0]) != reference.content_hash:
+            raise RfaError("resume_review_required", "현재 근거 무결성을 확인할 수 없습니다.")
+        return row[0]
+
+    async def authorized_metadata(self, domain_id, principal, *, audiences=tuple(Audience),
+                                  target=Audience.OWNER, endpoint="local-preview",
+                                  policy_version="local-v1", query=None, limit=100):
+        principal = fresh_principal(principal)
+        if endpoint not in LOCAL_ENDPOINTS:
+            raise RfaError("policy_denied", "자료 전송 경로를 지원하지 않습니다.")
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN")
+                candidates = connection.execute("SELECT source_id FROM kb_sources "
+                    "WHERE domain_id=? AND restricted=0 ORDER BY source_id",(domain_id.value,)).fetchall()
+                allowed = []
+                for row in candidates:
+                    try:
+                        meta = self._current_closure(connection,row[0],domain_id,principal,
+                                                     audiences,target,policy_version)
+                    except RfaError:
+                        continue
+                    allowed.append(meta)
+                if query is None:
+                    return allowed[:limit]
+                terms = sorted(set(re.findall(r"[\w-]+",query.lower())))
+                if not terms or not allowed:
+                    return []
+                # Rank only authorized IDs INSIDE SQLite. Application receives no
+                # candidate body: only selected source reader accesses full content.
+                expression = " + ".join("(instr(lower(json_extract(document_json,'$.title') "
+                    "|| ' ' || json_extract(document_json,'$.content')),?)>0)" for _ in terms)
+                placeholders = ",".join("?" for _ in allowed)
+                ranked = connection.execute("SELECT source_id,("+expression+") score "
+                    "FROM kb_documents WHERE (source_id,source_revision) IN "
+                    "(SELECT source_id,current_revision FROM kb_sources) AND source_id IN ("
+                    +placeholders+") AND score>0 ORDER BY score DESC,source_id LIMIT ?",
+                    (*terms,*(m.reference.source_id for m in allowed),limit)).fetchall()
+                by_id = {m.reference.source_id:m for m in allowed}
+                return [by_id[row[0]] for row in ranked]
+        return await asyncio.to_thread(operation)
+
+    async def read_sources(self, domain_id, principal, references, *, audiences=tuple(Audience),
+                           target=Audience.OWNER, endpoint="local-preview", policy_version="local-v1",
+                           metadata_only=False):
+        principal = fresh_principal(principal)
+        if endpoint not in LOCAL_ENDPOINTS:
+            raise RfaError("policy_denied", "자료 전송 경로를 지원하지 않습니다.")
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN")
+                result = []
+                for ref in references:
+                    meta = self._current_closure(connection,ref.source_id,domain_id,principal,
+                        audiences,target,policy_version,expected=ref)
+                    if metadata_only:
+                        result.append(meta)
+                    else:
+                        result.append(SourceRead(metadata=meta,content=self._read_source_body(connection,meta)))
+                return result
+        return await asyncio.to_thread(operation)
 
     async def list_documents(self, domain_id: str) -> list[KnowledgeDocument]:
         def operation() -> list[KnowledgeDocument]:
@@ -1648,19 +1893,15 @@ class LocalPolicy:
             return bool(
                 principal.authenticated
                 and principal.company_id
-                and (
-                    request.resource_company_id is None
-                    or request.resource_company_id == principal.company_id
-                )
+                and request.resource_company_id == principal.company_id
             )
         if audience == Audience.BUSINESS_UNIT:
             return bool(
                 principal.authenticated
                 and principal.business_units
-                and (
-                    request.resource_business_unit is None
-                    or request.resource_business_unit in principal.business_units
-                )
+                and request.resource_company_id
+                and request.resource_company_id == principal.company_id
+                and request.resource_business_unit in principal.business_units
             )
         if audience in {Audience.OWNER, Audience.PRIVATE}:
             return bool(

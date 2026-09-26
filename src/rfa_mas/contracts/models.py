@@ -433,12 +433,14 @@ class KnowledgeDocumentV11(KnowledgeDocument):
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     schema_version: Literal["1.1"] = "1.1"
+    project_id: OpaqueId | None = None
 
 
 class KnowledgeAcl(ExtendedContractModel):
     audience: Audience = Audience.PRIVATE
     company_id: OpaqueId | None = None
     memberships: tuple[OpaqueId, ...] = ()
+    project_id: OpaqueId | None = None
 
     @model_validator(mode="after")
     def consistent_scope(self) -> KnowledgeAcl:
@@ -449,7 +451,12 @@ class KnowledgeAcl(ExtendedContractModel):
             raise ValueError("membership belongs only to business-unit sharing")
         if self.audience == Audience.COMPANY and not self.company_id:
             raise ValueError("company sharing requires company")
-        if self.audience not in {Audience.COMPANY, Audience.BUSINESS_UNIT} and self.company_id:
+        if self.project_id and not self.company_id:
+            raise ValueError("project restriction requires company")
+        if (
+            self.audience not in {Audience.COMPANY, Audience.BUSINESS_UNIT}
+            and self.company_id and not self.project_id
+        ):
             raise ValueError("company metadata is not part of this sharing scope")
         if len(set(self.memberships)) != len(self.memberships):
             raise ValueError("duplicate membership")
@@ -839,6 +846,7 @@ class ContextRequest(RetrievalRequest):
     endpoint_id: OpaqueId
     selected_sources: tuple[SourceRevisionRef, ...] = ()
     max_characters: int = Field(default=12000, ge=1)
+    policies: PolicyBindings | None = None
 
     @model_validator(mode="after")
     def explicit_fulltext_selection(self) -> ContextRequest:
@@ -848,6 +856,7 @@ class ContextRequest(RetrievalRequest):
 
 
 class ContextItem(EvidenceItem):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     schema_version: Literal["1.1"] = "1.1"
     level: ContextLevel
     parents: tuple[SourceRevisionRef, ...] = Field(min_length=1)
@@ -867,6 +876,25 @@ class ContextBundle(EvidenceBundle):
         if self.loaded_characters != sum(len(item.excerpt) for item in self.items):
             raise ValueError("loaded_characters must be the measured excerpt length")
         return self
+
+
+class SourceMetadata(ExtendedContractModel):
+    """Only returned after current ACL and every parent have been authorized."""
+
+    reference: SourceRevisionRef
+    title: str
+    character_count: int = Field(ge=0)
+    epistemic_state: Literal["cited", "inferred", "tentative", "conflicting"] = "cited"
+    parents: tuple[SourceRevisionRef, ...] = ()
+    owner_id: str | None = None
+    company_id: str | None = None
+    required_memberships: tuple[str, ...] = ()
+    project_id: str | None = None
+
+
+class SourceRead(ExtendedContractModel):
+    metadata: SourceMetadata
+    content: str
 
 
 class ExperimentEvidence(ExtendedContractModel):

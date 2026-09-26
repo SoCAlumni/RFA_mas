@@ -469,13 +469,17 @@ async def test_all_native_cases_report_unsupported_product_gates_honestly(monkey
         assert cases["C11"].rules["past_result_scope"].status == EvaluationStatus.UNKNOWN
         assert cases["C11"].variants["acl"] == EvaluationStatus.NOT_RUN
     else:
-        expected = (
-            EvaluationStatus.PASS
-            if post.draft
-            and {i.source_id for i in post.draft.allowed_evidence}
-            <= captures["C11"].current_allowed
-            else EvaluationStatus.FAIL
-        )
+        # P1-001A: a current-policy outward view that withholds the whole draft/review
+        # with an explicit safe reason is a pass; any remaining forbidden draft fails.
+        if post.draft is not None:
+            safe = {i.source_id for i in post.draft.allowed_evidence} <= captures[
+                "C11"
+            ].current_allowed
+        else:
+            safe = post.review is None and bool(post.errors) and all(
+                e.code in {"policy_denied", "resume_review_required"} for e in post.errors
+            )
+        expected = EvaluationStatus.PASS if safe else EvaluationStatus.FAIL
         assert cases["C11"].rules["past_result_scope"].status == expected
         assert cases["C11"].variants["acl"] == expected
     assert cases["C11"].variants["source_revision"] == EvaluationStatus.NOT_RUN
@@ -509,8 +513,10 @@ def test_cli_executes_native_dataset_before_default_settings(monkeypatch, capsys
     monkeypatch.setattr("sys.argv", ["rfa", "evaluate", "--dataset", "persona-core-v1"])
     with pytest.raises(SystemExit) as exc:
         cli.main()
-    assert exc.value.code == 1
     payload = json.loads(capsys.readouterr().out)
+    # Exit code follows the actual verdicts: 1 with any rule fail, 2 when required
+    # observations remain unknown; never 0 while product gates are not_run.
+    assert exc.value.code == payload["exit_code"] and exc.value.code in (1, 2)
     assert len(payload["cases"]) == 12
     assert payload["product_final_gate"] == "not_run"
     assert CANARY not in json.dumps(payload)

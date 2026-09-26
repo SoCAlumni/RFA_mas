@@ -117,7 +117,7 @@ class Settings(BaseSettings):
     nvidia_model: str | None = None
     nvidia_api_key: SecretStr | None = None
 
-    retriever_backend: Literal["mock", "nemo_cli", "nemo_service"] = "mock"
+    retriever_backend: Literal["local", "mock", "nemo_cli", "nemo_service"] = "local"
     retriever_index_dir: Path = Path("./.local/retriever")
     retriever_service_url: str | None = None
     nemo_retriever_api_token: SecretStr | None = None

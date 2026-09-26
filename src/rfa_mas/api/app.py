@@ -192,14 +192,7 @@ def create_app(
         session_id: str,
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> SessionDetail:
-        detail = await selected_container.service.sessions.get(session_id, trusted_principal)
-        return detail.model_copy(
-            update={
-                "runs": tuple(
-                    [await present_record(record, trusted_principal) for record in detail.runs]
-                )
-            }
-        )
+        return await selected_container.service.present_session(session_id, trusted_principal)
 
     @app.post(
         "/v1/sessions/{session_id}/work",

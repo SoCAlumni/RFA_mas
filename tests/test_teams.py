@@ -233,7 +233,7 @@ async def test_restart_sessions_migration_preserve_owners_and_approved_template(
     old_identity = await repo.local_principal()
     await asyncio.gather(repo.initialize(), SqliteWorkRepository(repo.path).initialize())
     assert await repo.local_principal() == old_identity
-    assert [r[0] for r in rows(repo, "rfa_schema_migrations")] == [1, 2, 3, 4]
+    assert [r[0] for r in rows(repo, "rfa_schema_migrations")] == [1, 2, 3, 4, 5]
     reopened = SqliteWorkRepository(repo.path)
     new_runtime = RuntimeSpy()
     new_factory = TeamFactory(reopened, new_runtime, authority.resolve, lambda: authority.support)

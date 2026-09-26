@@ -346,6 +346,7 @@ async def test_restart_cas_history_and_seed_do_not_restore_deleted_source(tmp_pa
                 (2,),
                 (3,),
                 (4,),
+                (5,),
             ]
             assert db.execute("SELECT count(*) FROM installation_seeds").fetchone()[0] == 1
     finally:
@@ -432,7 +433,8 @@ async def test_legacy_upsert_no_overwrite_or_managed_write_bypass(container):
     ]
     created = await container.knowledge.write(note(), OWNER)
     bypass = KnowledgeDocument.model_validate(
-        created.document.model_dump() | {"schema_version": "1.0", "source_revision": "bypass"}
+        created.document.model_dump(exclude={"project_id"})
+        | {"schema_version": "1.0", "source_revision": "bypass"}
     )
     with pytest.raises(RfaError):
         await container.repository.upsert_documents([bypass])

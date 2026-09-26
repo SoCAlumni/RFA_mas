@@ -136,6 +136,8 @@ from rfa_mas.contracts.models import (
     SessionMessage,
     SessionRecord,
     SourceRevisionRef,
+    SourceMetadata,
+    SourceRead,
     TeamBudget,
     TeamInstance,
     TeamLifecycle,
@@ -148,6 +150,8 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "SourceMetadata",
+    "SourceRead",
     "KnowledgeAcl",
     "KnowledgeDelete",
     "KnowledgeDocumentV11",
@@ -197,6 +201,8 @@ EXTENDED_MODEL_NAMES = (
     "VersionReferences",
 )
 __all__ += [
+    "SourceMetadata",
+    "SourceRead",
     "KnowledgeAcl",
     "KnowledgeDelete",
     "KnowledgeDocumentV11",

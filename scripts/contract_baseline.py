@@ -77,6 +77,10 @@ def serialize(value: Any) -> str:
 
 
 def offline_settings(directory: Path, **overrides: Any) -> OfflineSettings:
+    # Frozen 1.0 reference specimens were produced by the explicit mock retriever
+    # fixture (simulation scenarios). The product default is now the local lexical
+    # reader, so the fixture keeps that selection explicit instead of implicit.
+    overrides.setdefault("retriever_backend", "mock")
     return OfflineSettings(
         _env_file=None,
         database_url=f"sqlite:///{directory / 'contract.db'}",

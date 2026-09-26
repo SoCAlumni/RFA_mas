@@ -1,5 +1,13 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P1-001A 권한 선필터 reader·project 제한 1.1 (통합·발행 대기)
+
+- additive 1.1: `KnowledgeAcl.project_id`/`KnowledgeDocumentV11.project_id`(선택, 자원 제한이며 caller grant가 아님), `SourceMetadata`/`SourceRead`(권한 판정 후 metadata와 선택 본문). frozen 1.0 DTO·fixture·baseline은 변경하지 않았다.
+- 기존 persisted write fingerprint는 `project_id`가 absent/None일 때 그 새 field만 제외해 동일 receipt/head를 유지한다. migration5(`kb_revision_context`)는 기존 revision의 raw hash·부모 없음만 backfill한다.
+- `RETRIEVER_BACKEND` 기본값을 `local`(SQLite lexical, simulated=false)로 전환했다. `mock`은 명시적 시뮬레이션 fixture이며, 1.0 reference specimen 생성기(`scripts/contract_baseline.py offline_settings`)와 NAT 합성 평가는 mock을 명시한다.
+- `BoundContextReader`(1.1 ContextRequest)는 bootstrap이 만든 서버 descriptor와 local endpoint(local-preview/local-model/mock-model)만 지원한다. 정책 receipt는 process-local 단기 판정이며 승인 원본·외부 인증 token이 아니다. 실제 recipient/cloud egress는 P1-005 전까지 거절한다.
+- 영향 consumer: P1-001B, P1-004A, P1-005, P0-020, P1-008. 새 extended digest 발행 후 각 consumer가 edit-spec으로 수락한다.
+
 ## 2026-09-26 — P1-001 KB 원문·revision 저장 1.1 (통합·발행 대기)
 
 - KnowledgeDocumentV11/KnowledgeAcl/KnowledgeWrite/KnowledgeDelete/KnowledgeRevision 및 export/행별 receipt DTO, owner 관리 CRUD/import API를 additive로 추가한다. 기존 1.0 DTO/route는 보존하고 정확한 원문 공백·provenance를 1.1에서 유지한다.

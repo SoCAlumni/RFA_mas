@@ -18,6 +18,7 @@ from rfa_mas.contracts import (
     PublicationStatus,
     ResumeRequest,
     RunResult,
+    SessionDetail,
     StructuredError,
     TrustedPrincipal,
     WorkRequest,
@@ -158,9 +159,43 @@ class WorkService:
         )
 
     async def present_result(self, result: RunResult, principal: TrustedPrincipal) -> RunResult:
-        """Owner-authorized error view; never persist its modified draft metadata."""
+        """Current-authorized view; never rewrite historical draft/approval storage."""
         await self._repository.get_owned_run(result.run_id, principal)
+        if result.draft is not None:
+            try:
+                await self._dependencies.validate_resume(result.draft, principal)
+            except RfaError as exc:
+                if exc.code not in {"resume_review_required", "policy_denied"}:
+                    raise
+                result = result.model_copy(update={
+                    "draft": None, "review": None, "stop_reason": exc.code,
+                    "errors": (StructuredError(code=exc.code,
+                        message="현재 자료 권한으로 결과를 표시할 수 없습니다.",
+                        request_id=result.request_id,trace_id=result.trace_id,
+                        run_id=result.run_id,retryable=False),),
+                })
         return await self._project_error(result, principal, outward=True)
+
+    async def present_session(self, session_id: str, principal: TrustedPrincipal) -> SessionDetail:
+        detail = await self.sessions.get(session_id, principal)
+        runs, results = [], {}
+        for record in detail.runs:
+            if record.result is None:
+                runs.append(record)
+                continue
+            result = await self.present_result(record.result, principal)
+            results[record.run_id] = result
+            runs.append(record.model_copy(update={"result":result,
+                "request_id":result.request_id,"trace_id":result.trace_id}))
+        messages = []
+        for message in detail.messages:
+            if message.role == "assistant":
+                result = results.get(message.run_id)
+                content = (result.draft.content if result and result.draft
+                           else "현재 자료 권한으로 이전 응답을 표시할 수 없습니다.")
+                message = message.model_copy(update={"content":content})
+            messages.append(message)
+        return detail.model_copy(update={"runs":tuple(runs),"messages":tuple(messages)})
 
     async def _execute_inner(
         self,

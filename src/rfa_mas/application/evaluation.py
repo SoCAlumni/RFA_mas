@@ -20,6 +20,7 @@ from rfa_mas.contracts import (
     EvaluationCaseV11,
     EvaluationStatus,
     JudgeAssessment,
+    KnowledgeWrite,
     ObservationLedger,
     ResumeRequest,
     ReviewDecision,
@@ -255,14 +256,19 @@ class _SyntheticSettings(Settings):
         BaseModel.__init__(self, **values)
 
 
-def synthetic_settings(directory: Path) -> Settings:
+def synthetic_settings(directory: Path, *, retriever_backend: str = "local") -> Settings:
     # macOS tempfile may return /var (a symlink to /private/var); the trusted
     # trace exporter deliberately rejects symlink ancestors, so resolve OUR temp root.
+    # The real local lexical reader is the default; only simulation scenarios
+    # (insufficient/timeout fixtures) select the explicit mock retriever.
+    if retriever_backend not in {"local", "mock"}:
+        raise ValueError("evaluation_retriever_unsupported")
     directory = directory.resolve()
     return _SyntheticSettings(
         database_url=f"sqlite:///{directory / 'work.db'}",
         checkpoint_path=directory / "checkpoint.db",
         trace_dir=directory / "trace",
+        retriever_backend=retriever_backend,
     )
 
 
@@ -306,6 +312,21 @@ def load_core_cases() -> tuple[CoreCase, ...]:
         return cases
     except Exception:
         raise ValueError("evaluation_dataset_invalid") from None
+
+
+SAFE_RESTRICTED_CODES = frozenset({"policy_denied", "resume_review_required"})
+
+
+def _past_result_safe(result: RunResult, current_allowed: set[str]) -> bool:
+    """A past result is safe when it only cites currently allowed sources, or when
+    the outward view withholds the whole draft/review with an explicit safe reason."""
+    if result.draft is not None:
+        return {i.source_id for i in result.draft.allowed_evidence} <= current_allowed
+    return (
+        result.review is None
+        and bool(result.errors)
+        and all(error.code in SAFE_RESTRICTED_CODES for error in result.errors)
+    )
 
 
 def _authorized_sources(documents, principal: TrustedPrincipal, audience: Audience) -> set[str]:
@@ -603,11 +624,7 @@ def verify_behavior(fixture: CoreCase, capture: NativeCapture) -> dict[str, Rule
     )
     check(
         "past_result_scope",
-        bool(
-            capture.post_change_result.draft
-            and {i.source_id for i in capture.post_change_result.draft.allowed_evidence}
-            <= capture.current_allowed
-        )
+        _past_result_safe(capture.post_change_result, capture.current_allowed)
         if capture.post_change_result is not None
         else None,
     )
@@ -768,9 +785,21 @@ async def run_native_case(fixture: CoreCase, *, judge_mode: str = "disabled") ->
     )
     capture = NativeCapture(request, principal)
     with TemporaryDirectory(prefix="rfa-persona-") as temporary:
-        container = build_container(synthetic_settings(Path(temporary)))
+        backend = "local" if fixture.simulation == SimulationScenario.SUCCESS else "mock"
+        container = build_container(synthetic_settings(Path(temporary), retriever_backend=backend))
         try:
             await container.startup()
+            managed = None
+            if fixture.case.case_id == "C11":
+                managed_request = KnowledgeWrite.model_validate({
+                    "domain_id":request.domain_id,
+                    "provenance":{"provider":"note","namespace":"evaluation",
+                                  "external_id":"acl-change"},
+                    "provider_revision":"initial", "title":"TRIV3 공개 검증",
+                    "content":"TRIV3 CURRENT_ACL_SYNTHETIC_CANARY", "synthetic":True,
+                    "acl":{"audience":"public"},
+                })
+                managed = await container.knowledge.write(managed_request, principal)
             documents = await container.repository.list_documents(request.domain_id.value)
             if not all(d.synthetic for d in documents):
                 raise ValueError("evaluation_synthetic_only")
@@ -801,19 +830,14 @@ async def run_native_case(fixture: CoreCase, *, judge_mode: str = "disabled") ->
                         container.policy.policy_version,
                     )
                 if fixture.case.case_id == "C11":
-                    changed = [
-                        d.model_copy(
-                            update={
-                                "audience": Audience.OWNER,
-                                "owner_id": "fixture-owner-001",
-                            }
-                        )
-                        for d in documents
-                        if d.audience == Audience.PUBLIC
-                    ]
-                    # Observe ACL revocation at the existing stored revision. A separate
-                    # revision/cache scenario awaits a current-head KB contract (not_run).
-                    await container.repository.upsert_documents(changed)
+                    assert managed is not None
+                    changed = KnowledgeWrite.model_validate(managed_request.model_dump() | {
+                        "provider_revision":"restricted",
+                        "expected_revision":managed.document.source_revision,
+                        "acl":{"audience":"private"},
+                    })
+                    await container.knowledge.write(changed, principal,
+                                                    source_id=managed.document.source_id)
                     current = await container.repository.list_documents(request.domain_id.value)
                     capture.current_allowed = _authorized_sources(
                         current, principal, request.target.audience

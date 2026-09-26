@@ -19,6 +19,8 @@ from rfa_mas.adapters.http import (
 )
 from rfa_mas.adapters.local import LocalJsonlTrace, LocalPolicy, LocalRuntime, SqliteWorkRepository
 from rfa_mas.adapters.mock import MockJudge, MockModel, MockResponse, MockRetrieval, MockTool
+from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
+from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
 from rfa_mas.application.graphs import (
     DomainGraphDependencies,
     SupervisorDependencies,
@@ -115,12 +117,13 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
             reserved.append(f"endpoint:{name}:non_loopback")
     for port, selected, default in (
         ("model", settings.model_provider, "mock"),
-        ("retriever", settings.retriever_backend, "mock"),
         ("trace", settings.trace_backend, "local"),
         ("judge", settings.judge_provider if settings.enable_judge else "mock", "mock"),
     ):
         if selected != default:
             reserved.append(f"{port}:{selected}")
+    if settings.retriever_backend not in {"local", "mock"}:
+        reserved.append(f"retriever:{settings.retriever_backend}")
     # Installed metadata is not an import/compatibility check or product NAT integration.
     try:
         metadata.version("nvidia-nat-langchain")
@@ -158,6 +161,11 @@ class Container:
     knowledge: KnowledgeService
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
+
+    def context_reader(self, bound: BoundAccess) -> BoundContextReader:
+        """Internal trusted composition, not a request-body factory or role grant."""
+        return BoundContextReader(self.repository,self.policy,bound,
+                                  issuer_supported=self.settings.policy_backend == "local")
 
     async def startup(self) -> None:
         if self.ready:
@@ -217,12 +225,12 @@ def _http_port(
     return reference_client
 
 
-def build_container(settings: Settings | None = None) -> Container:
+def build_container(settings: Settings | None = None, *, project_resolver: ProjectResolver = no_projects) -> Container:
     settings = settings or Settings()
     inspect_configuration(settings).require_available()
     redactor = SecretRedactor(settings.secret_values())
     configure_logging(settings.log_level, redactor)
-    repository = SqliteWorkRepository(settings.database_path)
+    repository = SqliteWorkRepository(settings.database_path, project_resolver=project_resolver)
     checkpoints = SqliteCheckpoints(settings.resolved_checkpoint_path)
     clients: list[httpx.AsyncClient] = []
 
@@ -241,7 +249,12 @@ def build_container(settings: Settings | None = None) -> Container:
             )
         )
 
-    retrieval = MockRetrieval(repository, policy_version=policy.policy_version)
+    if settings.retriever_backend == "local":
+        retrieval = LocalRetrieval(repository, policy_version=policy.policy_version)
+    elif settings.retriever_backend == "mock":
+        retrieval = MockRetrieval(repository, policy_version=policy.policy_version)
+    else:
+        raise BackendNotImplementedError(f"retriever:{settings.retriever_backend}")
 
     if settings.response_backend == "mock":
         response = MockResponse()
@@ -326,7 +339,8 @@ def build_container(settings: Settings | None = None) -> Container:
         lambda: runtime_support,
     )
     observed_model = ObservedPort(model, observer, "model", mode="mock")
-    observed_retrieval = ObservedPort(retrieval, observer, "retrieval", mode="mock")
+    observed_retrieval = ObservedPort(retrieval, observer, "retrieval",
+                                     mode="mock" if retrieval.simulated else "local")
     observed_policy = ObservedPort(
         policy,
         observer,

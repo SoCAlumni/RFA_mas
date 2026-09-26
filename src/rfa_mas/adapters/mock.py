@@ -30,6 +30,7 @@ from rfa_mas.contracts import (
     sha256_text,
 )
 from rfa_mas.errors import RfaError
+from rfa_mas.adapters.retrieval import LocalRetrieval
 from rfa_mas.ports import WorkRepositoryPort
 
 TOKEN_PATTERN = re.compile(r"[0-9A-Za-z가-힣_]{2,}")
@@ -91,30 +92,8 @@ class MockRetrieval:
         if request.simulation_scenario == SimulationScenario.INSUFFICIENT_EVIDENCE:
             return self._bundle(request, ())
 
-        documents = await self._repository.list_documents(request.domain_id.value)
-        allowed = [item for item in documents if self._is_accessible(item, request)]
-        query_terms = {match.group(0).lower() for match in TOKEN_PATTERN.finditer(request.query)}
-
-        def score(document: Any) -> tuple[int, str]:
-            searchable = f"{document.title} {document.content}".lower()
-            return (sum(term in searchable for term in query_terms), document.source_id)
-
-        ranked = sorted(allowed, key=score, reverse=True)
-        positive = [item for item in ranked if score(item)[0] > 0]
-        selected = (positive or ranked)[: request.limit]
-        items = tuple(
-            EvidenceItem(
-                source_id=document.source_id,
-                source_revision=document.source_revision,
-                location=document.location,
-                audience=document.audience,
-                excerpt=document.content,
-                content_hash=sha256_text(document.content),
-                policy_version=document.policy_version,
-            )
-            for document in selected
-        )
-        return self._bundle(request, items)
+        actual = await LocalRetrieval(self._repository, policy_version=self._policy_version).search(request)
+        return self._bundle(request, actual.items)
 
     def _is_accessible(self, document: Any, request: RetrievalRequest) -> bool:
         if document.audience not in request.allowed_audiences:
@@ -132,6 +111,8 @@ class MockRetrieval:
         if document.audience == Audience.BUSINESS_UNIT:
             return bool(
                 principal.authenticated
+                and document.company_id
+                and document.company_id == principal.company_id
                 and set(document.required_memberships).intersection(principal.business_units)
             )
         if document.audience in {Audience.OWNER, Audience.PRIVATE}:

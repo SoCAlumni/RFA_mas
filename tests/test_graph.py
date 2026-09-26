@@ -117,20 +117,34 @@ async def test_public_draft_does_not_echo_untrusted_query_text(
     ],
 )
 async def test_failure_scenarios_are_explicit(
-    container,
+    tmp_path,
     principal: TrustedPrincipal,
     scenario: SimulationScenario,
     expected_status: WorkStatus,
     expected_code: str,
 ) -> None:
-    result = await container.service.run(
-        WorkRequest(
-            query="TRIV3 근거를 찾아 줘.",
-            domain_id=DomainId.TRIV3,
-            simulation_scenario=scenario,
-        ),
-        principal,
+    # Simulation scenarios are mock-retriever fixtures; the default local reader
+    # never turns a scenario string into a timeout or a permission decision.
+    container = build_container(
+        Settings(
+            _env_file=None,
+            database_url=f"sqlite:///{tmp_path / 'mock.db'}",
+            trace_dir=tmp_path / "traces",
+            retriever_backend="mock",
+        )
     )
+    await container.startup()
+    try:
+        result = await container.service.run(
+            WorkRequest(
+                query="TRIV3 근거를 찾아 줘.",
+                domain_id=DomainId.TRIV3,
+                simulation_scenario=scenario,
+            ),
+            principal,
+        )
+    finally:
+        await container.shutdown()
 
     assert result.status == expected_status
     assert result.errors[0].code == expected_code
