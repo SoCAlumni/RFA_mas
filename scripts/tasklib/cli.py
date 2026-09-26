@@ -182,6 +182,25 @@ def integration_guard(store: Store, task: Task, args) -> None:
         raise ControlError("No reserved submission")
 
 
+def _captured_head_matches(source: dict, captured: str | None, recorded: str) -> bool:
+    """Exact binding, or a legacy record whose head advanced during the same attempt.
+
+    Before OPS-003, integration results stored the target head at record time. When an
+    unrelated commit landed between begin/record, that head descends from the captured
+    manifest head; fingerprint/file-hash/spec/contract equality is still checked by the
+    caller, so only that exact ancestry relation is tolerated.
+    """
+    if not captured:
+        return False
+    if captured == recorded:
+        return True
+    try:
+        git(Path(source["worktree"]), "merge-base", "--is-ancestor", captured, recorded)
+    except ControlError:
+        return False
+    return True
+
+
 def revalidation_baseline(store: Store, task: Task, source: dict) -> str:
     """Confirm historical integration, not current AC, before resetting its baseline."""
     integration = task.integration
@@ -209,7 +228,7 @@ def revalidation_baseline(store: Store, task: Task, source: dict) -> str:
         record.get("task_id") != task.id
         or record.get("result") != "passed"
         or before.get("repository_id") != store.project["repository_id"]
-        or before.get("head") != result["head"]
+        or not _captured_head_matches(source, before.get("head"), result["head"])
         or record.get("source_fingerprint") != summary.get("source_fingerprint")
         or before.get("fingerprint") != summary.get("source_fingerprint")
         or any(
@@ -753,7 +772,16 @@ def execute(store: Store, args) -> dict:
                 summary = record_attempt(
                     store, task, target, args.attempt, json.loads(read_input(args.report))
                 )
-                task.integration.result = {"verification_summary": summary, "head": source["head"]}
+                # Bind the head the checks actually ran on (captured at begin-evidence).
+                # Another session may commit unrelated files meanwhile; record_attempt has
+                # already rejected any change to this task's fingerprinted sources.
+                captured = json.loads(
+                    store.path(f"{task.evidence_dir}/{args.attempt}/source.json").read_text()
+                )
+                task.integration.result = {
+                    "verification_summary": summary,
+                    "head": captured["head"],
+                }
                 task.integration.evidence = summary["evidence"]
             else:
                 result = task.integration.result

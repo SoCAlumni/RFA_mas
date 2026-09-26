@@ -139,3 +139,8 @@ done task가 verifying/stale로 바뀐다. 이는 의도된 동작이며 영향 
 주의: 동시에 여러 전체 회귀를 실행하면 120초 plan timeout을 넘을 수 있다(2026-09-26 OPS-002 r3에서 실제
 발생, exit -9). 시간 한도를 늘리지 않고 부하를 줄여 단독 재실행한다. 일반 recovery(비 revalidation)로 바뀐
 작업은 claim baseline 이후 소유 경로의 실제 변경만 submit할 수 있으므로, 새 baseline 커밋을 섞지 않는다.
+
+OPS-003(2026-09-27): integration record-evidence는 이제 begin-evidence에서 캡처한 manifest head를
+result.head로 기록한다. 다른 세션이 검증 중 fingerprint 밖 파일을 commit해도 binding이 어긋나지 않는다.
+이전 도구가 기록한 과거 result.head는 manifest head의 후손이고 fingerprint·파일 hash·spec·contract가
+같을 때만 revalidation 근거로 인정한다(P1-001 post-retrieval-target: 3a1a5ee 캡처, caf7bd2 기록).

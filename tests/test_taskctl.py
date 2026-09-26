@@ -1624,3 +1624,72 @@ def test_all_planned_checks_required_even_when_they_reference_the_same_ac(contro
     second.assertions = ["The separate safety check also passed"]
     task.verification.append(second)
     assert check_report(task, control.report()) == "failed"
+
+def _race_integration(control, attempt="target-race"):
+    """Integration evidence where another session commits an unrelated file mid-attempt."""
+    control.claim()
+    control.commit_change()
+    control.evidence()
+    control.submit()
+    git_call(control.target, "merge", "--ff-only", "worker-a")
+    control.owned(
+        "begin-evidence", "--attempt", attempt, "--stage", "integration", session="coordinator"
+    )
+    captured = git_call(control.target, "rev-parse", "HEAD")
+    control.commit_change(control.target, "src/b.py", "UNRELATED = 9\n")
+    report = control.root.parent / f"{attempt}-report.json"
+    report.write_text(json.dumps(control.report()))
+    control.owned(
+        "record-evidence",
+        "--attempt",
+        attempt,
+        "--stage",
+        "integration",
+        "--report",
+        str(report),
+        session="coordinator",
+    )
+    return captured
+
+
+def test_concurrent_target_commit_binds_captured_head_and_revalidation_accepts_it(control):
+    captured = _race_integration(control)
+    assert control.task().integration.result["head"] == captured
+    assert captured != git_call(control.target, "rev-parse", "HEAD")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    control.commit_change(control.target, "src/a.py", "VALUE = 3\n")
+    control.run("status")
+    assert control.task().status == "verifying"
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    assert control.task().attempts.approaches[-1]["kind"] == "integrated_revalidation"
+
+
+@pytest.mark.parametrize("legacy", ["descendant", "unrelated"])
+def test_legacy_advanced_result_head_is_tolerated_only_as_descendant(control, legacy):
+    captured = _race_integration(control)
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    task = control.task()
+    if legacy == "descendant":
+        # Pre-OPS-003 records stored the (later) target head at record time.
+        task.integration.result["head"] = git_call(control.target, "rev-parse", "HEAD")
+    else:
+        git_call(control.target, "checkout", "-q", "-b", "side", captured + "~1")
+        control.commit_change(control.target, "src/b.py", "SIDE = 1\n")
+        side = git_call(control.target, "rev-parse", "HEAD")
+        git_call(control.target, "checkout", "-q", "fixture-main")
+        task.integration.result["head"] = side
+    control.put(task)
+    control.commit_change(control.target, "src/a.py", "VALUE = 3\n")
+    control.run("status")
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    if legacy == "descendant":
+        inspected_recover(control)
+        assert control.task().claim is not None
+    else:
+        before = control.task().model_dump(mode="json")
+        with pytest.raises(ControlError):
+            inspected_recover(control)
+        assert control.task().model_dump(mode="json") == before
