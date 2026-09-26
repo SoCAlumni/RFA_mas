@@ -11,10 +11,8 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
 status: todo
-spec_state: draft
-unresolved:
-- P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: coordinator
 estimated_effort: 0.5
@@ -38,6 +36,14 @@ scope:
   - registry/service.json
   - docs/INTEGRATION.md
   - tests/test_api.py
+  - docs/contracts/extended.json
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/application/events.py
+  - src/rfa_mas/application/observations.py
+  - src/rfa_mas/contracts/__init__.py
+  - tests/test_knowledge.py
+  - tests/test_sessions.py
+  - tests/test_teams.py
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/ports/interfaces.py
@@ -67,8 +73,8 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: null
-  role: consumer
+  digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+  role: provider
 context:
   global_refs:
   - docs/PROJECT_CONTEXT.md
@@ -186,8 +192,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 17
-spec_revision: 17
+revision: 18
+spec_revision: 18
 claim_generation: 0
 claim: null
 attempts:
@@ -209,7 +215,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T17:45:17+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
+updated_at: '2026-09-26T17:59:51+00:00'
+concise_result: 'Specification changed: Integration prep from reviewed wip/stack segment: accept current
+  RFA-EXTENDED, add files the segment touches (shared contracts/migration tests/composition)'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

@@ -37,3 +37,15 @@ Next first action: scoped feature commit, then submit verifying. Parent coordina
 - post-ops004 재검증 claim(generation 14, baseline 7553a20) 중 다른 통합(P1-008C, a0a9347)이 target을 이동시켜 submit이 "current integrated HEAD" 조건으로 거절됨.
 - FF하면 범위 밖 파일이 diff에 들어가고, claim 중인 task는 revalidation recover가 불가하여 도구 공백이 확인됨(OPS-005에서 보정).
 - 소스 변경 없는 재검증 claim이므로 discard로 정리한다. 이전 통합 이력은 attempts.approaches에 보존된다. OPS-005 후 절차 문서를 갱신하는 실제 변경으로 다시 완료한다.
+
+
+## 재통합(2026-09-27) — OPS-005 이후 재검증 운영 절차 문서화
+
+- 이전 통합 이력은 attempts.approaches에 보존. post-ops004 재검증은 target 이동으로 멈춰 discard했다.
+- 변경: docs/TASK_REVALIDATION.md에 운영 절차를 추가했다.
+  - 직접(전이) 의존성 우선 재검증, 최종 전체 재검증 1회.
+  - global context 문서 변경 시 전체 stale 주의.
+  - 재검증 중 target 이동은 FF 후 재캡처.
+  - nohup 백그라운드 작업 소멸 사건, OPS-002/OPS-003 discard 사건 기록.
+- 검증: 계획된 V1(test_taskctl)·V2(test_task_migration)를 worker/target 단계에서 실행한다.
+

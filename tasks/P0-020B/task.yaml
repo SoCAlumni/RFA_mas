@@ -1,0 +1,153 @@
+schema_version: '1.0'
+id: P0-020B
+title: team 결과·취소 HTTP 경로
+objective: E2E-03/10이 서비스 계층으로만 호출하던 team receipt와 취소를 owner 인증 HTTP로 노출한다.
+kind: task
+source_tasks:
+- P0-020
+requirement_refs:
+- RFA_E2E_Test_Scenarios_10_ko.md
+- docs/PRODUCT_REQUIREMENTS.md
+priority: P0
+status: todo
+spec_state: ready
+unresolved: []
+workstream: agents
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭
+execution_class: 이 저장소 구현
+product_mode: local/mock 제품 보수; real 모델/서비스 주장 없음
+scope:
+  included:
+  - api/app.py 두 경로와 extended.json 재생성
+  excluded:
+  - 권한/정책 완화
+  - real provider 주장
+  - 다른 task 기능 확장
+  owned_paths:
+  - docs/contracts/extended.json
+  - src/rfa_mas/api/app.py
+  - tests/test_api.py
+  read_only_paths: []
+  planned_paths: []
+  shared_resources:
+  - canonical-contracts
+depends_on:
+- id: P0-020
+  condition: integrated_done
+  required_output: 통합된 선행 결과
+- id: P0-021
+  condition: integrated_done
+  required_output: 통합된 선행 결과
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+  role: provider
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: RFA_E2E_Test_Scenarios_10_ko.md
+    section: 관련 시나리오
+    reason: E2E harness가 발견한 결함의 합격 기준
+  handoff: tasks/P0-020B/handoff.md
+  dependency_results:
+  - tasks/P0-020/handoff.md
+  - tasks/P0-021/handoff.md
+deliverables:
+- path: docs/contracts/extended.json
+  availability: existing
+  description: 보수 산출물
+- path: src/rfa_mas/api/app.py
+  availability: existing
+  description: 보수 산출물
+- path: tests/test_api.py
+  availability: existing
+  description: 보수 산출물
+acceptance_criteria:
+- id: AC1
+  given: owner의 team run
+  expect: GET /v1/runs/{id}/team이 TeamRunResult를 반환하고 타인/없는 run은 구분 불가한 404다.
+  required: true
+- id: AC2
+  given: 실행 중 또는 승인 대기 run 취소
+  expect: POST /v1/runs/{id}/cancel이 cancelling 또는 durable cancelled를 반환하고 종료된 run은 409다.
+  required: true
+- id: AC3
+  given: 인증 없음
+  expect: 401이며 상태 변화가 없다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - source worktree; 합성 fixture만; .env 읽기 금지
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_api.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - GET /v1/runs/{id}/team이 TeamRunResult를 반환하고 타인/없는 run은 구분 불가한 404다.
+  - POST /v1/runs/{id}/cancel이 cancelling 또는 durable cancelled를 반환하고 종료된 run은 409다.
+  - 401이며 상태 변화가 없다.
+  runner: pytest
+evidence_dir: .agent/evidence/P0-020B
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+  spec_revision: null
+  spec_digest: null
+  contract_digest: null
+  source_fingerprint: null
+  evidence: null
+integration:
+  state: pending
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new_coordinator_fix
+  source_ref: 2026-09-27 P0-026 E2E harness 보고(a4a57c6)
+  prior_claim: 없음
+  implementation_facts: wip/stack 개발 커밋 575626b,f22e4ad,54e9776; 등록 시 공식 검증 not_run
+  previous_evidence: []
+  checks_this_migration:
+  - E2E harness 보고 결함 재확인
+  judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
+  initial_spec_revision: 1
+updated_at: '2026-09-26T17:58:39+00:00'
+concise_result: 등록; 개발 커밋 있음, 공식 검증 not_run.
+next_action: claim 후 cherry-pick·검증·통합.

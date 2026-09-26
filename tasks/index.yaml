@@ -1,10 +1,10 @@
 generated: true
 schema_version: '1.0'
-source_digest: 7fe85c556b30f34350b67ac428208964d127230e9845baf6b5349286fb8d26a9
+source_digest: 508af42d82f099b8247c7a8a640edfbb4ad7c5dc2b4cc8daff1f7b29bdf67183
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 92
+  OPS-002: 100
   OPS-003: 19
   OPS-004: 15
   OPS-005: 17
@@ -28,11 +28,13 @@ source_revisions:
   P0-018: 147
   P0-019: 93
   P0-020: 58
-  P0-021: 15
-  P0-022: 15
-  P0-023: 14
-  P0-024: 15
-  P0-025: 17
+  P0-020A: 1
+  P0-020B: 1
+  P0-021: 16
+  P0-022: 16
+  P0-023: 15
+  P0-024: 16
+  P0-025: 18
   P0-025A: 17
   P0-026: 18
   P0-027: 92
@@ -41,6 +43,7 @@ source_revisions:
   P1-001A: 84
   P1-001B: 36
   P1-001C: 15
+  P1-001D: 1
   P1-002: 3
   P1-002A: 21
   P1-003: 2
@@ -50,7 +53,7 @@ source_revisions:
   P1-004B: 20
   P1-005: 28
   P1-005A: 20
-  P1-005B: 15
+  P1-005B: 16
   P1-005C: 6
   P1-006: 122
   P1-006A: 4
@@ -62,7 +65,7 @@ source_revisions:
   P1-007A: 1
   P1-007B: 2
   P1-007C: 2
-  P1-008: 17
+  P1-008: 18
   P1-008A: 4
   P1-008B: 4
   P1-008C: 26
@@ -77,7 +80,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T17:50:28+00:00'
+generated_at: '2026-09-26T17:59:51+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -267,6 +270,19 @@ tasks:
   - P1-001A
   - P1-006D
   path: tasks/P0-020/task.yaml
+- id: P0-020A
+  title: result_analyst 결정적 후속 비교(baseline 대 모든 비잠정 후보)
+  workstream: agents
+  depends_on:
+  - P0-020
+  path: tasks/P0-020A/task.yaml
+- id: P0-020B
+  title: team 결과·취소 HTTP 경로
+  workstream: agents
+  depends_on:
+  - P0-020
+  - P0-021
+  path: tasks/P0-020B/task.yaml
 - id: P0-021
   title: durable 실행 기록·재개 멱등성·결과 대사
   workstream: execution
@@ -375,6 +391,12 @@ tasks:
   - P1-001B
   - P1-004A
   path: tasks/P1-001C/task.yaml
+- id: P1-001D
+  title: 한국어 조사 정규화·결정적 BM25 lexical 순위(권한 필터 뒤)
+  workstream: agents
+  depends_on:
+  - P1-001A
+  path: tasks/P1-001D/task.yaml
 - id: P1-002
   title: NVIDIA ModelPort adapter 준비
   workstream: integration/evaluation

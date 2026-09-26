@@ -12,7 +12,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | --- | --- | --- | --- | --- | --- | --- |
 | [OPS-000](tasks/OPS-000/task.yaml) | 사용자 변경을 보존한 Git/worktree baseline 등록 | P0 | verifying / stale | contracts/control | 0.5 | — |
 | [OPS-001](tasks/OPS-001/task.yaml) | 작업 이관·공통 CLI·병렬 제어 검증 | P0 | verifying / stale | contracts/control | 0.5 | — |
-| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | todo / stale | contracts/control | 0.5 | — |
+| [OPS-002](tasks/OPS-002/task.yaml) | 후속 통합 후 재검증 recovery·현재 일정 회귀 보수 | P0 | done / passed | contracts/control | 0.5 | — |
 | [OPS-003](tasks/OPS-003/task.yaml) | 통합 evidence head race 보정과 과거 binding 호환 | P0 | todo / stale | contracts/control | 0.5 | OPS-002 |
 | [OPS-004](tasks/OPS-004/task.yaml) | taskctl 호출 단위 git 조회 memo로 cascade 비용 축소 | P0 | verifying / stale | contracts/control | 0.5 | OPS-003 |
 | [OPS-005](tasks/OPS-005/task.yaml) | stale 통합 예약의 claim 차단 완화와 target 이동 중 재검증 보정 | P0 | verifying / stale | contracts/control | 1 | OPS-004 |
@@ -36,6 +36,8 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-018](tasks/P0-018/task.yaml) | 승인된 팀 template와 규칙 selector | P0 | verifying / stale | agents | 0.5 | P0-014 |
 | [P0-019](tasks/P0-019/task.yaml) | Task 전담 팀·TeamFactory·중복 provisioning 방지 | P0 | verifying / stale | agents | 2 | P0-018, P0-015, P0-016 |
 | [P0-020](tasks/P0-020/task.yaml) | 역할별 실행·Supervisor 수집·팀 예산·취소 | P0 | verifying / stale | agents | 3 | P0-019, P0-017, P1-001A, P1-006D |
+| [P0-020A](tasks/P0-020A/task.yaml) | result_analyst 결정적 후속 비교(baseline 대 모든 비잠정 후보) | P0 | todo / not_run | agents | 1 | P0-020 |
+| [P0-020B](tasks/P0-020B/task.yaml) | team 결과·취소 HTTP 경로 | P0 | todo / not_run | agents | 1 | P0-020, P0-021 |
 | [P0-021](tasks/P0-021/task.yaml) | durable 실행 기록·재개 멱등성·결과 대사 | P0 | todo / not_run | execution | 1.5 | P0-016, P0-020, P1-005A |
 | [P0-022](tasks/P0-022/task.yaml) | 안전한 예약 DTO·사용자별 일정 관리 | P0 | todo / not_run | execution | 0.5 | P0-014, P0-017, P1-004, P0-021 |
 | [P0-023](tasks/P0-023/task.yaml) | APScheduler 3.x 영속 job store·단일 runner | P0 | todo / not_run | execution | 1.5 | P0-022 |
@@ -49,6 +51,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-001A](tasks/P1-001A/task.yaml) | 권한 선필터·최신 lexical 검색·무효화 | P0 | verifying / stale | knowledge | 1.5 | P1-001, P0-016, P1-006 |
 | [P1-001B](tasks/P1-001B/task.yaml) | KB L0/L1/L2 선택적 context loader | P0 | verifying / stale | knowledge | 1 | P0-014, P1-001A |
 | [P1-001C](tasks/P1-001C/task.yaml) | 계층 요약 최적화·context 로딩 비교(후속) | P1 | deferred / not_run | knowledge | 1 | P1-001B, P1-004A |
+| [P1-001D](tasks/P1-001D/task.yaml) | 한국어 조사 정규화·결정적 BM25 lexical 순위(권한 필터 뒤) | P0 | todo / not_run | agents | 1 | P1-001A |
 | [P1-002](tasks/P1-002/task.yaml) | NVIDIA ModelPort adapter 준비 | P1 | todo / not_run | integration/evaluation | 1.5 | P0-014, P0-017, P1-005 |
 | [P1-002A](tasks/P1-002A/task.yaml) | NVIDIA 실제 합성 호출 증거 | P1 | in_progress / passed | integration/evaluation | 0.5 | P0-017 |
 | [P1-003](tasks/P1-003/task.yaml) | 공식 NeMo Retriever Skill을 Research 도구에 연결 | P1 | todo / not_run | integration/evaluation | 1 | P0-020, P1-001A, P1-005 |
@@ -88,7 +91,6 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 다음 작업
 
-- OPS-002: planning ready; claim 가능
 - P1-006B: planning ready; claim 가능
 - P1-006C: planning ready; claim 가능
 
