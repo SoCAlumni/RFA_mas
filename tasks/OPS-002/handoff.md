@@ -49,3 +49,7 @@ Next first action: scoped feature commit, then submit verifying. Parent coordina
   - nohup 백그라운드 작업 소멸 사건, OPS-002/OPS-003 discard 사건 기록.
 - 검증: 계획된 V1(test_taskctl)·V2(test_task_migration)를 worker/target 단계에서 실행한다.
 
+## 재검증 pre-OPS-003 (2026-09-26T19:43Z)
+
+- 사유: docs/WORK_LOG.md commits (OPS-002 read-only path); dependency of OPS-003
+- 소스 변경 없이 현재 통합 HEAD 501aebf에서 계획된 검증을 worker/target 단계로 재실행한다.

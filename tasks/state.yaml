@@ -1,20 +1,20 @@
 generated: true
 schema_version: '1.0'
-source_digest: 8001a2b02cc08afe28f9cd230461b21e8a47aef232380e37ebc1851b2aa27b51
+source_digest: 338846c4ed32ef07db16f531e0c4eddcab5dfb21553ce780819ae74a47c72142
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 101
-  OPS-003: 22
-  OPS-004: 19
-  OPS-005: 20
-  OPS-006: 11
+  OPS-002: 110
+  OPS-003: 35
+  OPS-004: 20
+  OPS-005: 21
+  OPS-006: 13
   P0-001: 1
   P0-002: 1
   P0-003: 1
   P0-004: 1
   P0-005: 1
-  P0-005A: 1
+  P0-005A: 2
   P0-006: 1
   P0-007: 1
   P0-008: 1
@@ -23,74 +23,76 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 163
-  P0-015: 178
-  P0-016: 179
-  P0-017: 166
-  P0-018: 180
-  P0-019: 120
-  P0-020: 85
-  P0-020A: 4
+  P0-014: 172
+  P0-015: 187
+  P0-016: 188
+  P0-017: 177
+  P0-018: 191
+  P0-019: 129
+  P0-020: 94
+  P0-020A: 5
   P0-020B: 1
   P0-021: 34
   P0-022: 25
-  P0-023: 27
-  P0-024: 16
+  P0-023: 29
+  P0-024: 24
   P0-025: 18
-  P0-025A: 20
-  P0-026: 21
+  P0-025A: 21
+  P0-026: 22
   P0-027: 92
-  P0-028: 69
-  P1-001: 124
-  P1-001A: 111
-  P1-001B: 69
-  P1-001C: 18
-  P1-001D: 4
+  P0-028: 70
+  P1-001: 133
+  P1-001A: 120
+  P1-001B: 80
+  P1-001C: 19
+  P1-001D: 5
+  P1-001E: 2
   P1-002: 4
   P1-002A: 21
   P1-003: 3
   P1-003A: 14
   P1-004: 29
-  P1-004A: 67
-  P1-004B: 20
-  P1-005: 61
+  P1-004A: 76
+  P1-004B: 29
+  P1-004C: 2
+  P1-005: 72
   P1-005A: 47
   P1-005B: 16
-  P1-005C: 9
-  P1-006: 146
+  P1-005C: 10
+  P1-006: 157
   P1-006A: 4
   P1-006B: 3
   P1-006C: 4
-  P1-006D: 138
-  P1-006E: 29
-  P1-006F: 3
+  P1-006D: 147
+  P1-006E: 30
+  P1-006F: 4
   P1-007: 2
   P1-007A: 1
   P1-007B: 2
-  P1-007C: 6
+  P1-007C: 7
   P1-008: 27
   P1-008A: 4
   P1-008B: 4
-  P1-008C: 29
-  P1-008D: 20
-  P1-008E: 1
+  P1-008C: 30
+  P1-008D: 21
+  P1-008E: 2
   P1-009: 5
   P2-001: 2
   P2-002: 2
-  P2-003: 20
+  P2-003: 29
   P2-004: 2
   P2-005: 2
   P2-006: 2
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T19:41:21+00:00'
+generated_at: '2026-09-26T20:04:30+00:00'
 counts:
   todo: 18
-  in_progress: 2
-  verifying: 32
+  in_progress: 1
+  verifying: 36
   blocked: 5
-  done: 15
+  done: 14
   deferred: 9
   cancelled: 1
 final_acceptance:
@@ -161,17 +163,18 @@ tasks:
   reasons:
   - status:verifying
 - id: OPS-003
-  status: todo
+  status: verifying
   workstream: contracts/control
   owner: null
   recovery_required: false
-  integration: pending
-  reserved: false
+  integration: integrated
+  reserved: true
   blocker: null
   verification: stale
   planning_ready: false
   executable: false
   reasons:
+  - status:verifying
   - spec unresolved
   - contract baseline pending/stale
   - dependency:OPS-002
@@ -188,6 +191,8 @@ tasks:
   executable: false
   reasons:
   - status:verifying
+  - spec unresolved
+  - contract baseline pending/stale
   - dependency:OPS-003
 - id: OPS-005
   status: verifying
@@ -206,18 +211,20 @@ tasks:
   - contract baseline pending/stale
   - dependency:OPS-004
 - id: OPS-006
-  status: done
+  status: verifying
   workstream: contracts/control
   owner: null
   recovery_required: false
   integration: integrated
-  reserved: false
+  reserved: true
   blocker: null
-  verification: passed
+  verification: stale
   planning_ready: false
   executable: false
   reasons:
-  - status:done
+  - status:verifying
+  - spec unresolved
+  - contract baseline pending/stale
 - id: P0-001
   status: done
   workstream: contracts/control
@@ -257,7 +264,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-014
 - id: P0-004
   status: done
   workstream: contracts/control
@@ -293,9 +299,12 @@ tasks:
   reserved: false
   blocker: null
   verification: not_run
-  planning_ready: true
-  executable: true
-  reasons: []
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-023
 - id: P0-006
   status: done
   workstream: knowledge
@@ -374,7 +383,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-014
 - id: P0-012
   status: done
   workstream: contracts/control
@@ -388,7 +396,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P0-013
   status: done
@@ -403,21 +410,20 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P0-014
-  status: in_progress
+  status: verifying
   workstream: contracts/control
-  owner: rfa-coordinator
-  recovery_required: true
-  integration: pending
-  reserved: false
+  owner: null
+  recovery_required: false
+  integration: integrated
+  reserved: true
   blocker: null
-  verification: failed
+  verification: stale
   planning_ready: false
   executable: false
   reasons:
-  - status:in_progress
+  - status:verifying
 - id: P0-015
   status: verifying
   workstream: execution
@@ -432,7 +438,6 @@ tasks:
   reasons:
   - status:verifying
   - dependency:P0-014
-  - reserved:P0-014
 - id: P0-016
   status: verifying
   workstream: execution
@@ -447,7 +452,6 @@ tasks:
   reasons:
   - status:verifying
   - dependency:P0-015
-  - reserved:P0-014
 - id: P0-017
   status: verifying
   workstream: contracts/control
@@ -497,7 +501,6 @@ tasks:
   - dependency:P0-018
   - dependency:P0-015
   - dependency:P0-016
-  - reserved:P0-014
 - id: P0-020
   status: verifying
   workstream: agents
@@ -515,7 +518,6 @@ tasks:
   - dependency:P0-017
   - dependency:P1-001A
   - dependency:P1-006D
-  - reserved:P0-014
 - id: P0-020A
   status: todo
   workstream: agents
@@ -545,7 +547,6 @@ tasks:
   reasons:
   - dependency:P0-020
   - dependency:P0-021
-  - reserved:P0-014
 - id: P0-021
   status: verifying
   workstream: execution
@@ -562,7 +563,6 @@ tasks:
   - dependency:P0-016
   - dependency:P0-020
   - dependency:P1-005A
-  - reserved:P0-014
 - id: P0-022
   status: verifying
   workstream: execution
@@ -580,8 +580,23 @@ tasks:
   - dependency:P0-017
   - dependency:P1-004
   - dependency:P0-021
-  - reserved:P0-014
 - id: P0-023
+  status: verifying
+  workstream: execution
+  owner: null
+  recovery_required: false
+  integration: integrated
+  reserved: true
+  blocker: null
+  verification: stale
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:verifying
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P0-022
+- id: P0-024
   status: done
   workstream: execution
   owner: null
@@ -594,23 +609,10 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - dependency:P0-022
-- id: P0-024
-  status: todo
-  workstream: execution
-  owner: null
-  recovery_required: false
-  integration: pending
-  reserved: false
-  blocker: null
-  verification: not_run
-  planning_ready: false
-  executable: false
-  reasons:
+  - dependency:P0-023
   - dependency:P1-004B
   - dependency:P2-003
   - dependency:P1-005
-  - reserved:P0-014
 - id: P0-025
   status: todo
   workstream: integration/evaluation
@@ -625,9 +627,7 @@ tasks:
   reasons:
   - dependency:P0-015
   - dependency:P0-020
-  - dependency:P0-024
   - dependency:P1-008
-  - reserved:P0-014
 - id: P0-025A
   status: verifying
   workstream: integration/evaluation
@@ -661,14 +661,12 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P0-021
-  - dependency:P0-024
   - dependency:P0-025
   - dependency:P1-006
   - dependency:P1-008
   - dependency:P1-001B
   - dependency:P1-006E
   - dependency:P1-005B
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P0-027
   status: verifying
@@ -718,7 +716,6 @@ tasks:
   - dependency:P0-014
   - dependency:P0-015
   - dependency:P0-016
-  - reserved:P0-014
 - id: P1-001A
   status: verifying
   workstream: knowledge
@@ -735,7 +732,6 @@ tasks:
   - dependency:P1-001
   - dependency:P0-016
   - dependency:P1-006
-  - reserved:P0-014
 - id: P1-001B
   status: verifying
   workstream: knowledge
@@ -785,6 +781,21 @@ tasks:
   - spec unresolved
   - contract baseline pending/stale
   - dependency:P1-001A
+- id: P1-001E
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-001D
 - id: P1-002
   status: todo
   workstream: integration/evaluation
@@ -800,7 +811,6 @@ tasks:
   - dependency:P0-014
   - dependency:P0-017
   - dependency:P1-005
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P1-002A
   status: in_progress
@@ -831,7 +841,6 @@ tasks:
   - dependency:P0-020
   - dependency:P1-001A
   - dependency:P1-005
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P1-003A
   status: verifying
@@ -863,7 +872,6 @@ tasks:
   - status:verifying
   - dependency:P0-016
   - dependency:P1-001A
-  - reserved:P0-014
 - id: P1-004A
   status: verifying
   workstream: knowledge
@@ -879,7 +887,6 @@ tasks:
   - status:verifying
   - dependency:P0-020
   - dependency:P1-001A
-  - reserved:P0-014
 - id: P1-004B
   status: verifying
   workstream: knowledge
@@ -895,7 +902,23 @@ tasks:
   - status:verifying
   - dependency:P1-004A
   - dependency:P0-019
-  - reserved:P0-014
+- id: P1-004C
+  status: todo
+  workstream: agents
+  owner: null
+  recovery_required: false
+  integration: pending
+  reserved: false
+  blocker: null
+  verification: not_run
+  planning_ready: false
+  executable: false
+  reasons:
+  - spec unresolved
+  - contract baseline pending/stale
+  - dependency:P1-004A
+  - dependency:P1-004B
+  - dependency:P2-003
 - id: P1-005
   status: verifying
   workstream: agents
@@ -914,7 +937,6 @@ tasks:
   - dependency:P0-020
   - dependency:P1-004A
   - dependency:P1-001B
-  - reserved:P0-014
 - id: P1-005A
   status: verifying
   workstream: agents
@@ -930,7 +952,6 @@ tasks:
   - status:verifying
   - dependency:P1-005
   - dependency:P0-016
-  - reserved:P0-014
 - id: P1-005B
   status: todo
   workstream: agents
@@ -944,7 +965,6 @@ tasks:
   executable: false
   reasons:
   - dependency:P1-005A
-  - reserved:P0-014
 - id: P1-005C
   status: cancelled
   workstream: integration/evaluation
@@ -992,7 +1012,6 @@ tasks:
   reasons:
   - dependency:P1-006
   - dependency:P1-002
-  - reserved:P0-014
 - id: P1-006B
   status: todo
   workstream: integration/evaluation
@@ -1020,7 +1039,6 @@ tasks:
   reasons:
   - dependency:P1-006
   - dependency:P1-006D
-  - reserved:P0-014
 - id: P1-006D
   status: verifying
   workstream: integration/evaluation
@@ -1037,7 +1055,6 @@ tasks:
   - dependency:P0-014
   - dependency:P0-016
   - dependency:P0-017
-  - reserved:P0-014
 - id: P1-006E
   status: verifying
   workstream: integration/evaluation
@@ -1085,7 +1102,6 @@ tasks:
   reasons:
   - dependency:P0-014
   - dependency:P0-025
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P1-007A
   status: blocked
@@ -1156,7 +1172,6 @@ tasks:
   - dependency:P0-021
   - dependency:P1-005A
   - dependency:P1-006D
-  - reserved:P0-014
 - id: P1-008A
   status: blocked
   workstream: integration/evaluation
@@ -1174,7 +1189,6 @@ tasks:
   - spec unresolved
   - dependency:P1-008
   - dependency:P0-026
-  - reserved:P0-014
 - id: P1-008B
   status: blocked
   workstream: integration/evaluation
@@ -1193,7 +1207,6 @@ tasks:
   - dependency:P1-008
   - dependency:P0-025
   - dependency:P0-026
-  - reserved:P0-014
 - id: P1-008C
   status: verifying
   workstream: integration/evaluation
@@ -1239,6 +1252,8 @@ tasks:
   planning_ready: false
   executable: false
   reasons:
+  - spec unresolved
+  - contract baseline pending/stale
   - dependency:P1-008
   - dependency:P0-021
 - id: P1-009
@@ -1254,7 +1269,6 @@ tasks:
   executable: false
   reasons:
   - dependency:P0-026
-  - reserved:P0-014
   - reserved:P1-002A
 - id: P2-001
   status: deferred
@@ -1271,7 +1285,6 @@ tasks:
   - status:deferred
   - dependency:P1-004B
   - dependency:P2-003
-  - reserved:P0-014
 - id: P2-002
   status: deferred
   workstream: agents
@@ -1288,7 +1301,6 @@ tasks:
   - dependency:P2-003
   - dependency:P1-006B
   - dependency:P0-020
-  - reserved:P0-014
 - id: P2-003
   status: verifying
   workstream: knowledge
@@ -1303,7 +1315,6 @@ tasks:
   reasons:
   - status:verifying
   - dependency:P1-004B
-  - reserved:P0-014
 - id: P2-004
   status: deferred
   workstream: knowledge
@@ -1319,7 +1330,6 @@ tasks:
   - status:deferred
   - dependency:P1-001A
   - dependency:P1-008A
-  - reserved:P0-014
 - id: P2-005
   status: deferred
   workstream: integration/evaluation
@@ -1335,7 +1345,6 @@ tasks:
   - status:deferred
   - dependency:P0-020
   - dependency:P1-007B
-  - reserved:P0-014
 - id: P2-006
   status: deferred
   workstream: agents
@@ -1352,7 +1361,6 @@ tasks:
   - dependency:P0-020
   - dependency:P1-007B
   - dependency:P1-008A
-  - reserved:P0-014
 - id: P2-007
   status: deferred
   workstream: agents
@@ -1368,7 +1376,6 @@ tasks:
   - status:deferred
   - dependency:P0-019
   - dependency:P0-021
-  - reserved:P0-014
 - id: P2-008
   status: deferred
   workstream: integration/evaluation
@@ -1384,7 +1391,6 @@ tasks:
   - status:deferred
   - dependency:P1-008A
   - dependency:P0-015
-  - reserved:P0-014
 - id: P2-009
   status: deferred
   workstream: agents
@@ -1401,4 +1407,3 @@ tasks:
   - dependency:P0-018
   - dependency:P1-002A
   - dependency:P1-006B
-  - reserved:P0-014

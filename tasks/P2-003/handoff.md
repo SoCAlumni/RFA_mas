@@ -8,3 +8,7 @@
 
 - tests/test_candidates.py 정렬 테스트(임박 blocker > 기한 없는 가설 아이디어, 이유, 반복 동일, 상태 불변, tie-break).
 
+## 재검증 pre-P0-024 (2026-09-26T19:56Z)
+
+- 사유: Direct/transitive dependencies of P0-024 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 6e5494f에서 계획된 검증을 worker/target 단계로 재실행한다.

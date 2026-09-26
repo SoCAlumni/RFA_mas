@@ -1,0 +1,40 @@
+{
+  "schema_checked": true,
+  "fixtures_checked": true,
+  "contract_digest": "7b61a759c697390f998c39c34c952fcbf7b1d4fccd3374402ac045f68c936012",
+  "reviewer": "rfa-coordinator (claude-opus-5-5)",
+  "head": "49b75185f62e39289564d7a8b68b25df695fff8d",
+  "started_at": "2026-09-26T19:57:45.558631+00:00",
+  "finished_at": "2026-09-26T19:57:47.265556+00:00",
+  "checks": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T19:57:45.558781+00:00",
+      "finished_at": "2026-09-26T19:57:46.485106+00:00",
+      "elapsed_seconds": 0.9263573326170444,
+      "exit_code": 0,
+      "stdout": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        ".venv/bin/python",
+        "scripts/contract_baseline.py",
+        "check-extended"
+      ],
+      "timeout_seconds": 120,
+      "started_at": "2026-09-26T19:57:46.485140+00:00",
+      "finished_at": "2026-09-26T19:57:47.256063+00:00",
+      "elapsed_seconds": 0.7709659161046147,
+      "exit_code": 0,
+      "stdout": "extended contract: 7 fixture shapes valid\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "P0-024 additive 1.1 outbox/notification DTOs/routes; migration 11. No live provider claim."
+}

@@ -1,0 +1,94 @@
+{
+  "attempt_id": "pre-P0-024-target-0926194412",
+  "contract_digest": "47beffffdffd8285b1aa088f7324242a372b265883ba3b6bcaa5135829f639eb",
+  "mode": "fixture upsert만 implemented; 입력 기능 missing/not_run. 저장 local(false), synthetic 자료. 외부 의존 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_knowledge.py"
+        ],
+        "assertions": [
+          "서버 identity/기본 private/원문 보존과 위조·타인 쓰기 거절",
+          "provenance/revision 멱등·경쟁 CAS·행별 partial receipt 및 재처리",
+          "current/nondeleted projection, immutable 이력·ACL revision 및 모호한 legacy 제한",
+          "재시작 seed/migration 보존·DB/WAL/SHM private·비정규 파일 거절"
+        ],
+        "counts": {
+          "collected": 40,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 40,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.35,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T19:44:16.894998+00:00",
+        "id": "V1",
+        "log_excerpt": "40 passed, 1 warning in 1.39s",
+        "result": "passed",
+        "started_at": "2026-09-26T19:44:14.545092+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py",
+          "tests/test_sessions.py",
+          "tests/test_local_adapters.py",
+          "tests/test_contracts.py",
+          "tests/test_contract_baseline.py",
+          "tests/test_trace_eval_contract.py",
+          "tests/test_teams.py"
+        ],
+        "assertions": [
+          "기존 세션/재개·거절·동시 startup와 frozen/extended schema/fixture 회귀가 통과한다."
+        ],
+        "counts": {
+          "collected": 181,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 181,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 23.42,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T19:44:40.319931+00:00",
+        "id": "V2",
+        "log_excerpt": "181 passed, 37 warnings in 22.62s",
+        "result": "passed",
+        "started_at": "2026-09-26T19:44:16.895405+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "501aebfca1b32d4e7f537bbafaef39e83461159f",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-26T19:44:40.320023+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-26T19:44:14.544851+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "e6f473fd15dea881ca75b5719c9d96b316665650410047807a6be181c1df0412",
+  "source_manifest": ".agent/evidence/P1-001/pre-P0-024-target-0926194412/source.json",
+  "spec_digest": "d49412b6eaf707b2ef3af02a355aeae0fa6ea353a67c6f2c943f028a5d1c9f81",
+  "spec_revision": 9,
+  "task_id": "P1-001"
+}

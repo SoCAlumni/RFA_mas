@@ -12,3 +12,8 @@
 - 첫 개발 커밋은 중복 언급 병합이 발견 순서(무작위 source ID)에 의존해 간헐 실패 → 4258af7에서 수정.
 - migration7 추가로 tests/test_sessions.py·test_knowledge.py·test_teams.py의 고정 목록([1..6]) 단언이 실패 → 0cee5e4에서
   "빈틈없는 1..N, N>=7" 단언으로 바꿨다(이후 migration 추가 때 이 파일들을 다시 고치지 않음).
+
+## 재검증 pre-P0-024 (2026-09-26T19:55Z)
+
+- 사유: Direct/transitive dependencies of P0-024 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 6e5494f에서 계획된 검증을 worker/target 단계로 재실행한다.

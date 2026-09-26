@@ -9,7 +9,7 @@ requirement_refs:
 - TASK_EXECUTION_RULES.md
 - docs/TASK_REVALIDATION.md
 priority: P0
-status: todo
+status: verifying
 spec_state: draft
 unresolved:
 - Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
@@ -51,7 +51,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
+  digest: 12018d1bcd697fd5f1fc361f0f94a398826a2cf752a5ba9fe8dc2b74bf25c56b
   role: consumer
 context:
   global_refs:
@@ -133,35 +133,51 @@ verification:
   - 기존 이관·명세·view 정합성 회귀가 유지된다.
   runner: pytest
 evidence_dir: .agent/evidence/OPS-003
-latest_evidence_file: .agent/evidence/OPS-003/fix-target-02/result.json
+latest_evidence_file: .agent/evidence/OPS-003/target-repair-0926200126/result.json
 verification_summary:
   state: stale
-  spec_revision: 1
-  spec_digest: aee7b7e5ed53d3b8a37b5a6ccea0728f2aed164c2ef49aacd66d69bc02a46130
-  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
-  source_fingerprint: 31214393ad2fdfbb0484dadcc50ae1d30bfc04e188408449707b02480c119fde
-  evidence: .agent/evidence/OPS-003/fix-target-02/result.json
+  spec_revision: 10
+  spec_digest: cd66e5ea20d10b81d1bf5ae6d106f9dcd1b7a73385cdc445bfd26965a0fab258
+  contract_digest: 47beffffdffd8285b1aa088f7324242a372b265883ba3b6bcaa5135829f639eb
+  source_fingerprint: 721c7b3451a8c9243b6f4dd02fca2e325d967095b3f1a842485debd3e1cc9cb3
+  evidence: .agent/evidence/OPS-003/target-repair-0926200126/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 22
-spec_revision: 9
-claim_generation: 2
+  reservation: true
+  submission_generation: 3
+  submission:
+    head: 6e5494f2a8ff32663784588ebc636fba8b5f0346
+    baseline_head: 501aebfca1b32d4e7f537bbafaef39e83461159f
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-003-int-0926195024
+    branch: task/OPS-003-int-0926195024
+    evidence: .agent/evidence/OPS-003/worker-0926195029/result.json
+    changed_files:
+      tests/test_taskctl.py: ba144c4d304442aa3d42b930853b0152fb7f44d3e957d96153e7089280f41638
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 10
+      spec_digest: cd66e5ea20d10b81d1bf5ae6d106f9dcd1b7a73385cdc445bfd26965a0fab258
+      contract_digest: 47beffffdffd8285b1aa088f7324242a372b265883ba3b6bcaa5135829f639eb
+      source_fingerprint: 721c7b3451a8c9243b6f4dd02fca2e325d967095b3f1a842485debd3e1cc9cb3
+      evidence: .agent/evidence/OPS-003/target-repair-0926200126/result.json
+    head: 07cc0dc2d37575c92f2a39820d3cb0819ac42929
+  evidence: .agent/evidence/OPS-003/target-repair-0926200126/result.json
+revision: 35
+spec_revision: 11
+claim_generation: 3
 claim: null
 attempts:
-  count: 3
-  cycles: 0
+  count: 6
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: fix-target-02
+  latest_attempt: target-repair-0926200126
   evidence_refs:
   - .agent/evidence/OPS-003/fix-worker-01/result.json
   - .agent/evidence/OPS-003/fix-worker-02/result.json
+  - .agent/evidence/OPS-003/worker-0926195029/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -217,8 +233,7 @@ migration:
   - P1-001 integration.result.head(caf7bd2)≠manifest head(3a1a5ee), fingerprint 동일 확인
   judgment: 동시 세션 commit에 의한 도구 race. 규칙 완화 없이 기록 head를 캡처 head로 고정한다.
   initial_spec_revision: 1
-updated_at: '2026-09-26T18:41:31+00:00'
-concise_result: 'Recovery inspected: Stale task-control reservation deadlocks OPS-005 (pre-OPS-005 rules)
-  while dependency OPS-002 is todo; discard reservation only'
+updated_at: '2026-09-26T20:04:21+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

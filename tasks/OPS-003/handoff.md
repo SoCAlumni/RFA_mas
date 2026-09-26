@@ -12,3 +12,11 @@
 - OPS-004 통합 뒤 stale 예약(task-control)이 OPS-005 claim을 막고, 의존 task OPS-002가 todo여서 재검증도 불가한 순환이 확인됨.
 - 활성 claim·미통합 제출 없음. 통합된 소스(58a355d, 951c9cb)는 main에 그대로 있다. 이력은 attempts.approaches에 보존.
 - OPS-005 통합 뒤 재검증 절차 문서를 갱신하는 실제 변경으로 다시 완료한다.
+
+
+## 재통합(2026-09-27) — FF 재검증 binding 회귀
+
+- 이전 통합 이력은 attempts.approaches에 보존되어 있다. stale 예약이 OPS-005 claim과 순환 차단을 일으켜 discard했다.
+- 변경: `tests/test_taskctl.py`에 회귀를 추가했다. OPS-005의 target 이동 FF 재검증에서도 integration record-evidence가 캡처한 head로 binding되고, 이후 revalidation이 그 이력을 인정하는지 확인한다.
+- 검증: 계획된 V1(test_taskctl)과 V2(test_task_migration)를 worker/target 단계에서 실행한다.
+

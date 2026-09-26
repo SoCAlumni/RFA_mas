@@ -62,3 +62,8 @@ Worker actual: post-knowledge-worker-01 V1=15 passed (wall0.883s), V2=50 passed 
 
 - 사유: Direct/transitive dependencies of P0-024 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD bbd80e3에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P0-024-reissue (2026-09-26T19:41Z)
+
+- 사유: Direct/transitive dependencies of P0-024 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 501aebf에서 계획된 검증을 worker/target 단계로 재실행한다.
