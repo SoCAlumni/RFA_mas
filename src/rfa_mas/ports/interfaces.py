@@ -7,12 +7,16 @@ from rfa_mas.contracts import (
     AgentSpec,
     ContextBundle,
     ContextRequest,
+    DomainId,
     DraftBundle,
     EvaluationCase,
     EvidenceBundle,
     ExecutionContext,
     JudgeAssessment,
+    KnowledgeDelete,
     KnowledgeDocument,
+    KnowledgeRevision,
+    KnowledgeWrite,
     ModelRequest,
     ModelResult,
     ObservationRecord,
@@ -214,6 +218,37 @@ class WorkRepositoryPort(Protocol):
     async def save_checkpoint(self, run_id: str, node: str, metadata: dict[str, Any]) -> None: ...
 
     async def upsert_documents(self, documents: list[KnowledgeDocument]) -> None: ...
+
+    async def write_knowledge(
+        self,
+        request: KnowledgeWrite,
+        principal: TrustedPrincipal,
+        *,
+        policy_version: str,
+        source_id: str | None = None,
+    ) -> KnowledgeRevision: ...
+
+    async def delete_knowledge(
+        self,
+        source_id: str,
+        request: KnowledgeDelete,
+        principal: TrustedPrincipal,
+    ) -> KnowledgeRevision: ...
+
+    async def get_knowledge(
+        self,
+        source_id: str,
+        principal: TrustedPrincipal,
+        *,
+        revision: str | None = None,
+    ) -> KnowledgeRevision: ...
+
+    async def list_knowledge(
+        self,
+        principal: TrustedPrincipal,
+        *,
+        domain_id: DomainId | None = None,
+    ) -> list[KnowledgeRevision]: ...
 
     async def seed_documents_once(self, documents: list[KnowledgeDocument]) -> None:
         """Atomic installation fixture seed; never resurrect removed/changed sources."""

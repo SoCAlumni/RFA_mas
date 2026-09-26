@@ -428,6 +428,109 @@ class AuthenticationConfig(ContractModel):
 
 # Repository-local 1.1 extensions. These schemas are not authentication or
 # evidence that another service implements the protocol. Legacy DTOs stay 1.0.
+class KnowledgeDocumentV11(KnowledgeDocument):
+    """Exact stored text; legacy 1.0 validation/whitespace behavior is unchanged."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    schema_version: Literal["1.1"] = "1.1"
+
+
+class KnowledgeAcl(ExtendedContractModel):
+    audience: Audience = Audience.PRIVATE
+    company_id: OpaqueId | None = None
+    memberships: tuple[OpaqueId, ...] = ()
+
+    @model_validator(mode="after")
+    def consistent_scope(self) -> KnowledgeAcl:
+        if self.audience == Audience.BUSINESS_UNIT:
+            if not self.company_id or not self.memberships:
+                raise ValueError("business-unit sharing requires company and membership")
+        elif self.memberships:
+            raise ValueError("membership belongs only to business-unit sharing")
+        if self.audience == Audience.COMPANY and not self.company_id:
+            raise ValueError("company sharing requires company")
+        if self.audience not in {Audience.COMPANY, Audience.BUSINESS_UNIT} and self.company_id:
+            raise ValueError("company metadata is not part of this sharing scope")
+        if len(set(self.memberships)) != len(self.memberships):
+            raise ValueError("duplicate membership")
+        return self
+
+
+class KnowledgeProvenance(ExtendedContractModel):
+    provider: Literal["note", "github_issue", "confluence"]
+    namespace: str = Field(min_length=1, max_length=200)
+    external_id: str = Field(min_length=1, max_length=200)
+
+
+class KnowledgeWrite(ExtendedContractModel):
+    domain_id: DomainId
+    provenance: KnowledgeProvenance
+    provider_revision: str = Field(min_length=1, max_length=200)
+    expected_revision: OpaqueId | None = None
+    title: str = Field(min_length=1, max_length=1000)
+    content: str = Field(max_length=200_000)
+    acl: KnowledgeAcl = Field(default_factory=KnowledgeAcl)
+    source_modified_at: AwareDatetime | None = None
+    synthetic: bool = False
+
+
+class KnowledgeDelete(ExtendedContractModel):
+    expected_revision: OpaqueId
+    mutation_id: OpaqueId
+
+
+class KnowledgeRevision(ExtendedContractModel):
+    document: KnowledgeDocumentV11
+    provenance: KnowledgeProvenance
+    provider_revision: str
+    revision_number: int = Field(ge=1)
+    acl_revision: OpaqueId
+    deleted: bool
+    created_at: AwareDatetime
+    source_modified_at: AwareDatetime | None = None
+
+    @model_validator(mode="after")
+    def same_acl_revision(self) -> KnowledgeRevision:
+        if self.acl_revision != self.document.source_revision:
+            raise ValueError("ACL and content revision must be bound")
+        return self
+
+
+class KnowledgeExport(ExtendedContractModel):
+    provider: Literal["github_issue", "confluence"]
+    namespace: str = Field(min_length=1, max_length=200)
+    domain_id: DomainId
+    rows: tuple[dict[str, Any], ...] = Field(min_length=1, max_length=100)
+    synthetic: bool = False
+
+
+class KnowledgeImportRow(ExtendedContractModel):
+    row: int = Field(ge=0)
+    status: Literal["accepted", "rejected"]
+    source_id: OpaqueId | None = None
+    source_revision: OpaqueId | None = None
+    error_code: (
+        Literal["invalid_input", "policy_denied", "idempotency_conflict", "not_found"] | None
+    ) = None
+
+    @model_validator(mode="after")
+    def consistent_receipt(self) -> KnowledgeImportRow:
+        if self.status == "accepted":
+            if not self.source_id or not self.source_revision or self.error_code is not None:
+                raise ValueError("accepted receipt requires exact source/revision only")
+        elif (
+            self.error_code is None
+            or self.source_id is not None
+            or self.source_revision is not None
+        ):
+            raise ValueError("rejected receipt requires a safe error only")
+        return self
+
+
+class KnowledgeImportResult(ExtendedContractModel):
+    rows: tuple[KnowledgeImportRow, ...]
+
+
 class ExecutionContext(ExtendedContractModel):
     request_id: OpaqueId
     trace_id: OpaqueId
