@@ -117,7 +117,7 @@ bootstrap.py: settings에 따라 port 구현을 조립
 | `StructuredError` | `code`, `retryable`, 안전한 `message`와 추적 ID를 제공한다. 비밀이나 내부 stack을 전달하지 않는다 |
 | `EvaluationCase` / `EvalResult` | persona, 자료 scope, 기대/금지 정보와 결정적 규칙 결과를 보존하고 actual/mock/미실행 Judge 보조 평가를 분리한다 |
 
-서버는 request body의 `user_id`, membership, audience 권한 주장을 신뢰하지 않는다. `TrustedPrincipal`은 인증 경계에서 생성해 application에 주입한다. P0-015는 설치 DB마다 random owner ID를 만들고 기본 membership/company/role을 부여하지 않는다. 설정된 `APP_API_KEY`는 이 단일 설치 소유자를 인증하며 별도 사용자를 식별하는 다사용자 로그인 제품이 아니다. key 없는 개발 모드는 실제 request peer의 loopback 여부를 확인하며 X-Forwarded-For/X-User-Id를 인증으로 쓰지 않는다. 임의 외부 peer는 401이다. 다영 runtime identity 연동은 별도 실제 gate다.
+서버는 request body의 `user_id`, membership, audience 권한 주장을 신뢰하지 않는다. `TrustedPrincipal`은 인증 경계에서 생성해 application에 주입한다. P0-015는 설치 DB마다 random owner ID를 만들고 기본 membership/company/role을 부여하지 않는다. 설정된 `APP_API_KEY`는 이 단일 설치 소유자를 인증하며 별도 사용자를 식별하는 다사용자 로그인 제품이 아니다. key 없는 개발 모드는 실제 request peer의 loopback 여부를 확인하며 X-Forwarded-For/X-User-Id를 인증으로 쓰지 않는다. 외부 peer 또는 Forwarded/X-Forwarded-*/X-Real-IP가 있는 keyless 요청은 401이다. 프록시 뒤에서는 APP_API_KEY 인증이 필요하며 이 헤더만으로 권한을 얻을 수 없다. 다영 runtime identity 연동은 별도 실제 gate다.
 
 ### 사용자 소유 세션 API (P0-015)
 
@@ -131,6 +131,8 @@ bootstrap.py: settings에 따라 port 구현을 조립
 | `POST /v1/work`, `GET /v1/work/{run_id}` | 기존 1.0 요청/최종 응답 유지 | POST는 원자적으로 새 세션 연결; GET에도 owner 검사, 미완료 결과는 404 |
 
 세션 하나는 서버 발급 thread 하나이며 Task 연결은 N:M이다. `product_task_owners`는 서버 TaskFactory의 `register_task_owner(PersistentTask)`용 최소 소유권 registry이고 HTTP 등록 API가 아니다. 실제 Task/Team lifecycle은 P0-019가 담당한다. 미등록/타인 Task를 요청만으로 채택하거나 만들지 않는다. Task를 지정하면 그 Task의 domain도 일치해야 한다.
+
+HTTP 생성/이어하기의 `run_id`는 서버가 항상 새로 발급한다. 기존 요청 field 자체는 1.0 wire 호환을 위해 남지만 caller가 보낸 값은 저장 key나 존재 조회에 쓰지 않는다. 조회에는 응답의 run_id를 사용한다. request_id/trace_id/idempotency_key는 유지하며 같은 소유자의 동일 멱등 요청은 409로 중복 실행을 막는다. 내부 WorkService 직접 호출은 신뢰된 서버 생성 경계로 취급하고 supplied run_id를 유지할 수 있다. 이는 입력 ID를 인증/권한으로 신뢰한다는 뜻이 아니다. Runtime/Response에 전달하는 멱등 key도 서버 principal+원래 key의 namespace로 분리한다.
 
 SQLite `rfa_schema_migrations`의 migration 1은 기존 runs/drafts/KB/checkpoint 자료를 보존하며 sessions/session_messages/session_tasks와 nullable run owner/session/task를 추가한다. 기존 owner 불명 run은 null로 남아 모든 사용자 endpoint에서 404다. 재시작으로 소유자를 바꾸지 않는다. 실행·user 메시지·Task 연결·자동 session 생성은 한 transaction, 결과·assistant 메시지·DRAFT 저장도 한 transaction이다. owner별 idempotency key와 run ID unique로 중복 실행을 거절한다. 중단된 graph 재실행, 승인 resume, tool write ledger는 이 API의 구현 증거가 아니며 P0-016/021에서 검증한다.
 

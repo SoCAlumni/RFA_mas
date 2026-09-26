@@ -19,6 +19,7 @@ from rfa_mas.contracts import (
     StructuredError,
     TrustedPrincipal,
     WorkRequest,
+    new_id,
 )
 from rfa_mas.errors import RfaError
 from rfa_mas.settings import Settings
@@ -40,6 +41,13 @@ async def resolve_principal(
         if authorization is None or not hmac.compare_digest(authorization.encode(), expected):
             raise RfaError("authentication_required", "유효한 API 인증이 필요합니다.")
     else:
+        # A proxy may rewrite the ASGI peer address. Keyless development is for
+        # direct loopback connections only, never forwarded identity claims.
+        if any(
+            name == "forwarded" or name == "x-real-ip" or name.startswith("x-forwarded-")
+            for name in request.headers
+        ):
+            raise RfaError("authentication_required", "프록시 접근에는 API 인증이 필요합니다.")
         try:
             peer = ipaddress.ip_address(request.client.host if request.client else "")
             loopback = peer.is_loopback or bool(
@@ -123,7 +131,11 @@ def create_app(
         work: WorkRequest,
         trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunResult:
-        return await selected_container.service.run(work, trusted_principal)
+        # Keep the 1.0 field for wire compatibility, but never use a caller's
+        # proposed run ID as a storage key or an existence probe.
+        return await selected_container.service.run(
+            work.model_copy(update={"run_id": new_id("run")}), trusted_principal
+        )
 
     @app.get("/v1/work/{run_id}", response_model=RunResult, tags=["work"])
     async def get_work(
@@ -168,7 +180,8 @@ def create_app(
         if work.session_id is not None and work.session_id != session_id:
             raise RfaError("session_mismatch", "세션 참조가 일치하지 않습니다.")
         return await selected_container.service.run(
-            work.model_copy(update={"session_id": session_id}), trusted_principal
+            work.model_copy(update={"session_id": session_id, "run_id": new_id("run")}),
+            trusted_principal,
         )
 
     @app.get("/v1/runs/{run_id}", response_model=RunRecord, tags=["work"])

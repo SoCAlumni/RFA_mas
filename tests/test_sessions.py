@@ -392,6 +392,64 @@ async def test_keyless_identity_rejects_remote_peer_and_forwarded_claims(contain
     assert response.status_code == 401
 
 
+@pytest.mark.parametrize(
+    "header", ["Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "X-Real-IP"]
+)
+async def test_keyless_mode_rejects_proxy_headers_even_from_loopback(container, header):
+    app = create_app(container=container)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, client=("127.0.0.1", 1234)),
+        base_url="http://test",
+    ) as api:
+        blocked = await api.post("/v1/sessions", json={}, headers={header: "127.0.0.1"})
+        assert blocked.status_code == 401
+        assert (await api.get("/v1/sessions")).json() == []
+
+
+@pytest.mark.parametrize("session_route", [False, True])
+async def test_http_issues_run_ids_without_foreign_existence_oracle(container, session_route):
+    app = create_app(container=container)
+    current = identity("alice")
+
+    async def fixture_principal():
+        return current
+
+    app.dependency_overrides[resolve_principal] = fixture_principal
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as api:
+        alice_request = WorkRequest(query="TRIV3 public", domain_id=DomainId.TRIV3)
+        alice_result = await api.post("/v1/work", json=alice_request.model_dump(mode="json"))
+        assert alice_result.status_code == 201
+        alice_id = alice_result.json()["run_id"]
+        assert alice_id != alice_request.run_id
+        current = identity("bob")
+        session = (await api.post("/v1/sessions", json={})).json()
+        endpoint = f"/v1/sessions/{session['session_id']}/work" if session_route else "/v1/work"
+        issued_ids = []
+        for suggested_id in (alice_id, "unused-caller-run-id"):
+            request = (
+                work(run_id=suggested_id)
+                if session_route
+                else WorkRequest(
+                    query="TRIV3 public", domain_id=DomainId.TRIV3, run_id=suggested_id
+                )
+            )
+            response = await api.post(endpoint, json=request.model_dump(mode="json"))
+            assert response.status_code == 201 and response.json()["status"] == "completed"
+            assert response.json()["run_id"] != suggested_id
+            assert response.json()["request_id"] == request.request_id
+            assert response.json()["trace_id"] == request.trace_id
+            issued_ids.append(response.json()["run_id"])
+            replay = await api.post(endpoint, json=request.model_dump(mode="json"))
+            assert replay.status_code == 409 and replay.json()["code"] == "idempotency_conflict"
+        assert len(set(issued_ids)) == 2 and alice_id not in issued_ids
+        denied = await api.get(f"/v1/work/{alice_id}")
+        absent = await api.get("/v1/work/absent-run")
+        assert denied.status_code == absent.status_code == 404
+        assert denied.json() == absent.json()
+
+
 def test_additive_routes_preserve_original_wire_contract(container):
     from scripts.contract_baseline import BASELINE, build_baseline, build_extended
 

@@ -22,13 +22,14 @@ async def test_health_ready_openapi_and_work_endpoints(container) -> None:
             target=DraftTarget(audience=Audience.PUBLIC),
         )
         created = await client.post("/v1/work", json=request.model_dump(mode="json"))
-        fetched = await client.get(f"/v1/work/{request.run_id}")
+        fetched = await client.get(f"/v1/work/{created.json()['run_id']}")
 
     assert health.status_code == 200
     assert ready.status_code == 200
     assert openapi.status_code == 200
     assert "/v1/work" in openapi.json()["paths"]
     assert created.status_code == 201
+    assert created.json()["run_id"] != request.run_id
     assert created.json()["simulated"] is True
     assert created.json() == fetched.json()
 
@@ -108,6 +109,7 @@ async def test_api_key_resolves_persisted_owner_without_fixture_memberships(tmp_
                 headers={
                     "Authorization": f"Bearer {fake_secret}",
                     "X-User-Id": "fixture-owner-001",
+                    "X-Forwarded-For": "127.0.0.1",
                 },
             )
         owner = await instance.repository.local_principal()

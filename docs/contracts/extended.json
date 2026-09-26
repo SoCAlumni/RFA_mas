@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "66addb579d4dd868333dd9dd0c2aed80d11263f69ee5b7fc9a5aae53849f01d2",
+  "digest": "8cdb70c71066ec6028ccfb3658583f764511e2a531a561bf46c03630af6ed68a",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -6692,7 +6692,7 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
-    "src/rfa_mas/api/app.py": "843e4b5bb46082834d48fab40473b2938a0e0144f6baafe35e365a77caa8fc4e",
+    "src/rfa_mas/api/app.py": "df6bf5a1c8aac7d9aac9aa26dfb802b1a7738fe6a86605b980903cb6293bfb62",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
     "src/rfa_mas/contracts/__init__.py": "6931c77145aee5c2dde2f081435ddb946485ea3f95c4b2a968340498c923b497",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
