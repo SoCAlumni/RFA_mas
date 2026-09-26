@@ -11,7 +11,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: in_progress
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -240,43 +240,54 @@ verification:
   - 기존trusted 관측/null-stage/coverage/재개/기밀경계와frozen1.0·extended schema/fixture·API회귀보존
   runner: pytest
 evidence_dir: .agent/evidence/P1-006
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-006/evaluation-target-02/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 12
+  spec_digest: 1ddb53a7c091623a24ce4063add21a618c2086b6e8838d55a5070100b238c5af
+  contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
+  source_fingerprint: f32e2fd11051d6c7aa283dd455c00d4cb5b6418f0d97ea73b13a803fe84781bc
+  evidence: .agent/evidence/P1-006/evaluation-target-02/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 14
+  submission_generation: 1
+  submission:
+    head: 72a66d4f2a9183d66b4f92351beff23d2c36f5e8
+    baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006
+    branch: task/P1-006
+    evidence: .agent/evidence/P1-006/evaluation-worker-02/result.json
+    changed_files:
+      fixtures/eval/persona_core_v1.jsonl: 9588cf28817bd396260f61988fc4991ff7e01505431f2da9ff2422b5faf3d538
+      src/rfa_mas/application/evaluation.py: 7f3c9563d77aa7bd528926292bcac1b6c0fdebbb9dbc3cf1ff212435fc2304d1
+      src/rfa_mas/cli.py: 8ca132163091831f44144531413f07ece42c8d2b5fa94b5817d02e78cb241e2b
+      tests/test_behavior_verifier.py: 5de50bf9b9445f3eb5995e44e3b57f8f2e60f34226b88c77c34562344201b8d8
+      tests/test_evaluation.py: b3cbb8889eef66b78c0e72941242e3387b83131f8b058378bf9280b6510081e0
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 12
+      spec_digest: 1ddb53a7c091623a24ce4063add21a618c2086b6e8838d55a5070100b238c5af
+      contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
+      source_fingerprint: f32e2fd11051d6c7aa283dd455c00d4cb5b6418f0d97ea73b13a803fe84781bc
+      evidence: .agent/evidence/P1-006/evaluation-target-02/result.json
+    head: c7f7e4f70d4c5001afb090cf20bede60dddf63ac
+  evidence: .agent/evidence/P1-006/evaluation-target-02/result.json
+revision: 26
 spec_revision: 12
 claim_generation: 1
-claim:
-  session_id: worker-evaluation
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006
-  branch: task/P1-006
-  generation: 1
-  claimed_at: '2026-09-26T11:49:27+00:00'
-  heartbeat_at: '2026-09-26T11:51:00+00:00'
-  lease_expires_at: '2026-09-26T12:06:00+00:00'
-  baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
-  recovery_required: false
-  context_digest: 5d29d8da829524585fbcd2dc9b80482be2a9dc31e907b2f96a74ac88282adf6f
+claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 3
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: evaluation-target-02
+  evidence_refs:
+  - .agent/evidence/P1-006/evaluation-worker-01/result.json
+  - .agent/evidence/P1-006/evaluation-worker-02/result.json
   approaches: []
 blocker: null
 migration:
@@ -290,9 +301,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T11:51:00+00:00'
-concise_result: 'Specification changed: Reviewed additive P0-019 TeamLifecycle/TeamSpec and repository
-  baseline32b512; existing1.0 and observation meanings preserved. Accept input digest only; implementation
-  and fresh source validation remain separate gates.'
+updated_at: '2026-09-26T12:12:41+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

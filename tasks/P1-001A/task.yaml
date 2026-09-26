@@ -15,6 +15,13 @@ spec_state: draft
 unresolved:
 - P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야 한다.
 - Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+- P1-001 migration4/current-head/immutable ACL revision·삭제·provenance provider가 아직 구현/검증 중이다. 실제 통합 DTO/port/API와
+  모든 부모 참조/회사·project membership 표현을 확인한 뒤에만 소비 계약과 실행 가능 상태를 확정한다.
+- 1.0 RetrievalRequest/EvidenceRef에는 exact target/endpoint/parent ACL revision이 없다. 구현 전에 coordinator가
+  최소 local compatibility projection과 1.1 authorized metadata/selected-reader 결합을 명시해야 한다. cloud/공유 판단을
+  allowed_audiences나 role 문자열로 추정하지 않으며 필요한 graph/public DTO scope 확대는 별도 승인한다.
+- P1-006의 actual 관찰/evaluation consumer가 아직 구현·검증 중이다. source 변경 전 통합된 helper/검증 결과를 확인하고 C11 조회/기대와 backend
+  선택을 현재 실제 경로에 맞춘다.
 workstream: knowledge
 execution_role: coordinator
 estimated_effort: 1.5
@@ -32,9 +39,27 @@ scope:
     최신 source 읽기/공유 판정을 적용해 revoked 원문·DRAFT·metadata가 재노출되지 않게 한다. 이력 자체는 삭제하지 않는다.
   - 로컬 lexical adapter 구현이 검증된 뒤에만 기본 검색을 local로 전환한다. mock은 명시적 fixture 경로, 미지원 real의 fallback 금지. 검색
     무관자료 fallback 없이 insufficient 반환.
+  - '구현 순서: P1-001의 통합된 current-head/ACL/provenance 조회를 먼저 재사용 → 권한 제한 metadata 후보와 선택 본문 reader → 실제
+    local lexical 검색/default·관측 mode → 공통 현재 근거 검사로 pending resume 및 과거 outward result/session message
+    보호. 별도 head/ACL DB 원본을 만들지 않는다.'
+  - owner의 읽기 권한과 대상별 공유 권한은 별도 판정한다. BU는 company와 membership 모두 일치해야 하며 누락·다른 회사의 동명 BU·메시지 role 사칭은
+    거절한다. 현재 trusted principal의 project membership 표현은 P1-001 계약 확인 전 발명하지 않는다.
+  - 조회 시 저장 이력/승인 hash는 수정하지 않는다. 현재 재사용 불가한 DRAFT 전체와 파생 assistant message·review/evidence metadata를
+    안전한 restricted/stale outward projection으로 대체하며, 승인된 본문 일부를 지우고 기존 승인으로 유효하다고 반환하지 않는다. 소유자가 직접 작성한
+    사용자 메시지와 source-derived assistant message는 구분한다.
+  - 기본 local 전환은 RETRIEVER_BACKEND 기존 이름을 재사용하고 inspect_configuration·bootstrap의 실제 adapter/observed mode와
+    일치시킨다. mock 실패 시나리오는 명시적 mock fixture 설정으로 유지하며 정상 local 검색에서 시나리오 문자열이 허가·외부 호출·불관련 자료 fallback을
+    만들지 않는다.
+  - 최신 source의 outward projection을 API의 work/run/session 응답에 최소 연결한다. P1-006 평가 C11은 실제 회수 후 GET/terminal
+    resume로 재평가하며 기존 제품 결함을 기대값에 고정하지 않는다. evaluator 자체의 누락/위반 판정은 약화하지 않고 필요한 fixture 기대값만 갱신한다.
+  - C11 native 평가 준비는 통합된 KnowledgeService의 owner write/ACL revision 경로로 바꾸고 수정 후 실제 GET/terminal resume만
+    평가한다. 철회 후 안전한 restricted/deny 응답(금지 DRAFT 없음)을 누출 실패로 오판하지 않는다. known violation/unknown 우선순위와 독립
+    negative-fixture 회귀를 유지하며 평가 엔진을 재작성하지 않는다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
+  - P1-001B의 L0/L1/L2 요약 최적화·자동 생성 및 P1-005의 모든 Model/Response/Tool/외부 Judge 호출부 egress 조립은 별도 task다.
+    이번에는 해당 consumer가 사용할 현재 ACL/부모/endpoint 선판정 reader 경계를 검증하며 실제 cloud 통합을 주장하지 않는다.
   owned_paths:
   - src/rfa_mas/adapters/local.py
   - src/rfa_mas/adapters/mock.py
@@ -56,13 +81,26 @@ scope:
   - src/rfa_mas/application/sessions.py
   - tests/test_sessions.py
   - src/rfa_mas/application/resume_policy.py
+  - tests/test_retrieval.py
+  - tests/test_resume.py
+  - tests/test_api.py
+  - tests/test_graph.py
+  - tests/test_nat_adapter.py
+  - src/rfa_mas/api/app.py
+  - tests/test_behavior_verifier.py
+  - tests/test_evaluation.py
+  - src/rfa_mas/application/evaluation.py
   read_only_paths:
   - AGENTS.md
   - docs/EVALUATION_CONTEXT.md
+  - src/rfa_mas/application/graphs/domain.py
+  - src/rfa_mas/application/observations.py
+  - scripts/contract_baseline.py
   planned_paths:
   - src/rfa_mas/adapters/retrieval.py
   - tests/test_knowledge.py
-  - src/rfa_mas/application/resume_policy.py
+  - tests/test_retrieval.py
+  - tests/test_behavior_verifier.py
   shared_resources:
   - canonical-contracts
   - composition
@@ -109,6 +147,53 @@ context:
   - path: tasks/P0-016/handoff.md
     section: 현재 source 재검사와 과거 result/GET 한계
     reason: 영속 승인 resume의 검증 범위를 유지하며 최신 KB 권한 무효화를 실제 조회 경계에 연결
+  - path: src/rfa_mas/application/resume_policy.py
+    section: ResumePolicy current evidence verification
+    reason: 현재 pending 검증은 list_documents + exact revision/hash/label/location/policy 및 BU company를 검사.
+      새 current-head/부모 정책 연결에 재사용.
+  - path: src/rfa_mas/application/service.py
+    section: present_result, _project_error, terminal _resume_inner, get
+    reason: 현재 owner check/error projection만 적용된 완료 결과와 replay의 source-revocation 재검사 위치. 승인 hash/일부 public
+      결과 보존.
+  - path: src/rfa_mas/application/sessions.py
+    section: SessionService.get/get_run
+    reason: GET session의 run-linked assistant message를 저장 이력 수정 없이 안전한 outward view로 변환할 최소 경계.
+  - path: src/rfa_mas/api/app.py
+    section: present_record, GET /v1/work/{run_id}, /v1/runs/{run_id}, /v1/sessions/{session_id}
+    reason: 현재 API는 session runs만 projection하고 messages는 그대로 반환한다. WorkService/SessionService의 공통 재판정
+      결과를 outward 응답에 최소 연결하여 두 경계를 함께 검사한다.
+  - path: src/rfa_mas/ports/interfaces.py
+    section: RetrievalPort.search/load_context and WorkRepositoryPort knowledge readers
+    reason: 기존 1.0 search와 1.1 target/endpoint/selected-source reader를 혼동하지 않으며 P1-001 통합 API를 재사용.
+  - path: src/rfa_mas/settings.py
+    section: retriever_backend, existing egress flags
+    reason: 기존 RETRIEVER_BACKEND를 local로 확장하고 키≠외부 전송 권한, unsupported NeMo fallback 금지.
+  - path: src/rfa_mas/application/graphs/domain.py
+    section: authorize/retrieve/generate
+    reason: frozen RetrievalRequest에는 target/endpoint/role이 없고 Model 호출 조립은 후속 P1-005 경계임을 확인; graph 재작성
+      금지.
+  - path: tests/test_policy.py
+    section: BU/company policy and MockRetrieval ACL fixtures
+    reason: BU positive fixture의 누락 company를 합성 trusted company로 정정하며 다른 회사/누락 negative를 추가; 기존 deny 완화
+      금지.
+  - path: tests/test_resume.py
+    section: changed source/fresh principal/pending and completed resume
+    reason: 현재 pending source revocation 음성을 보존하고 terminal replay/다중 부모 변경 음성 추가.
+  - path: tests/test_sessions.py
+    section: session history and run ownership tests
+    reason: assistant message 원문과 result가 중복 저장되는 API 재노출 경계를 확인.
+  - path: tests/test_api.py
+    section: session/run/work detail routes
+    reason: 경로별 실제 응답 JSON을 검사; 서비스 helper 단위 검사만으로 API canary 차단을 주장하지 않음.
+  - path: tests/test_graph.py
+    section: public evidence/simulation failures
+    reason: local 기본 전환 후 mock 전용 timeout/insufficient는 명시 mock fixture로 유지.
+  - path: tests/test_nat_adapter.py
+    section: fake equivalence and failure path fixtures
+    reason: installed NAT 선택 검증의 existing mock failure 조건을 명시; core local 전환을 NAT 통합 성공으로 대체하지 않음.
+  - path: tasks/P1-001/handoff.md
+    section: 통합된 current-head/ACL/immutable revision/provenance와 한계
+    reason: 현재 구현 중인 migration4/API는 미확정이다. 통합 결과·계약 digest를 수신한 뒤 실제 메서드/필드와 planned 경로 존재를 다시 확인.
   handoff: tasks/P1-001A/handoff.md
   dependency_results:
   - tasks/P1-001/handoff.md
@@ -132,10 +217,12 @@ deliverables:
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 - path: src/rfa_mas/adapters/retrieval.py
   availability: planned
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+  description: 신규 local lexical adapter와 권한 제한 metadata/선택 본문 reader. frozen 1.0 search와 additive 1.1
+    ContextRequest 경계를 명시하며 fake-policy allow/ref 생성 금지.
 - path: tests/test_knowledge.py
   availability: planned
-  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+  description: 현재 canonical main에는 없고 P1-001에서 생성 예정인 CRUD/head/migration 회귀. 선행 통합 후 존재·계약 확인 및 availability
+    갱신.
 - path: src/rfa_mas/ports/interfaces.py
   availability: existing
   description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
@@ -168,32 +255,74 @@ deliverables:
   description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
 - path: src/rfa_mas/application/sessions.py
   availability: existing
-  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+  description: 세션 조회의 run-linked assistant message를 최신 근거 판정과 연결. raw 저장 이력은 보존; API가 runs만 projection하는
+    현재 틈을 내부 presentation 연결로 보호.
 - path: tests/test_sessions.py
   availability: existing
   description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
 - path: src/rfa_mas/application/resume_policy.py
+  availability: existing
+  description: 기존 P0-016 helper를 현재 head/ACL와 연결하고 과거 outward 조회가 공유할 현재 근거 검사 경계를 재사용. 승인/게시 원본은 ResponsePort
+    유지.
+- path: tests/test_retrieval.py
   availability: planned
-  description: P0-016에서 먼저 생성할 현재 source/policy 재검사 helper. 실제 파일 통합 뒤 authoritative current-head/ACL
-    조회로 연결
+  description: Local lexical/metadata-first reader의 ACL·정렬·무관 질의·다중 부모/TOCTOU·실제 읽기/외부 sink spy 회귀.
+- path: tests/test_resume.py
+  availability: existing
+  description: 현재 head 연결 후 pending/terminal replay 재검사, 승인 원본 조회·tool 실행 횟수와 safe outward 결과 검증.
+- path: tests/test_api.py
+  availability: existing
+  description: GET /v1/work, /v1/runs, /v1/sessions 및 resume 완료 replay에서 revoked body/title/URI/reference/canary
+    차단과 owner 격리.
+- path: tests/test_graph.py
+  availability: existing
+  description: 정상 local 검색·실제 adapter mode와 기존 explicit mock 실패 시나리오 회귀를 분리; 근거 없는 날짜/원인 추가 금지.
+- path: tests/test_nat_adapter.py
+  availability: existing
+  description: 기존 fake 경로의 동등성/실패 시나리오가 default local 변경으로 암묵적인 mock 전제를 갖지 않도록 명시 설정만 조정; NAT adapter
+    제품 코드는 변경하지 않음.
+- path: src/rfa_mas/api/app.py
+  availability: existing
+  description: 현재 근거 재판정 후 안전한 work/run/session outward projection만 최소 연결
+- path: tests/test_behavior_verifier.py
+  availability: planned
+  description: P1-006 consumer의 현재 근거/모드 기대를 새 local retrieval과 조정; verifier 보안 gate/과거 음성 요구 보존
+- path: tests/test_evaluation.py
+  availability: existing
+  description: P1-006 consumer의 현재 근거/모드 기대를 새 local retrieval과 조정; verifier 보안 gate/과거 음성 요구 보존
+- path: src/rfa_mas/application/evaluation.py
+  availability: existing
+  description: P1-006의 C11 source mutation을 실제 owner KB API와 연결하고 safe restricted/deny 응답 관측을 구분하는 최소
+    consumer 조정; 기존 evaluator 보안 음성 불변
 acceptance_criteria:
 - id: AC1
-  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: owner/BU/company/public에 실제 프로젝트 membership 결합, audience rank만으로 허가 금지
+  given: 동일 lexical query를 owner/다른 사용자·같은 회사/다른 회사·같은 이름 BU·project membership 없는 identity 및 owner→public
+    target 조합으로 실행
+  expect: 현재 head의 신뢰된 ACL로 후보 metadata부터 권한을 제한한다. 같은 회사와 BU membership을 모두 확인하며 누락 company·다른 회사 동명
+    BU·역할 문장/임의 allowed_audiences만으로 허가하지 않는다. owner read는 public share 권한이 아니다. 프로젝트 membership의 실제 provider
+    표현을 사용하고 domain 이름만으로 membership을 추정하지 않는다.
   required: true
 - id: AC2
-  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: 수정/삭제/권한 회수가 최신 검색·파생 항목·재개 run에 반영; 다중 부모 요약은 모든 부모의 최신 ACL/share/egress·revision 재판정, 제목·요약·관계
-    cache도 stale/restricted 처리
+  given: 한 source 또는 다중 부모 요약의 부모 하나를 수정·삭제·ACL/share/정책 변경한 뒤 최신 검색, 선택 읽기, pending resume, 완료 resume
+    재전송, run/work/session GET 실행
+  expect: 모든 부모의 현재 revision·ACL·read/share/요청 endpoint 판단을 다시 확인하여 old summary/cache/context를 stale/restricted로
+    처리한다. completed result뿐 아니라 run-linked assistant message 및 title/URI/source relation/review metadata에도
+    허용되지 않은 canary가 없다. 저장 이력·원래 draft hash/승인 연결은 불변; 현재 불가한 draft를 일부 수정하고 옛 승인으로 재사용하지 않는다. pending
+    거절 시 승인 원본/도구 재실행은 0회이고 completed replay는 재실행하지 않는다.
   required: true
 - id: AC3
-  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: 충돌/잠정/근거 부족 표기, 없던 출시일·원인 생성 금지
+  given: 같은 fixture로 두 번 검색하고, 최신/이전 revision·명시적 tentative/conflicting 자료 및 유효한 단어가 전혀 일치하지 않는 query를
+    사용
+  expect: 현재 허용 revision만 deterministic lexical 점수·안정 tie-break로 반환한다. 무관한 자료 fallback은 없고 no-match/권한
+    내 근거 부족은 insufficient로 반환한다. 확인된 잠정·충돌 표기를 보존하고 새 출시일·원인·확정 사실을 만들어 채우지 않는다. 제한된 자료의 존재/metadata를
+    부족 사유로 노출하지 않는다.
   required: true
 - id: AC4
-  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
-  expect: private/restricted source가 public EvidenceBundle에 포함되지 않음. 외부 embedding/reranker/LLM 전송보다 선필터가
-    먼저 실행되고 선택 source만 원문을 읽을 수 있는 reader 계약을 제공
+  given: 본문 read spy와 외부 sink spy를 둔 L0 manifest/명시 source 선택; metadata 조회와 실제 읽기 사이 revision/권한 변경; 비공개
+    부모·제목·요약·관계 canary
+  expect: 허가된 후보 metadata를 먼저 얻고 선택·재허가된 source만 본문을 읽는다. 최신 부모 ACL/share/endpoint 판정 전에는 외부 embedding/reranker/LLM
+    sink가 호출되지 않으며 미등록·미허용 endpoint는 fail closed다. public EvidenceBundle/context에는 비공개 본문뿐 아니라 금지 metadata도
+    없다. frozen 1.0에는 없는 target/endpoint 정보를 있다고 가정하지 않고 제한된 local compatibility 경계와 1.1 reader 계약을 구분한다.
   required: true
 verification:
 - id: V1
@@ -205,10 +334,9 @@ verification:
   type: command
   availability: planned
   prerequisites:
-  - 두 사용자의 ACL 선필터, lexical 검색·재시작, revision 충돌/삭제/회수→파생 요약·DRAFT 재사용 금지, canary 검사. 무관한 자료도 fallback하는
-    기존 mock 동작과 구분.
-  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
-    성공 아님.
+  - source worktree에서 임시 DB와 합성 identity/source만 사용; 실제 .env·외부 네트워크·키를 읽거나 사용하지 않는다.
+  - P1-001 current-head/ACL/provenance 계약과 fixture가 통합되고 digest/필수 parent 결과가 수락된 뒤 구현. 미존재 테스트와 새 assertion은
+    구현 전 planned; skip/미수집은 pass 아님.
   cwd: .
   argv:
   - .venv/bin/python
@@ -217,15 +345,60 @@ verification:
   - -q
   - tests/test_policy.py
   - tests/test_knowledge.py
+  - tests/test_retrieval.py
   timeout_seconds: 120
   procedure: []
   assertions:
-  - owner/BU/company/public에 실제 프로젝트 membership 결합, audience rank만으로 허가 금지
-  - 수정/삭제/권한 회수가 최신 검색·파생 항목·재개 run에 반영; 다중 부모 요약은 모든 부모의 최신 ACL/share/egress·revision 재판정, 제목·요약·관계 cache도
-    stale/restricted 처리
-  - 충돌/잠정/근거 부족 표기, 없던 출시일·원인 생성 금지
-  - private/restricted source가 public EvidenceBundle에 포함되지 않음. 외부 embedding/reranker/LLM 전송보다 선필터가 먼저
-    실행되고 선택 source만 원문을 읽을 수 있는 reader 계약을 제공
+  - 허용 owner/company/BU/project fixture positive control과 cross-company 동명 BU·company 누락·사칭·owner read→public
+    share negative가 모두 검증됨.
+  - current-head/삭제/ACL 변경과 모든 부모 provenance를 재판정; L0 metadata부터 제한하고 selected source read spy·중간 권한 변경·외부
+    sink 호출 기록으로 선필터를 입증.
+  - no-match는 items empty/insufficient이며 정렬이 반복 재현됨; tentative/conflicting fixture 표기와 금지된 날짜/원인 생성 부재를
+    확인.
+  - 새 default local 검색은 실제 로컬 결과이고 explicit mock은 simulated 표시; 기존 immutable KB CRUD/migration 회귀 유지.
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  - AC4
+  type: command
+  availability: planned
+  prerequisites:
+  - source worktree에서 임시 DB와 합성 identity/source만 사용; 실제 .env·외부 네트워크·키를 읽거나 사용하지 않는다.
+  - P1-001 current-head/ACL/provenance 계약과 fixture가 통합되고 digest/필수 parent 결과가 수락된 뒤 구현. 미존재 테스트와 새 assertion은
+    구현 전 planned; skip/미수집은 pass 아님.
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_sessions.py
+  - tests/test_resume.py
+  - tests/test_api.py
+  - tests/test_settings.py
+  - tests/test_graph.py
+  - tests/test_contracts.py
+  - tests/test_baseline.py
+  - tests/test_trace_eval_contract.py
+  - tests/test_trace_contract.py
+  - tests/test_nat_adapter.py
+  - tests/test_evaluation.py
+  - tests/test_behavior_verifier.py
+  timeout_seconds: 180
+  procedure: []
+  assertions:
+  - 같은 run의 completed resume replay·work GET·run GET·session GET를 모두 검사하며 source-derived assistant message까지
+    revoked body/title/URI/관계 canary가 없고 다른 사용자 접근은 거절됨.
+  - raw 저장 이력/draft content_hash/승인 receipt는 변경되지 않음; outward restricted result를 다시 승인·게시하지 않고 graph/tool/approval
+    원본 호출 횟수가 증가하지 않음. 허용 public 결과/부분 결과는 불필요하게 삭제되지 않음.
+  - pending resume의 현재 head 검증과 fresh identity·현재 정책 재판정은 유지; parent 하나만 revoke한 derived 결과도 fail closed.
+  - inspect_configuration/default/local 관측 mode 및 explicit mock failure fixture가 일치하며 frozen1.0 계약·기존1.1
+    소비 회귀를 유지. secret/error projection을 약화시키지 않음.
+  - NAT extra 미설치 환경의 core/native absence 검사와 설치 환경의 기존 fake 평가 동등성 검사는 실제 수집 범위를 구분한다. 설치 경로 미수집을 NAT
+    pass로 집계하지 않으며 기존 P0-028 consumer 재검증 gate를 대체하지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-001A
 latest_evidence_file: null
@@ -245,8 +418,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 10
-spec_revision: 10
+revision: 12
+spec_revision: 12
 claim_generation: 0
 claim: null
 attempts:
@@ -268,8 +441,9 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T11:13:54+00:00'
-concise_result: 'Specification changed: Carry forward inspected KB namespace/current-head gaps and P0-016
-  seed/resume/history ACL limitations; scope only, remains draft until current contract acceptance'
+updated_at: '2026-09-26T12:09:17+00:00'
+concise_result: 'Specification changed: Native C11 currently uses pre-KB legacy mutation; latest ACL task
+  must use authenticated immutable update and distinguish safe restricted/deny from actual post-change
+  disclosure while preserving verifier gates'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

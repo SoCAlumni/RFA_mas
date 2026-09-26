@@ -672,3 +672,33 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 기존 LangGraph subgraph durability 및 dependency ast.Str 경고는 숨기지 않았다.
   아직 미통합인 KB/Persona feature나 최종10개 E2E, 실제 NVIDIA/Skill/NemoClaw/
   OpenShell·승인/게시 gate를 이 전체 회귀 결과로 대신하지 않는다.
+
+## P1-006 Persona/행위 평가 통합·P1-001 KB 제출 — 2026-09-26
+
+- P1-006 source `72a66d4`의5개 파일을 main `c7f7e4f`에 통합했다. 기존24 ID와 새12사례,
+  실제 native 실행/ledger/spy·합성 sink·품질 Judge 상태를 구분한다. `rfa evaluate`는
+  Settings/dotenv 전에 분기하고 private 임시 DB만 사용하며 disabled/mock Judge만 허용한다.
+- worker01 V1은41 passed/5 failed, V2는89 passed였다. BU fixture에 company가 있다는
+  잘못된 기대2건과 macOS 임시 `/var` symlink를 거절한 실제 trace guard 관련3건이었다.
+  신뢰된 평가 임시 경로만 resolve하고 guard는 유지했다. 독립 검토로 찾은 incomplete
+  retrieval/approval 누락, 실제 위반을 unknown으로 낮추던 우선순위, 변경 전 결과의
+  잘못된 재사용도 수정했다. 같은 입력 재전송은 실제 typed 중복 거절과 호출 수로 확인한다.
+- worker02 **57+89 passed**; root `evaluation-target-02`도
+  **57 passed(13.16초)+89 passed(6.28초)**, fail/error/skip0으로 검증했다.
+  generation1/revision26에서 close했다. 실패01과 성공02 및 독립 target evidence를 보존한다.
+- 실제 합성 CLI는4.713초·exit1이었다. C03/04/05 pass, C01/02/06은 기존 BU 회사
+  확인 누락에 따른 범위 실패, C11은 ACL 변경 뒤 실제 GET 재노출 실패였고 나머지는
+  unknown이다. 이를 평가기 테스트 성공과 구분한다. semantic quality와 product final은
+  not_run이며 mock 점수로 보안 gate를 상쇄하지 않는다. 실제 자료/외부 게시는 사용하지 않았다.
+- P1-001 source `09bdb65`의16개 파일은 worker 제출·독립 read-only 검토를 마쳤다.
+  knowledge-01은 필수31+176 pass 후 추가 회귀39 pass/1 fail: SQLite가 정상 unlink한
+  열린 sidecar fd의 link0을 거절한 것이 원인이었다. 최초 보충 명령의 잘못된 test 파일명은
+  별도 미수집 오류로 보존했다. DB의 link1 검사는 유지하고 sidecar만 owner/regular의
+  link0/1을 허용한 knowledge-02는 **37+176+40 passed**였다. 실패 report의 unset
+  Settings repr 한 줄은 민감표현 guard가 거절하여 완전히 제거하고 나머지 안전한 원인/횟수를
+  기록했다. 현재 KB는 target 통합·계약 발행 대기이며 이 단계의 결과를 전체 E2E로 주장하지 않는다.
+- 다음 P1-001A 명세는 기존AC를 유지하며 metadata 선필터, current-head, 과거 result와
+  세션 assistant message의 무효화, 실제 KB API를 쓰는 C11 consumer 전환을 구체화했다.
+  새 KB 계약·직접 선행 결과 수락 전에는 draft이며 테스트는 planned다.
+- 발견한 별도 `.gitignore` 미커밋 변경은 사용자 변경으로 보존했고 우리 커밋에 넣지 않았다.
+  아직 생성되지 않은 평가 handoff를 조회한 진단은 missing이었으며 실행 증거로 삼지 않았다.
