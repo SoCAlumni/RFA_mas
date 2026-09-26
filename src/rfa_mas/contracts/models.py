@@ -461,6 +461,41 @@ class SessionRecord(ExtendedContractModel):
         return value.astimezone(UTC)
 
 
+class SessionCreate(ExtendedContractModel):
+    """Empty request: ownership and thread identifiers are allocated by the server."""
+
+
+class SessionMessage(ExtendedContractModel):
+    message_id: OpaqueId
+    session_id: OpaqueId
+    run_id: str
+    role: Literal["user", "assistant"]
+    content: str
+    created_at: AwareDatetime
+
+
+class RunRecord(ExtendedContractModel):
+    """Owner-authorized metadata, including runs without a final result yet."""
+
+    run_id: str
+    request_id: str
+    trace_id: str
+    session_id: OpaqueId
+    thread_id: OpaqueId
+    task_id: OpaqueId | None = None
+    owner_id: OpaqueId
+    domain_id: DomainId | None = None
+    status: WorkStatus
+    result: RunResult | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class SessionDetail(SessionRecord):
+    messages: tuple[SessionMessage, ...] = ()
+    runs: tuple[RunRecord, ...] = ()
+
+
 class PersistentTask(ExtendedContractModel):
     task_id: OpaqueId
     domain_id: DomainId

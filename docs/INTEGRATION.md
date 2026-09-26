@@ -9,7 +9,7 @@
 기존 Pydantic/OpenAPI의 repository-local provisional baseline은 [contracts/baseline.json](contracts/baseline.json), 합성 정상·거절·근거 부족·부분 실패·timeout fixture는 `fixtures/contracts/reference_cases.json`이다. `.venv/bin/python scripts/contract_baseline.py check`는 export·schema·fixture 형식을 검사하고, 실제 local/reference 응답은 `.venv/bin/python -m pytest -q tests/test_contract_baseline.py`로 대조한다. 생성 방향·version/digest 및 후속 변경은 [CONTRACT_CHANGELOG.md](CONTRACT_CHANGELOG.md)를 따른다. 이 baseline의 성공은 실제 팀원 API 지원이나 새 확장 schema 완료가 아니다.
 
 - 자체 UI와 FastAPI/LangGraph 코어를 유지한다. UI 구현은 다영 모듈을 연결하며 코어는 안전한 polling 상태·이벤트를 제공할 계획이다.
-- 세션은 서비스 메타데이터와 LangGraph 영속 SQLite checkpointer, 장기 지식은 별도 KB 모델을 사용한다. 현재 `graph_checkpoints`는 최종 metadata일 뿐 재개 가능한 checkpointer가 아니다. 현재 run GET에는 사용자별 owner 조회 제한도 없어 P0-015/016이 선행한다.
+- 세션 메타데이터·대화·run 소유권은 P0-015의 versioned SQLite migration으로 저장하며 모든 사용자 조회에 principal을 적용한다. `graph_checkpoints`는 여전히 최종 metadata일 뿐 재개 가능한 checkpointer가 아니다. 실제 LangGraph 재개는 P0-016의 별도 작업이며 KB와 분리한다.
 - 예약은 SchedulerPort 아래 APScheduler 3.x의 영속 job store를 단일 프로세스가 소유하도록 구현할 계획이다. FastAPI worker마다 시작하거나 직접 cron 엔진을 만들지 않는다.
 - OpenClaw Gateway/Deep Agents는 필수 dependency가 아니다. 내부 소스 복사·비공개 import는 하지 않으며 후속 도입은 worker/ChannelAdapter 교체로 제한한다.
 - 현재 `TaskRequest`는 일회 위임 DTO다. 지속 Task·Task당 활성 팀 하나·여러 Run·session↔Task N:M 관계는 P0-014/019에서 추가하며 기존 port 이름을 유지한다.
@@ -117,7 +117,24 @@ bootstrap.py: settings에 따라 port 구현을 조립
 | `StructuredError` | `code`, `retryable`, 안전한 `message`와 추적 ID를 제공한다. 비밀이나 내부 stack을 전달하지 않는다 |
 | `EvaluationCase` / `EvalResult` | persona, 자료 scope, 기대/금지 정보와 결정적 규칙 결과를 보존하고 actual/mock/미실행 Judge 보조 평가를 분리한다 |
 
-서버는 request body의 `user_id`, membership, audience 권한 주장을 신뢰하지 않는다. `TrustedPrincipal`은 인증 경계에서 생성해 application에 주입한다. P0의 loopback 기본 principal은 fixture용 개발 identity일 뿐 production 인증이 아니다.
+서버는 request body의 `user_id`, membership, audience 권한 주장을 신뢰하지 않는다. `TrustedPrincipal`은 인증 경계에서 생성해 application에 주입한다. P0-015는 설치 DB마다 random owner ID를 만들고 기본 membership/company/role을 부여하지 않는다. 설정된 `APP_API_KEY`는 이 단일 설치 소유자를 인증하며 별도 사용자를 식별하는 다사용자 로그인 제품이 아니다. key 없는 개발 모드는 실제 request peer의 loopback 여부를 확인하며 X-Forwarded-For/X-User-Id를 인증으로 쓰지 않는다. 임의 외부 peer는 401이다. 다영 runtime identity 연동은 별도 실제 gate다.
+
+### 사용자 소유 세션 API (P0-015)
+
+| Method / path | 입력 → 결과 | 소유권/상태 |
+| --- | --- | --- |
+| `POST /v1/sessions` | 빈 `SessionCreate` 또는 body 없음 → `SessionRecord` (201) | owner/thread는 서버 발급, body 소유권 주장은 422 |
+| `GET /v1/sessions` | 없음 → 자신의 `SessionRecord[]` | 타 사용자 목록/존재 비노출 |
+| `GET /v1/sessions/{session_id}` | 없음 → `SessionDetail` | 대화·연결 Task·Run은 소유자에게만; thread ID는 권한 증명이 아님 |
+| `POST /v1/sessions/{session_id}/work` | `DirectWorkRequest` 1.1 → 기존 `RunResult` 1.0 (201) | body session이 있으면 path와 일치; Task는 서버 등록 owner/domain 확인 후 연결 |
+| `GET /v1/runs/{run_id}` | 없음 → `RunRecord` 1.1 | created/running/waiting_approval/failed/cancelled도 조회 가능; 결과 없으면 null |
+| `POST /v1/work`, `GET /v1/work/{run_id}` | 기존 1.0 요청/최종 응답 유지 | POST는 원자적으로 새 세션 연결; GET에도 owner 검사, 미완료 결과는 404 |
+
+세션 하나는 서버 발급 thread 하나이며 Task 연결은 N:M이다. `product_task_owners`는 서버 TaskFactory의 `register_task_owner(PersistentTask)`용 최소 소유권 registry이고 HTTP 등록 API가 아니다. 실제 Task/Team lifecycle은 P0-019가 담당한다. 미등록/타인 Task를 요청만으로 채택하거나 만들지 않는다. Task를 지정하면 그 Task의 domain도 일치해야 한다.
+
+SQLite `rfa_schema_migrations`의 migration 1은 기존 runs/drafts/KB/checkpoint 자료를 보존하며 sessions/session_messages/session_tasks와 nullable run owner/session/task를 추가한다. 기존 owner 불명 run은 null로 남아 모든 사용자 endpoint에서 404다. 재시작으로 소유자를 바꾸지 않는다. 실행·user 메시지·Task 연결·자동 session 생성은 한 transaction, 결과·assistant 메시지·DRAFT 저장도 한 transaction이다. owner별 idempotency key와 run ID unique로 중복 실행을 거절한다. 중단된 graph 재실행, 승인 resume, tool write ledger는 이 API의 구현 증거가 아니며 P0-016/021에서 검증한다.
+
+1.0 exporter는 현재 코드의 기존 route와 기존 schema만 투영하여 역사적 baseline과 정확히 비교한다. 내용을 baseline에서 복사해 통과시키지 않는다. 새 route/전체 schema·port·현재 소스 hash는 `extended.json`에 생성한다. 이전 baseline의 owner 검사 없음 설명은 역사 기록이며 현행 권한 동작은 이 절과 검증된 API가 기준이다.
 
 ## 상태 소유권
 

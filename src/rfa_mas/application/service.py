@@ -1,19 +1,23 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import Any
 
 from rfa_mas.application.graphs.supervisor import build_supervisor_graph
+from rfa_mas.application.sessions import SessionService
 from rfa_mas.contracts import (
     AdapterInfo,
+    DirectWorkRequest,
     PublicationStatus,
     RunResult,
     StructuredError,
     TrustedPrincipal,
     WorkRequest,
     WorkStatus,
+    sha256_text,
 )
-from rfa_mas.errors import OutcomeUnknownError, ResourceNotFoundError, RfaError
+from rfa_mas.errors import OutcomeUnknownError, PolicyDeniedError, ResourceNotFoundError, RfaError
 from rfa_mas.ports import TracePort, WorkRepositoryPort
 
 
@@ -27,13 +31,23 @@ class WorkService:
         adapters: tuple[AdapterInfo, ...],
     ) -> None:
         self._repository = repository
+        self.sessions = SessionService(repository)
         self._trace = trace
         self._graph = build_supervisor_graph(supervisor_dependencies)
         self._adapters = adapters
 
     async def run(self, request: WorkRequest, principal: TrustedPrincipal) -> RunResult:
         created_at = datetime.now(UTC)
-        await self._repository.create_run(request)
+        if not principal.authenticated:
+            # Preserve the legacy policy-denied result, without creating durable
+            # user state or performing any graph/tool action for anonymous input.
+            return self._failed_result(request, created_at, PolicyDeniedError())
+        await self._repository.create_owned_run(
+            request,
+            principal,
+            session_id=request.session_id if isinstance(request, DirectWorkRequest) else None,
+            task_id=request.task_id if isinstance(request, DirectWorkRequest) else None,
+        )
         await self._repository.transition_run(request.run_id, WorkStatus.RUNNING)
         await self._trace.emit(
             event="work_started",
@@ -50,7 +64,22 @@ class WorkService:
             },
         )
         try:
-            state = await self._graph.ainvoke({"work": request, "principal": principal, "steps": 0})
+            # The current worker payload is the frozen 1.0 WorkRequest. Keep the
+            # session/task binding durably in the repository, and adapt only this
+            # legacy graph boundary rather than weakening its strict DTO parser.
+            graph_request = WorkRequest.model_validate(
+                {name: getattr(request, name) for name in WorkRequest.model_fields}
+                | {
+                    "schema_version": "1.0",
+                    # Runtime/Response reuse the work key. They must receive the
+                    # same identity namespace as storage, not a global client key.
+                    "idempotency_key": "owned:"
+                    + sha256_text(json.dumps([principal.user_id, request.idempotency_key])),
+                }
+            )
+            state = await self._graph.ainvoke(
+                {"work": graph_request, "principal": principal, "steps": 0}
+            )
             status = state.get("status", WorkStatus.FAILED)
             error = state.get("error")
             result = RunResult(
@@ -120,11 +149,11 @@ class WorkService:
         )
         return result
 
-    async def get(self, run_id: str) -> RunResult:
-        result = await self._repository.get_result(run_id)
-        if result is None:
-            raise ResourceNotFoundError(f"run:{run_id}")
-        return result
+    async def get(self, run_id: str, principal: TrustedPrincipal) -> RunResult:
+        record = await self._repository.get_owned_run(run_id, principal)
+        if record.result is None:
+            raise ResourceNotFoundError("run result")
+        return record.result
 
     def _failed_result(
         self, request: WorkRequest, created_at: datetime, error: RfaError

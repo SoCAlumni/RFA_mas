@@ -1,5 +1,13 @@
 # 계약 변경 기록
 
+## 2026-09-26 — P0-015 소유권·세션 API 보강 (coordinator 승인)
+
+- 기존 1.0 WorkRequest/RunResult wire를 변경하지 않고 SessionCreate/SessionMessage/SessionDetail/RunRecord 1.1을 추가했다. session 생성/목록/상세/이어하기와 미완료 run 상태 API를 구현했다. body identity/thread는 불허하고 server principal을 repository 조건까지 전달한다.
+- 설치별 random local owner, 기본 membership 없음. 단일 APP_API_KEY 또는 loopback 개발 peer 검사이며 실제 다영 identity 서비스 구현/검증이 아니다. WorkService.get은 principal 필수로 강화하여 기존 내부 호출자 tests/test_graph.py를 함께 수정했다.
+- WorkRepositoryPort 기존 메서드는 보존하고 소유권 검사 메서드를 추가했다. 레거시 get_result/create_run은 내부 import/저장 호환용으로만 남으며 사용자 API에서 쓰지 않는다. SQLite migration 1은 owner 미상 데이터를 제한 상태로 보존한다. graph resume/checkpointer 구현은 P0-016이다.
+- baseline 1.0은 원래 route/schema의 현재 코드 projection을 정확 비교, extended는 전체 API와 신규 메서드를 export한다. 새 기준 digest는 coordinator가 integration 검증 후 publish-contract하며 기존 consumer가 명시 수락해야 한다. 기존 P0-014 근거를 세션 기능의 성공 근거로 바꾸지 않는다.
+- 영향 consumer: P0-016/019/020/021, UI/reference adapter, trace/evaluation의 session/run 참조. Task owner registry는 서버 내부 등록만 허용하며 P0-019의 TaskFactory가 연결한다. 실제 teammate API 합의·OpenShell 강제·외부 write는 별도 gate다.
+
 ## 2026-09-26 — P0-014 additive 1.1 구현
 
 - 기존 1.0 wire 모델과 HTTP route를 유지한 채 version literal 1.1인 entity/DTO를 추가했다. 상세 필드·소유권·null/migration 경계는 INTEGRATION.md의 1.1 표와 단일 Pydantic 원본을 따른다. 새 endpoint 구현이나 팀원 합의를 주장하지 않는다.
