@@ -333,3 +333,124 @@ async def test_reference_http_runtime_completes_supervisor_flow_locally() -> Non
     assert state["draft"].adapter == "reference-contract-runtime-fixture"
     assert state["review"].simulated is True
     assert all(item.audience == Audience.PUBLIC for item in state["draft"].allowed_evidence)
+
+
+# -- P1-004 assistant intent routing ------------------------------------------------------
+import sqlite3 as _sqlite3  # noqa: E402
+
+import httpx as _httpx  # noqa: E402
+
+from rfa_mas.api.app import create_app as _create_app  # noqa: E402
+from rfa_mas.api.app import resolve_principal as _resolve_principal  # noqa: E402
+from rfa_mas.application.graphs.supervisor import route_intent  # noqa: E402
+from rfa_mas.bootstrap import build_container as _build_container  # noqa: E402
+from rfa_mas.contracts import AssistantRequest, KnowledgeWrite  # noqa: E402
+from rfa_mas.settings import Settings as _Settings  # noqa: E402
+
+INTENT_TABLE = [
+    ("TRIV3 벤치마크 로그 검증해줘", "task_run", "benchmark"),
+    ("양자화 방법론 자료 조사해줘", "task_run", "research"),
+    ("TRIV3 SDK 출시일이 언제야?", "query", None),
+    ("이 메모 저장해줘 TRIV3 지연 10ms", "store_note", None),
+    ("TRIV3 공개 채널에 답변 초안 써줘", "external_draft", None),
+    ("매일 오전 9시에 할 일 알려줘", "schedule", None),
+    ("앞으로는 세 문장 이내로 답해줘 피드백", "feedback", None),
+    ("TRIV3 서버 배포해줘", "unsupported", None),
+]
+
+
+@pytest.mark.parametrize(("text", "intent", "pattern"), INTENT_TABLE)
+def test_intent_routing_is_deterministic_with_limits_and_next_options(text, intent, pattern):
+    first = route_intent(text, domain_id=None, task_id=None, ingress="direct")
+    assert first == route_intent(text, domain_id=None, task_id=None, ingress="direct")
+    assert first["intent"] == intent
+    if pattern:
+        assert first["task_candidate"]["pattern"] == pattern and first["task_ref"] is None
+    if intent in {"schedule", "feedback", "unsupported"}:
+        assert first["supported"] is False and first["limitations"] and first["next_options"]
+    no_domain = route_intent("안녕하세요", domain_id=None, task_id=None, ingress="direct")
+    assert no_domain["supported"] is False and "domain_not_resolved" in no_domain["limitations"]
+
+
+@pytest.mark.parametrize("ingress", ["internal", "public"])
+def test_channel_ingress_only_enters_supervisor_for_query_or_public_draft(ingress):
+    denied = route_intent("TRIV3 벤치마크 검증해줘", domain_id=None, task_id=None, ingress=ingress)
+    assert denied["intent"] == "unsupported" and denied["rule"] == "channel-scope"
+    allowed = route_intent("TRIV3 출시 일정 알려줘", domain_id=None, task_id=None, ingress=ingress)
+    assert allowed["intent"] == "query" and allowed["supported"] is True
+
+
+async def _assistant_container(tmp_path, **settings):
+    container = _build_container(_Settings(
+        _env_file=None, database_url=f"sqlite:///{tmp_path / 'assistant.db'}",
+        trace_dir=(tmp_path / "traces").resolve(), **settings))
+    await container.startup()
+    owner = await container.repository.local_principal()
+    for key, content in (("a", "합성 benchmark A 로그. 환경 env-1, 지연 10.0ms, 정확도 81.0%"),
+                         ("b", "합성 benchmark B 로그. 환경 env-1, 지연 8.2ms, 정확도 80.8%")):
+        await container.knowledge.write(KnowledgeWrite.model_validate({
+            "domain_id": "triv3", "provenance": {"provider": "note", "namespace": "p1004",
+                                                 "external_id": key},
+            "provider_revision": "r1", "title": f"benchmark {key.upper()} 로그", "content": content,
+            "synthetic": True, "acl": {"audience": "owner"}}), owner)
+    return container, owner
+
+
+def _count(container, table):
+    with _sqlite3.connect(container.repository.path) as db:
+        return db.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+
+
+async def test_store_and_query_never_spawn_team_and_task_run_reuses_task(tmp_path):
+    container, owner = await _assistant_container(tmp_path)
+    service, kb = container.service, container.knowledge
+    try:
+        stored = await service.assist(AssistantRequest(text="이 메모 저장해줘 TRIV3 결정: 출시 보류"),
+                                      owner, knowledge=kb)
+        again = await service.assist(AssistantRequest(text="이 메모 저장해줘 TRIV3 결정: 출시 보류"),
+                                     owner, knowledge=kb)
+        assert stored.status == "stored" and stored.stored_source_id == again.stored_source_id
+        query = await service.assist(AssistantRequest(text="TRIV3 benchmark 로그 지연 알려줘?"),
+                                     owner, knowledge=kb)
+        assert query.decision.intent == "query" and query.task_id is query.team_id is None
+        assert query.run.status.value == "completed"
+        assert _count(container, "product_tasks") == 0 and _count(container, "team_slots") == 0
+        task = await service.assist(AssistantRequest(text="TRIV3 benchmark 로그 검증해줘"),
+                                    owner, knowledge=kb)
+        assert task.decision.intent == "task_run" and task.task_id and task.team_id
+        follow = await service.assist(
+            AssistantRequest(text="같은 작업에 B 로그 다시 분석해줘 TRIV3 benchmark",
+                             task_id=task.task_id), owner, knowledge=kb)
+        assert follow.decision.task_ref == task.task_id
+        assert (follow.task_id, follow.team_id) == (task.task_id, task.team_id)
+        assert _count(container, "product_tasks") == 1
+        unsupported = await service.assist(AssistantRequest(text="매일 아침마다 알려줘 TRIV3"),
+                                           owner, knowledge=kb)
+        assert unsupported.status == "unsupported" and unsupported.run is None
+        assert unsupported.next_options
+        public = await service.assist(
+            AssistantRequest(text="TRIV3 benchmark 검증해줘", ingress="public"), owner, knowledge=kb)
+        assert public.status == "unsupported" and _count(container, "product_tasks") == 1
+    finally:
+        await container.shutdown()
+
+
+async def test_common_result_reports_budget_partial_and_http_route(tmp_path):
+    container, owner = await _assistant_container(tmp_path, max_tool_calls=3)
+    try:
+        response = await container.service.assist(
+            AssistantRequest(text="TRIV3 benchmark 로그 검증해줘"), owner,
+            knowledge=container.knowledge)
+        assert response.status == "partial" and response.partial is True
+        assert response.stop_reason == "budget_exceeded" and response.next_options
+        assert response.run.draft is None and response.run.review is None
+        app = _create_app(container=container)
+        app.dependency_overrides[_resolve_principal] = lambda: owner
+        async with _httpx.AsyncClient(transport=_httpx.ASGITransport(app=app),
+                                      base_url="http://test") as client:
+            reply = await client.post("/v1/assistant", json={"text": "TRIV3 출시 일정 알려줘"})
+            assert reply.status_code == 201 and reply.json()["decision"]["intent"] == "query"
+            bad = await client.post("/v1/assistant", json={"text": "x", "principal": "admin"})
+            assert bad.status_code == 422
+    finally:
+        await container.shutdown()

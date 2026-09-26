@@ -15,6 +15,7 @@ from rfa_mas.contracts import (
     Audience,
     DomainId,
     DraftBundle,
+    DraftTarget,
     PublicationStatus,
     ResultStatus,
     ReviewDecision,
@@ -92,6 +93,71 @@ def _route_domain(work: WorkRequest) -> DomainId | None:
     if any(term in lowered for term in ("triv3", "benchmark", "벤치마크", "근거")):
         return DomainId.TRIV3
     return None
+
+
+
+# -- P1-004 deterministic assistant intent routing -------------------------------------
+# Ordered rules: first match wins. Text never grants identity, permission or a team.
+INTENT_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    ("unsupported", "destructive-or-external-action",
+     ("삭제해", "지워줘", "배포해", "결제", "송금", "delete all", "deploy")),
+    ("schedule", "schedule", ("매일", "매주", "예약", "알림", "리마인드", "아침마다", "cron")),
+    ("feedback", "feedback", ("피드백", "앞으로는", "다음부터", "선호", "말투")),
+    ("store_note", "store", ("저장해", "메모해", "기록해", "정리해 둬", "note:", "remember")),
+    ("external_draft", "external", ("공개 채널", "외부에", "외부 공유", "고객", "공지", "답변 초안")),
+    ("task_run", "task",
+     # Action verbs only: a question that merely mentions a benchmark stays a query.
+     ("검증해", "분석해", "조사해", "비교해", "실험해", "연구해", "벤치마크 돌려",
+      "run benchmark", "investigate")),
+)
+BENCHMARK_TERMS = ("벤치마크", "benchmark", "실험", "지연", "latency", "로그")
+CHANNEL_ALLOWED = frozenset({"query", "external_draft"})
+PATTERN_OUTPUTS = {"benchmark": ("benchmark_report",), "research": ("research_report",)}
+NEXT_OPTIONS = {
+    "schedule": ("예약 기능(P0-022/P0-023)이 준비되면 같은 요청을 다시 보내세요.",
+                 "지금은 필요한 질의를 직접 실행할 수 있습니다."),
+    "feedback": ("피드백 분류·적용(P1-005B)이 준비되면 같은 요청을 다시 보내세요.",
+                 "초안 수정은 검토 단계에서 요청할 수 있습니다."),
+    "destructive-or-external-action": ("삭제·배포·결제는 비서가 수행하지 않습니다.",
+                                       "자료 수정은 지식 관리 화면/API의 소유자 변경을 사용하세요."),
+    "channel-scope": ("외부/내부 채널은 질의와 공개 답변 초안만 요청할 수 있습니다.",),
+    "domain-required": ("도메인(triv3 또는 quantization_research)을 지정해 다시 요청하세요.",),
+}
+
+
+def route_intent(text: str, *, domain_id: DomainId | None, task_id: str | None,
+                 ingress: str) -> dict[str, Any]:
+    """Pure, deterministic routing. The same input always yields the same decision."""
+    lowered = " ".join(text.lower().split())
+    intent, rule = "query", "default-query"
+    for name, rule_id, terms in INTENT_RULES:
+        if any(term in lowered for term in terms):
+            intent, rule = name, rule_id
+            break
+    if task_id is not None and intent in {"query", "task_run"}:
+        intent, rule = "task_run", "existing-task"
+    domain = domain_id or _route_domain(
+        WorkRequest(query=text, domain_id=None, target=DraftTarget(audience=Audience.OWNER))
+    )
+    decision: dict[str, Any] = {
+        "intent": intent, "domain_id": domain, "rule": rule, "supported": True,
+    }
+    if ingress != "direct" and intent not in CHANNEL_ALLOWED:
+        return decision | {"intent": "unsupported", "rule": "channel-scope", "supported": False,
+                           "limitations": ("channel_scope",),
+                           "next_options": NEXT_OPTIONS["channel-scope"]}
+    if intent in {"schedule", "feedback", "unsupported"}:
+        return decision | {"supported": False, "limitations": (f"{intent}_not_available",),
+                           "next_options": NEXT_OPTIONS[rule if intent == "unsupported" else intent]}
+    if domain is None:
+        return decision | {"supported": False, "limitations": ("domain_not_resolved",),
+                           "next_options": NEXT_OPTIONS["domain-required"]}
+    if intent == "task_run":
+        pattern = "benchmark" if any(t in lowered for t in BENCHMARK_TERMS) else "research"
+        decision["task_candidate"] = {"goal": text[:2000], "pattern": pattern}
+        decision["task_ref"] = task_id
+    return decision
+
 
 
 def _allowed_audiences(principal: TrustedPrincipal, target: Audience) -> tuple[Audience, ...]:

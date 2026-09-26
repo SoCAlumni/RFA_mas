@@ -883,6 +883,56 @@ class ChannelWorkRequest(DirectWorkRequest):
 # "simulated" marks synthetic experiment numbers (P1-004A); never a measured fact.
 EpistemicState = Literal["cited", "inferred", "simulated", "tentative", "conflicting"]
 DerivedKind = Literal["summary", "todo", "issue", "decision", "link"]
+AssistantIntentName = Literal[
+    "store_note", "query", "task_run", "external_draft", "schedule", "feedback", "unsupported"
+]
+
+
+class AssistantRequest(ExtendedContractModel):
+    """Untrusted user text plus optional hints (P1-004). Identity comes only from auth."""
+
+    text: str = Field(min_length=1, max_length=10000)
+    domain_id: DomainId | None = None
+    target: DraftTarget = Field(default_factory=lambda: DraftTarget(audience=Audience.OWNER))
+    session_id: OpaqueId | None = None
+    task_id: OpaqueId | None = None
+    ingress: Literal["direct", "internal", "public"] = "direct"
+
+
+class TaskCandidateRef(ExtendedContractModel):
+    goal: str = Field(min_length=1, max_length=2000)
+    pattern: Literal["benchmark", "research"]
+
+
+class IntentDecision(ExtendedContractModel):
+    """Deterministic routing result; a rule id, never a model-invented permission."""
+
+    intent: AssistantIntentName
+    domain_id: DomainId | None = None
+    rule: OpaqueId
+    supported: bool
+    task_ref: OpaqueId | None = None
+    task_candidate: TaskCandidateRef | None = None
+    limitations: tuple[str, ...] = ()
+    next_options: tuple[str, ...] = ()
+
+
+class AssistantResponse(ExtendedContractModel):
+    """Common safe result for every intent: status, stop reason, partial flag, next options."""
+
+    decision: IntentDecision
+    status: Literal[
+        "stored", "completed", "waiting_approval", "failed", "cancelled", "partial", "unsupported"
+    ]
+    run: RunResult | None = None
+    stored_source_id: OpaqueId | None = None
+    stored_revision: OpaqueId | None = None
+    task_id: OpaqueId | None = None
+    team_id: OpaqueId | None = None
+    stop_reason: OpaqueId | None = None
+    partial: bool = False
+    next_options: tuple[str, ...] = ()
+
 
 
 class SourceRevisionRef(EvidenceRef):

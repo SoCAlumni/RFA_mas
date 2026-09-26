@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "ff71279b5726550be469b5fb2a652b24144019c2923ab9c42662ec01aa5a65cf",
+  "digest": "3340d55dec80eea4bfba032743b03c9d126aaaa230e56b3c3a3cde3c04caba6f",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -155,6 +155,207 @@
               "simulated"
             ],
             "title": "AdapterInfo",
+            "type": "object"
+          },
+          "AssistantRequest": {
+            "additionalProperties": false,
+            "description": "Untrusted user text plus optional hints (P1-004). Identity comes only from auth.",
+            "properties": {
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ingress": {
+                "default": "direct",
+                "enum": [
+                  "direct",
+                  "internal",
+                  "public"
+                ],
+                "title": "Ingress",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Session Id"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "task_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Id"
+              },
+              "text": {
+                "maxLength": 10000,
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "AssistantRequest",
+            "type": "object"
+          },
+          "AssistantResponse": {
+            "additionalProperties": false,
+            "description": "Common safe result for every intent: status, stop reason, partial flag, next options.",
+            "properties": {
+              "decision": {
+                "$ref": "#/components/schemas/IntentDecision"
+              },
+              "next_options": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Next Options",
+                "type": "array"
+              },
+              "partial": {
+                "default": false,
+                "title": "Partial",
+                "type": "boolean"
+              },
+              "run": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RunResult"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "stored",
+                  "completed",
+                  "waiting_approval",
+                  "failed",
+                  "cancelled",
+                  "partial",
+                  "unsupported"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "stop_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Stop Reason"
+              },
+              "stored_revision": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Stored Revision"
+              },
+              "stored_source_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Stored Source Id"
+              },
+              "task_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Id"
+              },
+              "team_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Team Id"
+              }
+            },
+            "required": [
+              "decision",
+              "status"
+            ],
+            "title": "AssistantResponse",
             "type": "object"
           },
           "AttachmentRef": {
@@ -744,6 +945,99 @@
               }
             },
             "title": "HTTPValidationError",
+            "type": "object"
+          },
+          "IntentDecision": {
+            "additionalProperties": false,
+            "description": "Deterministic routing result; a rule id, never a model-invented permission.",
+            "properties": {
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "intent": {
+                "enum": [
+                  "store_note",
+                  "query",
+                  "task_run",
+                  "external_draft",
+                  "schedule",
+                  "feedback",
+                  "unsupported"
+                ],
+                "title": "Intent",
+                "type": "string"
+              },
+              "limitations": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Limitations",
+                "type": "array"
+              },
+              "next_options": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "title": "Next Options",
+                "type": "array"
+              },
+              "rule": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Rule",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "supported": {
+                "title": "Supported",
+                "type": "boolean"
+              },
+              "task_candidate": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TaskCandidateRef"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "task_ref": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Ref"
+              }
+            },
+            "required": [
+              "intent",
+              "rule",
+              "supported"
+            ],
+            "title": "IntentDecision",
             "type": "object"
           },
           "KnowledgeAcl": {
@@ -2227,6 +2521,37 @@
             "title": "StructuredError",
             "type": "object"
           },
+          "TaskCandidateRef": {
+            "additionalProperties": false,
+            "properties": {
+              "goal": {
+                "maxLength": 2000,
+                "minLength": 1,
+                "title": "Goal",
+                "type": "string"
+              },
+              "pattern": {
+                "enum": [
+                  "benchmark",
+                  "research"
+                ],
+                "title": "Pattern",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "goal",
+              "pattern"
+            ],
+            "title": "TaskCandidateRef",
+            "type": "object"
+          },
           "TeamExecutionRequest": {
             "additionalProperties": false,
             "description": "Explicit team-execution intent (P0-020). No capability, identity or grant claims.\n\nTemplate choice, role capabilities and budgets are decided server-side by the\nTeamSelector/TeamFactory from the authenticated principal.",
@@ -2601,6 +2926,65 @@
             "summary": "Ready",
             "tags": [
               "operations"
+            ]
+          }
+        },
+        "/v1/assistant": {
+          "post": {
+            "operationId": "assistant_v1_assistant_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AssistantRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/AssistantResponse"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Assistant",
+            "tags": [
+              "assistant"
             ]
           }
         },
@@ -5771,6 +6155,216 @@
         "title": "ApprovalReference",
         "type": "object"
       },
+      "AssistantRequest": {
+        "additionalProperties": false,
+        "description": "Untrusted user text plus optional hints (P1-004). Identity comes only from auth.",
+        "properties": {
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ingress": {
+            "default": "direct",
+            "enum": [
+              "direct",
+              "internal",
+              "public"
+            ],
+            "title": "Ingress",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Id"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "AssistantRequest",
+        "type": "object"
+      },
+      "AssistantResponse": {
+        "additionalProperties": false,
+        "description": "Common safe result for every intent: status, stop reason, partial flag, next options.",
+        "properties": {
+          "decision": {
+            "$ref": "#/$defs/IntentDecision"
+          },
+          "next_options": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Options",
+            "type": "array"
+          },
+          "partial": {
+            "default": false,
+            "title": "Partial",
+            "type": "boolean"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/RunResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "stored",
+              "completed",
+              "waiting_approval",
+              "failed",
+              "cancelled",
+              "partial",
+              "unsupported"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stop Reason"
+          },
+          "stored_revision": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stored Revision"
+          },
+          "stored_source_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stored Source Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Id"
+          }
+        },
+        "required": [
+          "decision",
+          "status"
+        ],
+        "title": "AssistantResponse",
+        "type": "object"
+      },
       "AttachmentRef": {
         "additionalProperties": false,
         "properties": {
@@ -7508,6 +8102,102 @@
           "status"
         ],
         "title": "ExperimentEvidence",
+        "type": "object"
+      },
+      "IntentDecision": {
+        "additionalProperties": false,
+        "description": "Deterministic routing result; a rule id, never a model-invented permission.",
+        "properties": {
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "intent": {
+            "enum": [
+              "store_note",
+              "query",
+              "task_run",
+              "external_draft",
+              "schedule",
+              "feedback",
+              "unsupported"
+            ],
+            "title": "Intent",
+            "type": "string"
+          },
+          "limitations": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "next_options": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Options",
+            "type": "array"
+          },
+          "rule": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Rule",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "supported": {
+            "title": "Supported",
+            "type": "boolean"
+          },
+          "task_candidate": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TaskCandidateRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "task_ref": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Ref"
+          }
+        },
+        "required": [
+          "intent",
+          "rule",
+          "supported"
+        ],
+        "title": "IntentDecision",
         "type": "object"
       },
       "JudgeDimensions": {
@@ -9897,6 +10587,37 @@
         "title": "StructuredError",
         "type": "object"
       },
+      "TaskCandidateRef": {
+        "additionalProperties": false,
+        "properties": {
+          "goal": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "pattern": {
+            "enum": [
+              "benchmark",
+              "research"
+            ],
+            "title": "Pattern",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal",
+          "pattern"
+        ],
+        "title": "TaskCandidateRef",
+        "type": "object"
+      },
       "TeamBudget": {
         "additionalProperties": false,
         "properties": {
@@ -11305,6 +12026,10 @@
     "DerivedItemProposal",
     "AccumulatedItem",
     "AccumulationReport",
+    "AssistantRequest",
+    "IntentDecision",
+    "TaskCandidateRef",
+    "AssistantResponse",
     "TeamExecutionRequest",
     "RoleOutcome",
     "TeamBudgetUsage",
@@ -11362,11 +12087,11 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "2547a00d897cacda6938de1bfdc327e6b8cfccd469950de015eb0cc364fa8465",
-    "src/rfa_mas/api/app.py": "6065100fc61801b370e2e5b1454d0a54ecf16a774db660ff6551371e11293134",
+    "src/rfa_mas/api/app.py": "40c2f2f2ac7a40fdc445c6ca32b9af794d7df287ebd97a08efbd425a847c7cf6",
     "src/rfa_mas/application/state_machine.py": "fbc90e928ea5d04bc0d2d7af3dbad0ce392cbe7a1e49594356c3d22517ea22e3",
-    "src/rfa_mas/contracts/__init__.py": "9aecb3ad2b1215ffb05f7ad58ae336fbef2dbabea650297c618fd1bd676cf360",
+    "src/rfa_mas/contracts/__init__.py": "c8f2712c4ad26bb487c21f299c13e85cce0af8967905f5344b98b7b8736dc9aa",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "a3bb2610e6abdb5ac6ab5426507f350be90ef8e9090b6969af3b2c41405f23fd",
+    "src/rfa_mas/contracts/models.py": "3ff7d13bc8e188ad34c1b23f7e9d84d6fcc66192446f9e991cf94cf0fdea4b7a",
     "src/rfa_mas/ports/interfaces.py": "f4510d756ad2b54c07474586e83629c67b771ab84ec05014ee4d16b835e7156e",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },

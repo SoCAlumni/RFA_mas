@@ -15,6 +15,8 @@ from rfa_mas.contracts import (
     SCHEMA_VERSION,
     AccumulationReport,
     CandidateDecision,
+    AssistantRequest,
+    AssistantResponse,
     DirectWorkRequest,
     DomainId,
     DraftEditRequest,
@@ -178,6 +180,21 @@ def create_app(
         # proposed run ID as a storage key or an existence probe.
         return await selected_container.service.run(
             work.model_copy(update={"run_id": new_id("run")}), trusted_principal
+        )
+
+    @app.post(
+        "/v1/assistant",
+        response_model=AssistantResponse,
+        status_code=status.HTTP_201_CREATED,
+        tags=["assistant"],
+    )
+    async def assistant(
+        body: AssistantRequest,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> AssistantResponse:
+        # Deterministic intent routing; identity comes from authentication only.
+        return await selected_container.service.assist(
+            body, trusted_principal, knowledge=selected_container.knowledge
         )
 
     @app.get("/v1/work/{run_id}", response_model=RunResult, tags=["work"])

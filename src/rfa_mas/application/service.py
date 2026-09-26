@@ -381,6 +381,112 @@ class WorkService:
             raise ResourceNotFoundError("run result")
         return await self.present_result(record.result, principal)
 
+    # -- P1-004 thin assistant execution boundary ---------------------------------------
+    async def assist(self, request, principal: TrustedPrincipal, *, knowledge=None):
+        """Route untrusted text deterministically, then run exactly one existing path.
+
+        store/query never create a Task or team; task_run uses the explicit team path;
+        channel ingress may only query or draft for a public target through this Supervisor.
+        """
+        from rfa_mas.application.graphs.supervisor import PATTERN_OUTPUTS, route_intent
+        from rfa_mas.contracts import (
+            Audience,
+            AssistantRequest,
+            AssistantResponse,
+            DraftTarget,
+            IntentDecision,
+            KnowledgeWrite,
+            TeamExecutionRequest,
+        )
+
+        request = AssistantRequest.model_validate(request.model_dump())
+        decision = IntentDecision.model_validate(
+            route_intent(request.text, domain_id=request.domain_id, task_id=request.task_id,
+                         ingress=request.ingress)
+        )
+        if not decision.supported:
+            return AssistantResponse(decision=decision, status="unsupported",
+                                     stop_reason=decision.limitations[0] if decision.limitations
+                                     else "unsupported", next_options=decision.next_options)
+        if decision.intent == "store_note":
+            if knowledge is None:
+                raise RfaError("not_implemented", "노트 저장 경로가 구성되지 않았습니다.")
+            digest = sha256_text(json.dumps([principal.user_id, request.text]))
+            stored = await knowledge.write(
+                KnowledgeWrite.model_validate({
+                    "domain_id": decision.domain_id,
+                    "provenance": {"provider": "note", "namespace": "assistant",
+                                   "external_id": f"note-{digest[:32]}"},
+                    "provider_revision": "1",
+                    "title": " ".join(request.text.split())[:80],
+                    "content": request.text,
+                }),
+                principal,
+            )
+            return AssistantResponse(decision=decision, status="stored",
+                                     stored_source_id=stored.document.source_id,
+                                     stored_revision=stored.document.source_revision)
+        target = request.target
+        if decision.intent == "external_draft" or request.ingress == "public":
+            target = DraftTarget(audience=Audience.PUBLIC)
+        team = None
+        if decision.intent == "task_run" and decision.task_candidate is not None:
+            pattern = decision.task_candidate.pattern
+            goal = decision.task_candidate.goal
+            if request.task_id is not None:
+                # A follow-up Run keeps the durable Task goal/pattern; the new text is the
+                # Run's query. Ownership is re-checked by the repository.
+                existing = await self._repository.get_team_lifecycle(request.task_id, principal)
+                goal = existing.task.goal
+                pattern = existing.team.spec.template.pattern
+            team = TeamExecutionRequest(goal=goal,
+                                        outputs=PATTERN_OUTPUTS[pattern],
+                                        requested_pattern=pattern)
+        work = DirectWorkRequest(
+            query=request.text,
+            domain_id=decision.domain_id,
+            target=target,
+            session_id=request.session_id,
+            task_id=request.task_id if team is not None else None,
+            team=team,
+        )
+        result = await self.run(work, principal)
+        return await self._assistant_result(decision, result, principal, team is not None)
+
+    async def _assistant_result(self, decision, result: RunResult, principal, team_run: bool):
+        from rfa_mas.contracts import AssistantResponse
+
+        task_id = team_id = None
+        partial = False
+        if team_run:
+            try:
+                team = await self._repository.get_team_result(result.run_id, principal)
+            except RfaError:
+                team = None
+            if team is not None:
+                task_id, team_id = team.task_id, team.team_id
+                partial = team.status == "partial"
+        status = {
+            WorkStatus.COMPLETED: "completed",
+            WorkStatus.WAITING_APPROVAL: "waiting_approval",
+            WorkStatus.CANCELLED: "cancelled",
+        }.get(result.status, "partial" if partial else "failed")
+        options = ()
+        reason = result.stop_reason
+        if status in {"failed", "partial"}:
+            options = {
+                "budget_exceeded": ("목표 범위를 좁히거나 허용 예산 안에서 다시 요청하세요.",),
+                "budget_unavailable": ("사용량을 보고하는 모델 경로가 필요합니다.",),
+                "retrieval_timeout": ("잠시 후 같은 요청을 다시 보내세요.",),
+                "policy_denied": ("허용된 자료 범위에서 질문을 바꿔 다시 요청하세요.",),
+            }.get(reason or "", ("요청을 확인한 뒤 다시 시도하세요.",))
+        elif status == "cancelled":
+            options = ("필요하면 새 실행으로 다시 요청하세요. 이미 발생한 결과는 되돌리지 않았습니다.",)
+        return AssistantResponse(decision=decision, status=status, run=result, task_id=task_id,
+                                 team_id=team_id, stop_reason=reason, partial=partial,
+                                 next_options=options)
+
+
     async def team_result(self, run_id: str, principal: TrustedPrincipal):
         """Owner-authorized team receipt (roles, partial results, budget usage)."""
         await self._repository.get_owned_run(run_id, principal)

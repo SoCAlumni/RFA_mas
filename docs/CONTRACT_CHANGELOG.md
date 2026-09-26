@@ -22,6 +22,11 @@
 - additive 1.1: `DerivedItemProposal`(summary/todo/issue/decision/link, 부모 SourceRevisionRef 필수, 조건·불확실성), `AccumulatedItem`, `AccumulationReport`. epistemic 상태에 `simulated`를 추가했다(SourceMetadata/ContextItem 공통 `EpistemicState`). frozen 1.0 불변.
 - 파생 항목은 Supervisor gate(KnowledgeAccumulator)만 저장한다: 모든 부모를 현재 revision/ACL closure로 다시 읽고, "cited"는 부모 원문 인용이 확인될 때만 유지(아니면 inferred), 충돌 결정은 conflicting, 합성 실험 수치는 simulated. 모든 부모가 public일 때만 public, 아니면 owner. 기존 migration5 kb_revision_context와 write_derived_knowledge를 재사용하며 새 KB/요약 엔진은 없다.
 - 영향 consumer: P1-004B(후보), P1-005(대상별 DRAFT), P1-001B(L1 요약 소비).
+## 2026-09-26 — P1-004 비서 intent 라우팅 1.1 (통합·발행 대기)
+
+- additive 1.1: `AssistantRequest`(사용자 텍스트·힌트, 권한 주장 없음), `IntentDecision`(결정적 rule id, 지원 여부, 제한·다음 선택지, 기존 Task ref 또는 새 Task 후보), `TaskCandidateRef`, `AssistantResponse`(모든 intent 공통 결과: status/stop_reason/partial/next_options). 새 route `POST /v1/assistant`.
+- 저장/질의는 Task·team을 만들지 않는다. 연구·실험 동사(검증/분석/조사/비교/실험)만 명시적 팀 실행으로 연결하며 follow-up은 기존 Task 목표/패턴을 유지한다. internal/public 채널은 Supervisor를 통해 질의·공개 초안만 요청할 수 있다. 예약/피드백은 구현 전까지 명시적 unsupported와 다음 선택지를 반환한다.
+- 영향 consumer: P0-022(예약 연결), P1-005B(피드백), P0-025/P0-026.
 
 ## 2026-09-26 — P0-020 팀 역할 실행 1.1 (통합·발행 대기)
 
