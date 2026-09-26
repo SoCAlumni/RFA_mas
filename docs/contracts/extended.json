@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "50a42ca771af67d5330b25c90b819ed704739930f865707874129a2d218a99d1",
+  "digest": "272cead2257575f362a5470b0ff74a9505c42e0e9f7a16322d0431fe4ffec047",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -1717,6 +1717,199 @@
               "content"
             ],
             "title": "KnowledgeWrite",
+            "type": "object"
+          },
+          "Notification": {
+            "additionalProperties": false,
+            "description": "Owner-only history entry. P0 has no push/external channel and never publishes.",
+            "properties": {
+              "audience": {
+                "const": "owner",
+                "default": "owner",
+                "title": "Audience",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "delivery": {
+                "default": "active",
+                "enum": [
+                  "active",
+                  "held"
+                ],
+                "title": "Delivery",
+                "type": "string"
+              },
+              "held_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Held At"
+              },
+              "hold_reason": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Hold Reason"
+              },
+              "items": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/NotificationItem"
+                },
+                "maxItems": 50,
+                "title": "Items",
+                "type": "array"
+              },
+              "kind": {
+                "enum": [
+                  "briefing",
+                  "candidates"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "notification_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Notification Id",
+                "type": "string"
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "rule_version": {
+                "default": "candidate-rank-v1",
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Rule Version",
+                "type": "string"
+              },
+              "run_key": {
+                "pattern": "^[0-9a-f]{64}$",
+                "title": "Run Key",
+                "type": "string"
+              },
+              "schedule_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Schedule Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "required": [
+              "notification_id",
+              "owner_id",
+              "schedule_id",
+              "run_key",
+              "kind",
+              "created_at"
+            ],
+            "title": "Notification",
+            "type": "object"
+          },
+          "NotificationItem": {
+            "additionalProperties": false,
+            "description": "Reference to an owner candidate. Source text is not copied into notifications.",
+            "properties": {
+              "blocker": {
+                "default": false,
+                "title": "Blocker",
+                "type": "boolean"
+              },
+              "candidate_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Candidate Id",
+                "type": "string"
+              },
+              "due_date": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Due Date"
+              },
+              "rank": {
+                "minimum": 1.0,
+                "title": "Rank",
+                "type": "integer"
+              },
+              "reasons": {
+                "default": [],
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 8,
+                "title": "Reasons",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "source_refs": {
+                "default": [],
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                  "type": "string"
+                },
+                "maxItems": 32,
+                "title": "Source Refs",
+                "type": "array"
+              },
+              "title": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "candidate_id",
+              "rank",
+              "title"
+            ],
+            "title": "NotificationItem",
             "type": "object"
           },
           "PublicationReceipt": {
@@ -4106,6 +4299,69 @@
             "summary": "Update Source",
             "tags": [
               "knowledge"
+            ]
+          }
+        },
+        "/v1/notifications": {
+          "get": {
+            "operationId": "list_notifications_v1_notifications_get",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "include_held",
+                "required": false,
+                "schema": {
+                  "default": false,
+                  "title": "Include Held",
+                  "type": "boolean"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      },
+                      "title": "Response List Notifications V1 Notifications Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Notifications",
+            "tags": [
+              "schedules"
             ]
           }
         },
@@ -13528,12 +13784,12 @@
   "schema_version": "1.1",
   "source_files": {
     "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
-    "src/rfa_mas/api/app.py": "3be701f52fddc27d735867e2957e18a552f86d337cbdbdedb5235170bb4fed31",
+    "src/rfa_mas/api/app.py": "63d6713cdd80cb794c49b65a9769ce6a5bee241184728520915a88c3f4d443e6",
     "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
     "src/rfa_mas/contracts/__init__.py": "355b3b3c298eac4cf2f0b5115db87d8ffefe037dd611b19d299139f310ac8acc",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
     "src/rfa_mas/contracts/models.py": "9600fe31441910b37beef8fdce64bd6f745ca75aaf3c0c1dcf55e43efce9565d",
-    "src/rfa_mas/ports/interfaces.py": "c1cf378035e4784a1094fa1721003f0202eefefd7f0b7cf53f7510f74c107d09",
+    "src/rfa_mas/ports/interfaces.py": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
     "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",
