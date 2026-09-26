@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from importlib import metadata
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -25,11 +27,105 @@ from rfa_mas.application.graphs import (
 from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.application.service import WorkService
 from rfa_mas.contracts import AdapterInfo, KnowledgeDocument
-from rfa_mas.errors import BackendNotImplementedError
+from rfa_mas.errors import BackendNotImplementedError, ConfigurationError
 from rfa_mas.security import SecretRedactor, configure_logging
 from rfa_mas.settings import Settings
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+@dataclass(frozen=True)
+class ConfigurationInspection:
+    missing: tuple[str, ...]
+    invalid: tuple[str, ...]
+    reserved: tuple[str, ...]
+    nat_dependency: str
+
+    @property
+    def configuration_ready(self) -> bool:
+        return not self.missing and not self.invalid
+
+    @property
+    def implementation_ready(self) -> bool:
+        return not self.reserved
+
+    @property
+    def ready(self) -> bool:
+        return self.configuration_ready and self.implementation_ready
+
+    def require_available(self) -> None:
+        if self.missing or self.invalid:
+            raise ConfigurationError([*self.missing, *self.invalid])
+        if self.reserved:
+            raise BackendNotImplementedError(self.reserved[0])
+
+
+def inspect_configuration(settings: Settings) -> ConfigurationInspection:
+    """No clients, DBs, model imports, network probes or user values in the report."""
+    missing = settings.missing_for_selected_modes()
+    invalid: list[str] = []
+    reserved = list(settings.selected_reserved_features())
+    try:
+        settings.ensure_ready()
+        _ = settings.resolved_checkpoint_path
+    except ConfigurationError as exc:
+        invalid.extend(name for name in exc.missing if name not in missing)
+    except (ValueError, OSError):
+        invalid.append("DATABASE_URL/CHECKPOINT_PATH")
+    for name, mode, url in (
+        ("RESPONSE_BASE_URL", settings.response_backend, settings.response_base_url),
+        ("TOOL_BASE_URL", settings.tool_backend, settings.tool_base_url),
+        ("RUNTIME_BASE_URL", settings.runtime_backend, settings.runtime_base_url),
+        ("POLICY_BASE_URL", settings.policy_backend, settings.policy_base_url),
+    ):
+        if mode != "http" or not url:
+            continue
+        try:
+            # HTTPX may accept an unmatched '[' as a hostname. Validate URL shape
+            # and port without exposing parser messages before classifying locality.
+            structure = urlsplit(url)
+            _ = structure.port
+            if not structure.hostname:
+                invalid.append(name)
+                continue
+            parsed = httpx.URL(url)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or parsed.userinfo
+                or parsed.query
+                or parsed.fragment
+            ):
+                invalid.append(name)
+                continue
+            require_loopback_reference_url(url, setting_name=name)
+        except (ValueError, httpx.InvalidURL):
+            invalid.append(name)
+        except BackendNotImplementedError:
+            reserved.append(f"endpoint:{name}:non_loopback")
+    for port, selected, default in (
+        ("model", settings.model_provider, "mock"),
+        ("retriever", settings.retriever_backend, "mock"),
+        ("trace", settings.trace_backend, "local"),
+        ("judge", settings.judge_provider if settings.enable_judge else "mock", "mock"),
+    ):
+        if selected != default:
+            reserved.append(f"{port}:{selected}")
+    # Installed metadata is not an import/compatibility check or product NAT integration.
+    try:
+        metadata.version("nvidia-nat-langchain")
+        nat_dependency = "installed_unverified"
+    except metadata.PackageNotFoundError:
+        nat_dependency = "missing"
+    if settings.enable_nat:
+        if nat_dependency == "missing":
+            missing.append("NAT_EXTRA")
+        reserved.append("feature:nat_adapter")
+    return ConfigurationInspection(
+        tuple(sorted(set(missing))),
+        tuple(sorted(set(invalid))),
+        tuple(sorted(set(reserved))),
+        nat_dependency,
+    )
 
 
 @dataclass
@@ -110,21 +206,14 @@ def _http_port(
 
 def build_container(settings: Settings | None = None) -> Container:
     settings = settings or Settings()
-    settings.ensure_ready()
-    if reserved_features := settings.selected_reserved_features():
-        raise BackendNotImplementedError(reserved_features[0])
+    inspect_configuration(settings).require_available()
     redactor = SecretRedactor(settings.secret_values())
     configure_logging(settings.log_level, redactor)
     repository = SqliteWorkRepository(settings.database_path)
     checkpoints = SqliteCheckpoints(settings.resolved_checkpoint_path)
     clients: list[httpx.AsyncClient] = []
 
-    if settings.model_provider != "mock":
-        raise BackendNotImplementedError(f"model:{settings.model_provider}")
     model = MockModel()
-
-    if settings.retriever_backend != "mock":
-        raise BackendNotImplementedError(f"retriever:{settings.retriever_backend}")
 
     if settings.policy_backend == "local":
         policy = LocalPolicy()
@@ -180,12 +269,8 @@ def build_container(settings: Settings | None = None) -> Container:
             )
         )
 
-    if settings.trace_backend != "local":
-        raise BackendNotImplementedError(f"trace:{settings.trace_backend}")
     trace = LocalJsonlTrace(settings.trace_dir, redactor)
 
-    if settings.enable_judge and settings.judge_provider != "mock":
-        raise BackendNotImplementedError(f"judge:{settings.judge_provider}")
     judge = MockJudge()
 
     if isinstance(runtime, LocalRuntime):
