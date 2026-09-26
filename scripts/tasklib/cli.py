@@ -9,6 +9,8 @@ import stat
 import sys
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from .evidence import (
     matches,
     record_attempt,
@@ -228,6 +230,79 @@ def revalidation_baseline(store: Store, task: Task, source: dict) -> str:
     return source["target_head"]
 
 
+def inactive_integrated_guard(store: Store, task: Task) -> None:
+    """A stale reservation protects prior artifacts; it is not an active worker."""
+    if task.claim or task.verification_summary.state != "stale":
+        raise ControlError("Operation requires an inactive stale integrated reservation")
+    target = store.project["integration_target"]
+    source = store.source(target["worktree"])
+    if source["branch"] != target["branch"]:
+        raise ControlError("Wrong integration branch")
+    # Reuse the same historical evidence/manifest/commit binding as recovery. This
+    # does NOT certify current AC or release the reservation.
+    revalidation_baseline(store, task, source)
+
+
+def contract_notice(contract_id: str, version: str) -> str:
+    return f"Re-read {contract_id} {version}; coordinator edit-spec must accept new digest"
+
+
+def reserved_contract_acceptance(store: Store, task: Task, patch: dict) -> None:
+    """Permit only explicit published-baseline acceptance, never a scope rewrite."""
+    inactive_integrated_guard(store, task)
+    if "contract_refs" not in patch or set(patch) - {"contract_refs", "spec_state", "unresolved"}:
+        raise ControlError("Reserved scope allows only published contract acceptance")
+    try:
+        candidate = Task.model_validate(task.model_dump(mode="json") | patch)
+    except ValidationError:
+        raise ControlError(
+            "Invalid contract acceptance or unresolved ready specification"
+        ) from None
+    if [(ref.id, ref.role) for ref in candidate.contract_refs] != [
+        (ref.id, ref.role) for ref in task.contract_refs
+    ]:
+        raise ControlError("Contract acceptance must preserve contract IDs and roles")
+    notices = set()
+    for before, after in zip(task.contract_refs, candidate.contract_refs, strict=True):
+        if before == after:
+            continue
+        entry = store.project["contracts"][after.id]
+        path = store.path(entry["path"])
+        if (
+            before.role != "consumer"
+            or entry.get("state") != "ready"
+            or after.version != entry["version"]
+            or after.digest != entry["digest"]
+            or not path.is_file()
+            or hashlib.sha256(path.read_bytes()).hexdigest() != entry["digest"]
+        ):
+            raise ControlError("Accept only the current published consumer version/digest")
+        notices.add(contract_notice(after.id, after.version))
+        # A consumer can skip intermediate published versions. Only notices with
+        # exact publisher provenance may be cleared; never match arbitrary text
+        # by prefix or erase an independent unresolved decision.
+        for change in store.project.get("contract_changes", []):
+            version = change.get("version")
+            if (
+                change.get("id") == after.id
+                and task.id in change.get("affected", [])
+                and isinstance(version, str)
+                and change.get("notice") == contract_notice(after.id, version)
+            ):
+                notices.add(change["notice"])
+    if not notices:
+        raise ControlError("Contract acceptance requires a changed published baseline")
+    if set(candidate.unresolved) & notices:
+        raise ControlError("Remove accepted publisher notices in the same specification change")
+    removed = set(task.unresolved) - set(candidate.unresolved)
+    if not removed <= notices or candidate.unresolved != [
+        item for item in task.unresolved if item not in removed
+    ]:
+        raise ControlError("Contract acceptance cannot clear unrelated unresolved decisions")
+    if candidate.spec_state == "ready" and not store.contract_ready(candidate):
+        raise ControlError("All required contracts must be published before spec readiness")
+
+
 def submission_paths(store: Store, task: Task, source: Path) -> list[str]:
     """Only a fenced, explicitly recovered integration may submit unchanged artifacts."""
     approach = task.attempts.approaches[-1] if task.attempts.approaches else {}
@@ -277,8 +352,11 @@ def execute(store: Store, args) -> dict:
                 for t in tasks.values()
                 if any(r.id == args.contract and r.role == "consumer" for r in t.contract_refs)
             ]
-            if any(t.claim or t.integration.reservation for t in affected):
-                raise ControlError("Recover/release affected claims before contract change")
+            for task in affected:
+                if task.claim:
+                    raise ControlError("Recover/release affected claims before contract change")
+                if task.integration.reservation:
+                    inactive_integrated_guard(store, task)
             entry = store.project["contracts"][args.contract]
             path = store.path(entry["path"])
             proof = json.loads(store.path(args.evidence).read_text())
@@ -301,6 +379,9 @@ def execute(store: Store, args) -> dict:
                     "migration": args.migration,
                     "evidence": args.evidence,
                     "affected": [t.id for t in affected],
+                    "version": args.version,
+                    "digest": file_digest,
+                    "notice": contract_notice(args.contract, args.version),
                 }
             )
             store.project["updated_at"] = now()
@@ -317,8 +398,7 @@ def execute(store: Store, args) -> dict:
                     dict.fromkeys(
                         [
                             *task.unresolved,
-                            f"Re-read {args.contract} {args.version}; "
-                            "coordinator edit-spec must accept new digest",
+                            contract_notice(args.contract, args.version),
                         ]
                     )
                 )
@@ -327,6 +407,8 @@ def execute(store: Store, args) -> dict:
                     task.verification_summary.state = "stale"
                 if task.status == "done":
                     task.status = "verifying"
+                    if task.kind != "control":
+                        task.integration.reservation = True
                 bump(task)
                 atomic(store.path(f"tasks/{task.id}/task.yaml"), dump(task.model_dump(mode="json")))
             store.refresh(tasks)
@@ -564,6 +646,24 @@ def execute(store: Store, args) -> dict:
                 raise ControlError(
                     "Original claim baseline unavailable; coordinator must inspect history"
                 )
+            if args.disposition == "resume":
+                for other in tasks.values():
+                    if (
+                        other.id == task.id
+                        or not (other.claim or other.integration.reservation)
+                        or not conflict(task, other)
+                    ):
+                        continue
+                    if revalidation and other.claim is None:
+                        try:
+                            inactive_integrated_guard(store, other)
+                        except ControlError:
+                            pass
+                        else:
+                            # Its reservation/history remains intact. The new active
+                            # claim fences any later overlapping recovery until close.
+                            continue
+                    raise ControlError("Recovery conflicts with another reservation")
             handoff(store, task, args.handoff_file)
             task.claim_generation += 1
             task.attempts.approaches.append(
@@ -594,13 +694,6 @@ def execute(store: Store, args) -> dict:
             task.blocker = None
             task.status = "todo"
             if args.disposition == "resume":
-                if any(
-                    other.id != task.id
-                    and (other.claim or other.integration.reservation)
-                    and conflict(task, other)
-                    for other in tasks.values()
-                ):
-                    raise ControlError("Recovery conflicts with another reservation")
                 task.claim = Claim(
                     session_id=args.new_session,
                     worktree=source["worktree"],
@@ -630,8 +723,10 @@ def execute(store: Store, args) -> dict:
             patch = parse_yaml(read_input(args.patch))
             if set(patch) - SPEC_FIELDS:
                 raise ControlError("Spec patch cannot set operational state")
-            if task.claim or task.integration.reservation:
+            if task.claim:
                 raise ControlError("Recover/release active scope before specification change")
+            if task.integration.reservation:
+                reserved_contract_acceptance(store, task, patch)
             data = task.model_dump(mode="json")
             data.update(patch)
             task = Task.model_validate(data)

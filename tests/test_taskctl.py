@@ -216,11 +216,21 @@ class ControlFixture:
             ],
         }
 
-    def evidence(self, attempt="worker-1", *, stage="worker") -> None:
-        session = "coordinator" if stage == "integration" else "worker-a"
-        self.owned("begin-evidence", "--attempt", attempt, "--stage", stage, session=session)
+    def evidence(
+        self, attempt="worker-1", *, stage="worker", task_id="DEV-001", session=None
+    ) -> None:
+        session = session or ("coordinator" if stage == "integration" else "worker-a")
+        self.owned(
+            "begin-evidence",
+            "--attempt",
+            attempt,
+            "--stage",
+            stage,
+            session=session,
+            task_id=task_id,
+        )
         report = self.root.parent / f"{attempt}-report.json"
-        report.write_text(json.dumps(self.report()))
+        report.write_text(json.dumps(self.report(task_id)))
         self.owned(
             "record-evidence",
             "--attempt",
@@ -230,6 +240,7 @@ class ControlFixture:
             "--report",
             str(report),
             session=session,
+            task_id=task_id,
         )
 
     def submit(self) -> None:
@@ -1059,8 +1070,8 @@ def test_unrelated_target_change_does_not_invalidate_completed_task(control):
     assert rows["DEV-001"]["verification"] == "passed"
 
 
-def completed_then_changed(control):
-    """Real temp Git history: integrated A, followed by legitimate A and unrelated B."""
+def completed_consumer(control):
+    """Establish real temporary submission and target evidence, not a done flag."""
     control.claim()
     control.commit_change()
     control.evidence()
@@ -1069,7 +1080,12 @@ def completed_then_changed(control):
     control.evidence("target-1", stage="integration")
     control.owned("integrate", session="coordinator")
     control.owned("close", session="coordinator")
-    original = control.task().model_copy(deep=True)
+    return control.task().model_copy(deep=True)
+
+
+def completed_then_changed(control):
+    """Real temp Git history: integrated A, followed by legitimate A and unrelated B."""
+    original = completed_consumer(control)
     control.commit_change(control.target, "src/a.py", "VALUE = 3\n")
     control.commit_change(control.target, "src/b.py", "VALUE = 4\n")
     control.run("status")
@@ -1078,7 +1094,291 @@ def completed_then_changed(control):
     return original
 
 
-def inspected_recover(control, *, revalidate=True, source=None, session="coordinator"):
+def prepare_contract_update(control, *, change_bytes=True, version="2"):
+    path = control.root / "docs/contract.json"
+    if change_bytes:
+        path.write_text(json.dumps({"fixture_version": version}) + "\n")
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    # Synthetic management evidence only: not a real schema/provider verification.
+    (control.root / "docs/contract-proof.json").write_text(
+        json.dumps({"schema_checked": True, "fixtures_checked": True, "contract_digest": digest})
+    )
+    return digest
+
+
+def publish_fixture_contract(control, *, version="2"):
+    return control.run(
+        "publish-contract",
+        "--session",
+        "coordinator",
+        "--contract",
+        "fixture-contract",
+        "--version",
+        version,
+        "--expected-project-digest",
+        control.run("project-digest")["project_digest"],
+        "--evidence",
+        "docs/contract-proof.json",
+        "--reason",
+        "Temporary consumer contract lifecycle regression",
+        "--compatibility",
+        "Synthetic fixture only",
+        "--migration",
+        "Explicit baseline acceptance and new required AC verification",
+    )
+
+
+def accept_fixture_contract(control, changes=None, *, task_id="DEV-001"):
+    task = control.task(task_id)
+    registry = Store(control.root).project["contracts"]["fixture-contract"]
+    refs = [ref.model_dump(mode="json") for ref in task.contract_refs]
+    refs[0].update(version=registry["version"], digest=registry["digest"])
+    patch = {"contract_refs": refs, "spec_state": "ready", "unresolved": []}
+    patch.update(changes or {})
+    path = control.root.parent / "contract-acceptance.yaml"
+    path.write_text(dump(patch))
+    return control.run(
+        "edit-spec",
+        task_id,
+        "--session",
+        "coordinator",
+        "--expected-revision",
+        str(task.revision),
+        "--patch",
+        str(path),
+        "--reason",
+        "Review and accept the published fixture baseline only",
+    )
+
+
+@pytest.mark.parametrize("change_bytes", [True, False])
+def test_integrated_contract_publication_acceptance_retains_reservation_and_reverification(
+    control, change_bytes
+):
+    original = completed_consumer(control)
+    original_evidence = (control.root / original.integration.evidence).read_bytes()
+    digest = prepare_contract_update(control, change_bytes=change_bytes)
+    publish_fixture_contract(control)
+    published = control.task()
+    assert published.status == "verifying" and published.claim is None
+    assert published.verification_summary.state == "stale"
+    assert published.spec_state == "draft" and published.integration.reservation
+    assert published.contract_refs == original.contract_refs
+    assert not Store(control.root).complete(published)
+    with pytest.raises(ControlError):
+        control.owned("close", session="coordinator")
+    accept_fixture_contract(control)
+    accepted = control.task()
+    assert accepted.contract_refs[0].version == "2" and accepted.contract_refs[0].digest == digest
+    assert accepted.spec_state == "ready" and accepted.unresolved == []
+    assert accepted.integration == original.integration.model_copy(update={"reservation": True})
+    assert accepted.verification_summary.state == "stale" and accepted.status == "verifying"
+    assert accepted.latest_evidence_file == original.latest_evidence_file
+    assert (control.root / original.integration.evidence).read_bytes() == original_evidence
+    with pytest.raises(ControlError):
+        control.owned("close", session="coordinator")
+    rows = {row["id"]: row for row in control.run("status")["tasks"]}
+    assert "dependency:DEV-001" in rows["DEV-003"]["reasons"]
+
+    inspected_recover(control)
+    with pytest.raises(ControlError, match="not passed"):
+        control.submit()
+    control.evidence("accepted-worker")
+    control.submit()
+    with pytest.raises(ControlError, match="Target integration evidence required"):
+        control.owned("close", session="coordinator")
+    control.evidence("accepted-target", stage="integration")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    assert Store(control.root).complete(control.task())
+    rows = {row["id"]: row for row in control.run("status")["tasks"]}
+    assert "dependency:DEV-001" not in rows["DEV-003"]["reasons"]
+    assert (control.root / original.integration.evidence).read_bytes() == original_evidence
+
+
+@pytest.mark.parametrize("stage", ["active", "pending", "fake_integrated"])
+def test_contract_publication_keeps_active_unintegrated_and_unbound_reservations_blocked(
+    control, stage
+):
+    control.claim()
+    if stage != "active":
+        control.commit_change()
+        control.evidence()
+        control.submit()
+        if stage == "fake_integrated":
+            task = control.task()
+            task.integration.state = "integrated"
+            task.verification_summary.state = "stale"
+            control.put(task)
+    prepare_contract_update(control)
+    original_project = (control.root / "tasks/project.yaml").read_bytes()
+    with pytest.raises(ControlError):
+        publish_fixture_contract(control)
+    with pytest.raises(ControlError):
+        accept_fixture_contract(control)
+    assert (control.root / "tasks/project.yaml").read_bytes() == original_project
+
+
+@pytest.mark.parametrize(
+    "damage", ["evidence_result", "manifest_head", "target_branch", "unrelated_history"]
+)
+@pytest.mark.parametrize("operation", ["publish", "accept"])
+def test_reserved_contract_change_requires_historical_binding_and_canonical_branch(
+    control, damage, operation
+):
+    original = completed_consumer(control)
+    prepare_contract_update(control)
+    if operation == "accept":
+        publish_fixture_contract(control)
+    control.run("status")
+    if damage == "target_branch":
+        git_call(control.target, "switch", "-c", "wrong-target")
+    else:
+        evidence_path = control.root / original.integration.evidence
+        evidence = json.loads(evidence_path.read_text())
+        if damage == "evidence_result":
+            evidence["result"] = "failed"
+            evidence_path.write_text(json.dumps(evidence))
+        else:
+            manifest_path = control.root / evidence["source_manifest"]
+            manifest = json.loads(manifest_path.read_text())
+            if damage == "manifest_head":
+                manifest["head"] = git_call(control.target, "rev-parse", "HEAD^")
+            else:
+                tree = git_call(control.target, "rev-parse", "HEAD^{tree}")
+                unrelated = git_call(control.target, "commit-tree", tree, "-m", "Unrelated fixture")
+                manifest["head"] = unrelated
+                task = control.task()
+                task.integration.result["head"] = unrelated
+                control.put(task)
+            manifest_path.write_text(json.dumps(manifest))
+    original_project = (control.root / "tasks/project.yaml").read_bytes()
+    with pytest.raises(ControlError):
+        (publish_fixture_contract if operation == "publish" else accept_fixture_contract)(control)
+    assert (control.root / "tasks/project.yaml").read_bytes() == original_project
+    assert control.task().integration.reservation
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["scope", "ac", "dependency", "role", "drop_ref", "add_ref", "digest", "version", "unresolved"],
+)
+def test_reserved_contract_acceptance_cannot_rewrite_scope_authority_or_unrelated_blockers(
+    control, mutation
+):
+    completed_consumer(control)
+    prepare_contract_update(control)
+    publish_fixture_contract(control)
+    task = control.task()
+    data = task.model_dump(mode="json")
+    refs = deepcopy(data["contract_refs"])
+    refs[0].update(
+        version="2", digest=Store(control.root).project["contracts"]["fixture-contract"]["digest"]
+    )
+    changes = {}
+    if mutation == "scope":
+        changes["scope"] = data["scope"] | {"owned_paths": ["src/b.py"]}
+    elif mutation == "ac":
+        changes["acceptance_criteria"] = data["acceptance_criteria"]
+        changes["acceptance_criteria"][0]["expect"] = "Bypass the original requirement"
+    elif mutation == "dependency":
+        changes["depends_on"] = [{"id": "DEV-002", "required_output": "New requirement"}]
+    elif mutation == "unresolved":
+        task.unresolved.append("Unresolved independent authority decision")
+        control.put(task)
+    else:
+        if mutation == "role":
+            refs[0]["role"] = "provider"
+        elif mutation == "drop_ref":
+            refs = []
+        elif mutation == "add_ref":
+            refs.append(deepcopy(refs[0]))
+        elif mutation == "digest":
+            refs[0]["digest"] = "a" * 64
+        elif mutation == "version":
+            refs[0]["version"] = "unpublished"
+        changes["contract_refs"] = refs
+    before = (control.root / "tasks/DEV-001/task.yaml").read_bytes()
+    with pytest.raises(ControlError):
+        accept_fixture_contract(control, changes)
+    assert (control.root / "tasks/DEV-001/task.yaml").read_bytes() == before
+
+
+def test_contract_acceptance_preserves_unrelated_blocker_in_draft(control):
+    completed_consumer(control)
+    prepare_contract_update(control)
+    publish_fixture_contract(control)
+    task = control.task()
+    task.unresolved.append("Independent reviewed question")
+    control.put(task)
+    with pytest.raises(ControlError, match="unresolved ready"):
+        accept_fixture_contract(control, {"unresolved": ["Independent reviewed question"]})
+    accept_fixture_contract(
+        control, {"spec_state": "draft", "unresolved": ["Independent reviewed question"]}
+    )
+    assert control.task().unresolved == ["Independent reviewed question"]
+    assert control.task().spec_state == "draft" and control.task().integration.reservation
+    with pytest.raises(ControlError, match="Reconcile specification/contract"):
+        inspected_recover(control)
+
+
+def test_latest_contract_acceptance_clears_only_publisher_recorded_intermediate_notices(control):
+    original = completed_consumer(control)
+    for version in ("2", "3"):
+        prepare_contract_update(control, version=version)
+        publish_fixture_contract(control, version=version)
+    notices = control.task().unresolved
+    assert len(notices) == 2
+    task = control.task()
+    lookalike = "Re-read fixture-contract 99; coordinator edit-spec must accept new digest"
+    task.unresolved.append(lookalike)
+    control.put(task)
+    with pytest.raises(ControlError, match="unrelated unresolved"):
+        accept_fixture_contract(control)
+    accept_fixture_contract(control, {"spec_state": "draft", "unresolved": [lookalike]})
+    accepted = control.task()
+    assert accepted.contract_refs[0].version == "3"
+    assert accepted.unresolved == [lookalike]
+    assert accepted.integration == original.integration.model_copy(update={"reservation": True})
+
+
+def test_repeated_publication_can_accept_latest_ready_and_recover(control):
+    completed_consumer(control)
+    for version in ("2", "3"):
+        prepare_contract_update(control, version=version)
+        publish_fixture_contract(control, version=version)
+    accept_fixture_contract(control)
+    accepted = control.task()
+    assert accepted.spec_state == "ready" and accepted.unresolved == []
+    assert accepted.contract_refs[0].version == "3" and accepted.integration.reservation
+    inspected_recover(control)
+    assert control.task().status == "in_progress"
+    assert control.task().verification_summary.state == "stale"
+
+
+def test_accepting_contract_ref_without_clearing_its_notice_is_atomic_rejection(control):
+    completed_consumer(control)
+    prepare_contract_update(control)
+    publish_fixture_contract(control)
+    before = (control.root / "tasks/DEV-001/task.yaml").read_bytes()
+    with pytest.raises(ControlError, match="same specification change"):
+        accept_fixture_contract(
+            control, {"spec_state": "draft", "unresolved": control.task().unresolved}
+        )
+    assert (control.root / "tasks/DEV-001/task.yaml").read_bytes() == before
+    accept_fixture_contract(control)
+    assert control.task().spec_state == "ready"
+
+
+def inspected_recover(
+    control,
+    *,
+    revalidate=True,
+    source=None,
+    session="coordinator",
+    task_id="DEV-001",
+    new_session="worker-a",
+):
     inspection = control.root.parent / "revalidation-inspection.json"
     inspection.write_text(
         json.dumps(
@@ -1093,15 +1393,15 @@ def inspected_recover(control, *, revalidate=True, source=None, session="coordin
     )
     return control.run(
         "recover",
-        "DEV-001",
+        task_id,
         "--session",
         session,
         "--source",
         str(source or control.first),
         "--expected-revision",
-        str(control.task().revision),
+        str(control.task(task_id).revision),
         "--new-session",
-        "worker-a",
+        new_session,
         "--disposition",
         "resume",
         "--inspection-file",
@@ -1111,6 +1411,86 @@ def inspected_recover(control, *, revalidate=True, source=None, session="coordin
         "--reason",
         "Reviewed subsequent integrated source; reverify current artifacts",
     )
+
+
+@pytest.mark.parametrize("overlap", ["paths", "resources"])
+def test_overlapping_integrated_reservations_reverify_serially_without_releasing_history(
+    control, overlap
+):
+    if overlap == "resources":
+        first = control.task()
+        first.scope.shared_resources = ["test-database"]
+        control.put(first)
+    completed_consumer(control)
+    second = control.task("DEV-002")
+    if overlap == "paths":
+        second.scope.owned_paths.append("src/a.py")
+    else:
+        second.scope.shared_resources = ["test-database"]
+    control.put(second)
+    git_call(control.second, "merge", "--ff-only", "fixture-main")
+    control.claim("DEV-002", "worker-b", control.second)
+    # B's independent change preserves A's verified files; both really reach done.
+    control.commit_change(control.second, "src/b.py")
+    control.evidence("overlap-b-worker", task_id="DEV-002", session="worker-b")
+    control.owned(
+        "submit",
+        "--handoff-file",
+        str(control.handoff_file),
+        task_id="DEV-002",
+        session="worker-b",
+    )
+    git_call(control.target, "merge", "--ff-only", "worker-b")
+    control.evidence("overlap-b-target", task_id="DEV-002", stage="integration")
+    control.owned("integrate", task_id="DEV-002", session="coordinator")
+    control.owned("close", task_id="DEV-002", session="coordinator")
+    assert control.task().status == control.task("DEV-002").status == "done"
+
+    prepare_contract_update(control)
+    publish_fixture_contract(control)
+    for task_id in ("DEV-001", "DEV-002"):
+        accept_fixture_contract(control, task_id=task_id)
+        assert control.task(task_id).integration.reservation
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    second_before = control.task("DEV-002")
+    evidence_path = control.root / second_before.integration.evidence
+    evidence_bytes = evidence_path.read_bytes()
+    with pytest.raises(ControlError, match="Recovery conflicts"):
+        inspected_recover(control, revalidate=False)
+    corrupted = json.loads(evidence_bytes)
+    corrupted["result"] = "failed"
+    evidence_path.write_text(json.dumps(corrupted))
+    with pytest.raises(ControlError, match="Recovery conflicts"):
+        inspected_recover(control)
+    evidence_path.write_bytes(evidence_bytes)  # Restore only injected temporary fixture corruption.
+    inspected_recover(control)
+    assert control.task("DEV-002") == second_before
+
+    def recover_second():
+        return inspected_recover(
+            control, source=control.second, task_id="DEV-002", new_session="worker-b"
+        )
+
+    with pytest.raises(ControlError, match="Recovery conflicts"):
+        recover_second()
+    first_active = control.task()
+    expired = first_active.model_copy(deep=True)
+    expired.claim.lease_expires_at = "2000-01-01T00:00:00+00:00"
+    control.put(expired)
+    with pytest.raises(ControlError, match="Recovery conflicts"):
+        recover_second()
+    control.put(first_active)
+    control.evidence("overlap-a-reverified")
+    control.submit()
+    with pytest.raises(ControlError, match="Recovery conflicts"):
+        recover_second()  # A passed but is not yet integrated; its pending reservation blocks B.
+    control.evidence("overlap-a-target", stage="integration")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    recover_second()
+    assert control.task("DEV-002").status == "in_progress"
+    assert control.task("DEV-002").verification_summary.state == "stale"
+    assert evidence_path.read_bytes() == evidence_bytes
 
 
 @pytest.mark.parametrize("owned_fix", [False, True])

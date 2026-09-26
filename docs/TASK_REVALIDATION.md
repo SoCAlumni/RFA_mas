@@ -4,6 +4,37 @@
 task는 `verifying`/범위 예약으로 돌아간다. 과거 성공은 삭제되지 않으며 새 source의
 성공을 의미하지 않는다. 이 절차는 기존 `taskctl`의 coordinator recovery를 사용한다.
 
+## 완료된 consumer의 계약 갱신
+
+새 provider artifact를 통합한 후 `publish-contract`를 실행하면 기존 consumer의
+과거 검증이 stale일 수 있다. **활성 claim이 없고 이미 integrated였던 stale 예약**은
+이유만으로 계약 발행을 막지 않는다. 도구는 원래 submission/result/evidence/source
+manifest 연결, 기록된 통합 commit의 현재 canonical target ancestry와 target branch를
+확인한다. 활성 claim, 미통합 pending 제출, 증거가 없거나 변조된 예약은 계속 거절한다.
+명령의 coordinator/project digest/schema·fixture evidence 요구도 그대로다.
+
+1. 기존 `publish-contract`로 검증한 artifact를 발행한다. consumer는 draft/stale이며
+   예약·이전 submission·증거를 유지한다. artifact 바이트가 같아도 버전이 바뀌면 같다.
+2. consumer의 최신 revision을 조회하고 `edit-spec`으로 **기존 contract_refs의 ID와
+   role를 유지한 채** 발행 registry의 실제 version/digest만 수락한다. 이 예약 상태에서는
+   `contract_refs`, `spec_state`, `unresolved` 세 필드만 허용한다. provider 전환·계약 추가/
+   삭제·scope/AC/의존성 변경은 이 경로로 처리할 수 없다.
+3. `unresolved`에서 수락한 현재 계약의 자동 `Re-read …` 안내와 publisher가
+   `contract_changes`에 해당 consumer/계약/version/notice로 기록한 중간 발행 안내만
+   제거할 수 있다. 따라서 v2/v3를 연속 발행한 뒤 최신 v3를 직접 수락할 수 있다.
+   ref 갱신과 해당 안내 제거는 같은 patch에서 함께 해야 한다. ref만 수락하고 안내를
+   남기는 중간 상태는 거절해 이후 정리할 수 없는 예약을 만들지 않는다.
+   독립적인 미결정 사항은 유지하고 draft로 둔다. 미발행/파일과 불일치하는 digest,
+   unresolved가 남은 ready, 미갱신 계약이 있는 ready는 거절한다. 발행 이력으로 확인할 수
+   없는 과거 안내나 다른 명세 판단은 prefix로 자동 삭제하지 말고 coordinator가
+   별도로 조사·인계한다.
+4. 수락은 새 구현·검증·완료가 아니다. 아래 inspection/recovery → 새 worker evidence →
+   submit → 새 target evidence → integrate/close를 거쳐야 의존성이 풀린다. 이전 evidence
+   파일을 수정하거나 재검증 예약을 해제하지 않는다.
+
+이 예외는 같은 호스트의 신뢰된 coordinator 운영 프로토콜이다. 임의 사용자 인증이나
+변조 방지 서명을 새로 제공하지 않으며, 자동 merge·검증 실행도 하지 않는다.
+
 ## 재검증 baseline 발급
 
 1. canonical `TASK_CONTROL_ROOT`에서 `status`와 해당 `context-pack`을 다시 확인한다.
@@ -36,6 +67,14 @@ coordinator task의 `--new-session`도 coordinator여야 한다. 명시적
 `integrated_revalidation`은 이미 통합된 submission과 실제 통합 증거가 있을 때만 허용된다.
 증거의 task/source/commit 연결과 현재 target의 통합 commit ancestry를 확인한다.
 worker commit의 cherry-pick 통합은 파일 hash 연결로 보존한다.
+
+이미 통합된 여러 task가 같은 경로/자원을 보유했다면 계약 변경으로 모두 예약될 수 있다.
+명시적인 `integrated_revalidation` recovery에만, 충돌 상대가 **claim 없는 stale 통합
+예약이고 동일한 역사적 evidence/ancestry 검사에 통과**할 때 순서상 첫 재검증을 허용한다.
+상대의 예약·증거는 그대로 남는다. 첫 claim이 생긴 후에는 두 번째 overlapping recovery가
+거절되고, 첫 task의 새 검증·submit·target 검증·close가 끝나야 다음을 시작할 수 있다.
+만료 claim도 활성 점유로 취급한다. 일반 claim/recover, 미통합 pending 예약 또는 변조된
+역사 증거에는 이 예외가 없다. 병렬 재검증이나 자동 scope 양도를 허용하는 기능이 아니다.
 
 ## 변경되는 것과 보존되는 것
 
