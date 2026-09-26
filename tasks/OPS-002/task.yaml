@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: done
+status: todo
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -166,50 +166,32 @@ verification:
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
-latest_evidence_file: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
+latest_evidence_file: .agent/evidence/OPS-002/post-ops004-worker-0926161010/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 4
   spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-  source_fingerprint: 0426aa42af156805ab9a3907b91e63b7e346c8c8a671947102bf6484bd0292dc
-  evidence: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
+  source_fingerprint: 14243eea4768ae3561d5c8317a1b061df22b3863ca1b003b7364eff6d31f1079
+  evidence: .agent/evidence/OPS-002/post-ops004-worker-0926161010/result.json
 integration:
-  state: integrated
+  state: pending
   target: canonical main
   reason: null
   reservation: false
-  submission_generation: 13
-  submission:
-    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
-    baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
-    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r5
-    branch: task/OPS-002-r5
-    evidence: .agent/evidence/OPS-002/post-team-worker-0926152559/result.json
-    changed_files:
-      docs/TASK_REVALIDATION.md: c5ec61f6fafac73295cb3f27b9de4b7ed28f7677a3903fc2c8332e9c56aa6481
-      scripts/tasklib/cli.py: 3395fc7ea707cee7b9c487b42a2cf70d2452adcc6916ecd9d24a45f590776891
-      tests/test_task_migration.py: c31f88c8876c57d9040d7418ec6158587657c1dc44aa0b9f97efb1338ea8b7c1
-      tests/test_taskctl.py: 45b9fd2b5eca69b26ac952094612f33ae05a733ed57551c489ecf45b59ba7700
-  result:
-    verification_summary:
-      state: passed
-      spec_revision: 4
-      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
-      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-      source_fingerprint: 0426aa42af156805ab9a3907b91e63b7e346c8c8a671947102bf6484bd0292dc
-      evidence: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
-    head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
-  evidence: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
-revision: 87
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 92
 spec_revision: 4
-claim_generation: 13
+claim_generation: 15
 claim: null
 attempts:
-  count: 18
-  cycles: 1
+  count: 19
+  cycles: 0
   no_progress_count: 0
-  latest_attempt: post-team-target-0926153013
+  latest_attempt: post-ops004-worker-0926161010
   evidence_refs:
   - .agent/evidence/OPS-002/recovery-01/result.json
   - .agent/evidence/OPS-002/contract-recovery-01/result.json
@@ -221,6 +203,7 @@ attempts:
   - .agent/evidence/OPS-002/post-team-r4-worker/result.json
   - .agent/evidence/OPS-002/post-team-r5-worker/result.json
   - .agent/evidence/OPS-002/post-team-worker-0926152559/result.json
+  - .agent/evidence/OPS-002/post-ops004-worker-0926161010/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -577,6 +560,85 @@ attempts:
       source_fingerprint: 22ff20a2b25cac3ed9ef621b9e9ed7f4f2c7b5239ba28b1d1e1252da4a422a02
       evidence: .agent/evidence/OPS-002/post-team-r5-target2/result.json
     latest_evidence_file: .agent/evidence/OPS-002/post-team-r5-target2/result.json
+  - kind: integrated_revalidation
+    generation: 14
+    baseline_head: 7553a205e5a3eb332b38214e261226c9be36fe35
+    reason: OPS-004 tasklib git memo integrated at 7553a20 (control tool only)
+    at: '2026-09-26T16:10:09+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical main
+      reason: null
+      reservation: true
+      submission_generation: 13
+      submission:
+        head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+        baseline_head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r5
+        branch: task/OPS-002-r5
+        evidence: .agent/evidence/OPS-002/post-team-worker-0926152559/result.json
+        changed_files:
+          docs/TASK_REVALIDATION.md: c5ec61f6fafac73295cb3f27b9de4b7ed28f7677a3903fc2c8332e9c56aa6481
+          scripts/tasklib/cli.py: 3395fc7ea707cee7b9c487b42a2cf70d2452adcc6916ecd9d24a45f590776891
+          tests/test_task_migration.py: c31f88c8876c57d9040d7418ec6158587657c1dc44aa0b9f97efb1338ea8b7c1
+          tests/test_taskctl.py: 45b9fd2b5eca69b26ac952094612f33ae05a733ed57551c489ecf45b59ba7700
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 4
+          spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+          contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+          source_fingerprint: 0426aa42af156805ab9a3907b91e63b7e346c8c8a671947102bf6484bd0292dc
+          evidence: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
+        head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
+      evidence: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 0426aa42af156805ab9a3907b91e63b7e346c8c8a671947102bf6484bd0292dc
+      evidence: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/post-team-target-0926153013/result.json
+  - kind: recovery
+    generation: 15
+    baseline_head: 7553a205e5a3eb332b38214e261226c9be36fe35
+    reason: Target moved mid-revalidation (a0a9347); discard no-change revalidation claim; OPS-005 fixes
+      the tool gap
+    at: '2026-09-26T16:17:51+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-r5
+      branch: task/OPS-002-r5
+      generation: 14
+      claimed_at: '2026-09-26T16:10:09+00:00'
+      heartbeat_at: '2026-09-26T16:10:09+00:00'
+      lease_expires_at: '2026-09-26T16:25:09+00:00'
+      baseline_head: 7553a205e5a3eb332b38214e261226c9be36fe35
+      recovery_required: false
+      context_digest: f31729badfee720e37c869d548d67eca627f59279a4debd7260e8d8b7a6a2353
+    integration:
+      state: pending
+      target: canonical main
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 14243eea4768ae3561d5c8317a1b061df22b3863ca1b003b7364eff6d31f1079
+      evidence: .agent/evidence/OPS-002/post-ops004-worker-0926161010/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/post-ops004-worker-0926161010/result.json
 blocker: null
 migration:
   original_status: new
@@ -589,7 +651,8 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T15:34:20+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-26T16:17:51+00:00'
+concise_result: 'Recovery inspected: Target moved mid-revalidation (a0a9347); discard no-change revalidation
+  claim; OPS-005 fixes the tool gap'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

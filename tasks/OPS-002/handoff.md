@@ -25,3 +25,15 @@ Next first action: scoped feature commit, then submit verifying. Parent coordina
 
 - 사유: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED 1.1 888c3d6d
 - 소스 변경 없이 현재 통합 HEAD 11aedac에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 post-ops004 (2026-09-26T16:10Z)
+
+- 사유: OPS-004 tasklib git memo integrated at 7553a20 (control tool only)
+- 소스 변경 없이 현재 통합 HEAD 7553a20에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+
+## 2026-09-27 revalidation 중단(discard)
+
+- post-ops004 재검증 claim(generation 14, baseline 7553a20) 중 다른 통합(P1-008C, a0a9347)이 target을 이동시켜 submit이 "current integrated HEAD" 조건으로 거절됨.
+- FF하면 범위 밖 파일이 diff에 들어가고, claim 중인 task는 revalidation recover가 불가하여 도구 공백이 확인됨(OPS-005에서 보정).
+- 소스 변경 없는 재검증 claim이므로 discard로 정리한다. 이전 통합 이력은 attempts.approaches에 보존된다. OPS-005 후 절차 문서를 갱신하는 실제 변경으로 다시 완료한다.

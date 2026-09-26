@@ -1,0 +1,58 @@
+{
+  "attempt_id": "worker-0926161012",
+  "contract_digest": "4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14",
+  "mode": "local/mock; simulated=true. 실제 MCP/게시/OpenShell/UI gate는 별도 not_run.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_local_response.py"
+        ],
+        "assertions": [
+          "1.0 호환 submit은 pending; 1.1 원본 DB 수동 승인/거절/수정 요청. 위조 identity/token/Host/Origin/Forwarded 및 body echo 거절. HTTP READ allowlist 외 실제 tool 호출 0회.",
+          "승인자 서버 identity, 최신 binding/expiry 확인; 수정 후 이전 승인 거절. 승인 없는 모의 게시도 거절; receipt는 mode=mock/reference 표시, 외부 호출 0회.",
+          "검토/결정/영수증 보존과 멱등 동시 1회; 동일 key 다른 payload conflict, outcome_unknown 영속 조회 및 자동 재게시 0회.",
+          "기존 consumer의 pending/get/READ/WRITE 차단이 같은 DTO로 작동. capabilities/health는 local/mock이고 real 권한/게시/OpenShell을 주장하지 않는다."
+        ],
+        "counts": {
+          "collected": 24,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 24,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 4.62,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T16:10:21.067759+00:00",
+        "id": "V1",
+        "log_excerpt": "24 passed in 0.71s",
+        "result": "passed",
+        "started_at": "2026-09-26T16:10:16.451183+00:00",
+        "timeout_seconds": 180
+      }
+    ],
+    "environment": {
+      "head": "a0a9347cef39fab15b498d522ce7d681a530298b",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008C-int-0926161008",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T16:10:21.067824+00:00",
+    "limits": "Local/mock synthetic verification only; stand-ins are not real teammate services.",
+    "reviewer": "worker-local-modules (claude-opus-5-5 coordinator run)",
+    "started_at": "2026-09-26T16:10:16.450262+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "1def2ddb7753eac734fe2d569c0b78fe9ccd0b7c52ab7c99a1ffaa5b361a25ef",
+  "source_manifest": ".agent/evidence/P1-008C/worker-0926161012/source.json",
+  "spec_digest": "42964f03ec3be8fe7374a52597dbb4d302f852da46867d8767e710d6d6e8e419",
+  "spec_revision": 3,
+  "task_id": "P1-008C"
+}

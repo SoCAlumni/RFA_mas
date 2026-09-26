@@ -1,12 +1,13 @@
 generated: true
 schema_version: '1.0'
-source_digest: f6d077d877bcb09dcf093bd603e81f38ba20187bef3fc46a14e8bc6f6bbb2ee9
+source_digest: dfc8d72b96164dd3917a797987e5250ca676568e7e6d4e25d80b2ae0f860f222
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 87
-  OPS-003: 12
-  OPS-004: 1
+  OPS-002: 92
+  OPS-003: 14
+  OPS-004: 10
+  OPS-005: 11
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -20,13 +21,13 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 87
-  P0-015: 103
-  P0-016: 88
-  P0-017: 78
-  P0-018: 92
-  P0-019: 47
-  P0-020: 21
+  P0-014: 88
+  P0-015: 104
+  P0-016: 89
+  P0-017: 79
+  P0-018: 93
+  P0-019: 48
+  P0-020: 22
   P0-021: 10
   P0-022: 10
   P0-023: 9
@@ -34,10 +35,10 @@ source_revisions:
   P0-025: 12
   P0-025A: 2
   P0-026: 13
-  P0-027: 91
-  P0-028: 60
-  P1-001: 42
-  P1-001A: 38
+  P0-027: 92
+  P0-028: 61
+  P1-001: 43
+  P1-001A: 39
   P1-001B: 10
   P1-001C: 10
   P1-002: 3
@@ -50,11 +51,11 @@ source_revisions:
   P1-005: 12
   P1-005A: 10
   P1-005B: 10
-  P1-006: 49
+  P1-006: 50
   P1-006A: 4
   P1-006B: 3
   P1-006C: 3
-  P1-006D: 65
+  P1-006D: 66
   P1-006E: 10
   P1-007: 2
   P1-007A: 1
@@ -62,7 +63,7 @@ source_revisions:
   P1-008: 12
   P1-008A: 4
   P1-008B: 4
-  P1-008C: 2
+  P1-008C: 12
   P1-008D: 2
   P1-009: 5
   P2-001: 2
@@ -74,7 +75,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T15:50:53+00:00'
+generated_at: '2026-09-26T16:31:59+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -103,6 +104,12 @@ tasks:
   depends_on:
   - OPS-003
   path: tasks/OPS-004/task.yaml
+- id: OPS-005
+  title: stale 통합 예약의 claim 차단 완화와 target 이동 중 재검증 보정
+  workstream: contracts/control
+  depends_on:
+  - OPS-004
+  path: tasks/OPS-005/task.yaml
 - id: P0-001
   title: 빈 저장소 점검, Python 3.12/uv 패키지 구성, 버전 고정
   workstream: contracts/control

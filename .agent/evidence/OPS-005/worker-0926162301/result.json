@@ -1,0 +1,87 @@
+{
+  "attempt_id": "worker-0926162301",
+  "contract_digest": "4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14",
+  "mode": "개발 task-control 전용; 제품 기능 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_taskctl.py"
+        ],
+        "assertions": [
+          "새 task claim은 그 stale 예약 때문에 거절되지 않는다. 단, 새 task의 depends_on이 stale이면 기존처럼 dependency로 거절되고, 활성 claim·미통합 제출·blocked 예약은 계속 충돌로 거절된다.",
+          "worker 변경 없이 claim baseline의 후손인 현재 target HEAD로 clean fast-forward한 source는 무변경 revalidation으로 제출할 수 있다. target과 다른 head, dirty tree, 소유 범위 밖 worker commit은 기존처럼 거절된다.",
+          "fencing·evidence 불변성·scope·계약 수락·최종 gate(모든 통합 task 재검증) 규칙을 약화하지 않고 기존 테스트가 통과한다."
+        ],
+        "counts": {
+          "collected": 103,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 103,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 143.85,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T16:25:27.703100+00:00",
+        "id": "V1",
+        "log_excerpt": "103 passed, 1 warning in 138.22s (0:02:18)",
+        "result": "passed",
+        "started_at": "2026-09-26T16:23:03.856882+00:00",
+        "timeout_seconds": 600
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_task_migration.py"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 1,
+          "passed": 16,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 15.16,
+        "exit_code": 1,
+        "failures": [
+          "FAILED tests/test_task_migration.py::test_generated_views_are_consistent_and_no_monolithic_state_original"
+        ],
+        "finished_at": "2026-09-26T16:25:42.860446+00:00",
+        "id": "V2",
+        "log_excerpt": "1 failed, 16 passed in 14.50s",
+        "result": "failed",
+        "started_at": "2026-09-26T16:25:27.703771+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "4bf0ec93bdd00fe0d86091fc9ff45cdec19012ff",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-005-int-0926162257",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-26T16:25:42.860493+00:00",
+    "limits": "Local/mock synthetic verification only; stand-ins are not real teammate services.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5 coordinator run)",
+    "started_at": "2026-09-26T16:23:03.856442+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "6c679736c6d6e771c4c71dea8d18ca8f5625ae183ed3d52d4aaaa7cf2147800c",
+  "source_manifest": ".agent/evidence/OPS-005/worker-0926162301/source.json",
+  "spec_digest": "9d8e06c8825326fb483de21c4e87d14e1f929f31e47b1480aad5111b1a379c09",
+  "spec_revision": 1,
+  "task_id": "OPS-005"
+}

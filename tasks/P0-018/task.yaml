@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -123,7 +123,7 @@ verification:
 evidence_dir: .agent/evidence/P0-018
 latest_evidence_file: .agent/evidence/P0-018/post-team-target-0926153109/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 16
   spec_digest: 39ae72b6d220159f90169700c30e3b4dd45a7c80320445116619db87ab91c0d6
   contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
@@ -133,7 +133,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 8
   submission:
     head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
@@ -155,7 +155,7 @@ integration:
       evidence: .agent/evidence/P0-018/post-team-target-0926153109/result.json
     head: 11aedac975cc8e2d374ec548de2d63ef1ead2eee
   evidence: .agent/evidence/P0-018/post-team-target-0926153109/result.json
-revision: 92
+revision: 93
 spec_revision: 16
 claim_generation: 8
 claim: null
@@ -487,7 +487,7 @@ migration:
   judgment: ID/AC 유지. 순수 selector를 신규 team_selector.py로 격리해 P1-004 의존 제거; graph 연결은 P0-020, 공통 DTO는 P0-014가
     소유. 공유 파일 동시 수정 금지.
   initial_spec_revision: 1
-updated_at: '2026-09-26T15:31:35+00:00'
+updated_at: '2026-09-26T16:29:36+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

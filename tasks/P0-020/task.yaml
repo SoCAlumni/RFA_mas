@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -359,7 +359,7 @@ verification:
 evidence_dir: .agent/evidence/P0-020
 latest_evidence_file: .agent/evidence/P0-020/team-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 11
   spec_digest: c9cde2f15f3bdbaf8907c1b0c9c142be34c3e1f2a1302722e99b5e505fb13f49
   contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
@@ -369,7 +369,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 86d770fd928d7feb4f4ebcdce2ac4c6175e1c158
@@ -404,7 +404,7 @@ integration:
       evidence: .agent/evidence/P0-020/team-target-01/result.json
     head: 86d770fd928d7feb4f4ebcdce2ac4c6175e1c158
   evidence: .agent/evidence/P0-020/team-target-01/result.json
-revision: 21
+revision: 22
 spec_revision: 11
 claim_generation: 1
 claim: null
@@ -428,7 +428,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T14:50:39+00:00'
+updated_at: '2026-09-26T16:29:36+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
-  한다.
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'
