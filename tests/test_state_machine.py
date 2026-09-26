@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from rfa_mas.application.state_machine import ALLOWED_TRANSITIONS, ensure_transition
-from rfa_mas.contracts import WorkStatus
+from rfa_mas.application.state_machine import (
+    ALLOWED_TRANSITIONS,
+    PUBLICATION_TRANSITIONS,
+    ensure_publication_transition,
+    ensure_transition,
+)
+from rfa_mas.contracts import PublicationStatus, WorkStatus
 from rfa_mas.errors import InvalidStateTransitionError
 
 EXPECTED_TRANSITIONS: dict[WorkStatus, frozenset[WorkStatus]] = {
@@ -56,3 +61,45 @@ def test_invalid_transition_is_rejected(current: WorkStatus, requested: WorkStat
     assert captured.value.code == "invalid_state_transition"
     assert captured.value.retryable is False
     assert f"{current.value} -> {requested.value}" in captured.value.safe_message
+
+
+# P1-005A: publication lifecycle is separate from the Run lifecycle.
+P = PublicationStatus
+EXPECTED_PUBLICATION = {
+    P.NOT_REQUESTED: frozenset({P.PENDING}),
+    P.PENDING: frozenset({P.SUCCEEDED, P.FAILED, P.OUTCOME_UNKNOWN}),
+    P.OUTCOME_UNKNOWN: frozenset({P.SUCCEEDED, P.FAILED}),
+    P.SUCCEEDED: frozenset(),
+    P.FAILED: frozenset(),
+}
+
+
+def test_publication_table_is_separate_and_never_republishes() -> None:
+    assert PUBLICATION_TRANSITIONS == EXPECTED_PUBLICATION
+    # Unknown outcomes are reconciled by query, never by returning to pending/sending.
+    assert P.PENDING not in PUBLICATION_TRANSITIONS[P.OUTCOME_UNKNOWN]
+    # No state can reach SUCCEEDED without first recording a durable PENDING intent.
+    assert P.SUCCEEDED not in PUBLICATION_TRANSITIONS[P.NOT_REQUESTED]
+    assert set(PUBLICATION_TRANSITIONS) == set(PublicationStatus)
+
+
+@pytest.mark.parametrize(
+    ("current", "requested"),
+    [
+        (c, r)
+        for c in PublicationStatus
+        for r in PublicationStatus
+        if r not in EXPECTED_PUBLICATION[c]
+    ],
+)
+def test_invalid_publication_transition_is_rejected(current, requested) -> None:
+    with pytest.raises(InvalidStateTransitionError):
+        ensure_publication_transition(current, requested)
+
+
+@pytest.mark.parametrize(
+    ("current", "requested"),
+    [(c, r) for c, targets in EXPECTED_PUBLICATION.items() for r in targets],
+)
+def test_valid_publication_transition_is_accepted(current, requested) -> None:
+    ensure_publication_transition(current, requested)

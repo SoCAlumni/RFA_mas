@@ -9,13 +9,16 @@ from typing import Any
 from rfa_mas.contracts import (
     Audience,
     DraftBundle,
+    DraftBinding,
     EvaluationCase,
     EvidenceBundle,
     EvidenceItem,
+    ExecutionMode,
     JudgeAssessment,
     JudgeDimensions,
     ModelRequest,
     ModelResult,
+    PublicationReceipt,
     PublicationStatus,
     ResultStatus,
     RetrievalRequest,
@@ -27,9 +30,10 @@ from rfa_mas.contracts import (
     ToolEffect,
     ToolRequest,
     ToolResult,
+    new_id,
     sha256_text,
 )
-from rfa_mas.errors import RfaError
+from rfa_mas.errors import OutcomeUnknownError, RfaError
 from rfa_mas.adapters.retrieval import LocalRetrieval
 from rfa_mas.ports import WorkRepositoryPort
 
@@ -214,6 +218,81 @@ class MockResponse:
 
     async def get_decision(self, draft_id: str) -> ReviewDecision | None:
         return self._by_draft.get(draft_id)
+
+
+class MockPublisher:
+    """P1-005A in-process publication stand-in: no network, no external write.
+
+    It keeps an in-memory sink of published payload bindings keyed by the owned
+    idempotency key, so a retried/queried publication never produces a second effect.
+    `lose_ack` keys simulate an effect whose acknowledgement was lost (outcome_unknown);
+    `fail` keys simulate a definite rejection. Receipts are always mode=mock.
+    """
+
+    adapter_name = "mock-publisher"
+    simulated = True
+    mode = ExecutionMode.MOCK
+
+    def __init__(
+        self, *, lose_ack: frozenset[str] = frozenset(), fail: frozenset[str] = frozenset()
+    ) -> None:
+        self.sink: list[dict[str, Any]] = []
+        self.calls = 0
+        self._receipts: dict[str, tuple[str, PublicationReceipt]] = {}
+        self._lose_ack = set(lose_ack)
+        self._fail = set(fail)
+        self._lock = asyncio.Lock()
+
+    async def publish(
+        self,
+        binding: DraftBinding,
+        *,
+        run_id: str,
+        publication_id: str,
+        approval_id: str,
+        idempotency_key: str,
+    ) -> PublicationReceipt:
+        fingerprint = _canonical_fingerprint(binding.model_dump(mode="json"))
+        async with self._lock:
+            self.calls += 1
+            cached = self._receipts.get(idempotency_key)
+            if cached is not None:
+                if cached[0] != fingerprint:
+                    raise RfaError(
+                        "idempotency_conflict", "같은 key로 다른 게시 내용을 보낼 수 없습니다."
+                    )
+                return cached[1]
+            if idempotency_key in self._fail:
+                raise RfaError("publication_rejected", "모의 게시 대상이 요청을 거절했습니다.")
+            receipt = PublicationReceipt(
+                publication_id=publication_id,
+                run_id=run_id,
+                idempotency_key=idempotency_key,
+                binding=binding,
+                approval_id=approval_id,
+                status=PublicationStatus.SUCCEEDED,
+                external_result_ref="local-artifact:" + new_id("mockpub"),
+                mode=ExecutionMode.MOCK,
+                next_action="none",
+            )
+            self._receipts[idempotency_key] = (fingerprint, receipt)
+            self.sink.append(
+                {
+                    "idempotency_key": idempotency_key,
+                    "draft_id": binding.draft_id,
+                    "version": binding.version,
+                    "payload_hash": binding.payload_hash,
+                }
+            )
+            if idempotency_key in self._lose_ack:
+                self._lose_ack.discard(idempotency_key)
+                raise OutcomeUnknownError("mock publication acknowledgement")
+            return receipt
+
+    async def query(self, idempotency_key: str) -> PublicationReceipt | None:
+        async with self._lock:
+            cached = self._receipts.get(idempotency_key)
+            return cached[1] if cached else None
 
 
 class MockTool:

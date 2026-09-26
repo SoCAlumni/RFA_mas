@@ -111,6 +111,8 @@ from rfa_mas.contracts.models import (
     DerivedItemProposal,
     DraftBinding,
     DraftBundleV11,
+    DraftEditRequest,
+    DraftState,
     EvalResultV11,
     EvaluationCaseV11,
     ExecutionContext,
@@ -132,6 +134,7 @@ from rfa_mas.contracts.models import (
     PolicyBindings,
     PolicyDecisionV11,
     PublicationReceipt,
+    PublishRequest,
     RankReason,
     RankedCandidate,
     ResumeRequest,
@@ -161,6 +164,9 @@ from rfa_mas.contracts.models import (
 )
 
 EXTENDED_MODEL_NAMES = (
+    "DraftEditRequest",
+    "PublishRequest",
+    "DraftState",
     "RankReason",
     "RankedCandidate",
     "TodoCandidate",

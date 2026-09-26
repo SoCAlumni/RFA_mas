@@ -22,6 +22,7 @@ from rfa_mas.contracts import (
     AgentSpec,
     Audience,
     DomainId,
+    DraftBundle,
     ExecutionContext,
     ExecutionMode,
     KnowledgeDelete,
@@ -34,6 +35,7 @@ from rfa_mas.contracts import (
     PersistentTask,
     PolicyDecision,
     PolicyRequest,
+    PublicationReceipt,
     ResultStatus,
     RoleOutcome,
     RunRecord,
@@ -445,6 +447,24 @@ class SqliteWorkRepository:
                     )
                     connection.execute("INSERT INTO rfa_schema_migrations VALUES (7, ?)",
                                        (datetime.now(UTC).isoformat(),))
+                if not connection.execute(
+                    "SELECT 1 FROM rfa_schema_migrations WHERE version=8"
+                ).fetchone():
+                    # P1-005A: immutable DRAFT version metadata and publication receipts.
+                    for statement in (
+                        "CREATE TABLE draft_version_meta (draft_id TEXT NOT NULL, "
+                        "version INTEGER NOT NULL, run_id TEXT NOT NULL REFERENCES runs(run_id), "
+                        "attachments_json TEXT NOT NULL, created_at TEXT NOT NULL, "
+                        "PRIMARY KEY(draft_id, version))",
+                        "CREATE TABLE publications (publication_id TEXT PRIMARY KEY, "
+                        "run_id TEXT NOT NULL REFERENCES runs(run_id), owner_id TEXT NOT NULL, "
+                        "idempotency_key TEXT NOT NULL, status TEXT NOT NULL, "
+                        "receipt_json TEXT NOT NULL, updated_at TEXT NOT NULL, "
+                        "UNIQUE(owner_id, idempotency_key))",
+                    ):
+                        connection.execute(statement)
+                    connection.execute("INSERT INTO rfa_schema_migrations VALUES (8, ?)",
+                                       (datetime.now(UTC).isoformat(),))
                 # A role receipt left running by a previous process is unknown: never
                 # success, never permission to re-execute a possibly effectful step.
                 connection.execute(
@@ -726,6 +746,116 @@ class SqliteWorkRepository:
                      domain_id.value if domain_id else None),
                 ).fetchall()
                 return [TodoCandidate.model_validate_json(r[0]) for r in rows]
+
+        return await asyncio.to_thread(operation)
+
+
+    # -- P1-005A immutable DRAFT versions and publication receipts ----------------------
+    async def draft_versions(self, run_id: str, principal: TrustedPrincipal):
+        """Owner-authorized versions (DraftBundle, attachments) ordered by version."""
+        await self.get_owned_run(run_id, principal)
+
+        def operation():
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT d.draft_json, m.attachments_json FROM drafts d "
+                    "LEFT JOIN draft_version_meta m ON m.draft_id=d.draft_id "
+                    "AND m.version=d.version WHERE d.run_id=? ORDER BY d.version",
+                    (run_id,),
+                ).fetchall()
+                return [
+                    (DraftBundle.model_validate_json(r[0]),
+                     tuple(json.loads(r[1])) if r[1] else ())
+                    for r in rows
+                ]
+
+        return await asyncio.to_thread(operation)
+
+    async def append_draft_version(self, run_id: str, principal: TrustedPrincipal,
+                                   draft: DraftBundle, attachments: tuple[dict, ...]) -> None:
+        """Insert version N+1 only if N is the current latest version (optimistic CAS)."""
+        await self.get_owned_run(run_id, principal)
+        draft = DraftBundle.model_validate(draft.model_dump())
+        now = datetime.now(UTC).isoformat()
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                latest = connection.execute(
+                    "SELECT draft_id, max(version) FROM drafts WHERE run_id=?", (run_id,)
+                ).fetchone()
+                if latest[0] != draft.draft_id or latest[1] != draft.version - 1:
+                    raise RfaError("draft_version_conflict", "최신 DRAFT 버전이 아닙니다.")
+                connection.execute(
+                    "INSERT INTO drafts (draft_id, version, run_id, content_hash, draft_json, "
+                    "created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                    (draft.draft_id, draft.version, run_id, draft.content_hash,
+                     draft.model_dump_json(), now),
+                )
+                connection.execute(
+                    "INSERT INTO draft_version_meta VALUES (?, ?, ?, ?, ?)",
+                    (draft.draft_id, draft.version, run_id, json.dumps(list(attachments)), now),
+                )
+
+        await asyncio.to_thread(operation)
+
+    async def get_publication(self, run_id: str, principal: TrustedPrincipal):
+        owner = self._authenticated(principal)
+        await self.get_owned_run(run_id, principal)
+
+        def operation():
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT receipt_json FROM publications WHERE run_id=? AND owner_id=? "
+                    "ORDER BY updated_at DESC LIMIT 1",
+                    (run_id, owner),
+                ).fetchone()
+                return PublicationReceipt.model_validate_json(row[0]) if row else None
+
+        return await asyncio.to_thread(operation)
+
+    async def put_publication(self, receipt: PublicationReceipt, principal: TrustedPrincipal,
+                              *, expected_status: str | None) -> PublicationReceipt:
+        """Create (expected_status None) or advance a receipt; never two per Run."""
+        owner = self._authenticated(principal)
+        receipt = PublicationReceipt.model_validate(receipt.model_dump())
+        await self.get_owned_run(receipt.run_id, principal)
+        now = datetime.now(UTC).isoformat()
+
+        def operation():
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                same_key = connection.execute(
+                    "SELECT receipt_json FROM publications WHERE owner_id=? AND idempotency_key=?",
+                    (owner, receipt.idempotency_key),
+                ).fetchone()
+                existing = connection.execute(
+                    "SELECT publication_id, status, receipt_json FROM publications "
+                    "WHERE run_id=? AND owner_id=?",
+                    (receipt.run_id, owner),
+                ).fetchone()
+                if expected_status is None:
+                    if same_key is not None:
+                        return PublicationReceipt.model_validate_json(same_key[0])
+                    if existing is not None:
+                        raise RfaError("publication_exists", "이미 게시 요청이 있습니다.")
+                    connection.execute(
+                        "INSERT INTO publications VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (receipt.publication_id, receipt.run_id, owner,
+                         receipt.idempotency_key, receipt.status.value,
+                         receipt.model_dump_json(), now),
+                    )
+                    return receipt
+                if existing is None or existing[0] != receipt.publication_id \
+                        or existing[1] != expected_status:
+                    raise RfaError("invalid_state_transition", "게시 상태가 변경되었습니다.")
+                connection.execute(
+                    "UPDATE publications SET status=?, receipt_json=?, updated_at=? "
+                    "WHERE publication_id=?",
+                    (receipt.status.value, receipt.model_dump_json(), now,
+                     receipt.publication_id),
+                )
+                return receipt
 
         return await asyncio.to_thread(operation)
 

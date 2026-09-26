@@ -24,7 +24,15 @@ from rfa_mas.adapters.local import (
     LocalRuntime,
     SqliteWorkRepository,
 )
-from rfa_mas.adapters.mock import MockJudge, MockModel, MockResponse, MockRetrieval, MockTool
+from rfa_mas.adapters.mock import (
+    MockJudge,
+    MockModel,
+    MockPublisher,
+    MockResponse,
+    MockRetrieval,
+    MockTool,
+)
+from rfa_mas.application.drafts import DraftLifecycle
 from rfa_mas.adapters.retrieval import BoundContextReader, LocalRetrieval
 from rfa_mas.application.source_access import BoundAccess, ProjectResolver, no_projects
 from rfa_mas.application.graphs import (
@@ -167,6 +175,8 @@ class Container:
     team_factory: TeamFactory
     knowledge: KnowledgeService
     team_runner: TeamRunner | None = None
+    # P1-005A: DRAFT versions/approval validity/publication receipts (mock publisher only).
+    drafts: DraftLifecycle | None = None
     http_clients: list[httpx.AsyncClient] = field(default_factory=list)
     ready: bool = False
 
@@ -493,6 +503,13 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         guard_thread=checkpoints.guard,
         observations=observer,
     )
+    # P1-005A: only the in-process mock publisher exists. A non-mock response backend gets
+    # no publisher, so publication fails explicitly (501) instead of silently using mock.
+    drafts = DraftLifecycle(
+        repository=repository,
+        dependencies=lambda: service._dependencies,
+        publisher=MockPublisher() if settings.response_backend == "mock" else None,
+    )
     return Container(
         settings=settings,
         repository=repository,
@@ -510,5 +527,6 @@ def build_container(settings: Settings | None = None, *, project_resolver: Proje
         checkpoints=checkpoints,
         team_factory=team_factory,
         team_runner=team_runner,
+        drafts=drafts,
         http_clients=clients,
     )

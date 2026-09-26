@@ -17,11 +17,15 @@ from rfa_mas.contracts import (
     CandidateDecision,
     DirectWorkRequest,
     DomainId,
+    DraftEditRequest,
+    DraftState,
     KnowledgeDelete,
     KnowledgeExport,
     KnowledgeImportResult,
     KnowledgeRevision,
     KnowledgeWrite,
+    PublicationReceipt,
+    PublishRequest,
     ResumeRequest,
     RunRecord,
     RunResult,
@@ -129,6 +133,10 @@ def create_app(
             "invalid_state_transition": status.HTTP_409_CONFLICT,
             "idempotency_conflict": status.HTTP_409_CONFLICT,
             "draft_version_conflict": status.HTTP_409_CONFLICT,
+            "publication_exists": status.HTTP_409_CONFLICT,
+            "approval_required": status.HTTP_409_CONFLICT,
+            "approval_binding_mismatch": status.HTTP_409_CONFLICT,
+            "resume_review_required": status.HTTP_409_CONFLICT,
             "authentication_required": status.HTTP_401_UNAUTHORIZED,
             "thread_busy": status.HTTP_409_CONFLICT,
             "resume_unavailable": status.HTTP_409_CONFLICT,
@@ -339,5 +347,56 @@ def create_app(
     ) -> TodoCandidate:
         return await candidates.decide(candidate_id, body, principal)
 
+    # P1-005A: immutable DRAFT versions, approval validity and (mock) publication state.
+    def _drafts():
+        if selected_container.drafts is None:
+            raise RfaError("not_implemented", "DRAFT lifecycle이 구성되지 않았습니다.")
+        return selected_container.drafts
+
+    @app.get("/v1/runs/{run_id}/draft", response_model=DraftState, tags=["drafts"])
+    async def get_draft_state(
+        run_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> DraftState:
+        return await _drafts().state(run_id, principal)
+
+    @app.post(
+        "/v1/runs/{run_id}/draft/edits",
+        response_model=DraftState,
+        status_code=201,
+        tags=["drafts"],
+    )
+    async def edit_draft(
+        run_id: str,
+        body: DraftEditRequest,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> DraftState:
+        return await _drafts().edit(run_id, body, principal)
+
+    @app.post("/v1/runs/{run_id}/draft/review", response_model=DraftState, tags=["drafts"])
+    async def request_draft_review(
+        run_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> DraftState:
+        return await _drafts().request_review(run_id, principal)
+
+    @app.post(
+        "/v1/runs/{run_id}/publication", response_model=PublicationReceipt, tags=["drafts"]
+    )
+    async def publish_draft(
+        run_id: str,
+        body: PublishRequest,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> PublicationReceipt:
+        return await _drafts().publish(run_id, body, principal)
+
+    @app.get(
+        "/v1/runs/{run_id}/publication", response_model=PublicationReceipt, tags=["drafts"]
+    )
+    async def get_publication(
+        run_id: str,
+        principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> PublicationReceipt:
+        return await _drafts().query(run_id, principal)
 
     return app

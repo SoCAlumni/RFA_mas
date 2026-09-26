@@ -67,6 +67,9 @@ SAFE_ERROR_CODES = frozenset(
         "tool_not_allowed",
         "direct_message_denied",
         "task_domain_mismatch",
+        # P1-005A DRAFT lifecycle (fixed codes).
+        "approval_required",
+        "publication_exists",
     }
 )
 TEAM_ROLES = frozenset(

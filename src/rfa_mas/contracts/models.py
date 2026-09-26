@@ -1211,6 +1211,38 @@ class PublicationReceipt(ExtendedContractModel):
             raise ValueError("successful publication requires result reference")
         return self
 
+class DraftEditRequest(ExtendedContractModel):
+    """Owner edit of the current DRAFT (P1-005A): always a new immutable version."""
+
+    expected_version: int = Field(ge=1)
+    content: str = Field(min_length=1, max_length=20000)
+    target: DraftTarget | None = None
+    attachments: tuple[AttachmentRef, ...] = ()
+
+
+class PublishRequest(ExtendedContractModel):
+    idempotency_key: OpaqueId
+
+
+class DraftState(ExtendedContractModel):
+    """Run-scoped DRAFT/review/publication mirror. Publication state is separate from run.
+
+    `draft` is withheld (None) when current source/ACL/policy no longer allow showing it.
+    `review` is a mirror of the review authority's decision, never an approval itself.
+    """
+
+    run_id: str
+    draft: DraftBundle | None
+    current_version: int = Field(ge=1)
+    versions: tuple[int, ...]
+    attachments: tuple[AttachmentRef, ...] = ()
+    review: ReviewDecision | None = None
+    approval_valid: bool
+    invalid_reason: OpaqueId | None = None
+    publication: PublicationReceipt | None = None
+    publication_status: PublicationStatus = PublicationStatus.NOT_REQUESTED
+    publication_mode: ExecutionMode | None = None
+
 
 class ToolInvocation(ToolRequest):
     schema_version: Literal["1.1"] = "1.1"
