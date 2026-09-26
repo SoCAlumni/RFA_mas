@@ -81,8 +81,13 @@ def test_supervisor_bus_boundary_is_measured_without_openshell() -> None:
     "RFA_OPENSHELL_ROOTFS); a skipped live test is not a pass",
 )
 def test_live_e2e05_matrix(tmp_path: Path) -> None:
-    if shutil.which("openshell") is None:
-        pytest.fail("RFA_OPENSHELL_LIVE=1 but the openshell CLI is not installed")
+    # NemoClaw pins OpenShell 0.0.116 at /opt/homebrew/bin/openshell (2026-09-27); the
+    # standalone 0.1.1 gateway this run was recorded with can live elsewhere.
+    binary = os.environ.get("RFA_OPENSHELL_BIN") or shutil.which("openshell")
+    if binary is None or not Path(binary).is_file():
+        pytest.fail(
+            "RFA_OPENSHELL_LIVE=1 but the openshell CLI is not installed (RFA_OPENSHELL_BIN)"
+        )
     out = Path(EVIDENCE_OUT) if EVIDENCE_OUT else tmp_path
     args = argparse.Namespace(
         rootfs=ROOTFS,
@@ -91,7 +96,7 @@ def test_live_e2e05_matrix(tmp_path: Path) -> None:
         iterations=3,
         warm_repeats=5,
         deny_repeats=3,
-        openshell=shutil.which("openshell"),
+        openshell=binary,
     )
     report = e2e05.run(args)
     out.mkdir(parents=True, exist_ok=True)

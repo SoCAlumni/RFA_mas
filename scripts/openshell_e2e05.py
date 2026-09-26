@@ -1036,7 +1036,11 @@ def main() -> int:
     parser.add_argument("--iterations", type=int, default=3)
     parser.add_argument("--warm-repeats", type=int, default=5)
     parser.add_argument("--deny-repeats", type=int, default=3)
-    parser.add_argument("--openshell", default=shutil.which("openshell") or "openshell")
+    parser.add_argument(
+        "--openshell",
+        default=os.environ.get("RFA_OPENSHELL_BIN") or shutil.which("openshell") or "openshell",
+        help="openshell CLI to drive (env RFA_OPENSHELL_BIN overrides PATH lookup)",
+    )
     args = parser.parse_args()
     if not args.rootfs:
         print(
