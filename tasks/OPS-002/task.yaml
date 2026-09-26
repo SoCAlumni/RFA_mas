@@ -174,7 +174,7 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 16
+revision: 18
 spec_revision: 2
 claim_generation: 3
 claim:
@@ -183,8 +183,8 @@ claim:
   branch: task/OPS-002-r2
   generation: 3
   claimed_at: '2026-09-26T07:55:40+00:00'
-  heartbeat_at: '2026-09-26T07:55:40+00:00'
-  lease_expires_at: '2026-09-26T08:10:40+00:00'
+  heartbeat_at: '2026-09-26T08:02:27+00:00'
+  lease_expires_at: '2026-09-26T08:17:27+00:00'
   baseline_head: a612fc3360a6f2920b309d8056b7607aa6859194
   recovery_required: false
   context_digest: 54474dec8ea4c649909631543a195cee2621945c73259c99e681ca8fd5a039d6
@@ -252,7 +252,7 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:55:40+00:00'
+updated_at: '2026-09-26T08:02:27+00:00'
 concise_result: 'Specification changed: Preserve original AC and add deadlock regression for inactive
   already-integrated consumer contract publication/acceptance; no new framework or bypass of integration
   evidence'

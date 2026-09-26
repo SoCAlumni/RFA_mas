@@ -1,0 +1,119 @@
+{
+  "attempt_id": "resume-01",
+  "contract_digest": "7fa4d16ce9b7c8986f88ee5ed99a73eac4b5600e75937a611366213db004580b",
+  "mode": "두 graph의 checkpointer 미주입 확인; 확장 missing/not_run. persistence local(false), model/review mock(true). 외부 의존 없음(설치 후 offline).",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_sessions.py",
+          "tests/test_api.py",
+          "tests/test_graph.py",
+          "tests/test_supervisor_boundaries.py",
+          "tests/test_contracts.py",
+          "tests/test_trace_eval_contract.py",
+          "tests/test_contract_baseline.py",
+          "tests/test_local_adapters.py",
+          "tests/test_settings.py"
+        ],
+        "counts": {
+          "collected": 164,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 164,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "164 passed, 26 known nonpersistent-child durability warnings in 2.73s. No tests removed or skipped.",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "Frozen 1.0 schema/OpenAPI and 9 fixture shapes valid; artifact not overwritten.",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check-extended"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "Extended contract: 7 fixture shapes valid; ResumeRequest/new route and seed port method exported.",
+        "result": "passed"
+      },
+      {
+        "argv": [
+          ".venv/bin/ruff",
+          "check",
+          "src/rfa_mas",
+          "tests/test_resume.py",
+          "tests/test_supervisor_boundaries.py"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "log_excerpt": "All checks passed; git diff --check also passed.",
+        "result": "passed"
+      }
+    ],
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py"
+        ],
+        "assertions": [
+          "memory saver/최종 metadata를 resume 근거로 사용하지 않음",
+          "대기 interrupt와 재개 상태를 영속화하고 새 container/process에서 동일 run 이어가기",
+          "checkpoint lookup 전 owner 검사, 현재 서버 principal과 최신 ACL/policy로 재검사(과거 checkpoint의 권한 snapshot을 재사용하지 않음)",
+          "같은 thread 동시 invoke 거절/직렬화, checkpoint에 credential·authorization header 저장 없음."
+        ],
+        "counts": {
+          "collected": 22,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 22,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "22 passed, 17 warnings in 1.22s. Real SQLite interrupt plus fresh subprocess resume uses a synthetic authoritative ResponsePort fixture and forbids worker/model/submit replay. Owner denial precedes checkpoint lookup. Source deletion/revision/content/audience/policy changes and company/membership revocation return no stale draft. Same-host cross-instance/process flock, concurrent invocation rejection, state reset, seed restart/deletion/legacy-empty preservation and concurrent startup, configured-secret canary absence and DB/WAL/SHM mode 0600 verified. LangGraph warns that child durability has no effect without a checkpointer; parent sync/child exit is explicit and unsuppressed.",
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-26T07:55:59+00:00",
+    "limitations": "Local persistence and deterministic policy checks are actual local logic. Model/review fixtures are synthetic/mock. Default in-memory MockResponse remains pending when its original decision is lost on restart. No worker-middle-node replay, exactly-once tool crash window, all historical GET/terminal cached response ACL invalidation, real NVIDIA/NAT/teammate/OpenShell/UI/full E2E claim. Main integration and contract digest publication remain coordinator work.",
+    "prior_review_failures": [
+      "Before this formal attempt, real installed LangGraph1.2.12 child checkpointer=False inherited parent sync and raised AttributeError on _put_checkpoint_fut. Verified installed main.py and _loop.py; child explicitly uses exit while parent stays sync. Same independent probe then passed initial wait, query timeout staying waiting, later approval completed and replay; submit1/query2. No pre-fix product success claimed.",
+      "Independent review also identified transient query errors becoming terminal and initialization seed-marker race. Corrected query timeout to safe waiting with later error clearing, and entire fixed initialization DDL/marker migration inside BEGIN IMMEDIATE. All actual corrections and operational formatting/patch errors retained in handoff."
+    ],
+    "reviewer": "session_review worker; independent pre-evidence probes by nat_spike and coordinator",
+    "started_at": "2026-09-26T07:55:25+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "6b6fccac4051a049f9568bdbb701fd00cb9dd44f440df3649b61c673140521a1",
+  "source_manifest": ".agent/evidence/P0-016/resume-01/source.json",
+  "spec_digest": "e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31",
+  "spec_revision": 5,
+  "task_id": "P0-016"
+}

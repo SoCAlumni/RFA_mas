@@ -240,3 +240,20 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   [OpenShell middleware 공식 경계](https://docs.nvidia.com/openshell/extensibility/supervisor-middleware)는
   네트워크 정책 후의 콘텐츠 검사이며 tls-skip/일부 응답·WebSocket 한계가 있다.
   middleware 운영 구현은 다영 모듈의 범위로 유지한다.
+
+## P0-016 worker 제출 / KB 인계 — 2026-09-26
+
+- P0-016 최종 worker commit `3700de1` 제출: resume-01에서 22 passed(1.22초),
+  session/API/graph/계약/settings 등 관련 회귀 164 passed(2.73초), 양쪽 schema/
+  fixture 및 Ruff/diff 검사 통과. 실제 main 통합·계약 발행·target 검증은 대기 중이다.
+  SQLite/WAL/SHM 접근 모드 0600, 실제 새 process resume와 재제출 금지를 검사했다.
+- checkpoint 없는 child의 durability 경고는 숨기지 않았다. worker 중간 노드 복구와
+  tool crash exactly-once는 이 task의 증거가 아니며 P0-021/026에 남는다. 기본
+  in-memory 승인 mock은 재시작 후 승인 정보를 추정하지 않고 pending을 유지한다.
+- KB 조사 결과를 P1-001/P1-001A 원본에 인계했다. source namespace·immutable
+  revision·명시 current head/CAS·부분 export receipt와 실제 seed-once 재사용,
+  현재 ACL 회수 뒤 과거 Run/Session 결과 재노출 차단의 구현 경로를 scope에 반영했다.
+  현재는 여전히 draft/not_run이며 아직 사용 가능한 KB API로 표시하지 않는다.
+- OPS-002 사전 독립 검토는 v2→v3 연속 계약 발행 뒤 자동 notice가 누적되면
+  최신 수락도 막히는 추가 경계를 재현했다. 발행 이력에 기록된 동일 계약 notice만
+  처리하는 최소 수정과 음성 검증을 진행한다. 무관 blocker 삭제는 허용하지 않는다.

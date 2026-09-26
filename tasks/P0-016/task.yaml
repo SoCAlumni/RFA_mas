@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: in_progress
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: execution
@@ -264,25 +264,41 @@ integration:
   state: pending
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
+  reservation: true
+  submission_generation: 3
+  submission:
+    head: 3700de12ed0ba17cec32418b5895c25a07f29bde
+    baseline_head: 67ce4f099325c60fda1c0c010dd001c9f2619f27
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-016-r2
+    branch: task/P0-016-r2
+    evidence: .agent/evidence/P0-016/resume-01/result.json
+    changed_files:
+      .env.example: 898aa39c235b56056fc0e578ca9783c089e4d2ca80835620d730908c7aa0f918
+      docs/CONTRACT_CHANGELOG.md: cf7220a16ad60277f08ac2d51a187e615c968b5a15f83f6ecda1c9cd6019145b
+      docs/INTEGRATION.md: 7080ba3ce57b9617f2ea5076b71cec78ce4e321009615c4a21247c65b76b28a7
+      docs/contracts/extended.json: 0c285d7389dd2cd21676a887aae810e6a34b979c0b4b3a96f6831c8137fd8a65
+      pyproject.toml: 767555e89c26cd14d502864a4b8e7409534a8a21b1660fd13eaaacb1b4afd325
+      src/rfa_mas/adapters/checkpoints.py: 1f60e56a5b1d1119951a725649295e87574cabaed0ac8ee8f002da3945cb7392
+      src/rfa_mas/adapters/local.py: acd9255ba912ca6813b508d2bfb0875d35a36dfae9220f2ef2579352b25c8684
+      src/rfa_mas/api/app.py: 082ebce1001728632d4249543800c02f2dfc1b944da73ea7f7744f1dacc13ee9
+      src/rfa_mas/application/graphs/domain.py: 9642bf034038526c3ce20f533d1a3562e4142fee824c4cf890c73dce0a8bdd84
+      src/rfa_mas/application/graphs/supervisor.py: cfc82822622c6f0dee6db44915c8f3f914cb0c61709a4d1496768d0d9d4aa174
+      src/rfa_mas/application/resume_policy.py: c8e671f5dc502b65342c2516eaff18e5e571377eddb69679fdd1707d45cdc8f7
+      src/rfa_mas/application/service.py: 6208536965f1879fd5047f25aff83ac5015105cff8476b3f46f757c83aecc59a
+      src/rfa_mas/bootstrap.py: 50ad3538737097b11b68ef85e8e3489d5005a321bc84fc0af35cd438afa8c839
+      src/rfa_mas/contracts/__init__.py: a176557b4a69775d05924b6b657097dd1d42cc02760476cd36f5767282732f60
+      src/rfa_mas/contracts/models.py: e6ce3f0271ab0890149e42841adb084cf7d6b2ee2f5700ff993398a0881053a9
+      src/rfa_mas/ports/interfaces.py: c123e83a22933647374d441822e253ccb06ca0139472838d74674c5957edaad4
+      src/rfa_mas/settings.py: 30fbfa54b78f04bdf3c4f3cdda738a06ea737e6dc773e775988450540fdf9b3b
+      tests/test_resume.py: dd776c7f54a68705c00a1433641b622eeba6b5cb1a996b41d45e8d4b3f4c50a2
+      tests/test_supervisor_boundaries.py: fa5349793d8281c0bfc663564b00210c775a8340565bfd992c57a23318c721f7
+      uv.lock: cbc662503129c4b6e550dbea9f7d932a7107494835507e911ab972edcf932b83
   result: null
   evidence: null
-revision: 13
+revision: 15
 spec_revision: 5
 claim_generation: 3
-claim:
-  session_id: rfa-coordinator
-  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-016-r2
-  branch: task/P0-016-r2
-  generation: 3
-  claimed_at: '2026-09-26T07:42:42+00:00'
-  heartbeat_at: '2026-09-26T07:49:54+00:00'
-  lease_expires_at: '2026-09-26T08:04:54+00:00'
-  baseline_head: 67ce4f099325c60fda1c0c010dd001c9f2619f27
-  recovery_required: false
-  context_digest: 114c771ecfbcb3cfb42d9fdfff380b742ab183781a2a62c13f01420af49b3094
+claim: null
 attempts:
   count: 1
   cycles: 1
@@ -339,7 +355,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T07:57:02+00:00'
-concise_result: SQLite resume implementation present; pre-evidence independent review caught and fixed
-  inherited child sync durability incompatibility; formal AC not_run
-next_action: Finish independent review then freeze source and begin formal resume V1 evidence
+updated_at: '2026-09-26T08:01:31+00:00'
+concise_result: 'resume-01 passed: 22 resume tests, 164 related regression; contracts and lint passed,
+  integration pending.'
+next_action: Commit verified owned source, submit verifying, then coordinator integration after OPS-002
+  fix.

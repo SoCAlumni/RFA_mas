@@ -1,10 +1,10 @@
 generated: true
 schema_version: '1.0'
-source_digest: a92a660bcef79c35558f8134dcb7d5fefd7ba23802c77cb39f2594ad5bf3d6bc
+source_digest: bf646325875e15f86ad64d92fd240131fea91b0537d83bba5a0804c94f9ef308
 source_revisions:
   OPS-000: 6
   OPS-001: 13
-  OPS-002: 16
+  OPS-002: 18
   P0-001: 1
   P0-002: 1
   P0-003: 1
@@ -20,7 +20,7 @@ source_revisions:
   P0-013: 1
   P0-014: 24
   P0-015: 29
-  P0-016: 13
+  P0-016: 15
   P0-017: 5
   P0-018: 17
   P0-019: 4
@@ -33,8 +33,8 @@ source_revisions:
   P0-026: 7
   P0-027: 26
   P0-028: 5
-  P1-001: 4
-  P1-001A: 6
+  P1-001: 5
+  P1-001A: 7
   P1-001B: 4
   P1-001C: 4
   P1-002: 2
@@ -69,7 +69,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-26T07:57:02+00:00'
+generated_at: '2026-09-26T08:03:06+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -316,12 +316,14 @@ tasks:
   depends_on:
   - P0-014
   - P0-015
+  - P0-016
   path: tasks/P1-001/task.yaml
 - id: P1-001A
   title: 권한 선필터·최신 lexical 검색·무효화
   workstream: knowledge
   depends_on:
   - P1-001
+  - P0-016
   path: tasks/P1-001A/task.yaml
 - id: P1-001B
   title: KB L0/L1/L2 선택적 context loader

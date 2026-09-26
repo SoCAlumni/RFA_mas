@@ -26,6 +26,9 @@ scope:
   included:
   - source/revision·owner·domain·membership/ACL·audience·timestamp를 저장하는 입력/수정/삭제 DTO와 API(예정), 두 export
     mapper. live connector와 URL 수집 없음.
+  - 서버 발급 source identity와 owner/domain/provider/external-id 매핑, immutable revision 및 명시 current head/CAS를
+    사용한다. 동일 내용도 다른 provenance는 합치지 않는다. valid/bad/valid export는 행별 권한·원자적 저장과 partial receipt를 반환해 실패
+    행만 안전 재처리한다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
@@ -38,9 +41,14 @@ scope:
   - src/rfa_mas/application/knowledge.py
   - fixtures/imports
   - tests/test_knowledge.py
+  - src/rfa_mas/contracts/__init__.py
+  - src/rfa_mas/ports/__init__.py
+  - docs/contracts/extended.json
+  - docs/INTEGRATION.md
+  - docs/CONTRACT_CHANGELOG.md
+  - tests/test_sessions.py
   read_only_paths:
   - AGENTS.md
-  - docs/INTEGRATION.md
   planned_paths:
   - src/rfa_mas/application/knowledge.py
   - fixtures/imports
@@ -56,6 +64,9 @@ depends_on:
 - id: P0-015
   condition: integrated_done
   required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-016
+  condition: integrated_done
+  required_output: 실제 seed-once/영속 thread/resume source 정책 helper를 재사용하며 이전 코드 경로를 중복 구현하지 않음
 contract_refs:
 - id: RFA-DTO
   version: '1.0'
@@ -89,6 +100,7 @@ context:
   dependency_results:
   - tasks/P0-014/handoff.md
   - tasks/P0-015/handoff.md
+  - tasks/P0-016/handoff.md
 deliverables:
 - path: src/rfa_mas/contracts/models.py
   availability: existing
@@ -115,6 +127,24 @@ deliverables:
 - path: tests/test_knowledge.py
   availability: planned
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: src/rfa_mas/contracts/__init__.py
+  availability: existing
+  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+- path: src/rfa_mas/ports/__init__.py
+  availability: existing
+  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+- path: docs/contracts/extended.json
+  availability: existing
+  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+- path: docs/CONTRACT_CHANGELOG.md
+  availability: existing
+  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+- path: tests/test_sessions.py
+  availability: existing
+  description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -180,8 +210,8 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 4
-spec_revision: 4
+revision: 5
+spec_revision: 5
 claim_generation: 0
 claim: null
 attempts:
@@ -203,7 +233,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T07:19:53+00:00'
-concise_result: 이관 완료; 제품 구현/검증 not_run.
+updated_at: '2026-09-26T08:03:02+00:00'
+concise_result: 'Specification changed: Carry forward inspected KB namespace/current-head gaps and P0-016
+  seed/resume/history ACL limitations; scope only, remains draft until current contract acceptance'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.
