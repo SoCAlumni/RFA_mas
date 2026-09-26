@@ -1794,6 +1794,88 @@ def test_cli_main_enables_memo_only_for_its_own_execution(control, monkeypatch, 
     assert isinstance(json.loads(result.stdout), dict)
 
 
+# -- OPS-006: re-issue an unsubmitted integrated-revalidation claim after its session stopped
+
+
+def _expire_claim(control, task_id="DEV-001"):
+    task = control.task(task_id)
+    task.claim.lease_expires_at = "2000-01-01T00:00:00+00:00"
+    control.put(task)
+
+
+def test_expired_unsubmitted_revalidation_claim_is_reissued_with_its_history(control):
+    original = completed_then_changed(control)
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    first_generation = control.task().claim.generation
+    _expire_claim(control)
+    with pytest.raises(ControlError, match="Recovery required"):
+        control.owned("heartbeat")
+    # A later target move happened while the session was stopped.
+    control.commit_change(control.target, "src/b.py", "VALUE = 7\n")
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    stale_revision = control.task().revision
+    inspected_recover(control)
+    reissued = control.task()
+    assert reissued.claim.generation == first_generation + 1
+    assert reissued.claim.baseline_head == git_call(control.target, "rev-parse", "HEAD")
+    approach = reissued.attempts.approaches[-1]
+    assert approach["kind"] == "integrated_revalidation"
+    # The history binding is the original integration, not the reset pending state.
+    assert approach["integration"]["state"] == "integrated"
+    assert approach["integration"]["evidence"] == original.integration.evidence
+    # The previous generation is fenced.
+    with pytest.raises(ControlError, match="Stale"):
+        control.run(
+            "submit", "DEV-001", "--session", "worker-a",
+            "--generation", str(first_generation),
+            "--expected-revision", str(stale_revision),
+            "--handoff-file", str(control.handoff_file),
+        )
+    control.evidence("reissued-worker")
+    control.submit()
+    control.evidence("reissued-target", stage="integration")
+    control.owned("integrate", session="coordinator")
+    control.owned("close", session="coordinator")
+    assert control.task().status == "done"
+    # It can be revalidated again later from the new history, as usual.
+    control.commit_change(control.target, "src/a.py", "VALUE = 8\n")
+    control.run("status")
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    assert control.task().attempts.approaches[-1]["kind"] == "integrated_revalidation"
+
+
+def test_reissue_is_refused_for_ordinary_or_submitted_claims(control):
+    control.claim()
+    _expire_claim(control)
+    with pytest.raises(ControlError, match="Only an unsubmitted integrated-revalidation"):
+        inspected_recover(control)
+    # Submitted revalidation: the claim is gone; the ordinary path handles it (no reissue).
+    fresh = control.task()
+    fresh.claim.lease_expires_at = "2999-01-01T00:00:00+00:00"
+    control.put(fresh)
+    control.commit_change()
+    control.evidence()
+    control.submit()
+    assert control.task().claim is None
+    with pytest.raises(ControlError):
+        inspected_recover(control)  # pending (not integrated) submission is not a revalidation
+
+
+def test_reissued_revalidation_still_rejects_out_of_scope_changes(control):
+    completed_then_changed(control)
+    git_call(control.first, "merge", "--ff-only", "fixture-main")
+    inspected_recover(control)
+    _expire_claim(control)
+    inspected_recover(control)
+    control.commit_change(control.first, "src/b.py", "VALUE = 9\n")  # outside DEV-001 scope
+    control.evidence("reissued-out-of-scope")
+    with pytest.raises(ControlError, match="out-of-scope"):
+        control.submit()
+
+
+
 # -- OPS-005: stale integrated reservations and moved-target revalidation ----------------
 
 

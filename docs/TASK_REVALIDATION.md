@@ -173,3 +173,10 @@ in-process 호출과 테스트에는 memo가 없어서 호출 사이의 source �
   같은 이유로 막힌 OPS-003 stale 예약도 discard했다. 두 task의 과거 통합 이력은 attempts.approaches에 남아
   있고, 이 문서 갱신(OPS-002)과 FF 재검증 binding 회귀(OPS-003)로 다시 완료한다.
 
+
+OPS-006(2026-09-27): 제출 전에 세션이 멈춰 lease가 만료된 integrated revalidation claim은 heartbeat(Recovery
+required)나 일반 recovery(무변경이라 제출 범위 검사 실패)로 이어갈 수 없었다. 이제 coordinator가
+`integrated_revalidation: true` inspection으로 `recover --disposition resume`을 하면, 마지막 approach가 같은
+generation의 integrated_revalidation이고 제출이 없을 때에 한해 현재 target HEAD의 clean worktree에 새 generation을
+발급한다. 이력 binding은 그 재검증을 시작할 때 기록한 통합 이력을 이어받는다. 이전 generation 요청, 일반 claim,
+제출된 재검증은 이 경로로 재발급되지 않고, 범위 밖 변경은 기존대로 거절된다(2026-09-27 P0-014 pre-P0-024 사건).

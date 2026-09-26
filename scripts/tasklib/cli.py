@@ -666,6 +666,22 @@ def execute(store: Store, args) -> dict:
             revalidation = inspection.get("integrated_revalidation") is True
             if revalidation and args.disposition != "resume":
                 raise ControlError("Integrated revalidation requires explicit resume")
+            # OPS-006: an unsubmitted integrated-revalidation claim whose session stopped (e.g.
+            # lease expiry) is re-issued as a new revalidation generation. Its history binding is
+            # the integration recorded when that revalidation began, not the reset pending state.
+            last = task.attempts.approaches[-1] if task.attempts.approaches else {}
+            reissue = bool(
+                revalidation
+                and task.claim
+                and last.get("kind") == "integrated_revalidation"
+                and last.get("generation") == task.claim.generation
+                and not task.integration.submission
+                and isinstance(last.get("integration"), dict)
+            )
+            if revalidation and task.claim and not reissue:
+                raise ControlError(
+                    "Only an unsubmitted integrated-revalidation claim can be re-issued"
+                )
             source = store.source(
                 args.source,
                 feature=revalidation or task.execution_role == "worker",
@@ -700,7 +716,18 @@ def execute(store: Store, args) -> dict:
                 if task.integration.submission
                 else previous_claim.get("baseline_head")
             )
-            baseline = revalidation_baseline(store, task, source) if revalidation else original_base
+            history_integration = task.integration.model_dump(mode="json")
+            if reissue:
+                prior = task.model_copy(deep=True)
+                prior.claim = None
+                prior.status = "verifying"
+                prior.integration = type(task.integration).model_validate(last["integration"])
+                baseline = revalidation_baseline(store, prior, source)
+                history_integration = last["integration"]
+            elif revalidation:
+                baseline = revalidation_baseline(store, task, source)
+            else:
+                baseline = original_base
             if args.disposition == "resume" and not baseline:
                 raise ControlError(
                     "Original claim baseline unavailable; coordinator must inspect history"
@@ -735,7 +762,7 @@ def execute(store: Store, args) -> dict:
                     "cycles": task.attempts.cycles,
                     "no_progress_count": task.attempts.no_progress_count,
                     "claim": task.claim.model_dump(mode="json") if task.claim else None,
-                    "integration": task.integration.model_dump(mode="json"),
+                    "integration": history_integration,
                     "verification_summary": task.verification_summary.model_dump(mode="json"),
                     "latest_evidence_file": task.latest_evidence_file,
                 }
