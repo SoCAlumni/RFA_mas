@@ -200,7 +200,7 @@ async def test_result_is_persisted_and_retrievable(container, principal) -> None
     result = await container.service.run(
         WorkRequest(query="TRIV3 공개 근거", domain_id=DomainId.TRIV3), principal
     )
-    stored = await container.service.get(result.run_id)
+    stored = await container.service.get(result.run_id, principal)
     assert stored == result
 
 
@@ -216,7 +216,7 @@ async def test_runtime_side_effect_timeout_is_not_marked_failed(container, princ
     assert result.status == WorkStatus.OUTCOME_UNKNOWN
     assert result.errors[0].code == "outcome_unknown"
     assert result.errors[0].retryable is False
-    assert await container.service.get(result.run_id) == result
+    assert await container.service.get(result.run_id, principal) == result
 
 
 async def test_unexpected_runtime_error_finishes_with_safe_error(container, principal) -> None:
@@ -233,4 +233,4 @@ async def test_unexpected_runtime_error_finishes_with_safe_error(container, prin
     assert result.status == WorkStatus.FAILED
     assert result.errors[0].code == "internal_error"
     assert private_message not in result.model_dump_json()
-    assert await container.service.get(result.run_id) == result
+    assert await container.service.get(result.run_id, principal) == result

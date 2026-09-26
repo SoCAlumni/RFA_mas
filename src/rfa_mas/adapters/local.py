@@ -4,6 +4,8 @@ import asyncio
 import hashlib
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -13,16 +15,23 @@ from rfa_mas.contracts import (
     AgentSpec,
     Audience,
     KnowledgeDocument,
+    PersistentTask,
     PolicyDecision,
     PolicyRequest,
     ResultStatus,
+    RunRecord,
     RunResult,
+    SessionDetail,
+    SessionMessage,
+    SessionRecord,
     StructuredError,
     TaskRequest,
     TaskResult,
     ToolEffect,
+    TrustedPrincipal,
     WorkRequest,
     WorkStatus,
+    new_id,
 )
 from rfa_mas.errors import ResourceNotFoundError, RfaError
 from rfa_mas.ports import TaskHandler
@@ -43,12 +52,17 @@ class SqliteWorkRepository:
     def __init__(self, path: Path) -> None:
         self.path = path
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA journal_mode=WAL")
-        connection.execute("PRAGMA foreign_keys=ON")
-        return connection
+        try:
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA foreign_keys=ON")
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     async def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,10 +110,285 @@ class SqliteWorkRepository:
                     );
                     """
                 )
+                # Each additive migration and its version marker commit together.
+                # NULL ownership on old rows is intentional: never adopt legacy data.
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS rfa_schema_migrations "
+                    "(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+                )
+                if (
+                    connection.execute(
+                        "SELECT 1 FROM rfa_schema_migrations WHERE version = 1"
+                    ).fetchone()
+                    is None
+                ):
+                    for statement in (
+                        "CREATE TABLE local_identity (singleton INTEGER PRIMARY KEY "
+                        "CHECK (singleton = 1), principal_json TEXT NOT NULL)",
+                        "CREATE TABLE sessions (session_id TEXT PRIMARY KEY, "
+                        "thread_id TEXT NOT NULL UNIQUE, owner_id TEXT NOT NULL, "
+                        "created_at TEXT NOT NULL, updated_at TEXT NOT NULL)",
+                        "CREATE INDEX sessions_owner ON sessions(owner_id, updated_at)",
+                        "CREATE TABLE product_task_owners (task_id TEXT PRIMARY KEY, "
+                        "owner_id TEXT NOT NULL, domain_id TEXT NOT NULL)",
+                        "CREATE TABLE session_tasks (session_id TEXT NOT NULL "
+                        "REFERENCES sessions(session_id), task_id TEXT NOT NULL "
+                        "REFERENCES product_task_owners(task_id), "
+                        "PRIMARY KEY (session_id, task_id))",
+                        "ALTER TABLE runs ADD COLUMN owner_id TEXT",
+                        "ALTER TABLE runs ADD COLUMN session_id TEXT "
+                        "REFERENCES sessions(session_id)",
+                        "ALTER TABLE runs ADD COLUMN task_id TEXT "
+                        "REFERENCES product_task_owners(task_id)",
+                        "CREATE INDEX runs_owner_session ON runs(owner_id, session_id)",
+                        "CREATE TABLE session_messages (message_id TEXT PRIMARY KEY, "
+                        "session_id TEXT NOT NULL REFERENCES sessions(session_id), "
+                        "run_id TEXT NOT NULL REFERENCES runs(run_id), "
+                        "role TEXT NOT NULL CHECK (role IN ('user', 'assistant')), "
+                        "content TEXT NOT NULL, created_at TEXT NOT NULL, "
+                        "UNIQUE (run_id, role))",
+                    ):
+                        connection.execute(statement)
+                    connection.execute(
+                        "INSERT INTO rfa_schema_migrations VALUES (1, ?)",
+                        (datetime.now(UTC).isoformat(),),
+                    )
+                # Credentials authenticate this installation's owner, not a fixture
+                # or a user ID supplied in a request. No membership is implied.
+                connection.execute(
+                    "INSERT OR IGNORE INTO local_identity VALUES (1, ?)",
+                    (
+                        TrustedPrincipal(
+                            user_id=new_id("owner"), authenticated=True
+                        ).model_dump_json(),
+                    ),
+                )
 
         await asyncio.to_thread(operation)
 
+    @staticmethod
+    def _authenticated(principal: TrustedPrincipal) -> str:
+        if not principal.authenticated or not principal.user_id:
+            raise RfaError("authentication_required", "유효한 API 인증이 필요합니다.")
+        return principal.user_id
+
+    async def local_principal(self) -> TrustedPrincipal:
+        def operation() -> TrustedPrincipal:
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT principal_json FROM local_identity WHERE singleton = 1"
+                ).fetchone()
+                if row is None:
+                    raise RfaError("configuration_error", "로컬 소유자 초기화가 필요합니다.")
+                return TrustedPrincipal.model_validate_json(row[0])
+
+        return await asyncio.to_thread(operation)
+
+    @staticmethod
+    def _session(connection: sqlite3.Connection, session_id: str, owner: str) -> SessionRecord:
+        row = connection.execute(
+            "SELECT * FROM sessions WHERE session_id = ? AND owner_id = ?", (session_id, owner)
+        ).fetchone()
+        if row is None:
+            raise ResourceNotFoundError("session")
+        tasks = connection.execute(
+            "SELECT task_id FROM session_tasks WHERE session_id = ? ORDER BY task_id", (session_id,)
+        ).fetchall()
+        return SessionRecord(**dict(row), task_ids=tuple(item[0] for item in tasks))
+
+    async def create_session(self, principal: TrustedPrincipal) -> SessionRecord:
+        owner = self._authenticated(principal)
+        now = datetime.now(UTC)
+        record = SessionRecord(
+            session_id=new_id("session"),
+            thread_id=new_id("thread"),
+            owner_id=owner,
+            created_at=now,
+            updated_at=now,
+        )
+
+        def operation() -> None:
+            with self._connect() as connection:
+                connection.execute(
+                    "INSERT INTO sessions VALUES (?, ?, ?, ?, ?)",
+                    (record.session_id, record.thread_id, owner, now.isoformat(), now.isoformat()),
+                )
+
+        await asyncio.to_thread(operation)
+        return record
+
+    async def list_sessions(self, principal: TrustedPrincipal) -> list[SessionRecord]:
+        owner = self._authenticated(principal)
+
+        def operation() -> list[SessionRecord]:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT session_id FROM sessions WHERE owner_id = ? "
+                    "ORDER BY updated_at DESC, session_id",
+                    (owner,),
+                ).fetchall()
+                return [self._session(connection, row[0], owner) for row in rows]
+
+        return await asyncio.to_thread(operation)
+
+    async def get_session(self, session_id: str, principal: TrustedPrincipal) -> SessionDetail:
+        owner = self._authenticated(principal)
+
+        def operation() -> SessionDetail:
+            with self._connect() as connection:
+                # One read snapshot; authorize before reading messages or run data.
+                connection.execute("BEGIN")
+                session = self._session(connection, session_id, owner)
+                messages = connection.execute(
+                    "SELECT * FROM session_messages WHERE session_id = ? "
+                    "ORDER BY created_at, rowid",
+                    (session_id,),
+                ).fetchall()
+                runs = connection.execute(
+                    "SELECT runs.*, sessions.thread_id FROM runs JOIN sessions USING(session_id) "
+                    "WHERE runs.session_id = ? AND runs.owner_id = ? "
+                    "ORDER BY runs.created_at, run_id",
+                    (session_id, owner),
+                ).fetchall()
+                return SessionDetail(
+                    **session.model_dump(),
+                    messages=tuple(SessionMessage(**dict(row)) for row in messages),
+                    runs=tuple(self._run_record(row) for row in runs),
+                )
+
+        return await asyncio.to_thread(operation)
+
+    async def register_task_owner(self, task: PersistentTask) -> None:
+        """Internal TaskFactory boundary, never a caller-supplied ownership claim.
+
+        P0-019 owns Task creation/lifecycle. This minimal registry only permits
+        already-created server Tasks to be associated with multiple sessions.
+        """
+
+        def operation() -> None:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                row = connection.execute(
+                    "SELECT owner_id, domain_id FROM product_task_owners WHERE task_id = ?",
+                    (task.task_id,),
+                ).fetchone()
+                if row is not None and tuple(row) != (task.owner_id, task.domain_id.value):
+                    raise RfaError("idempotency_conflict", "Task 소유권을 변경할 수 없습니다.")
+                connection.execute(
+                    "INSERT OR IGNORE INTO product_task_owners VALUES (?, ?, ?)",
+                    (task.task_id, task.owner_id, task.domain_id.value),
+                )
+
+        await asyncio.to_thread(operation)
+
+    async def create_owned_run(
+        self,
+        request: WorkRequest,
+        principal: TrustedPrincipal,
+        *,
+        session_id: str | None,
+        task_id: str | None = None,
+    ) -> SessionRecord:
+        owner = self._authenticated(principal)
+        now = datetime.now(UTC).isoformat()
+
+        def operation() -> SessionRecord:
+            with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                selected_session = session_id or new_id("session")
+                if session_id is None:
+                    connection.execute(
+                        "INSERT INTO sessions VALUES (?, ?, ?, ?, ?)",
+                        (selected_session, new_id("thread"), owner, now, now),
+                    )
+                self._session(connection, selected_session, owner)
+                if task_id is not None:
+                    task = connection.execute(
+                        "SELECT domain_id FROM product_task_owners "
+                        "WHERE task_id = ? AND owner_id = ?",
+                        (task_id, owner),
+                    ).fetchone()
+                    if task is None:
+                        raise ResourceNotFoundError("task")
+                    if request.domain_id is None or task[0] != request.domain_id.value:
+                        raise RfaError("task_domain_mismatch", "Task의 도메인을 명시해야 합니다.")
+                    connection.execute(
+                        "INSERT OR IGNORE INTO session_tasks VALUES (?, ?)",
+                        (selected_session, task_id),
+                    )
+                connection.execute(
+                    "INSERT INTO runs (run_id, request_id, trace_id, idempotency_key, status, "
+                    "request_json, created_at, updated_at, owner_id, session_id, task_id) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        request.run_id,
+                        request.request_id,
+                        request.trace_id,
+                        "owned:"
+                        + _canonical_fingerprint({"owner": owner, "key": request.idempotency_key}),
+                        WorkStatus.CREATED.value,
+                        request.model_dump_json(),
+                        now,
+                        now,
+                        owner,
+                        selected_session,
+                        task_id,
+                    ),
+                )
+                connection.execute(
+                    "INSERT INTO session_messages VALUES (?, ?, ?, 'user', ?, ?)",
+                    (new_id("message"), selected_session, request.run_id, request.query, now),
+                )
+                connection.execute(
+                    "UPDATE sessions SET updated_at = ? WHERE session_id = ?",
+                    (now, selected_session),
+                )
+                return self._session(connection, selected_session, owner)
+
+        try:
+            return await asyncio.to_thread(operation)
+        except sqlite3.IntegrityError as exc:
+            raise RfaError("idempotency_conflict", "중복 실행 요청입니다.") from exc
+
+    @staticmethod
+    def _run_record(row: sqlite3.Row) -> RunRecord:
+        request = json.loads(row["request_json"])
+        return RunRecord(
+            run_id=row["run_id"],
+            request_id=row["request_id"],
+            trace_id=row["trace_id"],
+            session_id=row["session_id"],
+            thread_id=row["thread_id"],
+            owner_id=row["owner_id"],
+            task_id=row["task_id"],
+            domain_id=request.get("domain_id"),
+            status=row["status"],
+            result=RunResult.model_validate_json(row["result_json"])
+            if row["result_json"]
+            else None,
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
+    async def get_owned_run(self, run_id: str, principal: TrustedPrincipal) -> RunRecord:
+        owner = self._authenticated(principal)
+
+        def operation() -> RunRecord:
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT runs.*, sessions.thread_id FROM runs JOIN sessions USING(session_id) "
+                    "WHERE runs.run_id = ? AND runs.owner_id = ? AND sessions.owner_id = ?",
+                    (run_id, owner, owner),
+                ).fetchone()
+                if row is None:
+                    raise ResourceNotFoundError("run")
+                return self._run_record(row)
+
+        return await asyncio.to_thread(operation)
+
     async def create_run(self, request: WorkRequest) -> None:
+        """Legacy/internal import only: these runs have no user-visible ownership."""
         now = datetime.now(UTC).isoformat()
 
         def operation() -> None:
@@ -165,6 +454,25 @@ class SqliteWorkRepository:
                 )
                 if cursor.rowcount == 0:
                     raise ResourceNotFoundError(f"run:{result.run_id}")
+                row = connection.execute(
+                    "SELECT session_id FROM runs WHERE run_id = ?", (result.run_id,)
+                ).fetchone()
+                if row[0] is not None:
+                    connection.execute(
+                        "INSERT INTO session_messages VALUES (?, ?, ?, 'assistant', ?, ?) "
+                        "ON CONFLICT(run_id, role) DO UPDATE SET content = excluded.content",
+                        (
+                            new_id("message"),
+                            row[0],
+                            result.run_id,
+                            result.draft.content if result.draft else result.stop_reason,
+                            result.updated_at.isoformat(),
+                        ),
+                    )
+                    connection.execute(
+                        "UPDATE sessions SET updated_at = ? WHERE session_id = ?",
+                        (result.updated_at.isoformat(), row[0]),
+                    )
                 if result.draft is not None:
                     draft_json = result.draft.model_dump_json()
                     existing = connection.execute(

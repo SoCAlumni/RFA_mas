@@ -1,7 +1,7 @@
 {
   "baseline_id": "rfa-extended-v1.1",
   "derived": true,
-  "digest": "4c85ecd3c7a3acb02433ad4c01ceff86e8e35251303639e38761e579a29fc942",
+  "digest": "8cdb70c71066ec6028ccfb3658583f764511e2a531a561bf46c03630af6ed68a",
   "fixture_digest": "54f4d3e2212783b4cd454b40dce8fbf920ac90db6607c126f51ea0e7f60f854e",
   "fixture_file": "fixtures/contracts/trace_eval_cases.json",
   "implemented_http_routes": {
@@ -48,6 +48,107 @@
             ],
             "title": "Audience",
             "type": "string"
+          },
+          "DirectWorkRequest": {
+            "additionalProperties": false,
+            "properties": {
+              "agent_id": {
+                "default": "assistant-supervisor",
+                "title": "Agent Id",
+                "type": "string"
+              },
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "idempotency_key": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Idempotency Key"
+              },
+              "ingress": {
+                "const": "direct",
+                "default": "direct",
+                "title": "Ingress",
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 10000,
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Session Id"
+              },
+              "simulation_scenario": {
+                "$ref": "#/components/schemas/SimulationScenario",
+                "default": "success"
+              },
+              "target": {
+                "$ref": "#/components/schemas/DraftTarget"
+              },
+              "task_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Id"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "title": "DirectWorkRequest",
+            "type": "object"
           },
           "DomainId": {
             "enum": [
@@ -330,6 +431,111 @@
             "title": "ReviewStatus",
             "type": "string"
           },
+          "RunRecord": {
+            "additionalProperties": false,
+            "description": "Owner-authorized metadata, including runs without a final result yet.",
+            "properties": {
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DomainId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "request_id": {
+                "title": "Request Id",
+                "type": "string"
+              },
+              "result": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RunResult"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/WorkStatus"
+              },
+              "task_id": {
+                "anyOf": [
+                  {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Task Id"
+              },
+              "thread_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Thread Id",
+                "type": "string"
+              },
+              "trace_id": {
+                "title": "Trace Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "run_id",
+              "request_id",
+              "trace_id",
+              "session_id",
+              "thread_id",
+              "owner_id",
+              "status",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "RunRecord",
+            "type": "object"
+          },
           "RunResult": {
             "additionalProperties": false,
             "properties": {
@@ -436,6 +642,216 @@
               "adapters"
             ],
             "title": "RunResult",
+            "type": "object"
+          },
+          "SessionCreate": {
+            "additionalProperties": false,
+            "description": "Empty request: ownership and thread identifiers are allocated by the server.",
+            "properties": {
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              }
+            },
+            "title": "SessionCreate",
+            "type": "object"
+          },
+          "SessionDetail": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "messages": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/SessionMessage"
+                },
+                "title": "Messages",
+                "type": "array"
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "runs": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/RunRecord"
+                },
+                "title": "Runs",
+                "type": "array"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "task_ids": {
+                "default": [],
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                  "type": "string"
+                },
+                "title": "Task Ids",
+                "type": "array"
+              },
+              "thread_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Thread Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "thread_id",
+              "owner_id",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "SessionDetail",
+            "type": "object"
+          },
+          "SessionMessage": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "title": "Content",
+                "type": "string"
+              },
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "message_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Message Id",
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "user",
+                  "assistant"
+                ],
+                "title": "Role",
+                "type": "string"
+              },
+              "run_id": {
+                "title": "Run Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Session Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message_id",
+              "session_id",
+              "run_id",
+              "role",
+              "content",
+              "created_at"
+            ],
+            "title": "SessionMessage",
+            "type": "object"
+          },
+          "SessionRecord": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "format": "date-time",
+                "title": "Created At",
+                "type": "string"
+              },
+              "owner_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Owner Id",
+                "type": "string"
+              },
+              "schema_version": {
+                "const": "1.1",
+                "default": "1.1",
+                "title": "Schema Version",
+                "type": "string"
+              },
+              "session_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Session Id",
+                "type": "string"
+              },
+              "task_ids": {
+                "default": [],
+                "items": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                  "type": "string"
+                },
+                "title": "Task Ids",
+                "type": "array"
+              },
+              "thread_id": {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "title": "Thread Id",
+                "type": "string"
+              },
+              "updated_at": {
+                "format": "date-time",
+                "title": "Updated At",
+                "type": "string"
+              }
+            },
+            "required": [
+              "session_id",
+              "thread_id",
+              "owner_id",
+              "created_at",
+              "updated_at"
+            ],
+            "title": "SessionRecord",
             "type": "object"
           },
           "SimulationScenario": {
@@ -740,6 +1156,307 @@
             "summary": "Ready",
             "tags": [
               "operations"
+            ]
+          }
+        },
+        "/v1/runs/{run_id}": {
+          "get": {
+            "operationId": "get_run_status_v1_runs__run_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "run_id",
+                "required": true,
+                "schema": {
+                  "title": "Run Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunRecord"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Run Status",
+            "tags": [
+              "work"
+            ]
+          }
+        },
+        "/v1/sessions": {
+          "get": {
+            "operationId": "list_sessions_v1_sessions_get",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "items": {
+                        "$ref": "#/components/schemas/SessionRecord"
+                      },
+                      "title": "Response List Sessions V1 Sessions Get",
+                      "type": "array"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "List Sessions",
+            "tags": [
+              "sessions"
+            ]
+          },
+          "post": {
+            "operationId": "create_session_v1_sessions_post",
+            "parameters": [
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/SessionCreate"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Body"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/SessionRecord"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Create Session",
+            "tags": [
+              "sessions"
+            ]
+          }
+        },
+        "/v1/sessions/{session_id}": {
+          "get": {
+            "operationId": "get_session_v1_sessions__session_id__get",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "session_id",
+                "required": true,
+                "schema": {
+                  "title": "Session Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/SessionDetail"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Get Session",
+            "tags": [
+              "sessions"
+            ]
+          }
+        },
+        "/v1/sessions/{session_id}/work": {
+          "post": {
+            "operationId": "continue_session_v1_sessions__session_id__work_post",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "session_id",
+                "required": true,
+                "schema": {
+                  "title": "Session Id",
+                  "type": "string"
+                }
+              },
+              {
+                "in": "header",
+                "name": "authorization",
+                "required": false,
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Authorization"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DirectWorkRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/RunResult"
+                    }
+                  }
+                },
+                "description": "Successful Response"
+              },
+              "422": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    }
+                  }
+                },
+                "description": "Validation Error"
+              }
+            },
+            "summary": "Continue Session",
+            "tags": [
+              "sessions"
             ]
           }
         },
@@ -2236,6 +2953,36 @@
   },
   "json_schema": {
     "$defs": {
+      "AdapterInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "port": {
+            "title": "Port",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "port",
+          "adapter",
+          "simulated"
+        ],
+        "title": "AdapterInfo",
+        "type": "object"
+      },
       "AgentSpec": {
         "additionalProperties": false,
         "properties": {
@@ -2986,6 +3733,96 @@
           "sources"
         ],
         "title": "DraftBinding",
+        "type": "object"
+      },
+      "DraftBundle": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "allowed_evidence": {
+            "items": {
+              "$ref": "#/$defs/EvidenceRef"
+            },
+            "title": "Allowed Evidence",
+            "type": "array"
+          },
+          "audience": {
+            "$ref": "#/$defs/Audience"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "draft_id": {
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "content_hash",
+          "target",
+          "audience",
+          "policy_version",
+          "allowed_evidence",
+          "content",
+          "simulated",
+          "adapter"
+        ],
+        "title": "DraftBundle",
         "type": "object"
       },
       "DraftBundleV11": {
@@ -4101,6 +4938,88 @@
         "title": "PublicationStatus",
         "type": "string"
       },
+      "ReviewDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "decision": {
+            "$ref": "#/$defs/ReviewStatus"
+          },
+          "domain_id": {
+            "$ref": "#/$defs/DomainId"
+          },
+          "draft_id": {
+            "title": "Draft Id",
+            "type": "string"
+          },
+          "draft_version": {
+            "minimum": 1,
+            "title": "Draft Version",
+            "type": "integer"
+          },
+          "publication_status": {
+            "$ref": "#/$defs/PublicationStatus",
+            "default": "not_requested"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "safe_reason": {
+            "title": "Safe Reason",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "target": {
+            "$ref": "#/$defs/DraftTarget"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "domain_id",
+          "draft_id",
+          "draft_version",
+          "content_hash",
+          "target",
+          "decision",
+          "safe_reason",
+          "simulated",
+          "adapter"
+        ],
+        "title": "ReviewDecision",
+        "type": "object"
+      },
       "ReviewStatus": {
         "enum": [
           "pending",
@@ -4110,6 +5029,225 @@
         ],
         "title": "ReviewStatus",
         "type": "string"
+      },
+      "RunRecord": {
+        "additionalProperties": false,
+        "description": "Owner-authorized metadata, including runs without a final result yet.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "owner_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/RunResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/WorkStatus"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Id"
+          },
+          "thread_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Thread Id",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "request_id",
+          "trace_id",
+          "session_id",
+          "thread_id",
+          "owner_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RunRecord",
+        "type": "object"
+      },
+      "RunResult": {
+        "additionalProperties": false,
+        "properties": {
+          "adapters": {
+            "items": {
+              "$ref": "#/$defs/AdapterInfo"
+            },
+            "title": "Adapters",
+            "type": "array"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "domain_id": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DomainId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/DraftBundle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/$defs/StructuredError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "publication_status": {
+            "$ref": "#/$defs/PublicationStatus",
+            "default": "not_requested"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ReviewDecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "simulated": {
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/$defs/WorkStatus"
+          },
+          "stop_reason": {
+            "title": "Stop Reason",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "trace_id",
+          "run_id",
+          "agent_id",
+          "status",
+          "stop_reason",
+          "simulated",
+          "adapters"
+        ],
+        "title": "RunResult",
+        "type": "object"
       },
       "ScheduleSpec": {
         "additionalProperties": false,
@@ -4208,6 +5346,154 @@
           "cron"
         ],
         "title": "ScheduleSpec",
+        "type": "object"
+      },
+      "SessionCreate": {
+        "additionalProperties": false,
+        "description": "Empty request: ownership and thread identifiers are allocated by the server.",
+        "properties": {
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "title": "SessionCreate",
+        "type": "object"
+      },
+      "SessionDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "messages": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/SessionMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "owner_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Owner Id",
+            "type": "string"
+          },
+          "runs": {
+            "default": [],
+            "items": {
+              "$ref": "#/$defs/RunRecord"
+            },
+            "title": "Runs",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "task_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          },
+          "thread_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Thread Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "thread_id",
+          "owner_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SessionDetail",
+        "type": "object"
+      },
+      "SessionMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "message_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Message Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.1",
+            "default": "1.1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/-]*$",
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message_id",
+          "session_id",
+          "run_id",
+          "role",
+          "content",
+          "created_at"
+        ],
+        "title": "SessionMessage",
         "type": "object"
       },
       "SessionRecord": {
@@ -4393,6 +5679,77 @@
           "policy_version"
         ],
         "title": "SourceRevisionRef",
+        "type": "object"
+      },
+      "StructuredError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "StructuredError",
         "type": "object"
       },
       "TeamBudget": {
@@ -5222,6 +6579,19 @@
         ],
         "title": "VersionReferences",
         "type": "object"
+      },
+      "WorkStatus": {
+        "enum": [
+          "created",
+          "running",
+          "waiting_approval",
+          "completed",
+          "failed",
+          "cancelled",
+          "outcome_unknown"
+        ],
+        "title": "WorkStatus",
+        "type": "string"
       }
     },
     "title": "RFA 1.1 additive repository-local reference contracts"
@@ -5268,10 +6638,17 @@
       "emit_event": "(self, event: 'TraceEvent') -> 'None'"
     },
     "WorkRepositoryPort": {
+      "create_owned_run": "(self, request: 'WorkRequest', principal: 'TrustedPrincipal', *, session_id: 'str | None', task_id: 'str | None' = None) -> 'SessionRecord'",
       "create_run": "(self, request: 'WorkRequest') -> 'None'",
+      "create_session": "(self, principal: 'TrustedPrincipal') -> 'SessionRecord'",
+      "get_owned_run": "(self, run_id: 'str', principal: 'TrustedPrincipal') -> 'RunRecord'",
       "get_result": "(self, run_id: 'str') -> 'RunResult | None'",
+      "get_session": "(self, session_id: 'str', principal: 'TrustedPrincipal') -> 'SessionDetail'",
       "initialize": "(self) -> 'None'",
       "list_documents": "(self, domain_id: 'str') -> 'list[KnowledgeDocument]'",
+      "list_sessions": "(self, principal: 'TrustedPrincipal') -> 'list[SessionRecord]'",
+      "local_principal": "(self) -> 'TrustedPrincipal'",
+      "register_task_owner": "(self, task: 'PersistentTask') -> 'None'",
       "save_checkpoint": "(self, run_id: 'str', node: 'str', metadata: 'dict[str, Any]') -> 'None'",
       "save_result": "(self, result: 'RunResult') -> 'None'",
       "transition_run": "(self, run_id: 'str', status: 'WorkStatus') -> 'None'",
@@ -5296,7 +6673,11 @@
     "PolicyBindings",
     "PolicyDecisionV11",
     "PublicationReceipt",
+    "RunRecord",
     "ScheduleSpec",
+    "SessionCreate",
+    "SessionDetail",
+    "SessionMessage",
     "SessionRecord",
     "SourceRevisionRef",
     "TeamBudget",
@@ -5310,13 +6691,13 @@
   ],
   "schema_version": "1.1",
   "source_files": {
-    "scripts/contract_baseline.py": "001b5ea3734ee16ed4c876a6879ae612189001035592f8393c692742fbc92aed",
-    "src/rfa_mas/api/app.py": "f67e86c859930b374abfce2dbc7d1125a1ea508b03b410babc6793501d5a8f21",
+    "scripts/contract_baseline.py": "eb2a7196e82606b7f87ab6571eb47738ccb6258b43447105e385d16d46575c28",
+    "src/rfa_mas/api/app.py": "df6bf5a1c8aac7d9aac9aa26dfb802b1a7738fe6a86605b980903cb6293bfb62",
     "src/rfa_mas/application/state_machine.py": "e288a912968483aaf44732d8358f3ba48a8fb263407b18dbea267a40b9b10ce7",
-    "src/rfa_mas/contracts/__init__.py": "aad9f40330630dd1a938b430d1f4125044b6c3731b75a2f6db5ad10a9f18aaf0",
+    "src/rfa_mas/contracts/__init__.py": "6931c77145aee5c2dde2f081435ddb946485ea3f95c4b2a968340498c923b497",
     "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
-    "src/rfa_mas/contracts/models.py": "631918058d56f10c052f619620c15981a9f873d5f6203a1d23838b7c594249f8",
-    "src/rfa_mas/ports/interfaces.py": "badaeefbdf53ea09c33ff4406be182450a8a29124e582272d543224097db04b2",
+    "src/rfa_mas/contracts/models.py": "301ff0f77596d62011f78fc4ebf49dd90e300fceff9f46d69f66981f2e1aebfe",
+    "src/rfa_mas/ports/interfaces.py": "97a6c08ccecb92a9a92f382198d7e3d2d37305e21d01a085594c6a94f855e080",
     "src/rfa_mas/reference/app.py": "d40dabffb9ac224685fabab351c0d20a365d4d209a4d572df043a3ccd7d70694"
   },
   "source_of_truth": "src/rfa_mas/contracts (Pydantic)",

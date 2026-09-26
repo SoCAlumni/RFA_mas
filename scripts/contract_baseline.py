@@ -124,6 +124,13 @@ def build_baseline() -> dict[str, Any]:
     with TemporaryDirectory(prefix="rfa-contract-baseline-") as temporary:
         api = create_app(settings=offline_settings(Path(temporary))).openapi()
         reference = create_reference_contract_app().openapi()
+    # Additive session endpoints belong to the extended contract. Keep comparing
+    # each original operation/schema exactly (never substitute recorded content).
+    original_api = recorded["openapi"]["core"]
+    api["paths"] = {path: api["paths"][path] for path in original_api["paths"]}
+    api["components"]["schemas"] = {
+        name: api["components"]["schemas"][name] for name in original_api["components"]["schemas"]
+    }
     payload = {
         "baseline_id": "rfa-existing-v1",
         "schema_version": contracts.SCHEMA_VERSION,
@@ -311,6 +318,8 @@ def build_extended() -> dict[str, Any]:
         and name.endswith("Port")
         and port.__module__ == interfaces.__name__
     }
+    with TemporaryDirectory(prefix="rfa-contract-extended-") as temporary:
+        api = create_app(settings=offline_settings(Path(temporary))).openapi()
     payload = {
         "baseline_id": "rfa-extended-v1.1",
         "schema_version": "1.1",
@@ -327,7 +336,10 @@ def build_extended() -> dict[str, Any]:
         "ports": ports,
         "fixture_file": "fixtures/contracts/trace_eval_cases.json",
         "fixture_digest": digest(json.loads(EXTENDED_FIXTURES.read_text())),
-        "implemented_http_routes": build_baseline()["openapi"],
+        "implemented_http_routes": {
+            "core": api,
+            "teammate_reference": create_reference_contract_app().openapi(),
+        },
         "limits": [
             "No new HTTP route is implemented by a DTO/protocol declaration.",
             "1.0 source hashes record historical provenance; 1.1 source hashes are current.",

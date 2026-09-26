@@ -1,4 +1,5 @@
 import hmac
+import ipaddress
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -9,13 +10,56 @@ from fastapi.responses import JSONResponse
 from rfa_mas.bootstrap import Container, build_container
 from rfa_mas.contracts import (
     SCHEMA_VERSION,
+    DirectWorkRequest,
+    RunRecord,
     RunResult,
+    SessionCreate,
+    SessionDetail,
+    SessionRecord,
     StructuredError,
     TrustedPrincipal,
     WorkRequest,
+    new_id,
 )
 from rfa_mas.errors import RfaError
 from rfa_mas.settings import Settings
+
+
+async def resolve_principal(
+    request: Request,
+    authorization: Annotated[str | None, Header()] = None,
+) -> TrustedPrincipal:
+    """Single-installation auth boundary; replace here with verified runtime identity.
+
+    No body/header user ID, forwarding header, fixture role, or trace ID is an
+    authority. Keyless mode is explicitly local development, not multi-user auth.
+    """
+    container = request.app.state.container
+    configured = container.settings.app_api_key
+    if configured is not None:
+        expected = f"Bearer {configured.get_secret_value()}".encode()
+        if authorization is None or not hmac.compare_digest(authorization.encode(), expected):
+            raise RfaError("authentication_required", "유효한 API 인증이 필요합니다.")
+    else:
+        # A proxy may rewrite the ASGI peer address. Keyless development is for
+        # direct loopback connections only, never forwarded identity claims.
+        if any(
+            name == "forwarded" or name == "x-real-ip" or name.startswith("x-forwarded-")
+            for name in request.headers
+        ):
+            raise RfaError("authentication_required", "프록시 접근에는 API 인증이 필요합니다.")
+        try:
+            peer = ipaddress.ip_address(request.client.host if request.client else "")
+            loopback = peer.is_loopback or bool(
+                isinstance(peer, ipaddress.IPv6Address)
+                and peer.ipv4_mapped
+                and peer.ipv4_mapped.is_loopback
+            )
+        except ValueError:
+            loopback = False
+        if not loopback:
+            raise RfaError("authentication_required", "로컬 개발 접근 또는 API 인증이 필요합니다.")
+    return await container.service.sessions.local_principal()
 
 
 def create_app(
@@ -61,29 +105,6 @@ def create_app(
         )
         return JSONResponse(status_code=status_code, content=error.model_dump(mode="json"))
 
-    async def principal(
-        authorization: Annotated[str | None, Header()] = None,
-    ) -> TrustedPrincipal:
-        configured = selected_container.settings.app_api_key
-        if configured is not None:
-            expected = f"Bearer {configured.get_secret_value()}"
-            if authorization is None or not hmac.compare_digest(authorization, expected):
-                raise RfaError("authentication_required", "유효한 API 인증이 필요합니다.")
-            return TrustedPrincipal(
-                user_id="api-client",
-                authenticated=True,
-                company_id="local-company",
-                business_units=frozenset({"triv3-team", "quantization-research-team"}),
-                roles=frozenset({"company"}),
-            )
-        return TrustedPrincipal(
-            user_id="fixture-owner-001",
-            authenticated=True,
-            company_id="local-company",
-            business_units=frozenset({"triv3-team", "quantization-research-team"}),
-            roles=frozenset({"company", "local_development_identity"}),
-        )
-
     @app.get("/healthz", tags=["operations"])
     async def health() -> dict[str, object]:
         return {
@@ -108,15 +129,66 @@ def create_app(
     )
     async def create_work(
         work: WorkRequest,
-        trusted_principal: Annotated[TrustedPrincipal, Depends(principal)],
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunResult:
-        return await selected_container.service.run(work, trusted_principal)
+        # Keep the 1.0 field for wire compatibility, but never use a caller's
+        # proposed run ID as a storage key or an existence probe.
+        return await selected_container.service.run(
+            work.model_copy(update={"run_id": new_id("run")}), trusted_principal
+        )
 
     @app.get("/v1/work/{run_id}", response_model=RunResult, tags=["work"])
     async def get_work(
         run_id: str,
-        _: Annotated[TrustedPrincipal, Depends(principal)],
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
     ) -> RunResult:
-        return await selected_container.service.get(run_id)
+        return await selected_container.service.get(run_id, trusted_principal)
+
+    @app.post("/v1/sessions", response_model=SessionRecord, status_code=201, tags=["sessions"])
+    async def create_session(
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+        body: SessionCreate | None = None,
+    ) -> SessionRecord:
+        return await selected_container.service.sessions.create(trusted_principal)
+
+    @app.get("/v1/sessions", response_model=list[SessionRecord], tags=["sessions"])
+    async def list_sessions(
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> list[SessionRecord]:
+        return await selected_container.service.sessions.list(trusted_principal)
+
+    @app.get("/v1/sessions/{session_id}", response_model=SessionDetail, tags=["sessions"])
+    async def get_session(
+        session_id: str,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> SessionDetail:
+        return await selected_container.service.sessions.get(session_id, trusted_principal)
+
+    @app.post(
+        "/v1/sessions/{session_id}/work",
+        response_model=RunResult,
+        status_code=201,
+        tags=["sessions"],
+    )
+    async def continue_session(
+        session_id: str,
+        work: DirectWorkRequest,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> RunResult:
+        # Authorize the path before validating its binding to an optional body ID.
+        await selected_container.service.sessions.get(session_id, trusted_principal)
+        if work.session_id is not None and work.session_id != session_id:
+            raise RfaError("session_mismatch", "세션 참조가 일치하지 않습니다.")
+        return await selected_container.service.run(
+            work.model_copy(update={"session_id": session_id, "run_id": new_id("run")}),
+            trusted_principal,
+        )
+
+    @app.get("/v1/runs/{run_id}", response_model=RunRecord, tags=["work"])
+    async def get_run_status(
+        run_id: str,
+        trusted_principal: Annotated[TrustedPrincipal, Depends(resolve_principal)],
+    ) -> RunRecord:
+        return await selected_container.service.sessions.get_run(run_id, trusted_principal)
 
     return app

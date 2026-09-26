@@ -14,11 +14,15 @@ from rfa_mas.contracts import (
     KnowledgeDocument,
     ModelRequest,
     ModelResult,
+    PersistentTask,
     PolicyDecision,
     PolicyRequest,
     RetrievalRequest,
     ReviewDecision,
+    RunRecord,
     RunResult,
+    SessionDetail,
+    SessionRecord,
     SimulationScenario,
     TaskRequest,
     TaskResult,
@@ -27,6 +31,7 @@ from rfa_mas.contracts import (
     ToolRequest,
     ToolResult,
     TraceEvent,
+    TrustedPrincipal,
     WorkRequest,
     WorkStatus,
 )
@@ -116,6 +121,27 @@ class JudgePort(Protocol):
 
 class WorkRepositoryPort(Protocol):
     async def initialize(self) -> None: ...
+
+    async def local_principal(self) -> TrustedPrincipal: ...
+
+    async def create_session(self, principal: TrustedPrincipal) -> SessionRecord: ...
+
+    async def list_sessions(self, principal: TrustedPrincipal) -> list[SessionRecord]: ...
+
+    async def get_session(self, session_id: str, principal: TrustedPrincipal) -> SessionDetail: ...
+
+    async def register_task_owner(self, task: PersistentTask) -> None: ...
+
+    async def create_owned_run(
+        self,
+        request: WorkRequest,
+        principal: TrustedPrincipal,
+        *,
+        session_id: str | None,
+        task_id: str | None = None,
+    ) -> SessionRecord: ...
+
+    async def get_owned_run(self, run_id: str, principal: TrustedPrincipal) -> RunRecord: ...
 
     async def create_run(self, request: WorkRequest) -> None: ...
 
