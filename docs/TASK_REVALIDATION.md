@@ -120,3 +120,22 @@ D4 통합 8h와 본인 LLMOps 3.5h는 별도이며, 병렬 실행을 근거로 �
 원문 checksum·ID·완료 이력·NAT 독립성·mock/real 최종 gate는 그대로 검사한다.
 관리 회귀는 임시 Git/control fixture만 변경한다. 이 테스트의 성공은 RFA 제품/NAT/보안
 시나리오 성공이 아니다. 제품 task의 필수 검증은 해당 명세대로 별도로 실행한다.
+
+## 통합 후 재검증 cascade 운영 보조 (2026-09-26 추가)
+
+공유 소스(contracts, local.py, service 등)나 RFA-EXTENDED 계약이 바뀌면 그 파일을 fingerprint에 포함한
+done task가 verifying/stale로 바뀐다. 이는 의도된 동작이며 영향 AC를 다시 검증해야 의존 task를 claim할 수
+있다. coordinator는 `.agent/input/tc.py`(개발 운영 보조, 제품 코드 아님)로 다음 절차를 반복한다.
+
+1. `accept`: consumer의 contract_refs를 현재 발행 version/digest로 `edit-spec` 수락한다(예약된 task는
+   계약 수락 필드만 허용된다).
+2. `recover --disposition resume`와 `integrated_revalidation: true` inspection으로 현재 통합 HEAD의 clean
+   feature worktree에 새 generation claim을 만든다(과거 generation의 늦은 요청은 거절된다).
+3. `verify`: task의 검토된 pytest 계획 argv만 `env -i`(PATH/HOME 임시/TASK_CONTROL_ROOT)로 실행하고 실제
+   수집·통과 수로 report를 만든 뒤 begin/record-evidence를 호출한다. skip·미수집·timeout은 passed가 아니다.
+   manual 계획은 실제로 다시 확인한 관찰 문장을 요구한다.
+4. worker 통과 후 submit → canonical target에서 같은 계획으로 integration evidence → integrate → close.
+
+주의: 동시에 여러 전체 회귀를 실행하면 120초 plan timeout을 넘을 수 있다(2026-09-26 OPS-002 r3에서 실제
+발생, exit -9). 시간 한도를 늘리지 않고 부하를 줄여 단독 재실행한다. 일반 recovery(비 revalidation)로 바뀐
+작업은 claim baseline 이후 소유 경로의 실제 변경만 submit할 수 있으므로, 새 baseline 커밋을 섞지 않는다.
