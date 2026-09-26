@@ -1,5 +1,11 @@
 # 계약 변경 기록
 
+## 2026-09-27 — P1-005A DRAFT 편집·승인 무효화·모의 게시 상태 1.1 (통합·발행 대기)
+
+- additive 1.1: `DraftEditRequest`(expected_version, content, target, attachments: 항상 새 불변 버전), `PublishRequest`(idempotency_key), `DraftState`(현재 버전, 버전 목록, 승인 mirror, approval_valid/invalid_reason, publication receipt/status/mode). 기존 `DraftBinding`·`PublicationReceipt`·`ApprovalReference`는 바꾸지 않고 재사용한다.
+- migration8 `draft_version_meta`(버전별 첨부 manifest), `publications`(owner·idempotency_key unique, Run당 1개). 게시 상태는 Run 상태와 별도이며 전이표는 `state_machine.PUBLICATION_TRANSITIONS`(OUTCOME_UNKNOWN은 조회로만 SUCCEEDED/FAILED).
+- 승인 유효성은 사용 시점에 버전/content hash/target/정책 버전/현재 source·ACL(ResumePolicy)로 다시 판정한다. 승인 원본은 검토 서비스(현재 mock/stand-in)이며 이 mirror는 권한을 만들지 않는다. 게시는 in-process MockPublisher만(mode=mock, local-artifact 참조, 외부 write 0회). HTTP stand-in 게시 연결은 P1-008.
+
 ## 2026-09-27 — P2-003 설명 가능한 후보 정렬 1.1 (통합·발행 대기)
 
 - additive 1.1: `RankReason`(due/dependency/impact/certainty/state, 점수·설명), `RankedCandidate`(rank, score, rule_version `candidate-rank-v1`). 고정 규칙 가중치는 application/candidates.py의 `RANK_RULES`에 문서화했다.
