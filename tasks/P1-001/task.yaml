@@ -10,7 +10,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P0
-status: todo
+status: in_progress
 spec_state: ready
 unresolved: []
 workstream: knowledge
@@ -36,6 +36,8 @@ scope:
     않는다. 재개 보안 fixture는 정당한 새 revision/ACL 변경 또는 명시적인 test-only corruption으로 바꾸고 기대 보안 결과는 유지한다.
   - application SQLite DB/WAL/SHM은 최초 연결 전에 private mode와 symlink/비정규 파일 검사를 적용한다. checkpoint 보호를 KB 보호
     증거로 대신하지 않으며 기존 자료는 삭제하지 않는다.
+  - migration4 등록에 맞춰 tests/test_teams.py의 migration 기대 목록만 [1,2,3,4]로 갱신한다. 기존 owner/team/runtime/권한
+    검증을 줄이거나 변경하지 않는다.
   excluded:
   - 실제 connector/URL 수집, 외부 전송·게시, 실제 env 접근, worker graph/벡터 엔진
   - frozen 1.0 계약 변경, 권한 없는 legacy 자료의 현재 owner 임의 귀속
@@ -55,6 +57,7 @@ scope:
   - docs/CONTRACT_CHANGELOG.md
   - tests/test_sessions.py
   - tests/test_resume.py
+  - tests/test_teams.py
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/application/resume_policy.py
@@ -107,6 +110,9 @@ context:
   - path: src/rfa_mas/api/app.py
     section: task에 관련된 정의/호출부
     reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: tests/test_teams.py
+    section: test_restart_sessions_migration_preserve_owners_and_approved_template
+    reason: migration4 추가로 인한 기존 [1,2,3] 고정 기대값 갱신; task/team 보존 assertion 유지
   handoff: tasks/P1-001/handoff.md
   dependency_results:
   - tasks/P0-014/handoff.md
@@ -156,6 +162,9 @@ deliverables:
 - path: tests/test_sessions.py
   availability: existing
   description: 확인된 storage/ACL API와 1.1 additive 계약의 최소 연결·회귀; 기존 1.0 source 보존
+- path: tests/test_teams.py
+  availability: existing
+  description: migration 기대값4만 추가하고 기존 restart/team/owner 보존 검사 유지
 acceptance_criteria:
 - id: AC1
   given: authenticated owner 및 다른 사용자·위조 owner/company/membership 입력, 원문 공백·미분류 노트
@@ -229,20 +238,21 @@ verification:
   - tests/test_contracts.py
   - tests/test_contract_baseline.py
   - tests/test_trace_eval_contract.py
+  - tests/test_teams.py
   timeout_seconds: 120
   procedure: []
   assertions:
   - 기존 세션/재개·거절·동시 startup와 frozen/extended schema/fixture 회귀가 통과한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-001
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-001/knowledge-01/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: failed
+  spec_revision: 9
+  spec_digest: d49412b6eaf707b2ef3af02a355aeae0fa6ea353a67c6f2c943f028a5d1c9f81
+  contract_digest: d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7
+  source_fingerprint: cf104bc3b665443a8f92513dcdeb5aa1d84b9d8351212e3b577f53bd77bfdf7d
+  evidence: .agent/evidence/P1-001/knowledge-01/result.json
 integration:
   state: pending
   target: canonical integration branch after OPS-000
@@ -252,17 +262,64 @@ integration:
   submission: null
   result: null
   evidence: null
-revision: 8
-spec_revision: 8
-claim_generation: 0
-claim: null
+revision: 16
+spec_revision: 9
+claim_generation: 3
+claim:
+  session_id: rfa-coordinator
+  worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001
+  branch: task/P1-001
+  generation: 3
+  claimed_at: '2026-09-26T11:51:08+00:00'
+  heartbeat_at: '2026-09-26T11:56:44+00:00'
+  lease_expires_at: '2026-09-26T12:11:44+00:00'
+  baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
+  recovery_required: false
+  context_digest: 3b2e7d9e785068b91c469cbf1d80fd3d661c6569796db7b5a0c802176b08f9d8
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
-  approaches: []
+  latest_attempt: knowledge-02
+  evidence_refs:
+  - .agent/evidence/P1-001/knowledge-01/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
+    baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
+    reason: Preserve inspected in-progress KB source at same baseline; archive claim only to include migration4
+      expectation test
+    at: '2026-09-26T11:50:31+00:00'
+    cycles: 0
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001
+      branch: task/P1-001
+      generation: 1
+      claimed_at: '2026-09-26T11:39:47+00:00'
+      heartbeat_at: '2026-09-26T11:39:47+00:00'
+      lease_expires_at: '2026-09-26T11:54:47+00:00'
+      baseline_head: 85d747ee4c837566aa8d2cdc54878ee580ebfe69
+      recovery_required: false
+      context_digest: b9d4ba63150e3715d78c0c6f8389411e939ab856f20fb9d3696ec06eee15a51b
+    integration:
+      state: pending
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: not_run
+      spec_revision: null
+      spec_digest: null
+      contract_digest: null
+      source_fingerprint: null
+      evidence: null
+    latest_evidence_file: null
 blocker: null
 migration:
   original_status: todo
@@ -275,9 +332,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T09:14:42+00:00'
-concise_result: 'Specification changed: Current 1.1 baseline/provider accepted after source inspection;
-  immutable revisions require current projection and legitimate resume fixtures, preserving old data,
-  security assertions and seed-once behavior.'
+updated_at: '2026-09-26T11:56:55+00:00'
+concise_result: 'Specification changed: Observed migration3 expectation must include KB migration4; preserve
+  dirty owned implementation and all security assertions, add exact team regression to V2'
 next_action: P0-014의 확장 DTO/상태 fixture baseline(RFA-EXTENDED 1.1)을 수신·검토하고 contract_refs digest를 고정해야
   한다.

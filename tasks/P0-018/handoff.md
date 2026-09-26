@@ -1,19 +1,9 @@
-# P0-018 post-trace historical revalidation
+# P0-018 — post-teams no-code revalidation
 
-## Goal and AC
+Revalidate existing selector AC1–AC3 on frozen main85d747ee4c837566aa8d2cdc54878ee580ebfe69 and accepted RFA-EXTENDED1.1 digest32b512c810ce23b8d0d9a277c7d11fd24249dabfe3dff2fbbcfd7e460c71cc77. Historical selector implementation, previous failures and worker/target evidence remain preserved; no new product implementation.
 
-Revalidate existing selector AC1–AC3 against frozen main `35f43400c57641dea9ab8397b018a98d7f5bea8b` and published additive RFA-EXTENDED 1.1 digest `37bec7d97ee0a558c6890de82c0b1c463a1f0cb546d2cc778932a447c2f5383a`. No product change or new claim of functionality.
+Clean task/P0-018 was ff-only advanced to current main. Historical integration binding/target ancestry passed the existing inactive_integrated_guard. No previous selector process, dirty source, unintegrated changes or pending external side effects were found. Default exact lock environment is Python3.12.13/SQLite3.53.1; old venv is recoverably retained in this worktree .local/retained-venv-post-teams-20260926. No real .env, credentials or provider calls.
 
-## Current facts and decisions
+Worker post-teams-worker-01 actual window 2026-09-26T11:29:53.809505Z–11:30:00.999575Z: declared V1 selector53 passed0.04s; supplemental contract78 passed1.54s with4 existing durability warnings; frozen9/extended7 valid. No skips/errors/retries. Exact V1 assertions correspond to the pinned-template deterministic-selection and strict authorization/budget negative tests. All commands use bounded subprocess timeouts and minimal PATH-only environment with normal pytest plugins.
 
-- Historical implementation and post-settings worker/target evidence remain preserved. Previous target HEAD715db79 is ancestor of current main.
-- Source `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-018`, branch `task/P0-018`, is ff-only advanced to35f4340 and clean. Locked default uv sync rebuilt only editable package.
-- Existing feature Python3.12.13/SQLite3.50.4 is retained for pure selector tests; canonical root uses patched SQLite3.53.1. No environment replacement, source edit, or commit is required.
-- Existing approved template artifact/pins and execution budget behavior remain unchanged. This does not implement TeamFactory/runtime sandbox, NAT, or live provider execution.
-- No active previous selector process, unintegrated changes, or pending side effects were found. Other task claims are not changed.
-
-## Verification and next action
-
-Worker `post-trace-worker-01` actual results: V1 selector53 passed0.06s; supplementary contract64 passed0.60s; frozen9 and extended7 fixture shapes valid. Commands ran with `env -i PATH=/usr/bin:/bin`, normal pytest plugins, no keys/.env/network. Exact task assertions are attested in immutable result with actual output and source manifest. No errors or retries.
-
-Next first action: submit unchanged35f4340 feature with worker evidence, then capture fresh `post-trace-target-01` and independently rerun the same bounded checks in canonical root. Target is not yet run at this handoff. Preserve all historical evidence; no whole-suite repetition. After target pass, delegated coordinator integrates/closes and parent records final facts in Git work log.
+Next: submit unchanged source and capture independent post-teams-target-01, then repeat declared V1 plus bounded supplemental checks on frozen canonical target before integrate/close. TeamFactory, live model, sandbox and final RFA E2E success are outside this selector revalidation. Current authoritative later status is task.yaml.

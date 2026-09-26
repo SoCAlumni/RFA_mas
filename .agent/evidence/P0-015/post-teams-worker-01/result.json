@@ -1,0 +1,25 @@
+{
+  "attempt_id": "post-teams-worker-01",
+  "contract_digest": "d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7",
+  "mode": "현재 get_result는 owner 인자를 받지 않음; 신규 기능 missing/not_run. 저장/권한 local(false), 응답 생성 mock(true). 외부 의존 없음; loopback 개발 identity는 production 인증 증거 아님.",
+  "report": {
+    "checks": [
+      {
+        "id": "V1",
+        "log_excerpt": "Orchestration output capture failed: JSON parse Unexpected end of JSON input after exec_command yielded at 10 seconds. Final test outcome/counts not retained; not asserted passed. Process inspection subsequently found no sessions/API test still running. No product failure inferred and no source changes.",
+        "result": "failed"
+      }
+    ],
+    "failure_kind": "verification_output_unavailable",
+    "finished_at": "2026-09-26T11:30:32.574Z",
+    "next_action": "Capture new worker02 source and execute exact checks using stored command result with 30sec yield and explicit polling; preserve this failed evidence.",
+    "reviewer": "rfa-coordinator delegated sessions",
+    "started_at": "2026-09-26T11:30:32.571Z"
+  },
+  "result": "failed",
+  "source_fingerprint": "a88fb4e7be4493b7e1d4dde672d7c09bb6428dadcf22474a981d7cf189ec89cd",
+  "source_manifest": ".agent/evidence/P0-015/post-teams-worker-01/source.json",
+  "spec_digest": "a09b75a3eb474eadf0ef26d146349d6e6a5a3b7a66c67132e72d898267d31558",
+  "spec_revision": 5,
+  "task_id": "P0-015"
+}

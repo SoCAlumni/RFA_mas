@@ -1,0 +1,88 @@
+{
+  "attempt_id": "post-teams-target-01",
+  "contract_digest": "d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7",
+  "mode": "두 graph의 checkpointer 미주입 확인; 확장 missing/not_run. persistence local(false), model/review mock(true). 외부 의존 없음(설치 후 offline).",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py"
+        ],
+        "assertions": [
+          "memory saver/최종 metadata를 resume 근거로 사용하지 않음",
+          "대기 interrupt와 재개 상태를 영속화하고 새 container/process에서 동일 run 이어가기",
+          "checkpoint lookup 전 owner 검사, 현재 서버 principal과 최신 ACL/policy로 재검사(과거 checkpoint의 권한 snapshot을 재사용하지 않음)",
+          "같은 thread 동시 invoke 거절/직렬화, checkpoint에 credential·authorization header 저장 없음."
+        ],
+        "counts": {
+          "collected": 31,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 31,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 6.099,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T11:34:01.529372+00:00",
+        "id": "V1",
+        "log_excerpt": "...............................                                          [100%]\n=============================== warnings summary ===============================\ntests/test_resume.py: 17 warnings\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n31 passed, 17 warnings in 5.31s\n",
+        "result": "passed",
+        "started_at": "2026-09-26T11:33:55.430431+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": "Python3.12.13 SQLite3.53.1; explicit minimal child environment; locked dependencies and synthetic fixtures; no real env/credential/external providers",
+    "finished_at": "2026-09-26T11:34:05.919784+00:00",
+    "reviewer": "rfa-coordinator delegated sessions independent target rerun",
+    "source_head": "85d747ee4c837566aa8d2cdc54878ee580ebfe69",
+    "started_at": "2026-09-26T11:33:55.430300+00:00",
+    "supplemental": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_api.py",
+          "tests/test_contracts.py",
+          "tests/test_contract_baseline.py",
+          "tests/test_trace_eval_contract.py"
+        ],
+        "assertions": [
+          "API and frozen1.0/additive1.1 contract and trace fixture regression preserved"
+        ],
+        "counts": {
+          "collected": 82,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 82,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 4.39,
+        "exit_code": 0,
+        "finished_at": "2026-09-26T11:34:05.919686+00:00",
+        "id": "API-contract",
+        "log_excerpt": "........................................................................ [ 87%]\n..........                                                               [100%]\n=============================== warnings summary ===============================\ntests/test_api.py::test_health_ready_openapi_and_work_endpoints\ntests/test_api.py::test_duplicate_work_request_is_not_executed_twice\ntests/test_contract_baseline.py::test_reference_cases_match_actual_local_or_mock_behavior[work-normal]\ntests/test_contract_baseline.py::test_reference_cases_match_actual_local_or_mock_behavior[work-insufficient]\ntests/test_contract_baseline.py::test_reference_cases_match_actual_local_or_mock_behavior[work-partial_failure]\ntests/test_contract_baseline.py::test_reference_cases_match_actual_local_or_mock_behavior[work-timeout]\n  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n82 passed, 6 warnings in 3.49s\n",
+        "result": "passed",
+        "started_at": "2026-09-26T11:34:01.529446+00:00",
+        "timeout_seconds": 120
+      }
+    ]
+  },
+  "result": "passed",
+  "source_fingerprint": "1576d1d0f960b5b695eb294943cbc6302690c105623180f114f46d1030d37d53",
+  "source_manifest": ".agent/evidence/P0-016/post-teams-target-01/source.json",
+  "spec_digest": "e3f52aa17e2b42926eea90c70a4caf813d4bc3c34fe90bedddfc9b37213d4e31",
+  "spec_revision": 5,
+  "task_id": "P0-016"
+}

@@ -1,0 +1,7 @@
+# P1-001 migration test scope amendment
+
+The current feature task/P1-001 at 85d747e contains in-progress immutable revision/head, owner/ACL input API, export fixtures and tests. Work is not verified or committed yet. It is preserved in place; no files are reset, stashed, deleted or silently adopted from another worker. The assigned worker has paused all editing/testing and reported no running test/export process or external side effect.
+
+Inspection found tests/test_teams.py:test_restart_sessions_migration_preserve_owners_and_approved_template fixes migration history at [1,2,3]. The new KB migration4 requires exactly adding4 to this expectation, preserving all team/owner/runtime assertions. The file was not modified outside ownership. Coordinator archives the old claim only, adds this one test to scope/V2 using edit-spec, and reclaims this coordinator-role task at the same inspected feature/current HEAD. No evidence exists yet; all verification will start fresh after this amendment. Maximum3 log-based cycles still applies; there is no test failure to discard or reset.
+
+Next action: wait for new generation and context pack, then modify only migration expectation, complete declared KB implementation, regenerate additive1.1 schema, run captured V1/V2, commit and submit. Contract publication stays with root after P1-006 consumer completes. No actual env, live provider, search/FTS or OS sandbox claim.

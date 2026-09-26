@@ -632,3 +632,33 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   거절됐다. 기존 clean/idle feature와 미통합 변경 없음·외부 효과 없음을 확인한 뒤,
   역사적 통합/evidence를 approaches에 보존하며 reservation만 명시 archive-discard했다.
   코드를 삭제하거나 framework guard를 바꾸지 않았고 새 일정 AC를 정당하게 반영했다.
+
+## 팀 Factory 이후 재검증·OPS-002 일정 회귀 통합 — 2026-09-26
+
+- main `85d747e`를 고정한 상태에서 관련 기반을 새 worker/target evidence로 검증했다.
+  P0-014는15+50, P0-015는26+4, P0-016은31+82, P0-017은56,
+  P0-018은53, P1-006D는22+203, P0-027은 실제 NAT8/미설치2,
+  P0-028은 adapter22/실제 EvaluationRun2가 각 환경에서 통과했다.
+  과거 결과를 새 source에 복사하지 않았으며 post-teams source/result를 남겼다.
+- P0-015의 첫 worker 결과 수집은 실행 도구의 yield를 완료로 오인하여 실패했다.
+  해당 failed evidence를 보존하고 worker02에서 종료까지 실제 수집해 다시 검증했다.
+  target capture 전에 시작한 검사도 공식 증거로 사용하지 않고 capture 완료 뒤 다시
+  실행했다. P0-017의 사전 JS 직렬화 오류1건과 P0-014 report 필드 확인 오류도
+  handoff/report에 남겼다. 제품 실패 또는 통과와 운영 수집 오류를 구분한다.
+- OPS-002 feature `6a352ab`의 일정 기대값·문서2개만 통합했다(main `1c04a2b`).
+  worker94+17 passed, root 독립 current-effort-target-02는
+  **94 passed(122.35초)+17 passed(22.51초)**였다. 원래 full-regression-01의
+  596 passed/1 failed는 그대로 보존한다. generation8/revision56에서 close했고,
+  이 결과는 관리/이관 회귀이며 제품 최종10개 E2E 통과가 아니다.
+- P1-001은 같은85 baseline의 dirty 작업을 그대로 보존한 채 coordinator 검토로
+  기존 claim만 아카이브했다. 실제로 발견한 tests/test_teams.py의 migration4 기대값을
+  owned/V2에 추가하고 generation3/spec9로 재claim했다. reset/stash/파일 삭제는 없고,
+  아직 테스트가 실행되기 전이라 이전 실패를 없앤 것도 아니다. P1-006은 별도 feature와
+  worker-evaluation generation1로12 Persona/행위/Judge 분리 구현을 시작했다.
+- P1-001A의 다음 검색/무효화 작업은 read-only preflight를 진행했다. main의
+  authorization.py 및 준비 input 파일명을 잘못 가정한2번의 조회 실패는 실제 파일
+  탐색으로 정정했으며 제품 검증으로 집계하지 않았다. 알려진 누락은 metadata 선필터,
+  무관 자료 fallback 제거, 완료 replay/GET와 세션 assistant message의 최신 ACL 검사다.
+  KB 새 계약 발행 전까지 reference 계획이며 구현/통과를 주장하지 않는다.
+- 현재 main 전체 suite를 다시 실행할 예정이며 KB/평가 feature 검증과 별도로 기록한다.
+  실제 NVIDIA/Skill/NemoClaw/OpenShell, 최종10개 E2E는 여전히 미실행 gate다.

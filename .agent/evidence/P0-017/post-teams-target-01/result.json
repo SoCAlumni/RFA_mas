@@ -1,0 +1,88 @@
+{
+  "attempt_id": "post-teams-target-01",
+  "contract_digest": "d941539c11b7cff5f6b12826cb40acfea8dffb50401f04aa5bd52c50bd4bd8b7",
+  "mode": "기존 설정 검증 통과, 신규 항목 missing/not_run. local(false). 외부 의존 없음.",
+  "report": {
+    "additional_checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "finished_at": "2026-09-26T11:36:17.940344+00:00",
+        "log_excerpt": "contract baseline 0ae0c51fb55f3a0606b0776f8d9ec7c31fca0c75e76571d3ac19deb69fcc9dd0: schemas/OpenAPI and 9 fixture shapes valid\n",
+        "started_at": "2026-09-26T11:36:17.408519+00:00",
+        "timeout_seconds": 60,
+        "wall_seconds": 0.532
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "scripts/contract_baseline.py",
+          "check-extended"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "finished_at": "2026-09-26T11:36:18.475317+00:00",
+        "log_excerpt": "extended contract: 7 fixture shapes valid\n",
+        "started_at": "2026-09-26T11:36:17.940405+00:00",
+        "timeout_seconds": 60,
+        "wall_seconds": 0.535
+      }
+    ],
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_settings.py"
+        ],
+        "assertions": [
+          "현재 typed settings/example의 1대1 이름과 planned catalog 단일 소유·미적용 상태를 확인한다.",
+          "key/token 예제 값은 모두 빈칸이며 실제 env를 수정하지 않는다.",
+          "doctor/bootstrap 공통 판정은 configuration/implementation과 local lifecycle/provider probe not_run을 구분하며 값과 credential을 출력하지 않는다.",
+          "기본 mock 부팅·외부 write/egress 비활성, 선택한 미지원 real/NAT/scheduler는 명시 오류이며 fallback이 없다.",
+          "실측 SQLite 버전과 합성 patched/unpatched 경계가 올바르게 보고되며 자동 환경 교체/미실행 검사 성공 주장이 없다."
+        ],
+        "counts": {
+          "collected": 56,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 56,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "exit_code": 0,
+        "id": "V1",
+        "log_excerpt": "........................................................                 [100%]\n56 passed in 0.19s\n",
+        "observed": "Independent target rerun: exact settings/example names and empty secrets; safe configured-only doctor; no-fallback/no-egress/default bootstrap; actual and synthetic SQLite boundaries.",
+        "result": "passed",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "isolation": "env -i PATH only, normal plugins and explicit subprocess timeouts",
+      "nat": "1.8.0 installed, not product readiness proof",
+      "python": "3.12.13",
+      "source_head": "85d747ee4c837566aa8d2cdc54878ee580ebfe69",
+      "sqlite": "3.53.1"
+    },
+    "finished_at": "2026-09-26T11:36:18.475317+00:00",
+    "limits": "Independent target no-code revalidation; no keys/dotenv/provider calls/new functionality/full E2E. Historical evidence and worker orchestration diagnostic preserved.",
+    "reviewer": "nat_spike (delegated rfa-coordinator)",
+    "started_at": "2026-09-26T11:36:16.524676+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "78eacc4c3a76425ad3299ab5553d14f812bbbfd2fb9abe1bcce34c3a3d19a49c",
+  "source_manifest": ".agent/evidence/P0-017/post-teams-target-01/source.json",
+  "spec_digest": "03f3dbb64deb5e6a5c80015a388d7e788a1dbb40651055079572175d98f61286",
+  "spec_revision": 14,
+  "task_id": "P0-017"
+}
