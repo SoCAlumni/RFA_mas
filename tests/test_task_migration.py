@@ -84,8 +84,19 @@ def test_task_schema_paths_dag_and_contract_references_are_valid():
 
 def test_schedule_effort_and_final_acceptance_are_separate():
     store, tasks = records()
-    for day, expected in {"D1": 8, "D2": 8, "D3": 11, "D4": 8}.items():
+    # Initial E2E-expanded plan: D1/D2=8h, D3=11h, plus technical 4.5h = 31.5h.
+    # Approved preflight raises P0-017/P0-019 by 0.5h each and P1-006D by 1.5h.
+    for day, expected in {"D1": 8.5, "D2": 8.5, "D3": 11, "D4": 8}.items():
         assert sum(tasks[t].estimated_effort for t in store.project["milestones"][day]) == expected
+    serial_days = ("D1", "D2", "D3", "TECH_D1", "TECH_D2", "TECH_D3")
+    assert (
+        sum(
+            tasks[t].estimated_effort
+            for day in serial_days
+            for t in store.project["milestones"][day]
+        )
+        == 34
+    )
     assert tasks["P0-026"].estimated_effort == 4  # Approved E2E expansion: 1h + 3h.
     assert sum(tasks[t].estimated_effort for t in store.project["milestones"]["LLMOps"]) == 3.5
     assert store.project["final_acceptance"]["local_product"] == ["P0-026"]
@@ -179,7 +190,8 @@ def test_technical_specs_keep_nat_independent_and_parallel_scopes_disjoint():
 def test_technical_scope_budget_gates_and_unrun_evidence_are_explicit():
     store, tasks = records()
     incremental = ["P0-027", "P0-028", "P1-006D", "P1-006E", "P1-001B"]
-    assert sum(tasks[t].estimated_effort for t in incremental) == 4.5
+    # Initial 4.5h is historical; P1-006D's reviewed trace/retention scope adds 1.5h.
+    assert sum(tasks[t].estimated_effort for t in incremental) == 6
     assert {
         t for day in ["TECH_D1", "TECH_D2", "TECH_D3"] for t in store.project["milestones"][day]
     } == set(incremental)
