@@ -1,0 +1,102 @@
+{
+  "registry_version": "1",
+  "templates": [
+    {
+      "template": {
+        "schema_version": "1.1",
+        "template_id": "benchmark-local",
+        "version": "1",
+        "pattern": "benchmark",
+        "approved": true,
+        "required_capabilities": [
+          "evidence_search",
+          "experiment_run",
+          "result_analysis"
+        ],
+        "runtime_kind": "local",
+        "budget": {
+          "schema_version": "1.1",
+          "max_steps": 30,
+          "max_tool_calls": 10,
+          "max_tokens": 16000,
+          "timeout_seconds": 180,
+          "concurrency": 2
+        }
+      },
+      "roles": [
+        "supervisor",
+        "paper_scout",
+        "experiment_runner",
+        "result_analyst"
+      ],
+      "goal_terms": [
+        "benchmark",
+        "벤치마크",
+        "latency",
+        "지연",
+        "측정",
+        "성능 비교"
+      ],
+      "outputs": [
+        "benchmark_report",
+        "experiment_summary",
+        "evidence_summary"
+      ],
+      "minimum_budget": {
+        "schema_version": "1.1",
+        "max_steps": 6,
+        "max_tool_calls": 3,
+        "max_tokens": 2000,
+        "timeout_seconds": 30,
+        "concurrency": 1
+      }
+    },
+    {
+      "template": {
+        "schema_version": "1.1",
+        "template_id": "research-local",
+        "version": "1",
+        "pattern": "research",
+        "approved": true,
+        "required_capabilities": [
+          "evidence_search",
+          "evidence_review"
+        ],
+        "runtime_kind": "local",
+        "budget": {
+          "schema_version": "1.1",
+          "max_steps": 20,
+          "max_tool_calls": 8,
+          "max_tokens": 8000,
+          "timeout_seconds": 90,
+          "concurrency": 2
+        }
+      },
+      "roles": [
+        "supervisor",
+        "source_scout",
+        "evidence_reviewer"
+      ],
+      "goal_terms": [
+        "research",
+        "조사",
+        "논문",
+        "literature",
+        "근거",
+        "paper"
+      ],
+      "outputs": [
+        "research_report",
+        "evidence_summary"
+      ],
+      "minimum_budget": {
+        "schema_version": "1.1",
+        "max_steps": 4,
+        "max_tool_calls": 2,
+        "max_tokens": 1000,
+        "timeout_seconds": 15,
+        "concurrency": 1
+      }
+    }
+  ]
+}
