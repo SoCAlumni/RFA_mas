@@ -13,3 +13,7 @@
 - 검증: 기본 테스트는 OpenShell 없이 결정적 분류 규칙과 SupervisorBus 4개를 확인한다. 실제 결과는 report.json 검토(V2)로 확인한다.
 - 한계: teammate runtime/identity(P1-008B), 제품 RuntimePort가 OpenShell에서 역할을 실행하는 경로, NemoClaw는 not_run이다. 파일시스템 거절은 per-event 로그가 없어 control sandbox 대조로 귀속했다.
 
+## 재검증 final-source-freeze (2026-09-27T02:09Z)
+
+- 사유: Final product source is frozen; selective verification of actual CLI/provider/contract deltas. No new product code or live calls; existing real evidence reviewed separately.
+- 소스 변경 없이 현재 통합 HEAD 72632e7에서 계획된 검증을 worker/target 단계로 재실행한다.

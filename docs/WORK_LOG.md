@@ -946,3 +946,12 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - P1-009 AC4 공식 폼 본문은 로그인 때문에 미확인이다. 이 조건을 삭제하지 않고 blocked로 남겼다. 이미 main에 반영한 문서의 광범위 reservation만 검사 후 해제하고, 남은 README/e2e-final의 공식 요건 갱신 범위만 예약했다. AC1~3 증거·기존 모든 AC는 유지했다.
 - 보고서만 달라진 task는 OPS-007 문서 검토로 원래 실행시각/결과를 유지(`tests_reexecuted=false`)한다. 실제 제품 source/계약 차이는 이 경로로 통과시키지 않는다. UI·relevance·CLI/adapter 등 실제 영향 범위만 현재 고정 main에서 마지막 검증하며 전체 cascade는 다시 시작하지 않는다.
 - 사용자의 `.gitignore`8줄 변경은 그대로 보존하며 이번 commit에 포함하지 않는다. 원격 push·게시·배포·실제 외부 write·추가 live 삭제는 수행하지 않았다.
+
+## Coordinator — 고정 소스 검증 종료 (2026-09-27 11:24 KST)
+
+- 최종 제품 baseline `72632e7`을 변경하지 않고 실제 영향 범위 10개 task만 검증했다. P0-017(55), P0-023(56), P1-002(45), P1-003(27), P1-006(68+104), P1-006A(138), P1-006B(13), P1-006C(92), P1-006F(111), P1-007C(4)가 각각 worker/통합 단계에서 통과했고 모두 done으로 닫혔다. 이 실행의 failed/blocked task는 0이다. 숫자는 task별 검사 수이며 중복 없는 전체 제품 테스트 수라는 뜻이 아니다.
+- Judge·Langfuse·OpenShell의 실제 실행 항목은 기존 불변 증거를 검토했다. 이번 마지막 검증에서 NVIDIA API 재호출·Langfuse 데이터 삭제·sandbox 재실행은 하지 않았다. 이미 종료한 P0-026 E2E 75개도 재실행하지 않았다.
+- OPS-000은 등록된 canonical baseline·비밀 파일 비추적·사용자 변경 보존을 감사하고 임시 control fixture의 잘못된 root/오래된 baseline 거절 2개를 통과했다. 제품 보안이나 실제 서비스 연결 검증으로 집계하지 않는다.
+- 최종 원본 집계: done 65 / verifying 5 / todo 1 / blocked 4 / deferred 9 / cancelled 1, 총85개. 실행 중 task는 없다. OPS-001~006은 기존 구현이 있으나 현재 baseline의 관리 도구 감사가 덜 끝난 6개로 유지한다(verifying5/todo1). 이를 제품 미구현이나 완료로 바꾸지 않는다. 관리 체계 재개발·전체 회귀 cascade는 시작하지 않았다.
+- blocked: P1-007B의 RFA 역할별 실제 OpenShell identity, P1-008A/B의 실제 팀원 승인·게시/runtime·UI 교체, P1-009의 로그인 필요 공식 폼 본문 확인. 기본 교체형 로컬 모듈은 제공되지만 이 실제 gate를 대신하지 않는다. 기존 deferred9/cancelled1 이력은 유지한다.
+- 마지막 확인은 task 원본/파생 view 정합성과 diff 검사에 한정한다. 이후 commit은 task 상태·handoff·이 로그·안전한 불변 evidence JSON만 보존하며 제품 소스나 실행 조건을 바꾸지 않는다. 사용자 `.gitignore` 변경은 여전히 별도 보존한다.

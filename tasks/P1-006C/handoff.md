@@ -27,3 +27,8 @@
 
 - 사유: Remaining Judge/bootstrap-dependent prerequisites for retention and the observed Persona relevance fix; single bounded pass
 - 소스 변경 없이 현재 통합 HEAD d7d5bbb에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-source-freeze (2026-09-27T02:21Z)
+
+- 사유: Final product source is frozen; selective verification of actual CLI/provider/contract deltas. No new product code or live calls; existing real evidence reviewed separately.
+- 소스 변경 없이 현재 통합 HEAD 72632e7에서 계획된 검증을 worker/target 단계로 재실행한다.

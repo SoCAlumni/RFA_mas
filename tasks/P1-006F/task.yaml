@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P1
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -136,32 +136,34 @@ verification:
   - 실제 시계에서 삭제 0, 시계+8일에서 이 앱 trace 삭제·조회 사라짐 확인, 다른 앱 trace 유지, CLI dry-run exit 0
   runner: manual
 evidence_dir: .agent/evidence/P1-006F
-latest_evidence_file: .agent/evidence/P1-006F/target-0927010645/result.json
+latest_evidence_file: .agent/evidence/P1-006F/final-source-freeze-target-0927022229/result.json
 verification_summary:
-  state: stale
+  state: passed
   spec_revision: 10
   spec_digest: 12475789d7babd775e355e21fd47100b3cfdd3139d7de88b59de824f6c74bb61
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: 225849968ce8e6e969e688e8ac3ff80f2bf21c22941bc7453400729ea4136ca3
-  evidence: .agent/evidence/P1-006F/target-0927010645/result.json
+  source_fingerprint: bb48cc8112035e4997ac8ff3505d5442cafe5fc49b45cb243dd5ba8b5bbe3ff0
+  evidence: .agent/evidence/P1-006F/final-source-freeze-target-0927022229/result.json
 integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: true
-  submission_generation: 1
+  reservation: false
+  submission_generation: 2
   submission:
-    head: 45427134a5de9aefedbadb350efda3ac52be5edf
-    baseline_head: d7d5bbb9e2fd40fd5a585072465cf9d5131978d3
+    head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
+    baseline_head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006F-completion
     branch: task/P1-006F-completion
-    evidence: .agent/evidence/P1-006F/worker-0927010627/result.json
+    evidence: .agent/evidence/P1-006F/final-source-freeze-worker-0927022209/result.json
     changed_files:
-      docs/INTEGRATION.md: ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9
-      docs/evidence/llmops.md: 9e3a8da28db91c346d1d2f3a582ea8fe763197df0886669195326ecdae9355a2
+      .env.example: 48daee24469f6f7e40f68145ff1bf746c104cbaf09bc32fc28dd2964da4fbef8
+      docs/INTEGRATION.md: 0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a
+      docs/evidence/llmops.md: 8d077fc8211ea1e1db7587d33cc52df5782e49056e6813e129e843a75c1e9b27
       src/rfa_mas/adapters/langfuse.py: a6d6fc67e7480574ce116a9769f7d6d544bceb88be6c2828024a5cefd1875d65
       src/rfa_mas/bootstrap.py: d827e42d330dcf35ed72fa640db3457e8803a0d5ee6b03e82dfbb0074fc3def1
-      src/rfa_mas/cli.py: 468980af0873bc5a6a86b6096238b3cf7b84f0c401e04b708535dc655ef12d6a
+      src/rfa_mas/cli.py: 8a07ebba78f5fd855dc39cb1d61bb25f98b61a6fb3cee274edd908ab992db062
+      src/rfa_mas/settings.py: b61591f5e2a0b3be8413b8c9ef577e7047ec69fb281881b6762d9341114aaf8a
       tests/integration/test_langfuse_live.py: 4c4c4c90f9bdebcd369ae6d325738c49cf3b4d300cd1f3dae9fe553a09e7929f
       tests/test_langfuse_retention.py: b17808856e6dc18638217f12cc61b238b46fea9642ca3b93df57d5b2da2a4c85
   result:
@@ -170,22 +172,70 @@ integration:
       spec_revision: 10
       spec_digest: 12475789d7babd775e355e21fd47100b3cfdd3139d7de88b59de824f6c74bb61
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: 225849968ce8e6e969e688e8ac3ff80f2bf21c22941bc7453400729ea4136ca3
-      evidence: .agent/evidence/P1-006F/target-0927010645/result.json
-    head: 45427134a5de9aefedbadb350efda3ac52be5edf
-  evidence: .agent/evidence/P1-006F/target-0927010645/result.json
-revision: 20
+      source_fingerprint: bb48cc8112035e4997ac8ff3505d5442cafe5fc49b45cb243dd5ba8b5bbe3ff0
+      evidence: .agent/evidence/P1-006F/final-source-freeze-target-0927022229/result.json
+    head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
+  evidence: .agent/evidence/P1-006F/final-source-freeze-target-0927022229/result.json
+revision: 28
 spec_revision: 10
-claim_generation: 1
+claim_generation: 2
 claim: null
 attempts:
-  count: 2
+  count: 4
   cycles: 1
   no_progress_count: 0
-  latest_attempt: target-0927010645
+  latest_attempt: final-source-freeze-target-0927022229
   evidence_refs:
   - .agent/evidence/P1-006F/worker-0927010627/result.json
-  approaches: []
+  - .agent/evidence/P1-006F/final-source-freeze-worker-0927022209/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
+    reason: Final product source is frozen; selective verification of actual CLI/provider/contract deltas.
+      No new product code or live calls; existing real evidence reviewed separately.
+    at: '2026-09-27T02:22:05+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: 45427134a5de9aefedbadb350efda3ac52be5edf
+        baseline_head: d7d5bbb9e2fd40fd5a585072465cf9d5131978d3
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006F-completion
+        branch: task/P1-006F-completion
+        evidence: .agent/evidence/P1-006F/worker-0927010627/result.json
+        changed_files:
+          docs/INTEGRATION.md: ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9
+          docs/evidence/llmops.md: 9e3a8da28db91c346d1d2f3a582ea8fe763197df0886669195326ecdae9355a2
+          src/rfa_mas/adapters/langfuse.py: a6d6fc67e7480574ce116a9769f7d6d544bceb88be6c2828024a5cefd1875d65
+          src/rfa_mas/bootstrap.py: d827e42d330dcf35ed72fa640db3457e8803a0d5ee6b03e82dfbb0074fc3def1
+          src/rfa_mas/cli.py: 468980af0873bc5a6a86b6096238b3cf7b84f0c401e04b708535dc655ef12d6a
+          tests/integration/test_langfuse_live.py: 4c4c4c90f9bdebcd369ae6d325738c49cf3b4d300cd1f3dae9fe553a09e7929f
+          tests/test_langfuse_retention.py: b17808856e6dc18638217f12cc61b238b46fea9642ca3b93df57d5b2da2a4c85
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 10
+          spec_digest: 12475789d7babd775e355e21fd47100b3cfdd3139d7de88b59de824f6c74bb61
+          contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+          source_fingerprint: 225849968ce8e6e969e688e8ac3ff80f2bf21c22941bc7453400729ea4136ca3
+          evidence: .agent/evidence/P1-006F/target-0927010645/result.json
+        head: 45427134a5de9aefedbadb350efda3ac52be5edf
+      evidence: .agent/evidence/P1-006F/target-0927010645/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 10
+      spec_digest: 12475789d7babd775e355e21fd47100b3cfdd3139d7de88b59de824f6c74bb61
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 225849968ce8e6e969e688e8ac3ff80f2bf21c22941bc7453400729ea4136ca3
+      evidence: .agent/evidence/P1-006F/target-0927010645/result.json
+    latest_evidence_file: .agent/evidence/P1-006F/target-0927010645/result.json
 blocker: null
 migration:
   original_status: new_split
@@ -197,7 +247,7 @@ migration:
   - langfuse_worker live 관찰
   judgment: P1-006C AC3의 보존 적용 부분을 외부 제약과 함께 분리.
   initial_spec_revision: 1
-updated_at: '2026-09-27T01:56:51+00:00'
+updated_at: '2026-09-27T02:22:51+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

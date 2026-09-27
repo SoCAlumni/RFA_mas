@@ -10,3 +10,8 @@ P1-002 후속 74d3857의 본문 없는 404 재시도 분류가 Judge 공통 tran
 이는 사용자 만족도나 보안 통과 점수가 아니다. 원본 live 결과는 docs/evidence/nvidia-judge.json.
 필수 unit/설정/실패·차단 회귀는 최신 worker/target evidence를 따른다.
 다음 행동: 최종 전달 문서에서 실제 Judge 호출과 Persona simulated 결과를 별도로 연결한다.
+
+## 재검증 final-source-freeze (2026-09-27T02:17Z)
+
+- 사유: Final product source is frozen; selective verification of actual CLI/provider/contract deltas. No new product code or live calls; existing real evidence reviewed separately.
+- 소스 변경 없이 현재 통합 HEAD 72632e7에서 계획된 검증을 worker/target 단계로 재실행한다.

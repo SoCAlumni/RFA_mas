@@ -117,3 +117,8 @@ Next first action: submit unchanged source and capture fresh target evidence, re
 
 - 사유: Final fixed product baseline after retained Judge/retention and relevance fixes; only P0-026 dependency closure, no new source changes during run
 - 소스 변경 없이 현재 통합 HEAD e2c2848에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-source-freeze (2026-09-27T02:09Z)
+
+- 사유: Final product source is frozen; selective verification of actual CLI/provider/contract deltas. No new product code or live calls; existing real evidence reviewed separately.
+- 소스 변경 없이 현재 통합 HEAD 72632e7에서 계획된 검증을 worker/target 단계로 재실행한다.

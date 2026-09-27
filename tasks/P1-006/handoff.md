@@ -160,3 +160,8 @@ Next first action: submit unchanged artifact and capture/repeat target exact V1/
 
 - 사유: Finish only remaining final acceptance prerequisites; known scope conflicts scheduled before claim; stable source baseline
 - 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-source-freeze (2026-09-27T02:13Z)
+
+- 사유: Final product source is frozen; selective verification of actual CLI/provider/contract deltas. No new product code or live calls; existing real evidence reviewed separately.
+- 소스 변경 없이 현재 통합 HEAD 72632e7에서 계획된 검증을 worker/target 단계로 재실행한다.

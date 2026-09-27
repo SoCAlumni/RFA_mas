@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -177,30 +177,30 @@ verification:
   - 실측 SQLite 버전과 합성 patched/unpatched 경계가 올바르게 보고되며 자동 환경 교체/미실행 검사 성공 주장이 없다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-017
-latest_evidence_file: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
+latest_evidence_file: .agent/evidence/P0-017/final-source-freeze-target-0927021008/result.json
 verification_summary:
-  state: stale
+  state: passed
   spec_revision: 44
   spec_digest: 406ff256d4d2770989cbbc65afac146a6ca476c4a9ee159369c36e3f30a76aa2
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: 0eb593a404342b926bcf964c29193e230d0e92955448f1d6bb00bba2cc29a521
-  evidence: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
+  source_fingerprint: e16c45843f9d85d19d242739b071f2bd953d0eaf44e1680af7401ab6173e5a7f
+  evidence: .agent/evidence/P0-017/final-source-freeze-target-0927021008/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 26
+  reservation: false
+  submission_generation: 27
   submission:
-    head: e2c2848d9e9264eb612bbee9c35b3015ceceee3a
-    baseline_head: e2c2848d9e9264eb612bbee9c35b3015ceceee3a
+    head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
+    baseline_head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-017
     branch: task/P0-017
-    evidence: .agent/evidence/P0-017/final-e2e-prerequisites-worker-0927011150/result.json
+    evidence: .agent/evidence/P0-017/final-source-freeze-worker-0927020936/result.json
     changed_files:
       .env.example: 48daee24469f6f7e40f68145ff1bf746c104cbaf09bc32fc28dd2964da4fbef8
       src/rfa_mas/bootstrap.py: d827e42d330dcf35ed72fa640db3457e8803a0d5ee6b03e82dfbb0074fc3def1
-      src/rfa_mas/cli.py: 468980af0873bc5a6a86b6096238b3cf7b84f0c401e04b708535dc655ef12d6a
+      src/rfa_mas/cli.py: 8a07ebba78f5fd855dc39cb1d61bb25f98b61a6fb3cee274edd908ab992db062
       src/rfa_mas/dev_env.py: 8571fd97e72018f656de67aa538f9965e12134fb44a5ba0b415d2a60d72548fa
       src/rfa_mas/settings.py: b61591f5e2a0b3be8413b8c9ef577e7047ec69fb281881b6762d9341114aaf8a
       tests/test_settings.py: ac59db40c97f954aad92c54ac18db2ab9cdada3f9567b9e5f25b60b0dd908e4b
@@ -210,19 +210,19 @@ integration:
       spec_revision: 44
       spec_digest: 406ff256d4d2770989cbbc65afac146a6ca476c4a9ee159369c36e3f30a76aa2
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: 0eb593a404342b926bcf964c29193e230d0e92955448f1d6bb00bba2cc29a521
-      evidence: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
-    head: e2c2848d9e9264eb612bbee9c35b3015ceceee3a
-  evidence: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
-revision: 283
+      source_fingerprint: e16c45843f9d85d19d242739b071f2bd953d0eaf44e1680af7401ab6173e5a7f
+      evidence: .agent/evidence/P0-017/final-source-freeze-target-0927021008/result.json
+    head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
+  evidence: .agent/evidence/P0-017/final-source-freeze-target-0927021008/result.json
+revision: 291
 spec_revision: 44
-claim_generation: 26
+claim_generation: 27
 claim: null
 attempts:
-  count: 53
+  count: 55
   cycles: 1
   no_progress_count: 0
-  latest_attempt: final-e2e-prerequisites-target-0927011204
+  latest_attempt: final-source-freeze-target-0927021008
   evidence_refs:
   - .agent/evidence/P0-017/settings-01/result.json
   - .agent/evidence/P0-017/settings-02/result.json
@@ -251,6 +251,7 @@ attempts:
   - .agent/evidence/P0-017/freeze-reval3-worker-0927002841/result.json
   - .agent/evidence/P0-017/completion-prerequisites-worker-0927005330/result.json
   - .agent/evidence/P0-017/final-e2e-prerequisites-worker-0927011150/result.json
+  - .agent/evidence/P0-017/final-source-freeze-worker-0927020936/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -1385,6 +1386,52 @@ attempts:
       source_fingerprint: 88acbb573d0eb42ffc81ab761c7135f8db6a39f3bd03c308dd4458c0d37aed4e
       evidence: .agent/evidence/P0-017/completion-prerequisites-target-0927005342/result.json
     latest_evidence_file: .agent/evidence/P0-017/completion-prerequisites-target-0927005342/result.json
+  - kind: integrated_revalidation
+    generation: 27
+    baseline_head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
+    reason: Final product source is frozen; selective verification of actual CLI/provider/contract deltas.
+      No new product code or live calls; existing real evidence reviewed separately.
+    at: '2026-09-27T02:09:33+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 26
+      submission:
+        head: e2c2848d9e9264eb612bbee9c35b3015ceceee3a
+        baseline_head: e2c2848d9e9264eb612bbee9c35b3015ceceee3a
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-017
+        branch: task/P0-017
+        evidence: .agent/evidence/P0-017/final-e2e-prerequisites-worker-0927011150/result.json
+        changed_files:
+          .env.example: 48daee24469f6f7e40f68145ff1bf746c104cbaf09bc32fc28dd2964da4fbef8
+          src/rfa_mas/bootstrap.py: d827e42d330dcf35ed72fa640db3457e8803a0d5ee6b03e82dfbb0074fc3def1
+          src/rfa_mas/cli.py: 468980af0873bc5a6a86b6096238b3cf7b84f0c401e04b708535dc655ef12d6a
+          src/rfa_mas/dev_env.py: 8571fd97e72018f656de67aa538f9965e12134fb44a5ba0b415d2a60d72548fa
+          src/rfa_mas/settings.py: b61591f5e2a0b3be8413b8c9ef577e7047ec69fb281881b6762d9341114aaf8a
+          tests/test_settings.py: ac59db40c97f954aad92c54ac18db2ab9cdada3f9567b9e5f25b60b0dd908e4b
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 44
+          spec_digest: 406ff256d4d2770989cbbc65afac146a6ca476c4a9ee159369c36e3f30a76aa2
+          contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+          source_fingerprint: 0eb593a404342b926bcf964c29193e230d0e92955448f1d6bb00bba2cc29a521
+          evidence: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
+        head: e2c2848d9e9264eb612bbee9c35b3015ceceee3a
+      evidence: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 44
+      spec_digest: 406ff256d4d2770989cbbc65afac146a6ca476c4a9ee159369c36e3f30a76aa2
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 0eb593a404342b926bcf964c29193e230d0e92955448f1d6bb00bba2cc29a521
+      evidence: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
+    latest_evidence_file: .agent/evidence/P0-017/final-e2e-prerequisites-target-0927011204/result.json
 blocker: null
 migration:
   original_status: todo
@@ -1396,7 +1443,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-27T01:56:51+00:00'
+updated_at: '2026-09-27T02:10:48+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

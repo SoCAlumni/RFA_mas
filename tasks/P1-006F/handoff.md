@@ -11,3 +11,8 @@ CLI는 자동 예약·실제 운영 데이터 삭제를 수행한 것으로 표�
 일반 운영 데이터의 자동 삭제 권한으로 확대하지 않는다.
 현재 통합의 unit/security/settings 결과는 불변 task evidence를 따른다.
 다음 행동: 최종 전달 문서에 수동 dry-run/일일 실행 방식과 실제 검증 한계를 표시한다.
+
+## 재검증 final-source-freeze (2026-09-27T02:22Z)
+
+- 사유: Final product source is frozen; selective verification of actual CLI/provider/contract deltas. No new product code or live calls; existing real evidence reviewed separately.
+- 소스 변경 없이 현재 통합 HEAD 72632e7에서 계획된 검증을 worker/target 단계로 재실행한다.
