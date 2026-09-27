@@ -34,3 +34,10 @@ async def container(tmp_path) -> AsyncIterator[Container]:
         yield instance
     finally:
         await instance.shutdown()
+
+@pytest.fixture(autouse=True)
+def _pin_llm_provider(monkeypatch):
+    """The NemoClaw layer picks the hosted LLM from RFA_LLM_PROVIDER (os.environ, else .env.dev). Tests
+    must not depend on the developer's .env.dev, so pin the nvidia preset; a test that wants another
+    provider sets the variable itself (os.environ wins over the env file)."""
+    monkeypatch.setenv("RFA_LLM_PROVIDER", "nvidia")

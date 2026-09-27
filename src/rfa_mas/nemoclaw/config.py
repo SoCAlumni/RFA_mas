@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 import re
 from pathlib import Path
 from typing import Annotated, Literal
@@ -331,6 +332,7 @@ class Backend(Strict):
     credential_env: str | None = None
     env_file: str | None = None
     chat_template_kwargs: dict[str, object] | None = None  # e.g. NVIDIA enable_thinking=false
+    extras: dict[str, object] | None = None  # provider-specific top-level request fields (e.g. Gemini reasoning_effort=none)
 
     @model_validator(mode="after")
     def _auth(self) -> Backend:
@@ -384,6 +386,7 @@ class BrokerConfig(Strict):
 
 
 class Routing(Strict):
+    provider: str = "nvidia"   # set by apply_llm_provider (RFA_LLM_PROVIDER); declared here so it serialises
     version: int = 1
     proxy: ProxyConfig
     backends: dict[str, Backend]
@@ -613,8 +616,79 @@ def load_assignments(path: Path | None = None, teams_path: Path | None = None,
         raise ConfigError(f"assignments(+teams): {loc or 'root'}: {first.get('msg')}") from None
 
 
-def load_routing(path: Path | None = None) -> Routing:
-    return _build(Routing, path or DEPLOY_DIR / "routing.yaml")
+# --------------------------------------------------------------------------- LLM provider (.env)
+
+# The hosted LLM behind every alias is chosen by RFA_LLM_PROVIDER (os.environ, else the backend's env
+# file, default nvidia). Both presets speak OpenAI chat.completions; proxy.upstream_payload /
+# normalize_completion keep the call and the response identical. The model comes from the preset's
+# ``model_env`` (NVIDIA_MODEL / GEMINI_MODEL; Gemini is limited to ``models``), RFA_LLM_MODEL /
+# RFA_LLM_BASE_URL override anything.
+LLM_PROVIDERS: dict[str, dict] = {
+    # Both presets turn the model's reasoning channel off so short answers are not eaten by thinking
+    # tokens (NVIDIA: chat_template_kwargs.enable_thinking=false; Gemini: reasoning_effort=low — measured
+    # 2026-09-27: plain gemini-3.8-flash spent 78 of 81 tokens thinking and cut the answer, "low" leaves no
+    # thinking tokens on either model; "none" is rejected (400) by gemini-3.5-flash-lite).
+    "nvidia": {"url": "https://integrate.api.nvidia.com/v1", "credential_env": "NVIDIA_API_KEY",
+               "model": "nvidia/nemotron-3.5-lightning-30b-a3b", "model_env": "NVIDIA_MODEL", "models": None,
+               "chat_template_kwargs": {"enable_thinking": False}, "extras": None},
+    "gemini": {"url": "https://generativelanguage.googleapis.com/v1beta/openai", "credential_env": "GEMINI_API_KEY",
+               "model": "gemini-3.5-flash-lite", "model_env": "GEMINI_MODEL",
+               "models": ("gemini-3.5-flash-lite", "gemini-3.8-flash"),   # the two offered Gemini models (user, 2026-09-27)
+               "chat_template_kwargs": None, "extras": {"reasoning_effort": "low"}},
+}
+PROVIDER_ENV = "RFA_LLM_PROVIDER"
+
+
+def _env_lookup(key: str, env_file: Path | None) -> str | None:
+    value = os.environ.get(key)
+    if value is not None:
+        return value.strip() or None
+    if env_file is None or not env_file.exists():
+        return None
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        if line.startswith(f"{key}="):
+            return line.split("=", 1)[1].strip().strip('"').strip("'") or None
+    return None
+
+
+def llm_provider(env_file: Path | None) -> tuple[str, dict]:
+    """(provider name, preset with env overrides applied)."""
+    name = (_env_lookup(PROVIDER_ENV, env_file) or "nvidia").lower()
+    if name not in LLM_PROVIDERS:
+        raise ConfigError(f"{PROVIDER_ENV}={name!r}: must be one of {sorted(LLM_PROVIDERS)}")
+    preset = dict(LLM_PROVIDERS[name])
+    if model := _env_lookup(preset["model_env"], env_file):
+        if preset["models"] and model not in preset["models"]:
+            raise ConfigError(f"{preset['model_env']}={model!r}: {name} offers {list(preset['models'])}")
+        preset["model"] = model
+    if model := _env_lookup("RFA_LLM_MODEL", env_file):  # explicit override, any model
+        preset["model"] = model
+    if url := _env_lookup("RFA_LLM_BASE_URL", env_file):
+        preset["url"] = url
+    return name, preset
+
+
+def apply_llm_provider(routing: Routing, root: Path | None = None) -> Routing:
+    """Rewrite every bearer backend and every alias model from the .env-selected provider."""
+    root = root or DEPLOY_DIR.parents[1]
+    for name, backend in routing.backends.items():
+        if backend.auth != "bearer":
+            continue
+        env_file = root / backend.env_file if backend.env_file else None
+        provider, preset = llm_provider(env_file)
+        routing.backends[name] = backend.model_copy(update={
+            "url": preset["url"], "credential_env": preset["credential_env"],
+            "chat_template_kwargs": preset["chat_template_kwargs"], "extras": preset["extras"]})
+        for alias_name, alias in routing.aliases.items():
+            if alias.backend == name:
+                routing.aliases[alias_name] = alias.model_copy(update={"model": preset["model"]})
+        routing.provider = provider
+    return routing
+
+
+def load_routing(path: Path | None = None, *, apply_env: bool = True) -> Routing:
+    routing = _build(Routing, path or DEPLOY_DIR / "routing.yaml")
+    return apply_llm_provider(routing) if apply_env else routing
 
 
 def load_censors(path: Path | None = None) -> Censors:

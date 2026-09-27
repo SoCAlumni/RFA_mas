@@ -67,10 +67,19 @@ class DirectJudge:
                          "messages": [{"role": "user", "content": prompt}]}
         if backend.chat_template_kwargs:
             payload["chat_template_kwargs"] = dict(backend.chat_template_kwargs)
-        try:
-            response = httpx.post(url, json=payload, headers=headers, timeout=stage.timeout_seconds)
-        except httpx.HTTPError as exc:
-            raise JudgeError(f"direct judge transport: {type(exc).__name__}") from exc
+        if backend.extras:
+            payload.update(backend.extras)
+        response = None
+        for attempt in (1, 2):  # the hosted endpoint hangs about one call in four: one short retry, then give up
+            try:
+                response = httpx.post(url, json=payload, headers=headers, timeout=stage.timeout_seconds)
+                break
+            except httpx.TimeoutException as exc:
+                if attempt == 2:
+                    raise JudgeError(f"direct judge transport: {type(exc).__name__} x2") from exc
+            except httpx.HTTPError as exc:
+                raise JudgeError(f"direct judge transport: {type(exc).__name__}") from exc
+        assert response is not None
         if response.status_code != 200:
             raise JudgeError(f"direct judge HTTP {response.status_code}")
         data = response.json()

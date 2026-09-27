@@ -173,11 +173,16 @@ class EgressProxy:
         return json.dumps(censored, ensure_ascii=False), redacted, blocked
 
     async def _censor_messages(self, messages: list[dict], profile: str) -> tuple[list[dict], list[CensorResult], CensorResult | None]:
+        """Regex on every message; the LLM judge only on the newest non-system message. The system
+        prompt is OpenClaw's own text and earlier turns were judged when they were the newest one, so
+        one judge call per request is enough (2026-09-27, user decision: each hosted judge call takes
+        1-9 s and hangs to the timeout about one time in four)."""
         out, reports = [], []
-        for message in messages:
+        newest = max((i for i, m in enumerate(messages) if m.get("role") != "system"), default=-1)
+        for i, message in enumerate(messages):
             content = message.get("content")
             if isinstance(content, str) and content:
-                result = await self._run(content, profile)
+                result = await self._run(content, profile, None if i == newest else ("regex",))
                 reports.append(result)
                 if result.verdict == "block":
                     return out, reports, result
@@ -195,12 +200,7 @@ class EgressProxy:
         if backend.auth == "bearer":
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
         url = f"{backend.url.rstrip('/')}/chat/completions"
-        payload = {k: v for k, v in body.items() if k not in ("stream", "stream_options")}
-        payload["model"] = alias.model
-        payload["messages"] = messages
-        payload["stream"] = False
-        if backend.chat_template_kwargs:
-            payload["chat_template_kwargs"] = dict(backend.chat_template_kwargs)  # top-level field (NVIDIA)
+        payload = upstream_payload(body, alias.model, messages, backend.chat_template_kwargs, backend.extras)
         try:
             response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
         except httpx.HTTPError as exc:
@@ -211,7 +211,7 @@ class EgressProxy:
             data = response.json()
         except ValueError:
             return 502, {"error": {"message": "upstream returned non-JSON", "type": "upstream_error"}}
-        return 200, data
+        return 200, normalize_completion(data, alias.model)
 
     # ---- main route ------------------------------------------------------------------------
 
@@ -264,7 +264,8 @@ class EgressProxy:
                 message = choice.get("message") or {}
                 content = message.get("content")
                 if isinstance(content, str) and content:
-                    result = await self._run(content, profile)
+                    # hosted output is ingress: regex only here; the LLM judge runs once on the final reply
+                    result = await self._run(content, profile, ("regex",))
                     response_redactions += result.redacted_count
                     if result.verdict == "block":
                         verdict = "block"
@@ -299,6 +300,61 @@ class EgressProxy:
             return JSONResponse(data)
         return StreamingResponse(_sse(data, mode), media_type="text/event-stream",
                                  headers={"cache-control": "no-cache"})
+
+
+# OpenAI chat.completions request fields every supported provider (build.nvidia.com, Gemini's OpenAI
+# endpoint) accepts. Anything else OpenClaw sends is dropped so both providers see the same call.
+UPSTREAM_FIELDS = frozenset({
+    "model", "messages", "tools", "tool_choice", "temperature", "top_p", "max_tokens", "max_completion_tokens",
+    "stop", "n", "presence_penalty", "frequency_penalty", "response_format", "seed", "user", "parallel_tool_calls",
+})
+
+
+def upstream_payload(body: dict, model: str, messages: list[dict], chat_template_kwargs: dict | None = None,
+                     extras: dict | None = None) -> dict:
+    """Provider-neutral request: allowlisted OpenAI fields, buffered (no stream), the alias model,
+    plus the backend's own extras (NVIDIA ``chat_template_kwargs``, Gemini ``reasoning_effort``)."""
+    payload = {k: v for k, v in body.items() if k in UPSTREAM_FIELDS}
+    payload["model"] = model
+    payload["messages"] = messages
+    payload["stream"] = False
+    if chat_template_kwargs:
+        payload["chat_template_kwargs"] = dict(chat_template_kwargs)
+    if extras:
+        payload.update(extras)
+    return payload
+
+
+def normalize_completion(data: dict, model: str) -> dict:
+    """Provider-neutral response: OpenAI ``chat.completion`` shape with string ``content`` on every
+    choice, ``finish_reason`` and ``usage`` always present, provider-specific extras dropped."""
+    choices = []
+    for i, choice in enumerate(data.get("choices") or []):
+        message = dict(choice.get("message") or {})
+        content = message.get("content")
+        if isinstance(content, list):  # content-part arrays → concatenated text
+            content = "".join(str(p.get("text") or "") for p in content if isinstance(p, dict))
+        out = {"role": message.get("role") or "assistant", "content": content if isinstance(content, str) else ""}
+        calls = []
+        for j, call in enumerate(message.get("tool_calls") or []):
+            function = call.get("function") or {}
+            arguments = function.get("arguments", "")
+            if not isinstance(arguments, str):
+                arguments = json.dumps(arguments, ensure_ascii=False)
+            calls.append({"id": call.get("id") or f"call_{j}", "type": "function",
+                          "function": {"name": function.get("name") or "", "arguments": arguments}})
+        if calls:
+            out["tool_calls"] = calls
+        choices.append({"index": choice.get("index", i), "message": out,
+                        "finish_reason": choice.get("finish_reason") or ("tool_calls" if calls else "stop")})
+    usage = data.get("usage") or {}
+    return {
+        "id": data.get("id") or f"chatcmpl-{uuid.uuid4().hex[:12]}", "object": "chat.completion",
+        "created": data.get("created") or int(time.time()), "model": model, "choices": choices,
+        "usage": {"prompt_tokens": int(usage.get("prompt_tokens") or 0),
+                  "completion_tokens": int(usage.get("completion_tokens") or 0),
+                  "total_tokens": int(usage.get("total_tokens") or 0)},
+    }
 
 
 def _completion(model: str, text: str) -> dict:

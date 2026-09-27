@@ -55,10 +55,10 @@ profiles:
         sandbox: rfa-main            # censor 에이전트가 배치된 샌드박스 (기본 샌드박스; 별도 샌드박스 없음)
         agent: censor
         alias: rfa-censor
-        timeout_seconds: 45
+        timeout_seconds: 12          # hosted 판정 실측 1~9초, 약 1/4 은 응답 없이 멈춤 → 짧게 끊고 1회 재시도(serve.DirectJudge)
         skip_if_shorter_than: 24     # 아주 짧은 텍스트는 regex 단계만
         categories: [internal_project, financial_figure, personal_data, credential]
-        on_error: block              # 시간 초과/파싱 실패 = fail-closed
+        on_error: allow              # 판정 provider 가 두 번 다 응답하지 않으면 그 텍스트는 regex 결과로 통과(감사에 degraded 기록). 2026-09-27 사용자 결정
   public:                                  # /ask audience=public: external 규칙 + 미공개 일자
     stages:
       - *external_regex
