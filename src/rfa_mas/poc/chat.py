@@ -584,8 +584,9 @@ class LocalChat:
         if not evidence:
             return
         model_name = getattr(self.model, "adapter_name", "model")
+        # Keep the prompt small enough for a hosted 30B model to answer within the budget.
         lines = [
-            f"[{e['source_id']}@{e['source_revision']}] {e['excerpt'][:1500]}" for e in evidence
+            f"[{e['source_id']}@{e['source_revision']}] {e['excerpt'][:700]}" for e in evidence[:5]
         ]
         user = f"질문: {body.text[:4000]}\n\n근거 발췌:\n" + "\n".join(lines)
         try:

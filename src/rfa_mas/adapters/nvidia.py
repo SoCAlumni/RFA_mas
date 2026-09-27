@@ -227,14 +227,18 @@ class OwnerConsentEgressGate(PublicOnlyEgressGate):
         )
 
     def text_grant(self, *, endpoint: str, model: str) -> ModelEgressGrant | None:
-        """Grant for an owner-only free-form reasoning call (no evidence bundle)."""
+        """Grant for an owner-only free-form reasoning call (no evidence bundle).
+
+        Chat reasoning runs outside a runtime task, so its deadline is the larger of the
+        task budget and 90 s (per try still bounded by the HTTP timeout).
+        """
         if (endpoint, model) != (self._endpoint, self._model):
             return None
         return ModelEgressGrant(
             endpoint=endpoint,
             model=model,
             max_output_tokens=self._max_output_tokens,
-            deadline=self._clock() + self._budget,
+            deadline=self._clock() + max(self._budget, 90.0),
             max_attempts=self._attempts,
         )
 
