@@ -6,7 +6,7 @@
 
 P1-002A는 build.nvidia.com hosted endpoint에 **고정된 합성 한국어 요청만** 보내는 opt-in live smoke다. 저장소의 기존 `Settings`가 사용자 소유 `.env.dev`를 명시 경로로 읽어 `NVIDIA_BASE_URL`/`NVIDIA_MODEL`/`NVIDIA_API_KEY`를 사용한다. 사용자 노트, KB, 세션, trace 같은 제품 데이터는 전송하지 않는다.
 
-제품 `ModelPort` → bootstrap → graph 경로의 NVIDIA 호출은 아직 **not_run**이다. 그 adapter(`src/rfa_mas/adapters/nvidia.py`)와 정책·예산 연결은 P1-002 범위이며, 이 문서의 결과를 제품 경로 성공으로 해석하지 않는다.
+이 절은 P1-002A 직접 smoke의 역사적 범위다. 이후 제품 `ModelPort` → bootstrap → graph 호출도 P1-002에서 실행했다(아래 제품 adapter 절). 2026-09-27에는 대표 E2E 3종×3회를 모델별 비교했다. Ultra/4096은 9/9 완료·30초 기준 통과, Lightning1024/4096은 7/9·8/9 완료이며 지연 기준에 실패했다. [최종 보고서](e2e-final.md)에 실패와 raw 측정을 함께 보존한다. 직접 smoke의 tool_call 제안은 도구 실행 성공이 아니다.
 
 ## 호출 대상
 

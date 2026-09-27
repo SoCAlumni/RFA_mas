@@ -9,9 +9,9 @@
 
 P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다. 아래 `검증 완료(P0)`는 해당 로컬 경계만 뜻하며 NVIDIA API, NeMo Retriever, MCP, NemoClaw 또는 OpenShell live 검증으로 확대 해석하지 않는다.
 
-2026-09-26 계획 보강: [TASKS.md](../TASKS.md)의 P0는 세션·Task 팀·예약·복구까지 확장되었으며 아직 완료되지 않았다. 기존 기반 suite는 이번에도 170개 통과했지만 새 기능이나 실제 NVIDIA 기술 검증 증거는 아니다. 기밀 검수 최종 소유권은 계속 미확정이다.
+역사적 2026-09-26 계획 보강: [TASKS.md](../TASKS.md)의 P0는 세션·Task 팀·예약·복구까지 확장되었으며 아직 완료되지 않았다. 기존 기반 suite는 이번에도 170개 통과했지만 새 기능이나 실제 NVIDIA 기술 검증 증거는 아니다. 기밀 검수 최종 소유권은 계속 미확정이다.
 
-2026-09-27 상태 갱신(P1-009, `wip/stack` 260f394; P1-007A 시연 반영): 아래 표의 real 항목만 실제 외부 구성요소를 실행한 증거다. 제품 경로 live smoke는 NVIDIA 모델(P1-002)과 NeMo Retriever Skill(P1-003) 각 n=1이다. OpenShell은 로컬 standalone(P1-007C)과 NemoClaw 운영 경로(P1-007A, Docker/Colima driver) 각 n=1로 실행했다. 명령과 offline suite 결과는 [README](../README.md)의 "검증 상태"에 있다.
+2026-09-27 상태 갱신(main d6aaa91; P1-007A 시연 반영): 아래 표의 real 항목만 실제 외부 구성요소를 실행한 증거다. 제품 경로 live smoke는 NVIDIA 모델(P1-002)과 NeMo Retriever Skill(P1-003) 각 n=1이다. OpenShell은 로컬 standalone(P1-007C)과 NemoClaw 운영 경로(P1-007A, Docker/Colima driver) 각 n=1로 실행했다. 명령과 offline suite 결과는 [README](../README.md)의 "검증 상태"에 있다.
 
 | 교육/기술 경계 | 구현 task | 파일/예정 위치 | 실행 증거 상태 |
 | --- | --- | --- | --- |
@@ -20,11 +20,13 @@ P0 local/mock 증거는 2026-09-25 KST에 offline suite와 demo로 검증했다.
 | NVIDIA 추론 API | P1-002/002A | `src/rfa_mas/adapters/nvidia.py`, `tests/integration/test_nvidia_live.py`(direct hosted smoke), `tests/integration/test_nvidia_product_live.py`(제품 경로), `docs/evidence/nvidia-model.md` | hosted Nemotron 3.5 Lightning 합성 호출 live verified(2026-09-26, P1-002A). 제품 ModelPort 경로 live n=1(2026-09-27, P1-002): 1 passed, 모델 호출 29.8초, public 근거만 전송 |
 | 공식 NeMo Retriever Skill | P1-003/003A | `src/rfa_mas/adapters/nemo_retriever.py`, `tests/integration/test_retriever_live.py`(공식 Skill CLI direct smoke), `tests/integration/test_retriever_product_live.py`(제품 경로), `docs/evidence/nvidia-skill.md`, [Skill 제품 경로 증거](evidence/nvidia-skill-product.md) | 26.8.1 CLI ingest/query·hosted embedding·근거 기반 답변 live verified(2026-09-26, P1-003A). 제품 Research worker 경로 live n=1(2026-09-27, P1-003): 4 passed, ingest 7.17초, Research run 3.9초. 기록은 [Skill 제품 경로 증거](evidence/nvidia-skill-product.md) |
 | 지원 runtime의 NemoClaw 운영 | P1-007, P1-007A | [NemoClaw 증거](evidence/nemoclaw.md)(§3~§7 설계, §8A 실시연), `deploy/nemoclaw/rfa-api-minimal.yaml`, `tests/integration/test_nemoclaw_live.py`, `docs/INTEGRATION.md` | real(n=1, 2026-09-27 KST): NemoClaw v0.0.124가 온보딩한 OpenClaw 2026.7.1 sandbox(OpenShell 0.0.116, Docker/Colima, NVIDIA Endpoints super-120b)에서 `rfa-api-minimal` preset으로 이 서비스의 허용 4 route 호출 성공, 그 외 7 probe는 OpenShell L7 정책 거부, OCSF 기록 일치, agent 턴이 healthz 보고. RFA backend는 sandbox 밖 host 프로세스이며 역할별 identity(P1-007B)는 별개 |
-| LLMOps 관측(Langfuse) | P1-006C, P1-006F(blocked) | `src/rfa_mas/adapters/langfuse.py`, `tests/integration/test_langfuse_live.py`, [LLMOps 증거](evidence/llmops.md) | real(local): 로컬 self-host Langfuse 4.46.0에 allowlist metadata OTLP export, ID 조회, ID 삭제 확인(2026-09-27). 보존 기간 적용은 blocked(P1-006F, OSS에서 Enterprise entitlement 필요). 로컬 trace가 원본 |
+| LLMOps 관측(Langfuse) | P1-006C, P1-006F | `src/rfa_mas/adapters/langfuse.py`, `tests/integration/test_langfuse_live.py`, [LLMOps 증거](evidence/llmops.md) | real(local): 로컬 self-host Langfuse 4.46.0에 allowlist metadata OTLP export, ID 조회, ID 삭제 확인(2026-09-27). OSS 자체 보존은 없으므로 P1-006F 앱 삭제 job으로 대체했다. 기존 live 6건/현재 offline 회귀를 구분하며 이번 정리에서 live 삭제를 다시 하지 않았다. 로컬 trace가 원본 |
 | NVIDIA Agent Toolkit(NAT) | P0-027, P0-028 | `src/rfa_mas/adapters/nat_eval.py`, `tests/test_nat_smoke.py`, [NAT 호환성](NAT_COMPATIBILITY.md) | NAT 1.8.0 installed offline smoke(합성 WorkService, mock 공급자) 통과. live 모델이나 runtime 격리 증거가 아니다 |
-| OpenShell 권한 강제 | P1-007C, P1-008B, P1-007B | [OpenShell 증거](evidence/openshell.md)(E2E-05, `scripts/openshell_e2e05.py`, `deploy/openshell/`, `tests/integration/test_openshell_live.py`); [NemoClaw 증거 §8](evidence/nemoclaw.md)(OpenShell 단독 첫 관측); 기존 `src/rfa_mas/adapters/http.py` | real(OpenShell local standalone): 이 Mac의 공식 OpenShell v0.1.1 gateway(VM compute driver)에서 stand-in 조사/실행 역할 정책의 파일·네트워크·실행 허용/차단 matrix를 합성 자료로 재현(run 0926181417, 2026-09-27 KST, opt-in live 5 passed). RFA 제품 RuntimePort가 OpenShell에서 역할을 실행하는 경로·팀원 identity(P1-008B)·NemoClaw(P1-007A)는 not_run; local runtime은 sandbox 아님 |
+| OpenShell 권한 강제 | P1-007C, P1-008B, P1-007B | [OpenShell 증거](evidence/openshell.md)(E2E-05, `scripts/openshell_e2e05.py`, `deploy/openshell/`, `tests/integration/test_openshell_live.py`); [NemoClaw 증거 §8](evidence/nemoclaw.md)(OpenShell 단독 첫 관측); 기존 `src/rfa_mas/adapters/http.py` | real(OpenShell local standalone): 이 Mac의 공식 OpenShell v0.1.1 gateway(VM compute driver)에서 stand-in 조사/실행 역할 정책의 파일·네트워크·실행 허용/차단 matrix를 합성 자료로 재현(run 0926181417, 2026-09-27 KST, opt-in live 5 passed). RFA 제품 RuntimePort가 OpenShell에서 역할을 실행하는 경로·팀원 identity(P1-008B)는 not_run; NemoClaw 운영 시연은 위 별도 증거; local runtime은 sandbox 아님 |
 
 예정 파일/증거 경로는 아직 산출물이 아니다. 2026-09-27 재조회에서 learn.nvidia.com 과정 페이지(`course-v1:DLI+S-FX-43+V1`)는 HTTP 200이었지만 본문이 JavaScript로 채워져 정적 조회로 읽지 못했다. 아래 학습 목표는 같은 course ID를 공식 과정 페이지로 링크하는 NVIDIA DLI 저장소의 canonical 문구만 사용한다. 미확인 제출 미션, 필수 기술 수, 수료·평가 조건은 추가하지 않는다.
+
+현재 controlled 최종 인수는 P0-026의 worker/main 각각 75 passed다. NVIDIA Ultra 대표 9회와 Lightning 실패 비교, Persona24/24 simulated, Chrome 기본 smoke는 [최종 보고서](evidence/e2e-final.md)를 본다. 전체 실제 제품 통과 주장은 아니다.
 
 ## 과정 학습 목표 → task → 파일 → 실행 증거 (P1-007)
 
@@ -143,7 +145,7 @@ LangGraph checkpoint는 중단된 graph 실행을 재개하기 위한 상태이�
 - OpenShell 단독 sandbox의 관측(P1-007C stand-in 역할 정책 포함)은 RFA 서비스 경로, NemoClaw 경로, RFA 제품 역할 실행의 권한 강제 증거가 아니다. RFA backend는 sandbox 밖에서 실행되며 보호되지 않는 범위는 [NemoClaw 증거 §6](evidence/nemoclaw.md)에 있다.
 - 실제 NemoClaw/OpenShell 주장은 공식 platform support 확인, live policy, runtime identity, 허용/차단 실행 증거가 모두 있을 때만 갱신한다.
 - 실제 모델, Retriever, MCP, 팀원 Response/Runtime 서비스가 없으면 명확한 `not_implemented` 또는 `configuration_error`를 반환하며 mock으로 조용히 대체하지 않는다.
-- Langfuse export 성공은 로컬 self-host 대상이며 Langfuse 쪽 보존 기간 적용(P1-006F)은 blocked다. NAT installed smoke는 mock 공급자 기준이다.
+- Langfuse export 성공은 로컬 self-host 대상이다. OSS 서버 자체 보존 대신 P1-006F 앱 소유 trace 삭제 job을 구현했으며 기존 live/후속 offline 증거를 구분한다. NAT installed smoke는 mock 공급자 기준이다.
 - NemoClaw 공식 문서는 현재 제품을 trusted operator가 사용하는 one-host early-preview reference stack으로 한정한다. 이를 hosted service, multi-tenant enterprise control plane 또는 enterprise identity system으로 설명하지 않는다.
 
 ## 공식 출처

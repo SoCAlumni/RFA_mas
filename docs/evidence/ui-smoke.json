@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-09-27T01:14:36.797677+00:00",
+  "product_head": "e2c2848d9e9264eb612bbee9c35b3015ceceee3a",
+  "mode": "actual-headless-Chrome/local-mock-product",
+  "playwright": "1.63.0",
+  "checks": [
+    "actual DOM initialized with reachable core and local/mock status",
+    "session created and selected through browser",
+    "note persisted; attack-looking title rendered as text, no dialog/image element",
+    "draft waiting approval -> manual mock approval -> resumed completed run",
+    "no page errors/dialogs/external outbound or browser storage"
+  ],
+  "limits": "One synthetic browser flow; not teammate UI, real publication, NVIDIA or runtime isolation.",
+  "browser": "154.0.8037.57",
+  "status": "passed",
+  "finished_at": "2026-09-27T01:14:41.284048+00:00",
+  "raw_artifact": {
+    "path": "/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/rfa-ui-completion-proof-p534yzmp/result.json",
+    "sha256": "609f59aab353a3b3c97304d84ef67bbf401f3f7f6fd7f28d64b2ae7fe64c3871"
+  }
+}

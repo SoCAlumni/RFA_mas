@@ -2,7 +2,7 @@
 
 NVIDIA Korea Agentic AI Hackathon 온라인 사전 챌린지를 위한 기업형 개인 비서다. 비서 Supervisor가 요청을 도메인 TaskGraph나 작업 팀에 위임하고, 권한을 확인한 근거로만 DRAFT를 만들며, 검토·승인을 거친 뒤에만 게시 단계로 넘어간다. 모든 외부 경계는 port/adapter로 분리되어 mock, 로컬 stand-in, 실제 서비스를 설정만으로 바꾼다. SRNote의 노트 저장·탐색·지식 축적 개념을 참고했다.
 
-이 문서는 `wip/stack` 260f394 기준이며 2026-09-27 KST에 실제로 실행한 결과만 적는다. mock·로컬 stand-in의 성공은 NVIDIA, MCP, OpenShell, 팀원 서비스, 외부 게시의 실제 결과가 아니다.
+제품 기준은 main `d6aaa91`(2026-09-27 KST)이다. [최종 인수 보고서](docs/evidence/e2e-final.md)에 실행별 코드·모드·실패·미검증 경계를 기록했다. mock·로컬 stand-in의 성공은 NVIDIA, MCP, OpenShell, 팀원 서비스, 외부 게시의 실제 결과가 아니다.
 
 ## 빠른 시작
 
@@ -23,9 +23,9 @@ uv sync --locked --extra nat
 uv run --extra nat python -m pytest -q
 ```
 
-`python -m pytest`로 실행한다. `pytest` 실행 파일을 직접 쓰면 저장소 루트가 import 경로에 없어 `scripts.contract_baseline`을 import하는 test가 수집 단계에서 실패한다(2026-09-27 관측). extra 없이 `uv sync --locked`를 실행하면 환경이 기본 설치로 돌아가 NAT extra 패키지가 제거된다(2026-09-27 관측). control-root 전용 `tests/test_task_migration.py`, `tests/test_taskctl.py`는 작업용 worktree 사본을 거절하므로 worktree에서는 `--ignore`로 제외한다.
+`python -m pytest`로 실행한다. `pytest` 실행 파일을 직접 쓰면 저장소 루트가 import 경로에 없어 `scripts.contract_baseline`을 import하는 test가 수집 단계에서 실패한다(2026-09-27 관측). extra 없이 `uv sync --locked`를 실행하면 환경이 기본 설치로 돌아가 NAT extra 패키지가 제거된다(2026-09-27 관측). 작업용 worktree에서는 `TASK_CONTROL_ROOT`를 canonical checkout 절대 경로로 지정한다. control 테스트를 임의로 제외해 전체 통과라고 보고하지 않는다.
 
-통합 E2E 시나리오(E2E-01~10) 결과와 `rfa demo --full`은 P0-026이 작성하는 [docs/DEMO.md](docs/DEMO.md)를 본다. 이 branch 기준으로 DEMO.md는 아직 통합되지 않았다.
+통합 E2E 시나리오(E2E-01~10) 결과와 `rfa demo --full`은 P0-026이 작성하는 [docs/DEMO.md](docs/DEMO.md)를 본다. 현재 main에 통합되어 있다. 키 없는 전체 데모는 `uv run rfa demo --full`로 실행한다.
 
 ## 명령
 
@@ -40,8 +40,8 @@ uv run --extra nat python -m pytest -q
 | `uv run rfa demo --scenario policy_denied` | 권한 거절 | `failed`/`policy_denied`, DRAFT 없음, exit 1(의도한 실패) |
 | `uv run rfa api` | FastAPI, 기본 `127.0.0.1:8000` | `/healthz` 200, `/readyz` `ready`, `POST /v1/work` 201 `completed`, `GET /v1/work/{run_id}`와 `GET /v1/runs/{run_id}/status` 200, `/openapi.json` 200 |
 | `uv run rfa scheduler --run-seconds 3` (`SCHEDULER_ENABLED=true`) | API와 별도 프로세스인 단일 owner 예약 runner | `scheduler_running`, exit 0. `SCHEDULER_ENABLED`가 false면 exit 2 `scheduler_disabled` |
-| `uv run rfa evaluate --dataset persona-regression-v2 --label baseline --output <새 파일>` | 합성 persona 회귀(simulated) | 24/24 실행, 23 pass, 1 fail, 보안 실패 0, release gate `fail` → exit 1. 격리를 위해 `--env-file`은 거절된다 |
-| `uv run rfa evaluate-compare --baseline <A> --candidate <B> --output <새 파일>` | 같은 조건의 두 실행 비교 | `comparable=true`, 24/24 unchanged, 보안 회귀 0, exit 1(release `fail` 유지) |
+| `uv run rfa evaluate --dataset persona-regression-v2 --label baseline --output <새 파일>` | 합성 persona 회귀(simulated) | P1-001E 보수 후 24/24 pass, 보안 실패 0(simulated). 과거 23/24 실패와 구분한다. 격리를 위해 `--env-file`은 거절된다 |
+| `uv run rfa evaluate-compare --baseline <A> --candidate <B> --output <새 파일>` | 같은 조건의 두 실행 비교 | 실제 생성한 두 manifest만 비교. 과거 동일 코드 23/24 실행은 unchanged/release fail이었으며 현재 개선 측정과 혼합하지 않는다 |
 | `uv run rfa openapi --output <경로>` | OpenAPI export | 41개 path |
 | `uv run rfa init-env --output .env.dev` | 서비스별 로컬 내부 credential profile 생성 | 8개 변수 생성, 파일 권한 0600, 변수 이름만 출력. `NVIDIA_API_KEY`는 만들지 않는다. 저장소 루트의 `.env` 또는 git-ignore된 `.env.<profile>`만 허용한다 |
 
@@ -79,9 +79,20 @@ RFA_RETRIEVER_PRODUCT_EVIDENCE_OUT=/tmp/p1003-product-live.json \
 | 실행 | 결과(n=1) |
 | --- | --- |
 | P1-002 제품 모델 경로 | 1 passed. HTTP 시도 1회, 모델 호출 29.8초, Run 30.3초, `completed`. 합성 공개 노트만 전송했고 owner 전용 노트·canary는 보내지 않았다. [모델 증거](docs/evidence/nvidia-model.md) |
-| P1-003 제품 Research 경로 | 4 passed(11.25초). 합성 PDF 2개 ingest 7.17초, Research run 3.9초, Skill 결과 3개 반환·3개 사용·0개 unmapped, 관측 mode `real`. 측정 JSON은 임시 경로에만 있고 저장소 evidence 문서(`docs/evidence/nvidia-skill.md`의 P1-003 절)는 아직 갱신되지 않았다 |
+| P1-003 제품 Research 경로 | 4 passed(11.25초). 합성 PDF 2개 ingest 7.17초, Research run 3.9초, Skill 결과 3개 반환·3개 사용·0개 unmapped, 관측 mode `real`. [제품 Skill 증거](docs/evidence/nvidia-skill-product.md)에 기록했다 |
 
 다른 opt-in live test는 이번 문서 작업에서 다시 실행하지 않았다. 조건과 결과는 각 evidence 문서에 있다: `tests/integration/test_nvidia_live.py`(P1-002A, [모델 증거](docs/evidence/nvidia-model.md)), `tests/integration/test_retriever_live.py`(P1-003A, [Skill 증거](docs/evidence/nvidia-skill.md)), `tests/integration/test_langfuse_live.py`(P1-006C, 로컬 self-host Langfuse 필요, [LLMOps 증거](docs/evidence/llmops.md)), `tests/integration/test_openshell_live.py`(P1-007C, OpenShell gateway와 rootfs 필요, [OpenShell 증거](docs/evidence/openshell.md)).
+
+## 현재 인수 결과
+
+| 경로 | 실제 결과 | 한계 |
+| --- | --- | --- |
+| `demo --full` + controlled/API·프로세스·부하 | worker/main 각각 75 passed, 실패·skip 0 | 모델/검토/게시는 mock; 전체 real E2E 아님 |
+| Ultra 4096, E2E-02/06/08 ×3 | 9/9 완료, 각각 30초 이내, 금지 outbound marker 0 | 공개 합성 자료; E2E-06/08 semantic quality not_run |
+| Lightning 1024 / 4096 | 7/9 / 8/9 완료, 지연 기준 실패 | 실패 삭제·임계값 완화 없음 |
+| UI | 실제 Chrome 기본 세션·저장·수동 mock 승인·재개 smoke 통과 | 전체 10개 UI 시나리오 아님 |
+
+재현 명령·원시 지연·코드/fixture 버전·실제/모의 경계는 [최종 보고서](docs/evidence/e2e-final.md)에 있다. 모델 비교 결과만으로 사용자 `.env.dev`나 기본 provider를 변경하지 않았다.
 
 ## 아키텍처
 
@@ -107,7 +118,7 @@ client / 로컬 UI (P0-025A)
 
 | 구성요소 | 기본 실행(키 없음) | 선택 가능한 실제 경로 | 실제로 실행한 증거 | 아직 아닌 것 |
 | --- | --- | --- | --- | --- |
-| 모델 | `MockModel`(simulated) | `MODEL_PROVIDER=nvidia` -> `NvidiaChatModel` | hosted Nemotron 합성 호출(P1-002A), 제품 경로 live n=1(P1-002) | 품질·지연 분포, 한국어 golden 평가, 실제 Judge |
+| 모델 | `MockModel`(simulated) | `MODEL_PROVIDER=nvidia` -> `NvidiaChatModel` | hosted Nemotron 합성 호출(P1-002A), 제품 경로 live n=1(P1-002) | 대표 Ultra 9회 결과는 아래 보고서; 일반 품질·지연 보장은 아님 |
 | 공식 Skill(NeMo Retriever) | 없음 | `RETRIEVER_BACKEND=nemo_cli` -> Research 팀 source_scout의 Skill 도구 | CLI 26.8.1 direct 실행(P1-003A), 제품 Research 경로 live n=1(P1-003) | `nemo_service`(reserved), local embedding NIM, Skill 결과를 DRAFT 근거로 결합 |
 | KB·검색 | `LocalRetrieval`: SQLite, 권한 확인 뒤 한국어 BM25 | 없음 | offline test(real local) | 외부 벡터 검색 |
 | 검토·승인 | `MockResponse` | `RESPONSE_BACKEND=http` -> reference fixture 또는 P1-008C stand-in | stand-in 계약 test(local, receipt mode=mock) | 팀원 Response 서비스(P1-008A) |
@@ -115,26 +126,26 @@ client / 로컬 UI (P0-025A)
 | Tool | 팀 역할은 `LocalAnalysisTools`(READ 계산). `TOOL_BACKEND`의 ToolPort는 Work 경로에서 호출하지 않는다 | `TOOL_BACKEND=http`(reference) | 계약 test | MCP 실행, WRITE |
 | Runtime | `LocalRuntime`(process-local) | `RUNTIME_BACKEND=http` -> P1-008D stand-in | 계약 test | OpenShell 위 RFA 역할 실행(P1-007B), 팀원 runtime(P1-008B) |
 | OpenShell | 사용 안 함 | 없음 | 로컬 standalone OpenShell v0.1.1에서 stand-in 역할별 허용·차단(P1-007C) | RFA 제품 경로 |
-| NemoClaw | 사용 안 함 | 없음 | 설계 문서만(P1-007) | 실행 not_run(P1-007A blocked) |
+| NemoClaw | 사용 안 함 | 없음 | NemoClaw 지원 OpenClaw sandbox → 제한된 host RFA API 실제 실행 n=1(P1-007A) | RFA backend는 sandbox 밖; 역할 identity 연결은 별도 |
 | Policy | `LocalPolicy`(application policy) | `POLICY_BACKEND=http`(reference) | offline test | OS 수준 강제 |
-| Trace | 로컬 JSONL + SQLite 관측 원장 | `TRACE_BACKEND=langfuse` + `LANGFUSE_EXPORT_ENABLED=true`(loopback) | 로컬 self-host Langfuse 4.46.0 export·ID 조회·ID 삭제(P1-006C) | Langfuse 보존 적용(P1-006F blocked), 비loopback |
-| 평가 | 규칙 평가(simulated, mock 모델) | NAT 1.8 installed smoke(P0-028, mock 공급자) | persona v2 23 pass/1 fail/보안 0(2026-09-27) | 실제 Judge, actual 모델 평가 |
+| Trace | 로컬 JSONL + SQLite 관측 원장 | `TRACE_BACKEND=langfuse` + `LANGFUSE_EXPORT_ENABLED=true`(loopback) | 로컬 self-host Langfuse 4.46.0 export·ID 조회·ID 삭제(P1-006C) | P1-006F 앱 삭제 job/기존 live 6건 증거 있음; 비loopback 미지원 |
+| 평가 | 규칙 평가(simulated, mock 모델) | NAT 1.8 installed smoke(P0-028, mock 공급자) | persona v2 24/24 pass/보안 0(simulated); 별도 NVIDIA Judge 합성 n=1(0.6) | E2E 전체 semantic quality와 실제 사용자 만족도 미검증 |
 | 예약 | `SCHEDULER_ENABLED=false` | `rfa scheduler`(APScheduler, 별도 프로세스) | 3초 smoke, offline test | 예약 알림 생산자 |
-| UI | 없음 | `rfa_mas.ui.app.create_local_ui_app`(P0-025A) | ASGI test(`tests/test_local_ui.py`) | 실행 CLI. 이 문서 작업에서 브라우저 실행은 하지 않았다 |
+| UI | 없음 | `rfa_mas.ui.app.create_local_ui_app`(P0-025A) | ASGI test와 실제 headless Chrome 기본 흐름([증거](docs/evidence/ui-smoke.json)) | 별도 UI 실행 CLI/전체 10개 UI E2E 없음; `rfa api`가 UI를 자동 mount하지 않음 |
 
 ## 해커톤 평가 기준 연결
 
-공식 폼(AGENTS.md의 2026-09-24 KST 확인 기록)의 평가 항목에 이 저장소의 task와 증거를 연결한다. 폼은 항목별 배점이나 가중치를 공개하지 않았으므로 점수·가중치를 붙이지 않는다. 온라인 사전 챌린지 접수 마감은 **2026-09-28 23:59 KST**다. 2026-09-27 공개 웹 검색에서는 2차 출처(LinkedIn 게시물)가 같은 접수 기간(2026-09-11~09-28 23:59)을, NVIDIA AI Day Seoul 페이지가 2026-11-10 쇼케이스 일정을 보여 주었고 다른 공지는 찾지 못했다. 공식 폼 자체는 이번에 다시 열어 보지 않았다. 제출 요건은 제출 직전에 공식 폼으로 다시 확인한다.
+공식 폼(AGENTS.md의 2026-09-24 KST 확인 기록)의 평가 항목에 이 저장소의 task와 증거를 연결한다. 폼은 항목별 배점이나 가중치를 공개하지 않았으므로 점수·가중치를 붙이지 않는다. 온라인 사전 챌린지 접수 마감은 **2026-09-28 23:59 KST**다. 2026-09-27 01:23 UTC 공식 폼 접근을 다시 시도했지만 Google 로그인 화면으로 이동해 본문을 확인하지 못했다. 최신 요건 대조는 미검증이며 P1-009의 잔여 blocker다. AGENTS.md의 기존 요건을 유지하고 미공개 배점은 추가하지 않는다.
 
 | 평가 항목 | task | 증거 파일 | 상태 |
 | --- | --- | --- | --- |
 | NVIDIA Agent 기술 활용 심도: 실제 모델 | P1-002A, P1-002 | [nvidia-model.md](docs/evidence/nvidia-model.md) | real: hosted Nemotron 합성 호출, 제품 경로 n=1 |
-| NVIDIA Agent 기술 활용 심도: Skill | P1-003A, P1-003 | [nvidia-skill.md](docs/evidence/nvidia-skill.md), `tests/integration/test_retriever_product_live.py` | real: 공식 CLI direct 실행, 제품 Research 경로 n=1(측정 기록 미커밋) |
+| NVIDIA Agent 기술 활용 심도: Skill | P1-003A, P1-003 | [nvidia-skill.md](docs/evidence/nvidia-skill.md), `tests/integration/test_retriever_product_live.py` | real: 공식 CLI direct 실행, [제품 Research 경로 n=1](docs/evidence/nvidia-skill-product.md) |
 | NVIDIA Agent 기술 활용 심도: OpenShell | P1-007C, P1-007B | [openshell.md](docs/evidence/openshell.md) | real(로컬 standalone, stand-in 역할 정책). RFA 제품 경로 not_run |
-| NVIDIA Agent 기술 활용 심도: NemoClaw | P1-007, P1-007A | [nemoclaw.md](docs/evidence/nemoclaw.md) | 설계만. 실행 not_run(P1-007A blocked) |
+| NVIDIA Agent 기술 활용 심도: NemoClaw | P1-007, P1-007A | [nemoclaw.md](docs/evidence/nemoclaw.md) | real n=1: 지원 OpenClaw sandbox → host 제한 API; RFA core 격리와 다름 |
 | NVIDIA Agent 기술 활용 심도: Agent Toolkit(NAT) | P0-027, P0-028 | [NAT_COMPATIBILITY.md](docs/NAT_COMPATIBILITY.md), `tests/test_nat_smoke.py` | NAT 1.8.0 installed offline smoke(mock 공급자). live 모델이나 runtime 격리 증거가 아님 |
 | 실용성·산업 가치·혁신성 | P0-015, P0-020, P0-022~024, P1-001A/D, P1-005/005A/005B, P1-008 | [INTEGRATION.md](docs/INTEGRATION.md), [PRODUCT_REQUIREMENTS.md](docs/PRODUCT_REQUIREMENTS.md) | 권한 인지 비서, 근거 제한 DRAFT, 검토 후 게시, 예약, 피드백이 real(local)+mock으로 동작. 팀원 실서비스 미연결 |
-| 완성도 | P0-021, P1-006B, P0-026, P1-009 | 이 README의 "검증 상태", [llmops.md](docs/evidence/llmops.md), [DEMO.md](docs/DEMO.md)(P0-026) | offline suite 통과(아래). persona v2 release gate `fail`(기능 실패 1). E2E-01~10은 P0-026 작성 중 |
+| 완성도 | P0-021, P1-006B, P0-026, P1-009 | 이 README의 "검증 상태", [llmops.md](docs/evidence/llmops.md), [DEMO.md](docs/DEMO.md)(P0-026) | 현재 controlled 인수 75 passed(worker/main 각각), Persona24/24 simulated. 전체 real/UI gate는 보고서에서 분리 |
 | 커스터마이징·독창성 | P1-004, P1-005, P0-021, P1-001D, P1-006E | [INTEGRATION.md](docs/INTEGRATION.md), [llmops.md](docs/evidence/llmops.md), `tests/test_redteam_regression.py` | 두 도메인이 공유하는 TaskGraph template, audience 라벨과 membership을 결합한 정책, cloud egress screen, 효과 ledger, 한국어 BM25, 레드팀 회귀 |
 
 ## 설정과 key 관리
@@ -165,7 +176,7 @@ client / 로컬 UI (P0-025A)
 | `POLICY_BACKEND=http` | `POLICY_BASE_URL`, `POLICY_API_TOKEN` | loopback만 |
 | `TRACE_BACKEND=langfuse` | loopback `LANGFUSE_BASE_URL`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_EXPORT_ENABLED=true` | 로컬 trace를 유지하고 allowlist metadata만 OTLP로 export. 비loopback은 `not_implemented` |
 | `SCHEDULER_ENABLED=true` | 없음 | `rfa scheduler` 실행 허용 |
-| `ENABLE_JUDGE=true`, `JUDGE_PROVIDER=nvidia` | `JUDGE_MODEL`, `NVIDIA_API_KEY` | reserved: `not_implemented` |
+| `ENABLE_JUDGE=true`, `JUDGE_PROVIDER=nvidia` | `JUDGE_MODEL`, `NVIDIA_API_KEY` | 실제 NvidiaJudge. 합성/공개 평가 입력만 허용하며 개인 context를 보내지 않는다 |
 
 `uv run rfa init-env --output .env.dev`는 기존의 비어 있지 않은 값을 덮어쓰지 않고, 통신 구간마다 다른 내부 token과 Langfuse key pair를 생성해 권한 0600으로 저장한다. `NVIDIA_API_KEY`는 외부 발급값이라 생성하지 않는다. 기본 backend는 계속 mock/local이므로 이 명령만으로 외부 호출이 켜지지 않는다.
 
@@ -186,15 +197,15 @@ Raw Slack, GitHub, 메일 credential은 이 서비스에 두지 않는다. key/t
 
 - 팀원 실제 Response/Runtime 서비스(P1-008A/B)는 연결하지 않았다. stand-in은 로컬 대체물이다.
 - MCP tool 실행과 외부 채널 게시는 없다.
-- OpenShell 위의 RFA 역할 실행(P1-007B)과 NemoClaw 운영(P1-007A)은 실행하지 않았다.
-- 실제 LLM Judge, Langfuse 보존 기간 적용(P1-006F), 비loopback Langfuse, `nemo_service` backend는 없다.
-- 모델 품질과 지연은 n=1이라 분포를 주장하지 않는다.
+- OpenShell 위의 RFA 역할 실행(P1-007B)은 미검증이다. standalone OpenShell과 NemoClaw 제한 API 시연은 별도 실제 증거가 있다.
+- 실제 Judge와 OSS Langfuse 보존 job은 구현·한정 검증했다. 비loopback Langfuse와 `nemo_service`는 미지원이다.
+- 모델별 대표 합성 9회 비교는 소표본이다. 일반 성능·보안 보장이 아니며 Lightning 실패도 보존한다.
 - production 인증, 멀티테넌시, 분산 queue는 없다. 단일 설치 owner 기준이다.
 - 로컬 namespace, `LocalPolicy`, `LocalRuntime`은 OS sandbox나 OpenShell 검증이 아니다. mock 검토 승인은 실제 승인·게시 권한이 아니다.
 
 ## 검증 상태
 
-2026-09-27 KST, `wip/stack` 260f394 기준으로 실제 실행한 것:
+초기 명령/전체 suite 기록은 `wip/stack` 260f394의 역사적 실행이다. 현재 main 인수 결과는 [최종 보고서](docs/evidence/e2e-final.md)와 아래 표를 기준으로 한다:
 
 - 위 "명령" 표의 명령 전부(임시 데이터 디렉터리, 합성 env 파일).
 - offline 전체 suite: 아래 "검증 기록" 참고.

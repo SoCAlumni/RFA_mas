@@ -4,7 +4,7 @@
 
 ## 확정 아키텍처와 구현 상태의 구분
 
-2026-09-26에 확장한 P0 계획과 상태의 원본은 `tasks/<ID>/task.yaml`이며 [TASKS.md](../TASKS.md)는 생성된 조회 view다. 아래 기존 endpoint/DTO 표는 schema 1.0 구현을 설명한다. Session/Task/TeamSpec/Scheduler/receipt route는 해당 task(P0-015, P0-019/020, P0-022~024, P1-005A, P1-008)가 구현했으며 생성 OpenAPI가 기준이다. review callback은 검증 계약(`ReviewCallbackVerifier`)만 있고 core API route는 아직 없다. 2026-09-27(`wip/stack` 260f394) 기준 실제/모의 구분은 [README의 "실제 vs mock/local" 표](../README.md#실제-vs-mocklocal)를 본다.
+2026-09-26에 확장한 P0 계획과 상태의 원본은 `tasks/<ID>/task.yaml`이며 [TASKS.md](../TASKS.md)는 생성된 조회 view다. 아래 기존 endpoint/DTO 표는 schema 1.0 구현을 설명한다. Session/Task/TeamSpec/Scheduler/receipt route는 해당 task(P0-015, P0-019/020, P0-022~024, P1-005A, P1-008)가 구현했으며 생성 OpenAPI가 기준이다. review callback은 검증 계약(`ReviewCallbackVerifier`)만 있고 core API route는 아직 없다. 2026-09-27(main d6aaa91) 기준 실제/모의 구분은 [README의 "실제 vs mock/local" 표](../README.md#실제-vs-mocklocal)를 본다.
 
 기존 Pydantic/OpenAPI의 repository-local provisional baseline은 [contracts/baseline.json](contracts/baseline.json), 합성 정상·거절·근거 부족·부분 실패·timeout fixture는 `fixtures/contracts/reference_cases.json`이다. `.venv/bin/python scripts/contract_baseline.py check`는 export·schema·fixture 형식을 검사하고, 실제 local/reference 응답은 `.venv/bin/python -m pytest -q tests/test_contract_baseline.py`로 대조한다. 생성 방향·version/digest 및 후속 변경은 [CONTRACT_CHANGELOG.md](CONTRACT_CHANGELOG.md)를 따른다. 이 baseline의 성공은 실제 팀원 API 지원이나 새 확장 schema 완료가 아니다.
 
@@ -106,7 +106,7 @@ bootstrap.py: settings에 따라 port 구현을 조립
 
 Work 경로는 `RuntimePort`와 `ResponsePort`를 직접 사용한다. `TOOL_BACKEND`로 선택한 `ToolPort`(`MockTool`/`ToolHttpAdapter`)는 container에 조립되지만 Work 경로에서 호출하지 않는다. 팀 역할의 도구는 로컬 READ 계산(`LocalAnalysisTools`)이고, `RETRIEVER_BACKEND=nemo_cli`일 때만 Research 팀 source_scout에 공식 NeMo Retriever Skill 도구(`NemoRetrieverTool`, P1-003)가 추가된다. `RUNTIME_BACKEND=http`이면 8013 Runtime이 Domain TaskGraph를 호스팅하면서 Policy/Retriever/Model 경계를 호출하도록 구현해야 전체 topology가 실제로 사용된다.
 
-### NemoClaw/OpenShell sandbox agent 호출 경계 (P1-007 설계, not_run)
+### NemoClaw/OpenShell sandbox agent 호출 경계 (P1-007 설계, P1-007A 실제 시연은 별도 evidence)
 
 RFA FastAPI/LangGraph process와 그 SQLite DB·checkpoint·trace·`.env`는 host의 일반 사용자 프로세스이며 어떤 sandbox 안에도 있지 않다. OpenShell/NemoClaw policy는 sandbox 안 agent의 파일·process·egress만 제한하고 RFA backend의 파일 접근과 outbound 연결은 제한하지 않는다. NemoClaw는 목록 외 agent harness를 지원하지 않으므로 이 서비스는 NemoClaw agent runtime이 아니라 sandbox 안 지원 agent가 호출하는 sandbox 밖 API로 둔다. 공식 근거, 보호되지 않는 범위, 합성 입력 계획은 [NemoClaw 증거](evidence/nemoclaw.md)에 있다.
 
@@ -337,7 +337,7 @@ uv run uvicorn rfa_mas.reference.app:create_reference_contract_app \
 
 ### P1-008 확장 reference 계약
 
-P1-008 구현이며 `wip/stack`에 포함되어 있다. 모든 결과는 local/mock(simulated) 증거이며 실제 승희 Response/Tool, 다영 Runtime, MCP, OpenShell, 외부 게시 증거가 아니다.
+P1-008 구현이며 main에 통합되어 있다. 모든 결과는 local/mock(simulated) 증거이며 실제 승희 Response/Tool, 다영 Runtime, MCP, OpenShell, 외부 게시 증거가 아니다.
 
 | Method / path | 요청 | 응답 | 의미 |
 | --- | --- | --- | --- |
@@ -350,7 +350,7 @@ P1-008 구현이며 `wip/stack`에 포함되어 있다. 모든 결과는 local/m
 
 - 같은 consumer suite: `tests/test_http_contract.py`, `tests/test_consumer_safety.py`는 동일한 WorkService/DraftLifecycle consumer를 mock port와 reference HTTP(ASGI, loopback base URL)로 실행한다. approved/revision_requested/timeout(pending)/rejected(수동 결정)/게시 outcome_unknown, 정상·정책 deny·승인 없음·본문/source ACL/policy 변경·중복·timeout을 같은 의미로 검증한다. graph/application 모듈에는 httpx/MCP/FastAPI import와 URL/Authorization 문자열이 없어야 한다.
 - 계약 버전: 응답의 `schema_version`이 `1.0`/`1.1`이 아니면 `unsupported_contract_version` 명시 오류다. 조용히 1.0으로 해석하지 않는다.
-- 게시 adapter(`PublicationHttpAdapter`): `RESPONSE_BACKEND=http`이면 bootstrap이 DraftLifecycle에 연결한다. mock publisher로 fallback하지 않는다. POST 전에 stand-in의 `ApprovalReference`로 approved·미만료·설치 owner 승인자·draft/version/content/target/policy/source 결합을 확인한다. stand-in 승인 표현에서 core payload hash를 재계산해 첨부가 다르면 거절한다. 실패한 proof는 게시 0회이며 이 branch에서 publication은 `failed`(확정 거절)다. 미통합 P1-008E(`wip/P1-008E`)는 이를 바꿔 dispatch 전 거절은 `approval_required`이고 receipt를 남기지 않으며, 전송한 게시의 확정 거절만 `failed`로 둔다.
+- 게시 adapter(`PublicationHttpAdapter`): `RESPONSE_BACKEND=http`이면 bootstrap이 DraftLifecycle에 연결한다. mock publisher로 fallback하지 않는다. POST 전에 stand-in의 `ApprovalReference`로 approved·미만료·설치 owner 승인자·draft/version/content/target/policy/source 결합을 확인한다. stand-in 승인 표현에서 core payload hash를 재계산해 첨부가 다르면 거절한다. 실패한 proof는 게시 0회다. 통합된 P1-008E는 dispatch 전 거절을 `approval_required`로 처리하고 receipt를 남기지 않으며, 전송한 게시의 확정 거절만 `failed`로 둔다.
 - 알려진 한계: core graph의 검토 제출은 1.0 `/v1/reviews`다. stand-in은 1.1 `/v1/local/reviews` 제출에만 `ApprovalReference`를 발급한다. 따라서 stand-in으로 게시하려면 현재 초안의 1.1 mirror(`local_review_draft`)를 stand-in에서 승인해야 한다. core가 1.1로 제출하는 연결은 DraftLifecycle/graph 소유 후속 작업이다. stand-in에는 idempotency key 조회가 없다. 응답 receipt 참조를 받지 못한 timeout은 재시작 후에도 `outcome_unknown`로 남고 다시 POST하지 않는다.
 - 인증 callback(`ReviewCallbackVerifier`): `X-RFA-Timestamp`(unix 초)와 `X-RFA-Signature: sha256=<HMAC-SHA256(secret, "<timestamp>.<raw body>")>`를 요구한다. 서명은 parsing 전에 raw bytes로 검증하고 기본 허용 시차는 5분이다. 설치 owner 승인자와 현재 초안의 run/draft/version/content hash/target에 결합한다. 같은 event 재전송은 같은 결과를 반환하고, 같은 event ID에 다른 payload가 오면 `idempotency_conflict`다. callback은 재조회를 깨우는 wake-up일 뿐 승인이 아니다. core API route 연결은 공통 API 소유 task의 후속 작업이다.
 - reference fixture opt-in: `create_reference_contract_app(service_token=..., manual_decisions=True)`. 기본값은 동결된 1.0 fixture와 동일하다. token을 켜면 모든 route가 Bearer proof를 요구하므로 누락·위조 identity로는 handler가 실행되지 않는다. test token은 합성 값만 쓰고 `.env.example`에 넣지 않는다.

@@ -65,6 +65,12 @@
 - 근거 충돌의 "잠정/충돌" 명시 표기(`conflict_state`)는 관찰 수단이 없어 요구하지 않았다. `conflict_surfaced`는 두 충돌 source가 현재 revision으로 구조적 인용됐는지만 본다.
 - lexical retriever의 동점 순서가 비결정적이라 인용 목록 전체는 digest에서 제외하고 manifest에만 기록한다.
 
+## P1-001E 이후 Persona 재측정 (2026-09-27 KST)
+
+현재 소스의 명시적 식별자 OMEGA 근거 부족 처리 보수(`0ab54f1`, main `54118a0`) 후 같은 persona-regression-v2/seed29/local-v1의 24개가 모두 pass, 보안 실패 0이었다. 기존 19/24·23/24는 위 역사적 결과로 보존한다. 이 결과는 mock/simulated이며 semantic quality는 not_run이다. 서로 다른 버전의 실패를 삭제하거나 실제 Judge 점수로 상쇄하지 않았다. 코드와 검증은 P1-001E immutable evidence 및 WORK_LOG에 연결된다.
+
+별도 P1-006A 실제 NVIDIA Ultra Judge는 공개 합성 사례 n=1, score 0.6, 2.24초였다. Persona 전체의 실제 Judge 실행이나 사용자 만족도 측정이 아니다.
+
 ## P1-006C — Langfuse trace export, redaction, 보존·삭제 (2026-09-27 KST)
 
 ### 결론
