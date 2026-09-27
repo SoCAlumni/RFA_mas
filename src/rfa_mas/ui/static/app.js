@@ -183,8 +183,13 @@
   }
   async function newSession() {
     if(busy) return;
-    const s=await api("POST","/ui/api/sessions",{}); await selectSession(s.session_id);
-    byId("chat-input").focus();
+    busy=true; byId("send-message").disabled=true; byId("create-session").disabled=true;
+    try {
+      const s=await api("POST","/ui/api/sessions",{}); await selectSession(s.session_id);
+      byId("chat-input").focus();
+    } finally {
+      busy=false; byId("send-message").disabled=false; byId("create-session").disabled=false;
+    }
   }
   async function send(event) {
     event.preventDefault();
@@ -375,6 +380,7 @@
     });
   }
   document.addEventListener("DOMContentLoaded",async()=>{
+    busy=true; byId("send-message").disabled=true; byId("create-session").disabled=true;
     welcome=byId("welcome").cloneNode(true); wireExamples();
     ["chat","kb","reviews"].forEach((name)=>byId("tab-"+name).addEventListener("click",()=>switchTab(name)));
     byId("chat-form").addEventListener("submit",send);
@@ -385,8 +391,10 @@
     byId("reload-reviews").addEventListener("click",loadReviews);
     byId("kb-search").addEventListener("input",renderNotes);
     byId("kb-domain").addEventListener("change",renderNotes);
-    await loadStatus(); await Promise.all([loadNotes(),loadReviews()]);
-    try { const sessions=await loadSessions(); if(sessions.length)await selectSession(sessions[0].session_id); }
-    catch(e){showError(byId("global-error"),e);}
+    try {
+      await loadStatus(); await Promise.all([loadNotes(),loadReviews()]);
+      const sessions=await loadSessions(); if(sessions.length)await selectSession(sessions[0].session_id);
+    } catch(e){showError(byId("global-error"),e);}
+    finally {busy=false;byId("send-message").disabled=false;byId("create-session").disabled=false;}
   });
 })();

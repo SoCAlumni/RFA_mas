@@ -83,7 +83,7 @@ async def test_no_match_ambiguity_domain_and_other_owner(tmp_path):
         other = TrustedPrincipal(user_id="other-synthetic", authenticated=True)
         assert await catalog.list_for(other) == []
         with pytest.raises(RfaError):
-            await catalog.list_for(TrustedPrincipal(authenticated=False))
+            await catalog.list_for(TrustedPrincipal(user_id="anonymous", authenticated=False))
 
 
 async def test_inactive_task_not_used_and_no_automatic_team_creation(tmp_path):
