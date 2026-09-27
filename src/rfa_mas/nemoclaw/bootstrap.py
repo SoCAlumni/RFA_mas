@@ -272,12 +272,12 @@ def seed_sandbox(
     main_agent = assignments.main_agent(sandbox)
     if main_agent is None:
         targets.append(("main", render_head_identity(assignments, sandbox, secret), "sg-head"))
-        for agent_id in assignments.sandbox_agents(sandbox):
-            spec = assignments.agents[agent_id]
-            targets.append((agent_id, render_identity(assignments, agent_id, secret), spec.skill))
     else:
         spec = assignments.agents[main_agent]
         targets.append(("main", render_identity(assignments, main_agent, secret), spec.skill))
+    for agent_id in assignments.sandbox_agents(sandbox):  # secondaries live beside either kind of main
+        spec = assignments.agents[agent_id]
+        targets.append((agent_id, render_identity(assignments, agent_id, secret), spec.skill))
     with tempfile.TemporaryDirectory() as tmp:
         for openclaw_id, identity, skill in targets:
             workspace = workspace_path(openclaw_id)

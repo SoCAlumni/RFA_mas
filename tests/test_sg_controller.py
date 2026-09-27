@@ -319,7 +319,7 @@ def test_observer_parses_cli_json_and_yaml(tmp_path):
         ("nemoclaw", "rfa-main", "policy", "get"): policy_yaml,
         ("nemoclaw", "rfa-main", "agents", "list", "--json"): "✓ Active gateway set to 'nemoclaw'\n"
         + json.dumps([{"id": "main", "isDefault": True}]),
-        ("nemoclaw", "rfa-main", "mcp", "list", "--json"): json.dumps({"servers": [{"name": "broker"}]}),
+        ("nemoclaw", "rfa-main", "mcp", "list", "--json"): json.dumps({"sandbox": "rfa-main", "bridges": [{"server": "broker"}]}),
     })
     observed = Observer(runner).observe(["rfa-main", "rfa-tasks-none"])
     assert observed.exists("rfa-main") and not observed.exists("rfa-tasks-none")

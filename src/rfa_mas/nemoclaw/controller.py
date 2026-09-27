@@ -82,7 +82,8 @@ class Observer:
             data = extract_json(result.stdout)
         except ValueError:
             return set()
-        entries = data if isinstance(data, list) else data.get("servers", data.get("mcpServers", []))
+        entries = data if isinstance(data, list) else (
+            data.get("bridges") or data.get("servers") or data.get("mcpServers") or [])
         if isinstance(entries, dict):
             return set(entries)
         names = set()
