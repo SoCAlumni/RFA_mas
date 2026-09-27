@@ -3,7 +3,7 @@
 UI 화면마다 어떤 API 를 언제 부르고, 응답을 어디에 그리는지 정리한 문서다. 필드 정의 원본은 `docs/openapi.yaml`(서버에서 `GET /openapi.json`, `/docs`)이고, 이 문서는 **화면 ↔ API 대응과 주의점**을 다룬다.
 
 - 기준 시안: artifact `LFD3Utajj2ahC9wv45MbAg` (비서 채팅 · 태스크 추가 · 관리 화면)
-- 배경 결정: `docs/decisions.md` (D-0.4, D-5~D-7, D-10, D-12~D-19), 상세 요구사항: `docs/FE_CHAT_TASK_API_PLAN.md`, `docs/FE_ADMIN_API_PLAN.md`
+- 배경 결정: `docs/decisions.md` (D-0.4, D-5~D-7, D-10, D-12~D-19), 흐름·보안: `docs/ARCHITECTURE.md`
 - 작성: 2026-09-28, FE-5·FE-6 (커밋 전 작업 트리 기준)
 
 ---
