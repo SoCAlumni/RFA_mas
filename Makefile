@@ -9,6 +9,12 @@
 
 SHELL := /bin/bash
 export PATH := $(HOME)/.hermes/node/bin:$(HOME)/.local/bin:$(PATH)
+# Colima: the NemoClaw-managed OpenShell gateway needs DOCKER_HOST, otherwise it looks for /var/run/docker.sock
+ifeq ($(origin DOCKER_HOST), undefined)
+  ifneq ($(wildcard $(HOME)/.colima/default/docker.sock),)
+    export DOCKER_HOST := unix://$(HOME)/.colima/default/docker.sock
+  endif
+endif
 UV ?= uv run --offline --frozen
 SG := $(UV) python -m rfa_mas.nemoclaw
 DEMO_MODE ?= replay

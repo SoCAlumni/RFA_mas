@@ -1,9 +1,195 @@
-# RFA MAS
+# RFA MAS — NemoClaw 보안 그룹 운영층
 
-NVIDIA Korea Agentic AI Hackathon 온라인 사전 챌린지를 위한 기업형 개인 비서다. 비서 Supervisor가 요청을 도메인 TaskGraph나 작업 팀에 위임하고, 권한을 확인한 근거로만 DRAFT를 만들며, 검토·승인을 거친 뒤에만 게시 단계로 넘어간다. 모든 외부 경계는 port/adapter로 분리되어 mock, 로컬 stand-in, 실제 서비스를 설정만으로 바꾼다. SRNote의 노트 저장·탐색·지식 축적 개념을 참고했다.
+> **한 줄 요약**: 에이전트 N개를 "보안팀이 승인할 수 있는 형태"로 운영한다. 샌드박스는 보안 그룹의 조합 단위이고,
+> 채널(internal/external)별 검열 프로파일은 API 진입점 한 곳에서 정해져 세션으로 전파되며, 경계를 넘으면 안 되는
+> 규칙은 전부 OpenShell 정책 층에 있다. 시스템 전체는 설정 파일 3개로 선언된다.
 
-제품 기준은 main `d6aaa91`(2026-09-27 KST)이다. [최종 인수 보고서](docs/evidence/e2e-final.md)에 실행별 코드·모드·실패·미검증 경계를 기록했다. mock·로컬 stand-in의 성공은 NVIDIA, MCP, OpenShell, 팀원 서비스, 외부 게시의 실제 결과가 아니다.
+## 문제 정의 → 기존 대안의 한계 → 해법
 
+**문제.** 1인 사내 비서라도 실제로는 에이전트가 여럿이다(비서, 검열, 조사·벤치마크·요약 같은 task 에이전트).
+위협은 외부 공격자가 아니라 **내 에이전트 자신**이다: 프롬프트 인젝션이나 오작동으로 사내 API에서 읽은 수치·프로젝트명·
+연락처가 외부 LLM 호출이나 외부 목적지로 새어 나간다. 보안팀이 물어보는 것은 세 가지다. "어느 에이전트가 어디로
+나갈 수 있는가", "외부 모델로 나가는 내용은 누가 검열하는가", "에이전트를 옮기거나 추가할 때 그 규칙이 유지되는가".
+
+**기존 대안의 한계.**
+
+| 대안 | 한계 |
+| --- | --- |
+| 샌드박스 1개에 모든 에이전트 | egress 정책이 가장 넓은 에이전트 기준으로 합쳐진다. 조사 에이전트의 사내 API 접근이 요약 에이전트에게도 열린다 |
+| 에이전트당 샌드박스 1개 | NemoClaw 온보딩 3분/샌드박스, 메모리·정책 파일이 에이전트 수만큼 늘어 운영 불가. 정책 검토 대상이 N개 |
+| 앱 내부 필터(프롬프트·코드 gate)만 | 에이전트가 우회하면 끝. 경계가 아니라 "권고"다. OpenShell 층에 없는 규칙은 보안팀이 승인할 수 없다 |
+| NemoClaw 기본 사용 | 게이트웨이당 라이브 inference route 1개, 샌드박스 식별 헤더 없음, 응답 검열(DLP) 없음, 에이전트 이동 절차 없음 |
+
+**해법 (이 저장소).**
+
+1. **보안 그룹 = OpenShell preset 파일.** `deploy/nemoclaw/presets/sg-*.yaml`을 `nemoclaw <sb> policy add --from-file`로만
+   적용하고, 컨트롤러가 `assignments.yaml`을 읽어 reconcile 한다. static(filesystem/process) 섹션은 baseline, network는 preset.
+2. **샌드박스 = 보안 그룹 조합 단위.** 같은 egress 조합의 task 에이전트는 한 샌드박스에 `agents.yaml`(NemoClaw 선언형 manifest)로
+   묶인다. 고정 에이전트 assistant/censor는 전용 샌드박스.
+3. **채널 기반 검열 프로파일.** internal(로컬 Nemotron, 사내 API, 검열 없음) / external(hosted 모델, 요청·응답 검열 필수).
+   프로파일은 채널 API 진입점 한 곳에서 결정되어 서명된 세션 마커로 전파된다.
+4. **검열은 egress 경계에서.** 모든 샌드박스의 inference route가 호스트 egress-proxy(유일한 provider) 하나를 가리키고,
+   프록시가 regex → LLM 2단계로 redact(기본)·block·fail-closed 한다. censor LLM은 egress 0 + 로컬 inference.
+5. **브로커 경유 호출.** assistant는 managed MCP(또는 REST 폴백) `ask_task_agent(name, query)` 하나로 같은/다른 샌드박스를
+   구분하지 않고 위임한다. 세션의 채널이 task 에이전트의 inference에도 그대로 적용된다.
+6. **에이전트 = 이식 가능한 번들.** 정의(agents.yaml 항목 + 스킬) + 상태(workspace, agents/<id>). 격상은 상태 포함 이동,
+   격하는 censor 스캔(또는 비우기) 후 이동, 이동 전 브로커 drain.
+
+## 아키텍처
+
+```mermaid
+flowchart LR
+  subgraph Host["호스트 (샌드박스 밖)"]
+    ENTRY["채널 API 진입점<br/>/channel/{internal|external}/chat<br/>세션→프로파일 결정·서명 마커"]
+    PROXY["egress-proxy :8797<br/>유일한 inference provider<br/>마커 귀속 → alias → 검열(regex→LLM) → 백엔드"]
+    BROKER["브로커 :8798<br/>MCP(HTTPS) + REST 폴백<br/>ask_task_agent / drain"]
+    CTRL["컨트롤러<br/>assignments/routing/censors.yaml<br/>nemoclaw policy add·exclude / agents apply / mcp add / explain"]
+    AUDIT["감사 로그 :8799/audit/<br/>channel·profile·agent·verdict·정책 차단·승인"]
+    OLLAMA["로컬 Nemotron<br/>(Ollama)"]
+    KF["사내 API<br/>knowledge facade :8791"]
+  end
+  subgraph GW["OpenShell 게이트웨이 (NemoClaw 관리)"]
+    ROUTE["inference.local → host.openshell.internal:8797<br/>(route model = 전체 모드 rfa-auto / rfa-internal)"]
+  end
+  subgraph SB1["rfa-assistant (control-plane)"]
+    A["assistant (main)"]
+  end
+  subgraph SB2["rfa-censor (egress-none)"]
+    C["censor (main)"]
+  end
+  subgraph SB3["rfa-tasks-intranet (intranet-ro)"]
+    H1["head (main)"] --> R["research"] & B["benchmark"]
+  end
+  subgraph SB4["rfa-tasks-none (egress-none)"]
+    H2["head (main)"] --> S["summarizer"]
+  end
+  BUILD["build.nvidia.com<br/>(NVIDIA_INFERENCE_API_KEY는 호스트)"]
+  ENTRY -- "nemoclaw rfa-assistant agent" --> A
+  A -- "MCP ask_task_agent" --> BROKER
+  BROKER -- "nemoclaw <sb> agent --agent <id>" --> R & B & S
+  A & C & R & B & S -- "inference.local" --> ROUTE --> PROXY
+  PROXY -- "rfa-internal / rfa-censor" --> OLLAMA
+  PROXY -- "rfa-external (검열)" --> BUILD
+  R & B -- "preset sg-intranet-ro" --> KF
+  CTRL -. "reconcile" .-> SB1 & SB2 & SB3 & SB4
+  PROXY & BROKER & ENTRY & CTRL -. "기록" .-> AUDIT
+```
+
+경계 원칙: 외부 목적지는 어떤 샌드박스도 직접 못 나간다(baseline의 `nvidia`·`clawhub`·`openclaw_api`·`openclaw_docs`·
+`npm_registry`를 모든 샌드박스에서 `policy exclude`). 프록시 장애 = 전 샌드박스 inference 정지이므로 `make demo`는 시작 시
+프록시 헬스체크를 한다.
+
+## 설정 3개로 선언되는 시스템
+
+| 파일 | 역할 | 소비자 |
+| --- | --- | --- |
+| [`deploy/nemoclaw/assignments.yaml`](deploy/nemoclaw/assignments.yaml) | 보안 그룹(preset 목록·privilege) → 샌드박스(그룹 조합) → 에이전트(그룹 또는 고정 샌드박스, alias, 스킬, tools) | 컨트롤러(reconcile, manifest 생성), 브로커, 재배치 |
+| [`deploy/nemoclaw/routing.yaml`](deploy/nemoclaw/routing.yaml) | 채널 → alias → 백엔드(로컬 Ollama / build.nvidia.com), 프록시·브로커·진입점 listener, route 모드 | egress-proxy, 진입점, 전환 스크립트 |
+| [`deploy/nemoclaw/censors.yaml`](deploy/nemoclaw/censors.yaml) | 검열 프로파일: regex 규칙(redact/block) → LLM 분류(runner, timeout, fail-closed) | 프록시(요청·응답), 채널 API 최종 응답, 격하 스캔 |
+
+`assignments.yaml` 발췌:
+
+```yaml
+security_groups:
+  egress-none:   { privilege: 0, presets: [] }
+  intranet-ro:   { privilege: 1, presets: [sg-intranet-ro] }
+  control-plane: { privilege: 2, presets: [], mcp_servers: [broker], fallback_presets: [sg-control-plane] }
+sandboxes:
+  rfa-censor:         { groups: [egress-none], fixed: true }
+  rfa-tasks-none:     { groups: [egress-none] }
+  rfa-tasks-intranet: { groups: [intranet-ro] }
+  rfa-assistant:      { groups: [control-plane], fixed: true }
+agents:
+  research:  { kind: task, groups: [intranet-ro], alias: rfa-external, skill: task-research, tools: { allow: [read, exec] } }
+  benchmark: { kind: task, groups: [intranet-ro], alias: rfa-internal, skill: task-benchmark, tools: { allow: [read, exec] } }
+```
+
+`routing.yaml` 발췌:
+
+```yaml
+proxy:   { bind: 0.0.0.0:8797, route_url: http://host.openshell.internal:8797/v1, default_mode: rfa-auto, unattributed_alias: rfa-internal }
+aliases:
+  rfa-internal: { backend: ollama, model: nemotron-3-nano:4b,               censor: none,     exposure: 0 }
+  rfa-external: { backend: build,  model: nvidia/nemotron-3-super-120b-a12b, censor: external, exposure: 1 }
+  rfa-censor:   { backend: ollama, model: nemotron-3-nano:4b,               censor: bypass,   exposure: 0 }
+channels:
+  internal: { alias: rfa-internal, profile: none }
+  external: { alias: rfa-external, profile: external }
+```
+
+`censors.yaml` 발췌:
+
+```yaml
+profiles:
+  external:
+    stages:
+      - { id: regex, type: regex, rules: [{ id: money-krw, pattern: '\d{1,3}(?:,\d{3})+\s*(?:원|KRW)', replacement: '[REDACTED:amount]' },
+                                          { id: credential, pattern: '(?i)(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}', replacement: '[REDACTED:credential]', action: block }] }
+      - { id: llm, type: llm, runner: direct, sandbox: rfa-censor, alias: rfa-censor, timeout_seconds: 45, on_error: block }
+```
+
+## 실행
+
+```bash
+make bootstrap   # 검증 → 프록시/브로커/진입점 기동 → 사내 API 기동 → (rfa-demo 폐기) → 샌드박스 4개 순서 온보딩 → reconcile → 워크스페이스 시드
+make demo        # demo/01..05 (기본 --replay; DEMO_MODE=live 로 라이브 실행, 실패·30초 초과 시 자동으로 기록 재생)
+make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
+```
+
+컨트롤러 명령(`python -m rfa_mas.nemoclaw …`, 또는 스킬 [`nemoclaw-security-groups`](deploy/nemoclaw/skills/nemoclaw-security-groups/SKILL.md)):
+`validate` · `render` · `plan` · `apply` · `status` · `verify-baseline` · `explain` · `seed` · `bootstrap` · `teardown` ·
+`switch-route <mode> [--force-openshell]` · `serve [--replay]` · `relocate <agent> --to-groups … [--wipe]` ·
+`requests sync|list|approve|deny` · `audit`. 감사 로그 화면: <http://127.0.0.1:8799/audit/>.
+
+## NVIDIA Agent 기술 사용 기능 체크리스트
+
+| 사용 기능 | 어디에 | 상태 |
+| --- | --- | --- |
+| OpenShell 정책: static(filesystem/process)은 baseline, network_policies는 preset | [baseline/openclaw-sandbox.yaml](deploy/nemoclaw/baseline/openclaw-sandbox.yaml) · [presets/sg-intranet-ro.yaml](deploy/nemoclaw/presets/sg-intranet-ro.yaml) · [presets/sg-control-plane.yaml](deploy/nemoclaw/presets/sg-control-plane.yaml) · `verify-baseline`([controller.py](src/rfa_mas/nemoclaw/controller.py)) | 구현 |
+| NemoClaw CLI: onboard(--agents, --non-interactive), policy add/remove/get, agents apply, snapshot, status, logs | [bootstrap.py](src/rfa_mas/nemoclaw/bootstrap.py)(onboard·snapshot·destroy) · [controller.py](src/rfa_mas/nemoclaw/controller.py)(policy add/remove/exclude/get, agents apply, explain) · [requests.py](src/rfa_mas/nemoclaw/requests.py)(logs) · [Makefile](Makefile)(status) | 구현 |
+| OpenClaw agents.yaml: main + secondary, tools.allow/deny, subagents.allowAgents, defaults.maxSpawnDepth | [manifests.py](src/rfa_mas/nemoclaw/manifests.py) → [agents/rfa-tasks-intranet.agents.yaml](deploy/nemoclaw/agents/rfa-tasks-intranet.agents.yaml) (NemoClaw `validateExtraAgents`로 검증) | 구현 |
+| managed MCP: 브로커를 MCP 서버로 등록, 사내 API 자격증명은 샌드박스 밖 | [broker.py](src/rfa_mas/nemoclaw/broker.py) (Streamable HTTP) · `mcp add --url https://<lan-ip>:8798/mcp --env RFA_BROKER_MCP_TOKEN --trusted-private-host`([controller.py](src/rfa_mas/nemoclaw/controller.py)) · 로컬 CA·IP SAN 인증서·`NEMOCLAW_CORPORATE_CA_BUNDLE`([bootstrap.py](src/rfa_mas/nemoclaw/bootstrap.py)) · REST 폴백 [presets/sg-control-plane.yaml](deploy/nemoclaw/presets/sg-control-plane.yaml) | 구현 (라이브 결과는 아래 "검증 상태") |
+| inference 라우팅: 채널별 프로바이더 분리, 재시작 없는 전환 스크립트 | [routing.yaml](deploy/nemoclaw/routing.yaml) · [proxy.py](src/rfa_mas/nemoclaw/proxy.py) · [routes.py](src/rfa_mas/nemoclaw/routes.py)(`nemoclaw inference set` 우선, `openshell inference set`은 `--force-openshell`로만) | 구현 |
+| build.nvidia.com을 external 채널 모델로, 키는 host env `NVIDIA_INFERENCE_API_KEY` → OpenShell provider store | 온보딩 env([bootstrap.py](src/rfa_mas/nemoclaw/bootstrap.py)) · 프록시 상류 [routing.yaml](deploy/nemoclaw/routing.yaml) `backends.build` (`.env.dev` 0600·git-ignore 검증) | 구현 |
+| Skills: (a) task 에이전트별 SKILL.md (b) 컨트롤러 `nemoclaw-security-groups` 스킬 | [skills/task-research](deploy/nemoclaw/skills/task-research/SKILL.md) · [task-benchmark](deploy/nemoclaw/skills/task-benchmark/SKILL.md) · [task-summarizer](deploy/nemoclaw/skills/task-summarizer/SKILL.md) · [censor](deploy/nemoclaw/skills/censor/SKILL.md) · [sg-assistant](deploy/nemoclaw/skills/sg-assistant/SKILL.md) · [nemoclaw-security-groups](deploy/nemoclaw/skills/nemoclaw-security-groups/SKILL.md) (`skill install`/workspace upload, [bootstrap.py seed_sandbox](src/rfa_mas/nemoclaw/bootstrap.py)) | 구현 |
+| 차단 요청 approve/deny 흐름(CLI) | [requests.py](src/rfa_mas/nemoclaw/requests.py): OCSF DENIED 수집 → `sg-approved-<id>` preset → `policy add`; `openshell term`은 대안 | 구현 |
+| Explain Network Policy to Agents | `policy explain --write` 후 `POLICY.md`를 스킬이 참조([controller.py](src/rfa_mas/nemoclaw/controller.py), [sg-assistant SKILL](deploy/nemoclaw/skills/sg-assistant/SKILL.md)) | 구현 |
+
+## NemoClaw 로드맵/이슈에 없는 기능
+
+- **보안 그룹 추상화** (샌드박스 = 그룹 조합, preset 파일 reconcile): NemoClaw는 preset을 샌드박스 단위로 수동 add/remove 한다.
+  선언형 배치·조합·drift 감지는 없다. 관련: [#2853](https://github.com/NVIDIA/NemoClaw/issues/2853) (선언형 다중 에이전트 manifest,
+  closed — 에이전트 roster까지만 다루고 정책 배치는 다루지 않음), [#10904](https://github.com/NVIDIA/NemoClaw/issues/10904)
+  (온보딩 입력을 선언형 설정 하나로, open).
+- **채널 기반 검열 프로파일** (egress 경계에서 요청·응답 redact/block, 세션 전파): NemoClaw의 inference route는 credential 주입만 하고
+  내용을 검사하지 않으며 Supervisor middleware는 문서에 노출되지 않는다. 관련: [#566](https://github.com/NVIDIA/NemoClaw/issues/566)
+  (MCP 자격증명 경계 — 내용 검열 아님).
+- **에이전트 재배치 정책** (격상 상태 포함·격하 스캔·브로커 drain): `snapshot restore --to`는 샌드박스 전체 복제뿐이며
+  에이전트 단위 이동·검열 스캔은 없다. 관련: [#11763](https://github.com/NVIDIA/NemoClaw/issues/11763) (NemoClaw-only 제한을
+  OpenShell 밖에 두지 말 것, open — 이 저장소는 경계 규칙을 OpenShell 층에만 두고 agents.yaml/브로커는 세분화·감사용으로만 쓴다).
+
+## 실측으로 확인한 제약과 대응
+
+| 확인 사실 (2026-09-27, NemoClaw 0.0.124 / OpenShell 0.0.116) | 대응 |
+| --- | --- |
+| 게이트웨이는 요청의 `model`을 라이브 route 모델로 덮어쓰고 샌드박스 식별 헤더가 없다 | HMAC 서명 in-band 마커([markers.py](src/rfa_mas/nemoclaw/markers.py)): 진입점이 세션 메시지에, 컨트롤러가 각 workspace `IDENTITY.md`에. 위·변조 마커는 무시하고 최소 노출 alias를 택한다 |
+| 같은 게이트웨이의 샌드박스가 다른 model을 기록하면 `inference set`이 `provider-model` 충돌로 거부 | 모든 샌드박스는 route `rfa-auto` 하나를 기록; 채널 구분은 마커, route 모델명은 전체 모드(kill switch) |
+| `inference set --endpoint-url`은 사설 IP를 거부 | 문서화된 `http://host.openshell.internal:<port>` 경로 사용 (Colima에서 192.168.5.2 = 호스트) |
+| managed MCP는 HTTPS + 사설 IP SAN 인증서 + 온보딩 시 CA 번들 요구 | bootstrap이 로컬 CA를 만들고 `NEMOCLAW_CORPORATE_CA_BUNDLE`로 온보딩; 실패 시 REST preset 폴백 |
+| `~/.nemoclaw/credentials.json`은 legacy이며 현재 릴리스는 만들지 않음 | 키는 host env → OpenShell provider store; 프록시 상류 키는 0600·git-ignore 파일 |
+| 4B 로컬 모델이 OpenClaw 시스템 프롬프트(수천~2만 토큰)를 매 턴 처리하면 60초 이상 | 검열 LLM 단계는 `runner: direct`(5초 실측), `NEMOCLAW_MINIMAL_BOOTSTRAP=1`, internal 데모는 단순 조회 1개 |
+
+## 검증 상태 (보안 그룹 층)
+
+이 절은 `make bootstrap && make demo`의 실제 결과로 갱신한다. 단위 테스트: `make test`
+(`tests/test_sg_controller.py` 컨트롤러 reconcile, `tests/test_censor.py` regex/LLM/fail-closed, `tests/test_broker.py` 브로커 라우팅,
+`tests/test_egress_proxy.py` 프록시, `tests/test_sg_ops.py` 승인·재배치·스캔).
+
+__VERIFICATION_STATUS__
+
+---
+
+# RFA MAS (제품 코어 문서)
 ## 빠른 시작
 
 필수 환경은 Python 3.12와 [uv](https://docs.astral.sh/uv/)다. 패키지 버전은 `uv.lock`에 고정되어 있다.

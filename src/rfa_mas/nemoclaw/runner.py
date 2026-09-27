@@ -83,6 +83,9 @@ class SubprocessRunner:
         merged = dict(os.environ)
         merged["PATH"] = os.pathsep.join([str(p) for p in EXTRA_PATH] + [merged.get("PATH", "")])
         merged.setdefault("NEMOCLAW_NON_INTERACTIVE", "1")
+        colima_sock = Path.home() / ".colima" / "default" / "docker.sock"
+        if "DOCKER_HOST" not in merged and colima_sock.exists():
+            merged["DOCKER_HOST"] = f"unix://{colima_sock}"  # managed gateway otherwise wants /var/run/docker.sock
         if env:
             merged.update(env)
         started = time.monotonic()
