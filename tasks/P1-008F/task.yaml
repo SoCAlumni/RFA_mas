@@ -11,7 +11,7 @@ source_tasks:
 requirement_refs:
 - docs/LOCAL_MODULES.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -139,7 +139,7 @@ verification:
 evidence_dir: .agent/evidence/P1-008F
 latest_evidence_file: .agent/evidence/P1-008F/poc-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 1
   spec_digest: 2b0331236815190dab73868248b418ccf42b1d47fc948191e8b078dfb849122e
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -149,7 +149,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
@@ -173,7 +173,7 @@ integration:
       evidence: .agent/evidence/P1-008F/poc-target-01/result.json
     head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
   evidence: .agent/evidence/P1-008F/poc-target-01/result.json
-revision: 10
+revision: 11
 spec_revision: 1
 claim_generation: 1
 claim: null
@@ -196,6 +196,7 @@ migration:
   - 기존 factory/lifecycle·포트 경계 확인
   judgment: 독립 실행 산출물로 split; 실제 교체 gate 보존
   initial_spec_revision: 1
-updated_at: '2026-09-27T03:03:20+00:00'
+updated_at: '2026-09-27T04:23:43+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: 단일 local composition/launcher 구현 후 실제 프로세스와 재시작·수동 승인·모의 게시 검증
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

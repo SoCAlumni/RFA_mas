@@ -3,80 +3,214 @@ id: P1-008G
 title: 비서 채팅 자동 라우팅과 내 KB 탭
 objective: 별도 저장/질의 폼 대신 대화에서 정보를 저장하고 검색하며 내 KB를 탐색한다.
 kind: task
-source_tasks: [P1-008F, P0-025A, P1-004]
-requirement_refs: [docs/POC.md]
+source_tasks:
+- P1-008F
+- P0-025A
+- P1-004
+requirement_refs:
+- docs/POC.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
 execution_role: coordinator
-estimated_effort: 3
+estimated_effort: 3.0
 product_owner: 민섭 사용자 승인 PoC; 팀원 UI 교체 가능
 execution_class: 이 저장소 구현
 product_mode: local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님
 scope:
-  included: [채팅 중심 반응형 UI, 서버 저장/검색 라우팅, 내 KB 목록/본문/필터, 영속 대화와 중복 방지, 기존 승인 경계 유지]
-  excluded: [새 모델 API 호출, 공통 DTO/권한 변경, 실제 게시, 신규 프레임워크]
-  owned_paths: [src/rfa_mas/poc, src/rfa_mas/ui, src/rfa_mas/application/chat.py, tests/test_chat_poc.py, docs/POC.md]
-  read_only_paths: [src/rfa_mas/application/service.py, src/rfa_mas/application/graphs/supervisor.py, tests/test_local_ui.py, tests/test_poc.py]
-  planned_paths: [src/rfa_mas/application/chat.py, src/rfa_mas/poc/chat.py, tests/test_chat_poc.py]
-  shared_resources: [composition]
+  included:
+  - 채팅 중심 반응형 UI
+  - 서버 저장/검색 라우팅
+  - 내 KB 목록/본문/필터
+  - 영속 대화와 중복 방지
+  - 기존 승인 경계 유지
+  excluded:
+  - 새 모델 API 호출
+  - 공통 DTO/권한 변경
+  - 실제 게시
+  - 신규 프레임워크
+  owned_paths:
+  - src/rfa_mas/poc
+  - src/rfa_mas/ui
+  - src/rfa_mas/application/chat.py
+  - tests/test_chat_poc.py
+  - docs/POC.md
+  read_only_paths:
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/graphs/supervisor.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  planned_paths:
+  - src/rfa_mas/application/chat.py
+  - src/rfa_mas/poc/chat.py
+  - tests/test_chat_poc.py
+  shared_resources:
+  - composition
 depends_on:
-  - {id: P1-008F, condition: integrated_done, required_output: 실행 가능한 local PoC와 승인 경계}
+- id: P1-008F
+  condition: integrated_done
+  required_output: 실행 가능한 local PoC와 승인 경계
 contract_refs:
-  - {id: RFA-DTO, version: '1.0', digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6, role: consumer}
-  - {id: RFA-EXTENDED, version: '1.1', digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb, role: consumer}
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
 context:
-  global_refs: [docs/PROJECT_CONTEXT.md, TASK_EXECUTION_RULES.md]
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    - {path: src/rfa_mas/poc/bootstrap.py, section: create_poc_app, reason: 교체형 조립 재사용}
-    - {path: src/rfa_mas/application/service.py, section: assist/present_result, reason: 기존 Supervisor와 권한 재검사 재사용}
-    - {path: src/rfa_mas/ui, section: API/static, reason: same-origin 경계 보존}
+  - path: src/rfa_mas/poc/bootstrap.py
+    section: create_poc_app
+    reason: 교체형 조립 재사용
+  - path: src/rfa_mas/application/service.py
+    section: assist/present_result
+    reason: 기존 Supervisor와 권한 재검사 재사용
+  - path: src/rfa_mas/ui
+    section: API/static
+    reason: same-origin 경계 보존
   handoff: tasks/P1-008G/handoff.md
-  dependency_results: [tasks/P1-008F/handoff.md]
+  dependency_results:
+  - tasks/P1-008F/handoff.md
 deliverables:
-  - {path: src/rfa_mas/ui, availability: existing, description: 채팅/KB/승인함 탭}
-  - {path: src/rfa_mas/poc/chat.py, availability: planned, description: core HTTP 소비·영속 turn ledger}
-  - {path: src/rfa_mas/application/chat.py, availability: planned, description: ChatPort·입력·규칙 기반 의도 판별}
-  - {path: tests/test_chat_poc.py, availability: planned, description: 채팅/KB/보안/재시작 회귀}
-  - {path: docs/POC.md, availability: existing, description: 실제 사용법과 한계}
+- path: src/rfa_mas/ui
+  availability: existing
+  description: 채팅/KB/승인함 탭
+- path: src/rfa_mas/poc/chat.py
+  availability: planned
+  description: core HTTP 소비·영속 turn ledger
+- path: src/rfa_mas/application/chat.py
+  availability: planned
+  description: ChatPort·입력·규칙 기반 의도 판별
+- path: tests/test_chat_poc.py
+  availability: planned
+  description: 채팅/KB/보안/재시작 회귀
+- path: docs/POC.md
+  availability: existing
+  description: 실제 사용법과 한계
 acceptance_criteria:
-  - {id: AC1, given: 자연어 메모와 질문, expect: 저장/검색을 서버에서 구분하고 저장 확인/근거 답변을 대화로 표시; 모호한 입력은 안내; private 기본, required: true}
-  - {id: AC2, given: KB 탭·새로고침·재시작·중복 메시지, expect: 본문과 출처 확인 및 대화 복구; 동일 key 재요청은 중복 부작용 없음; 다른 내용 key 재사용 거절, required: true}
-  - {id: AC3, given: 공개 초안/권한 변경/위조 요청, expect: 기존 승인·현재 ACL·CSRF·안전 렌더링 유지; 과거 응답을 권한 검증 없이 재표시하지 않음, required: true}
-  - {id: AC4, given: 실제 브라우저 desktop/mobile, expect: 비서 채팅/내 KB/승인함을 사용 가능하고 저장 후 검색·KB 본문·재로딩 대화 확인; JS 오류 없음, required: true}
+- id: AC1
+  given: 자연어 메모와 질문
+  expect: 저장/검색을 서버에서 구분하고 저장 확인/근거 답변을 대화로 표시; 모호한 입력은 안내; private 기본
+  required: true
+- id: AC2
+  given: KB 탭·새로고침·재시작·중복 메시지
+  expect: 본문과 출처 확인 및 대화 복구; 동일 key 재요청은 중복 부작용 없음; 다른 내용 key 재사용 거절
+  required: true
+- id: AC3
+  given: 공개 초안/권한 변경/위조 요청
+  expect: 기존 승인·현재 ACL·CSRF·안전 렌더링 유지; 과거 응답을 권한 검증 없이 재표시하지 않음
+  required: true
+- id: AC4
+  given: 실제 브라우저 desktop/mobile
+  expect: 비서 채팅/내 KB/승인함을 사용 가능하고 저장 후 검색·KB 본문·재로딩 대화 확인; JS 오류 없음
+  required: true
 verification:
-  - id: V1
-    ac_ids: [AC1, AC2, AC3]
-    type: command
-    availability: planned
-    prerequisites: [합성 데이터·tmp_path; 외부 호출 없음]
-    cwd: .
-    argv: [.venv/bin/python, -m, pytest, -q, tests/test_chat_poc.py, tests/test_local_ui.py, tests/test_poc.py]
-    timeout_seconds: 240
-    procedure: []
-    assertions: [서버 자동 저장/검색, 중복·재시작·권한·CSRF 회귀, 기존 승인/게시 보호 통과]
-    runner: pytest
-  - id: V2
-    ac_ids: [AC4]
-    type: UI
-    availability: planned
-    prerequisites: [합성 별도 PoC 서버와 새 브라우저]
-    cwd: .
-    argv: []
-    timeout_seconds: 120
-    procedure: [채팅 메모 입력, 후속 검색, KB 본문 조회, 새로고침 및 mobile 레이아웃 확인]
-    assertions: [채팅/KB/승인함 탭 동작, JS 오류 없음·본문 안전 렌더링·대화 복구]
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 합성 데이터·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_chat_poc.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  timeout_seconds: 240
+  procedure: []
+  assertions:
+  - 서버 자동 저장/검색
+  - 중복·재시작·권한·CSRF 회귀
+  - 기존 승인/게시 보호 통과
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC4
+  type: UI
+  availability: planned
+  prerequisites:
+  - 합성 별도 PoC 서버와 새 브라우저
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - 채팅 메모 입력
+  - 후속 검색
+  - KB 본문 조회
+  - 새로고침 및 mobile 레이아웃 확인
+  assertions:
+  - 채팅/KB/승인함 탭 동작
+  - JS 오류 없음·본문 안전 렌더링·대화 복구
+  runner: manual
 evidence_dir: .agent/evidence/P1-008G
-latest_evidence_file: null
-verification_summary: {state: not_run}
-integration: {state: pending, target: main canonical control checkout, reason: null, reservation: false}
-revision: 1
+latest_evidence_file: .agent/evidence/P1-008G/chat-target-01/result.json
+verification_summary:
+  state: passed
+  spec_revision: 1
+  spec_digest: ceab2e71604a627bc8a44e3c801d676b8e3d87bebf4448b6a1a70f662462ad88
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 7a9b298b1b1e31cf051fa2704d30211c78f663f627a38020b0c9d5508fa565f8
+  evidence: .agent/evidence/P1-008G/chat-target-01/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 1
+  submission:
+    head: 6d738468f09af42bb4ba8c183797908ad81531d3
+    baseline_head: efa063ab58f54e490151e565dfd10ecacd6c6e15
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008G-chat
+    branch: task/P1-008G-chat
+    evidence: .agent/evidence/P1-008G/chat-worker-03/result.json
+    changed_files:
+      docs/POC.md: e855c3d75d1598b051a06f3787e033763b16db14c3aec5908e43b8790d2a84af
+      src/rfa_mas/application/chat.py: 0b03bb642ac8ca17aa750179dd08d8da9ea74383bf0c0b46f6adf2f32bbcbcd4
+      src/rfa_mas/poc/bootstrap.py: e790b7bc203b38aaa0ce1b76e4bd528fa556bfa80f1c48f0db0ddeddf7d54544
+      src/rfa_mas/poc/chat.py: 6bbfab35065a2f33f7c4721b3caa69ef6166ea7499a9c84764bb09c7a7e12764
+      src/rfa_mas/ui/app.py: 4796012c5dc3e527c27c136b22b76ccc9f7020f4336740cede5415b608a79928
+      src/rfa_mas/ui/static/app.css: 9be439d5beb224168f67b970d777f3ce70d8a94452563430781d59e3934d54ec
+      src/rfa_mas/ui/static/app.js: c771b39d1dd6918d9159c6a11bb6957f080b81a3dcf29fda5fad9a242e394899
+      src/rfa_mas/ui/static/index.html: a57e962c36621352338f4879bbe9752c5d09e4e9ecf21ad0de99ac4642017667
+      tests/test_chat_poc.py: ea0a4cfe7c1490e6d888c680e68844fc23517b736108aee359ff5747652ab443
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: ceab2e71604a627bc8a44e3c801d676b8e3d87bebf4448b6a1a70f662462ad88
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 7a9b298b1b1e31cf051fa2704d30211c78f663f627a38020b0c9d5508fa565f8
+      evidence: .agent/evidence/P1-008G/chat-target-01/result.json
+    head: 6d738468f09af42bb4ba8c183797908ad81531d3
+  evidence: .agent/evidence/P1-008G/chat-target-01/result.json
+revision: 16
 spec_revision: 1
-claim_generation: 0
+claim_generation: 1
 claim: null
-attempts: {count: 0, cycles: 0, no_progress_count: 0, latest_attempt: null, evidence_refs: [], approaches: []}
+attempts:
+  count: 4
+  cycles: 3
+  no_progress_count: 0
+  latest_attempt: chat-target-01
+  evidence_refs:
+  - .agent/evidence/P1-008G/chat-worker-01/result.json
+  - .agent/evidence/P1-008G/chat-worker-02/result.json
+  - .agent/evidence/P1-008G/chat-worker-03/result.json
+  approaches: []
 blocker: null
 migration:
   original_status: new_user_authorized
@@ -84,9 +218,10 @@ migration:
   prior_claim: 폼 기반 PoC 완료; 채팅 UX 미구현
   implementation_facts: 기존 비서 assist API 있으나 UI에서 미사용; 저장은 session message에 미포함
   previous_evidence: []
-  checks_this_migration: [UI/비서/세션/KB 코드 확인]
+  checks_this_migration:
+  - UI/비서/세션/KB 코드 확인
   judgment: 이전 완료 이력 유지하고 대화 UX 독립 산출물 추가
   initial_spec_revision: 1
-updated_at: '2026-09-27T04:00:00+00:00'
-concise_result: 구현 전
-next_action: chat 경계·서버 라우팅·영속 대화와 UI 구현
+updated_at: '2026-09-27T04:24:47+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 검증된 채팅 PoC를 main에 통합하고 기존 data-dir의 8780 화면 사용

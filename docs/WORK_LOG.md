@@ -971,3 +971,15 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 검증 도중 이 실행자가 만들지 않은 `bc165a1`(.gitignore), `2f0ec59`(PoC 증거), `e1d547c`(작업 상태·로그) 커밋을 발견했다. 그대로 보존했고 6c92479 대비 src/tests/pyproject/lock 변경이 없음을 확인했다. 사용자의 .gitignore 변경을 이 실행자가 임의 편집하거나 되돌리지 않았다.
 - 최종 완료 범위는 교체형 local/mock PoC와 통제된 로컬 인수다. NVIDIA API 재호출·실제 외부 게시·추가 sandbox 실행은 하지 않았다. 사용자용 8780 서버는 유지한다.
 - taskctl validate: 86개 원본 유효/view current, diff check 통과. 집계는 done66/verifying5/todo1/blocked4/deferred9/cancelled1, in_progress0이다. 마지막 읽기용 집계 스크립트에서 integration.status 대신 실제 필드 integration.state를 사용하도록 1회 수정했고 P1-008F/P0-026 모두 integrated임을 확인했다(제품 실패 아님).
+
+## P1-008G — 비서 채팅과 내 KB (2026-09-27)
+
+- 사용자 요청에 따라 기존 저장/질의 폼을 채팅 중심 화면으로 바꿨다. `70b45c8`, `bd8921a`, `6d73846`을 main에 fast-forward 통합했다. 좌측 비서 채팅/내 KB/승인함, 최근 대화·새 대화, 반응형 composer, KB 제목/본문 필터·원문·출처를 제공한다. 외부 UI framework/font/CDN 추가 없음.
+- 서버 ChatPort의 결정적 routing: 명시 메모/정보형 문장→private KB, 질문→private core LangGraph 검색, 공개 초안→public 근거. 모호한 요청은 확인 안내. 모델은 기존 mock이며 임의 대명사 해석/장기 대화 추론·일정/도구 자동 실행을 지원한다고 주장하지 않는다.
+- 새 로컬 chat/history.db에는 사용자 메시지·source/run 참조를 저장한다. current ACL을 거친 core result만 다시 표시하며 응답 본문 캐시는 없다. 동일 메시지 중복/다른 본문 충돌·중단 outcome_unknown을 처리한다. 대화와 실행 thread를 분리해서 승인 대기가 후속 질문을 막지 않도록 했다. 승인 자동 처리·검사 완화 없이 기존 manual approval/core resume/mock receipt를 재사용한다. 개인 답변도 core 초안이고 run 완료/게시 승인이 아니다.
+- 기존 폼의 대화·KB·승인 데이터를 지우거나 DB를 덮어쓰지 않았다. 이전 session run은 current-authorized view로 새 채팅에 보인다. 기존8780 서버를 정상 종료하고 같은 `.local/poc`로 새 서버를 시작했다. /ui/, chat sessions200 및 core reachable 확인. 임시18780 서버는 합성 브라우저 검증 전용이다.
+- 개발1차26pass/2fail: thread_busy와 기존 mode metadata 누락. 원인을 각각 대화/실행 분리와 명시 local/not_run metadata로 보수했다. 개발2차28pass. 정식 worker01는 추가 회귀 포함30pass+Chrome 통과. 화면에서 mock adapter provenance 조건을 수정한 worker02는 command30pass이나 browser가 이전 게시 카드를 집어 publication_exists로 실패했다(중복 차단 정상). 6d73846의 안정적인 draft ID로 정확한 승인 카드/영수증을 검증한 worker03는30pass/0fail/skip+Chrome 통과. 오류·실패 evidence를 보존했다. 동일 실패를 근거 없이 반복하거나 AC를 낮추지 않았다.
+- 실제 Chrome154: 정보형 문장 저장→개인 검색→KB 본문·출처→새로고침 대화복구→공개 초안→수동 승인→mock 영수증; HTML-like 입력의 text 렌더링,390px 모바일 가로 넘침 없음, JS 오류/외부 outbound/브라우저 영속 저장0. 간결한 개인 응답 아래 원문/근거/실제 run 상태를 보존한다. 공개 승인 본문은 축약하지 않는다.
+- 변경은 chat/PoC/UI/tests/docs에 한정한다. 공통 DTO·core graph·기존 DB migration·settings·lockfile 변경 없음. NVIDIA 호출·실제 게시·OpenShell/NemoClaw 재검증 없음. 최종75개 전체 E2E cascade를 다시 시작하지 않고 이번 UI/채팅과 기존 승인·PoC의 scoped30개로 검증했다. 소스 변경으로 이전 P0-025A/P0-026/P1-008F 증거는 stale로 보존하며 이 신규 task 증거와 구분한다.
+- 다른 세션이 생성 중인 P1-010/P1-011 파일은 수정/삭제/commit하지 않는다. 그 작성 중 참조 검증으로 heartbeat가1회 거절됐으나 이후 성공했다. 분리 worktree에서 구현했고 별도 작업의 범위·코드는 건드리지 않았다. canonical generated view는 taskctl이 갱신하며 수동 편집하지 않는다.
+- main `chat-target-01`에서도30passed/실패·skip0 및 fresh Chrome 동일 흐름 통과. P1-008G를 integrated/done으로 닫았다. 사용자8780 서버는 계속 실행하며 임시18780 서버만 종료했다. 테스트용 데이터는 삭제하지 않았다. generated view에는 다른 세션의 미추적 task가 포함되어 이번 커밋에 임의로 넣지 않고, 이번 task/실제 stale 변경/작업로그/검증 증거만 명시적으로 기록한다.
