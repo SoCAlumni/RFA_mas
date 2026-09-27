@@ -4,6 +4,7 @@ broker (HTTPS for managed MCP + REST fallback, bearer), channel entry + audit UI
 from __future__ import annotations
 
 import asyncio
+import os
 import signal
 from collections.abc import Sequence
 from pathlib import Path
@@ -97,7 +98,8 @@ def build_ask_service(ask_cfg: AskConfig, pipeline: CensorPipeline, broker: Brok
                       proxy_url: str, *, fake_agents: bool = False, token: str | None = None) -> AskService:
     learned = LearnedRules(bs.ROOT / ask_cfg.learned_rules_file)
     if fake_agents:
-        deps = AskDeps(ask_cfg, CensorPipeline(pipeline.censors, HintJudge()), KeywordHead(), FakeTasks(), learned)
+        delay = float(os.environ.get("RFA_FAKE_TASK_DELAY", "0") or 0)  # e.g. 3 → the admission-queue demo can queue
+        deps = AskDeps(ask_cfg, CensorPipeline(pipeline.censors, HintJudge()), KeywordHead(), FakeTasks(delay=delay), learned)
     else:
         head = (DirectHead(proxy_url, proxy_key, secret, timeout_seconds=ask_cfg.head.timeout_seconds,
                            fallback=KeywordHead() if ask_cfg.head.fallback == "keywords" else None)

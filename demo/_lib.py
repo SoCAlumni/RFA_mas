@@ -16,7 +16,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REPLAY_DIR = ROOT / "demo" / "replay"
+# RFA_DEMO_REPLAY_DIR: keep recordings made against a fake/alternate entry out of demo/replay (real recordings only)
+REPLAY_DIR = Path(os.environ.get("RFA_DEMO_REPLAY_DIR") or ROOT / "demo" / "replay")
 sys.path.insert(0, str(ROOT / "src"))
 
 from rfa_mas.nemoclaw.runner import SubprocessRunner  # noqa: E402
@@ -171,7 +172,8 @@ def ask_token() -> str:
     raise DemoFailure("RFA_ASK_TOKEN missing in .env.dev")
 
 
-ENTRY = "http://127.0.0.1:8799"
+# RFA_ENTRY_URL: point the ask() demos at another entry (e.g. `serve --fake-agents` on a spare port) for a dry run
+ENTRY = os.environ.get("RFA_ENTRY_URL", "http://127.0.0.1:8799")
 
 
 def nemoclaw_bin() -> str:
