@@ -16,7 +16,8 @@ from rfa_mas.nemoclaw.config import Assignments, ToolPolicy
 from rfa_mas.nemoclaw.markers import make_marker
 
 ROUTE_PROVIDER = "inference"  # NemoClaw routeProvider for the managed inference.local route
-HEAD_TOOLS = {"profile": "minimal", "allow": ["read", "sessions_spawn", "sessions_list", "session_status", "agents_list"]}
+HEAD_TOOLS = {"profile": "coding", "deny": ["group:runtime", "write", "edit", "apply_patch", "group:web", "cron",
+              "group:memory", "group:media", "skill_workshop", "browser", "bundle-mcp"]}
 WORKSPACE_ROOT = "/sandbox/.openclaw"
 
 
