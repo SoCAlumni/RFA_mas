@@ -19,3 +19,7 @@
 - 신규 테스트 13 passed.
 - 전체 1173 passed, 21 skipped(opt-in live). control 테스트 9건은 worktree 환경 한정 실패이며 base와 동일하다.
 
+## 재검증 final-local-unlock (2026-09-27T01:36Z)
+
+- 사유: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent claim runners or product edits
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

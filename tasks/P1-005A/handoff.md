@@ -104,3 +104,8 @@ P1-005B(피드백), P0-021(effect ledger)가 이 게시 기록을 재사용한�
 
 - 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-local-unlock (2026-09-27T01:39Z)
+
+- 사유: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent claim runners or product edits
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

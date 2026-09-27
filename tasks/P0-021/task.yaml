@@ -169,14 +169,14 @@ verification:
   - checkpoint와 DB 사이 원자성을 가정하지 않고 ledger로 복구; 취소·권한 회수 후 후속 호출 금지.
   runner: pytest
 evidence_dir: .agent/evidence/P0-021
-latest_evidence_file: .agent/evidence/P0-021/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P0-021/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 16
   spec_digest: 97fe99b82758eaa69ee823576c9284b5fe5d603024d497d4d4bb67e64065047a
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: 75ec054c7d68b5fe92f6c228b508db4a43d047a13b2983ecd9a7949368a07e75
-  evidence: .agent/evidence/P0-021/completion-reference-review/result.json
+  source_fingerprint: 3b965d3d5513b7eaf070c2e2b9bb1d1dfc2ae217e7d17a64b63a722676e834b9
+  evidence: .agent/evidence/P0-021/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -184,7 +184,7 @@ integration:
   reservation: false
   submission_generation: 7
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-021-int-0926180917
     branch: task/P0-021-int-0926180917
@@ -210,20 +210,20 @@ integration:
       spec_revision: 16
       spec_digest: 97fe99b82758eaa69ee823576c9284b5fe5d603024d497d4d4bb67e64065047a
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: 75ec054c7d68b5fe92f6c228b508db4a43d047a13b2983ecd9a7949368a07e75
-      evidence: .agent/evidence/P0-021/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: 3b965d3d5513b7eaf070c2e2b9bb1d1dfc2ae217e7d17a64b63a722676e834b9
+      evidence: .agent/evidence/P0-021/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P0-021/completion-reference-review/result.json
-revision: 82
+  evidence: .agent/evidence/P0-021/final-report-reference-review/result.json
+revision: 84
 spec_revision: 16
 claim_generation: 7
 claim: null
 attempts:
-  count: 16
+  count: 17
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P0-021/worker-0926180929/result.json
   - .agent/evidence/P0-021/pre-P0-022-worker-0926184006/result.json
@@ -234,6 +234,7 @@ attempts:
   - .agent/evidence/P0-021/pre-P1-007-worker-0927000848/result.json
   - .agent/evidence/P0-021/p1007-reference-review/result.json
   - .agent/evidence/P0-021/completion-reference-review/result.json
+  - .agent/evidence/P0-021/final-report-reference-review/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -564,6 +565,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T01:09:24+00:00'
+updated_at: '2026-09-27T02:05:40+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

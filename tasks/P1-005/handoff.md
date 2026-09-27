@@ -73,3 +73,8 @@
 
 - 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-local-unlock (2026-09-27T01:37Z)
+
+- 사유: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent claim runners or product edits
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

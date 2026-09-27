@@ -137,3 +137,8 @@ Worker actual: resume31 passed (wall7.421s), API/contract regression82 passed (w
 
 - 사유: Remaining Judge/bootstrap-dependent prerequisites for retention and the observed Persona relevance fix; single bounded pass
 - 소스 변경 없이 현재 통합 HEAD d7d5bbb에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-e2e-prerequisites (2026-09-27T01:10Z)
+
+- 사유: Final fixed product baseline after retained Judge/retention and relevance fixes; only P0-026 dependency closure, no new source changes during run
+- 소스 변경 없이 현재 통합 HEAD e2c2848에서 계획된 검증을 worker/target 단계로 재실행한다.

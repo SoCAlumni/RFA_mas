@@ -13,3 +13,7 @@
 
 - bootstrap/CLI local-stack 조립은 P0-025/P1-008.
 
+## 재검증 completion-final-slices (2026-09-27T02:07Z)
+
+- 사유: Final source baseline191378e; UI contract acceptance and identifier relevance changed since old evidence. No product edits.
+- 소스 변경 없이 현재 통합 HEAD 191378e에서 계획된 검증을 worker/target 단계로 재실행한다.

@@ -28,3 +28,7 @@
 - 수정 전 코드에서는 원래 3개가 실패하고 API가 -10으로 종료된다.
 - 인접 테스트 221 passed. 전체 1055 passed.
 
+## 재검증 final-e2e-after-trace (2026-09-27T01:19Z)
+
+- 사유: Resume remaining dependency checks after trace fixture correction; do not repeat completed tasks; product source fixed
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

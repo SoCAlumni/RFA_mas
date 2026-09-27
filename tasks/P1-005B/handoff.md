@@ -11,3 +11,7 @@
   - P1-004 feedback intent를 연결했다.
 - 개발 검증: test_feedback 16 passed(M01 HTTP 흐름 포함). stack 구간 254 passed.
 
+## 재검증 final-local-unlock (2026-09-27T01:40Z)
+
+- 사유: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent claim runners or product edits
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

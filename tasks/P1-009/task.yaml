@@ -11,7 +11,7 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P1
-status: todo
+status: blocked
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -29,27 +29,35 @@ scope:
     병렬 용량 부족을 숨기지 않음.
   - RFA_E2E_Test_Scenarios_10_ko.md 10개 전체 및 필수/선택 variant의 actual evidence/status를 최종 보고. API/UI, controlled/real-model/real-integration,
     기능/보안/품질/성능 gate 분리; 미실행 실연동이 있으면 전체 제품 real E2E 완료 아님.
+  - 191378e에 반영한 계약/교육/측정 문서는 완료된 산출물로 읽기 전용. 남은 공식 폼 AC4는 README와 e2e-final.md만 갱신한다. 모든 기존 AC 및 증거 요구는
+    보존한다.
   excluded:
   - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
   - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
   owned_paths:
   - README.md
-  - docs/INTEGRATION.md
-  - docs/EDUCATION_MAPPING.md
-  - docs/DEMO.md
-  - docs/evidence/llmops.md
   - docs/evidence/e2e-final.md
   read_only_paths:
   - AGENTS.md
+  - RFA_E2E_Test_Scenarios_10_ko.md
+  - docs/DEMO.md
+  - docs/EDUCATION_MAPPING.md
+  - docs/EVALUATION_CONTEXT.md
+  - docs/INTEGRATION.md
+  - docs/evidence/e2e-completion.json
+  - docs/evidence/llmops.md
+  - docs/evidence/nvidia-model.md
+  - docs/evidence/ui-smoke.json
+  - scripts/e2e_model_comparison.py
   - src/rfa_mas/contracts
   - src/rfa_mas/ports/interfaces.py
-  - docs/EVALUATION_CONTEXT.md
-  - RFA_E2E_Test_Scenarios_10_ko.md
   planned_paths:
   - docs/DEMO.md
   - docs/evidence/e2e-final.md
-  shared_resources:
-  - contract-docs
+  - docs/evidence/e2e-completion.json
+  - docs/evidence/ui-smoke.json
+  - scripts/e2e_model_comparison.py
+  shared_resources: []
 depends_on:
 - id: P0-026
   condition: integrated_done
@@ -103,6 +111,18 @@ deliverables:
   availability: planned
   description: RFA_E2E_Test_Scenarios_10_ko.md 10개 시나리오 최종 실행 보고(controlled/real-model/real-integration
     분리)
+- path: docs/evidence/e2e-completion.json
+  availability: planned
+  description: 안전한 실제 실행 요약/원본 참조; provider payload·secret·private 본문 제외, 실패 이력과 mode 분리
+- path: docs/evidence/ui-smoke.json
+  availability: planned
+  description: 안전한 실제 실행 요약/원본 참조; provider payload·secret·private 본문 제외, 실패 이력과 mode 분리
+- path: docs/evidence/nvidia-model.md
+  availability: existing
+  description: 안전한 실제 실행 요약/원본 참조; provider payload·secret·private 본문 제외, 실패 이력과 mode 분리
+- path: scripts/e2e_model_comparison.py
+  availability: planned
+  description: 안전한 실제 실행 요약/원본 참조; provider payload·secret·private 본문 제외, 실패 이력과 mode 분리
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -170,35 +190,99 @@ verification:
   - README/DEMO에 쓴 rfa demo --full 명령이 실제로 동작하고 mock/local/simulated 표시·canary 없음·재시작 보존을 만족한다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-009
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-009/completion-report-0927020356/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 8
+  spec_digest: dc922a3ac928e41b1e9ca1a606b6aefda0655310bc7af8caecba0bc36bd31af6
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: 1acab87f3031db514fd5977b9b956e42d8195380c2f4b825498c9af637f8e340
+  evidence: .agent/evidence/P1-009/completion-report-0927020356/result.json
 integration:
   state: pending
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: null
   submission: null
   result: null
   evidence: null
-revision: 6
-spec_revision: 6
-claim_generation: 0
+revision: 16
+spec_revision: 9
+claim_generation: 3
 claim: null
 attempts:
-  count: 0
+  count: 1
   cycles: 0
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
-  approaches: []
-blocker: null
+  latest_attempt: completion-report-0927020356
+  evidence_refs:
+  - .agent/evidence/P1-009/completion-report-0927020356/result.json
+  approaches:
+  - kind: block
+    at: '2026-09-27T02:04:22+00:00'
+    reason: AC4 official form redirects to Google sign-in; current submission text unavailable. Reviewed
+      report artifacts are committed; no product defect inferred.
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-009-completion
+      branch: task/P1-009-completion
+      generation: 1
+      claimed_at: '2026-09-27T02:00:26+00:00'
+      heartbeat_at: '2026-09-27T02:00:26+00:00'
+      lease_expires_at: '2026-09-27T02:15:26+00:00'
+      baseline_head: d6aaa9127cddd71f6b76e9c967dacb8f31c023cb
+      recovery_required: false
+      context_digest: bc0bff98e730f47f3b430a0a983a87837996ee5758d794b9ba4a84c2d295f3a3
+  - kind: recovery
+    generation: 2
+    baseline_head: d6aaa9127cddd71f6b76e9c967dacb8f31c023cb
+    reason: 191378e documentation/helper commits are fast-forwarded into main; no remaining source processes
+      or dirty WIP. Release broad document reservation, NOT claim AC4 passed.
+    at: '2026-09-27T02:06:20+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: pending
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: failed
+      spec_revision: 8
+      spec_digest: dc922a3ac928e41b1e9ca1a606b6aefda0655310bc7af8caecba0bc36bd31af6
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 1acab87f3031db514fd5977b9b956e42d8195380c2f4b825498c9af637f8e340
+      evidence: .agent/evidence/P1-009/completion-report-0927020356/result.json
+    latest_evidence_file: .agent/evidence/P1-009/completion-report-0927020356/result.json
+  - kind: block
+    at: '2026-09-27T02:06:47+00:00'
+    reason: 'Only AC4 remains: official form redirects to sign-in. Report commits191378e already on main;
+      no unintegrated product change.'
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-009-completion
+      branch: task/P1-009-completion
+      generation: 3
+      claimed_at: '2026-09-27T02:06:38+00:00'
+      heartbeat_at: '2026-09-27T02:06:38+00:00'
+      lease_expires_at: '2026-09-27T02:21:38+00:00'
+      baseline_head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
+      recovery_required: false
+      context_digest: 36c1c38cfcd36ab86663172816320775a76149a613801383fbf219fbf65ab027
+blocker:
+  cause: 'Only AC4 remains: official form redirects to sign-in. Report commits191378e already on main;
+    no unintegrated product change.'
+  evidence:
+  - tasks/P1-009/handoff.md
+  resolve_when: Read current official form using an authenticated normal session and compare requirements;
+    do not repeat product tests for this document-access blocker.
+  affects: []
 migration:
   original_status: todo
   source_ref: docs/archive/TASKS_2026-09-26.md — P1-009
@@ -210,7 +294,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T22:11:54+00:00'
-concise_result: 'Specification changed: Own the final E2E report file and the P1-006B evidence refresh;
-  add a command check that the documented demo runs'
+updated_at: '2026-09-27T02:06:47+00:00'
+concise_result: 'Specification changed: 모든 산출물 commit191378e가 main에 반영됨을 확인; 외부 폼 확인만 남아 완료된 문서의 광범위 예약
+  해제. AC 축소/자동 done 없음.'
 next_action: 변경된 adapter 대상 회귀 + 최종 합성 데모, 링크/교육-task-file 매핑 확인. 새 코드가 없으면 문서 검증만.

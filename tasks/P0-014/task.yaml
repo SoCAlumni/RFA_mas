@@ -221,14 +221,14 @@ verification:
   - 합성 Run의 연결 및 raw metadata reject; exporter canary는 P1-006D에서 별도 확인
   runner: pytest
 evidence_dir: .agent/evidence/P0-014
-latest_evidence_file: .agent/evidence/P0-014/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P0-014/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 4
   spec_digest: 89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: cb785c9cb6a6d3952d9e0d13fb91327013869ac8c82beefc6f921dc81eefd96e
-  evidence: .agent/evidence/P0-014/completion-reference-review/result.json
+  source_fingerprint: 525dc06119aef3bd982110a73992b16178375c63ee315bd36dd915b0a6e3d7a0
+  evidence: .agent/evidence/P0-014/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -236,14 +236,14 @@ integration:
   reservation: false
   submission_generation: 27
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-014
     branch: task/P0-014
     evidence: .agent/evidence/P0-014/freeze-reval3-worker-0927002447/result.json
     changed_files:
       docs/CONTRACT_CHANGELOG.md: 75a02ffbfb7c92ef97a730c29e7477108cf23cf60927305d79a7c9b71b38cb82
-      docs/INTEGRATION.md: ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9
+      docs/INTEGRATION.md: 0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a
       docs/contracts/extended.json: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
       fixtures/contracts/reference_cases.json: e8c4d6c45e898ac93bba629ed4b1714bab0f1663e805469ef48821df9b2861ec
       fixtures/contracts/retriever/index_manifest.json: 147363035d2dcb93562c1d66c5b4ef255c946fa8803a941857a43fb94d4564ca
@@ -266,20 +266,20 @@ integration:
       spec_revision: 4
       spec_digest: 89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: cb785c9cb6a6d3952d9e0d13fb91327013869ac8c82beefc6f921dc81eefd96e
-      evidence: .agent/evidence/P0-014/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: 525dc06119aef3bd982110a73992b16178375c63ee315bd36dd915b0a6e3d7a0
+      evidence: .agent/evidence/P0-014/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P0-014/completion-reference-review/result.json
-revision: 245
+  evidence: .agent/evidence/P0-014/final-report-reference-review/result.json
+revision: 247
 spec_revision: 4
 claim_generation: 27
 claim: null
 attempts:
-  count: 55
+  count: 56
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P0-014/contracts-01/result.json
   - .agent/evidence/P0-014/contracts-02/result.json
@@ -310,6 +310,7 @@ attempts:
   - .agent/evidence/P0-014/pre-P1-007-worker-0926234605/result.json
   - .agent/evidence/P0-014/freeze-reval3-worker-0927002447/result.json
   - .agent/evidence/P0-014/completion-reference-review/result.json
+  - .agent/evidence/P0-014/final-report-reference-review/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -1702,6 +1703,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T01:09:15+00:00'
+updated_at: '2026-09-27T02:05:18+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

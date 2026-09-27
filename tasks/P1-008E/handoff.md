@@ -22,3 +22,7 @@
 
 - E2E-08 harness가 기대하던 조기 게시 결과가 `status == failed`에서 409 approval_required로 바뀐다.
 
+## 재검증 final-local-unlock (2026-09-27T01:43Z)
+
+- 사유: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent claim runners or product edits
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

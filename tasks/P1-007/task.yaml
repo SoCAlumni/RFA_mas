@@ -116,14 +116,14 @@ verification:
   - 교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지.
   runner: manual
 evidence_dir: .agent/evidence/P1-007
-latest_evidence_file: .agent/evidence/P1-007/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P1-007/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 2
   spec_digest: c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: fbe8d32cdbbb1ee9fd6ad213387a6b3641fd562a2feb0bda118ea3cf9dc0ecdd
-  evidence: .agent/evidence/P1-007/completion-reference-review/result.json
+  source_fingerprint: ae971eaaa8c1d746b561f00631f68209a3856b98947100c79e4e8ea2c79a3701
+  evidence: .agent/evidence/P1-007/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -131,14 +131,14 @@ integration:
   reservation: false
   submission_generation: 1
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007-int-0927001544
     branch: task/P1-007-int-0927001544
     evidence: .agent/evidence/P1-007/worker-0927001601/result.json
     changed_files:
-      docs/EDUCATION_MAPPING.md: 905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554
-      docs/INTEGRATION.md: ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9
+      docs/EDUCATION_MAPPING.md: 37154abbb7882e875fe0594d840978669c7b08bb33d30bf292a46908ae7c14a4
+      docs/INTEGRATION.md: 0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a
       docs/evidence/nemoclaw.md: bb2c727fd0989e8e5d92f27aa970e27bda5fd8ed692f7df1b15c47f6d6a7b83b
   result:
     verification_summary:
@@ -146,24 +146,25 @@ integration:
       spec_revision: 2
       spec_digest: c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: fbe8d32cdbbb1ee9fd6ad213387a6b3641fd562a2feb0bda118ea3cf9dc0ecdd
-      evidence: .agent/evidence/P1-007/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: ae971eaaa8c1d746b561f00631f68209a3856b98947100c79e4e8ea2c79a3701
+      evidence: .agent/evidence/P1-007/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P1-007/completion-reference-review/result.json
-revision: 14
+  evidence: .agent/evidence/P1-007/final-report-reference-review/result.json
+revision: 16
 spec_revision: 2
 claim_generation: 1
 claim: null
 attempts:
-  count: 4
+  count: 5
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P1-007/worker-0927001601/result.json
   - .agent/evidence/P1-007/openshell-reference-review/result.json
   - .agent/evidence/P1-007/completion-reference-review/result.json
+  - .agent/evidence/P1-007/final-report-reference-review/result.json
   approaches: []
 blocker: null
 migration:
@@ -177,6 +178,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T01:09:42+00:00'
+updated_at: '2026-09-27T02:08:08+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

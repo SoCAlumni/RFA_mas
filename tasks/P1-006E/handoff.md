@@ -16,3 +16,7 @@
   - NAT middleware는 쓰지 않았다(port test double / KB planting).
   - ToolPort는 현재 graph에서 호출되지 않아 RN01은 unknown이다.
 
+## 재검증 final-unlock (2026-09-27T01:28Z)
+
+- 사유: Finish only remaining final acceptance prerequisites; known scope conflicts scheduled before claim; stable source baseline
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

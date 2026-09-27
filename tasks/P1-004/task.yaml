@@ -150,14 +150,14 @@ verification:
   - budget/timeout/cancel/부분 실패를 안전한 응답에 반영하는 공통 결과 계약.
   runner: pytest
 evidence_dir: .agent/evidence/P1-004
-latest_evidence_file: .agent/evidence/P1-004/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P1-004/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 11
   spec_digest: 6973122d042c46193d3113a86c6f7e4b27d9435ef61e1220cb91588f5220b003
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: 4703b33e04e6ed5e42a4049e549dc7f91e21a549edfa21c965009f56da83108f
-  evidence: .agent/evidence/P1-004/completion-reference-review/result.json
+  source_fingerprint: d34a35b2007276cf641b86bec7e0ea682760cb1fba1315fb7239f078cf773880
+  evidence: .agent/evidence/P1-004/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -165,7 +165,7 @@ integration:
   reservation: false
   submission_generation: 5
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-004-int-0926174448
     branch: task/P1-004-int-0926174448
@@ -186,20 +186,20 @@ integration:
       spec_revision: 11
       spec_digest: 6973122d042c46193d3113a86c6f7e4b27d9435ef61e1220cb91588f5220b003
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: 4703b33e04e6ed5e42a4049e549dc7f91e21a549edfa21c965009f56da83108f
-      evidence: .agent/evidence/P1-004/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: d34a35b2007276cf641b86bec7e0ea682760cb1fba1315fb7239f078cf773880
+      evidence: .agent/evidence/P1-004/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P1-004/completion-reference-review/result.json
-revision: 59
+  evidence: .agent/evidence/P1-004/final-report-reference-review/result.json
+revision: 61
 spec_revision: 11
 claim_generation: 5
 claim: null
 attempts:
-  count: 12
+  count: 13
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P1-004/worker-0926174459/result.json
   - .agent/evidence/P1-004/pre-P0-022-worker-0926183756/result.json
@@ -208,6 +208,7 @@ attempts:
   - .agent/evidence/P1-004/pre-P1-007-worker-0927000414/result.json
   - .agent/evidence/P1-004/p1007-reference-review/result.json
   - .agent/evidence/P1-004/completion-reference-review/result.json
+  - .agent/evidence/P1-004/final-report-reference-review/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -412,6 +413,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T01:09:36+00:00'
+updated_at: '2026-09-27T02:06:42+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

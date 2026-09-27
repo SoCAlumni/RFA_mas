@@ -9,7 +9,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -240,26 +240,26 @@ verification:
   - NAT raw 파일/오류 로그 canary 및 외부 network/tracer spy 검사; P1-006D allowlist export만 저장
   runner: pytest
 evidence_dir: .agent/evidence/P0-028
-latest_evidence_file: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
+latest_evidence_file: .agent/evidence/P0-028/final-report-reference-review/result.json
 verification_summary:
-  state: stale
+  state: passed
   spec_revision: 32
   spec_digest: 9299da545b92e2b8672c9c2c364ea719e6f31a4aaec6d4a76ff1f536c488c608
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: f1d9790a834e8b6367132a95d4541e8188e34113ab3f83e47be64b465302fc84
-  evidence: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
+  source_fingerprint: ae48d3fae12288bcd4343be089a0cb9c65e788d1eea15b776fdd9b4ebb812707
+  evidence: .agent/evidence/P0-028/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 5
+  reservation: false
+  submission_generation: 6
   submission:
-    head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
-    baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-028
     branch: task/P0-028
-    evidence: .agent/evidence/P0-028/freeze-reval3-worker-0927003258/result.json
+    evidence: .agent/evidence/P0-028/final-nat-worker-0927012713/result.json
     changed_files:
       configs/nat/rfa_eval.yml: d80f19e184606058dfd98fb64b963c04d247872d0f856da17118e67885ab0aa4
       configs/nat/rfa_eval_cases.json: 5d615f55caf3c2b81481274882d22f547dfa71ef882c3859fcfd70070d15058f
@@ -272,19 +272,20 @@ integration:
       spec_revision: 32
       spec_digest: 9299da545b92e2b8672c9c2c364ea719e6f31a4aaec6d4a76ff1f536c488c608
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: f1d9790a834e8b6367132a95d4541e8188e34113ab3f83e47be64b465302fc84
-      evidence: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
-    head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
-  evidence: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
-revision: 83
+      source_fingerprint: ae48d3fae12288bcd4343be089a0cb9c65e788d1eea15b776fdd9b4ebb812707
+      evidence: .agent/evidence/P0-028/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
+    documentation_review: true
+  evidence: .agent/evidence/P0-028/final-report-reference-review/result.json
+revision: 93
 spec_revision: 32
-claim_generation: 5
+claim_generation: 6
 claim: null
 attempts:
-  count: 11
+  count: 14
   cycles: 1
   no_progress_count: 0
-  latest_attempt: freeze-reval3-target-0927003326
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P0-028/nat-adapter-01/result.json
   - .agent/evidence/P0-028/nat-adapter-02/result.json
@@ -292,6 +293,8 @@ attempts:
   - .agent/evidence/P0-028/post-knowledge-worker-01/result.json
   - .agent/evidence/P0-028/post-team-worker-0926154410/result.json
   - .agent/evidence/P0-028/freeze-reval3-worker-0927003258/result.json
+  - .agent/evidence/P0-028/final-nat-worker-0927012713/result.json
+  - .agent/evidence/P0-028/final-report-reference-review/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -472,6 +475,51 @@ attempts:
       source_fingerprint: 06b58cacd5cedb1f45caca89efa87ae6eb5ac74b6656fe5676a7462b6c53228b
       evidence: .agent/evidence/P0-028/post-team-target-0926154459/result.json
     latest_evidence_file: .agent/evidence/P0-028/post-team-target-0926154459/result.json
+  - kind: integrated_revalidation
+    generation: 6
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    reason: Final source now fixed; verify installed NAT wrapper against current local graph without another
+      source change or real model claim
+    at: '2026-09-27T01:27:09+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 5
+      submission:
+        head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+        baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-028
+        branch: task/P0-028
+        evidence: .agent/evidence/P0-028/freeze-reval3-worker-0927003258/result.json
+        changed_files:
+          configs/nat/rfa_eval.yml: d80f19e184606058dfd98fb64b963c04d247872d0f856da17118e67885ab0aa4
+          configs/nat/rfa_eval_cases.json: 5d615f55caf3c2b81481274882d22f547dfa71ef882c3859fcfd70070d15058f
+          src/rfa_mas/adapters/nat_eval.py: 724aea91a60a9435dd13fd5590b075df11766887f1a178d37a107499a694676b
+          tests/test_nat_adapter.py: 1cc8a9b1c44f03659e57d8a518c09fc1faa70989e85ec2f61fc7f6d17c50f7a5
+          tests/test_nat_smoke.py: 69cf60d5f1d68fd5ac51292c9fcd8ea602b1f75f9f521dbefb841b18eee62d61
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 32
+          spec_digest: 9299da545b92e2b8672c9c2c364ea719e6f31a4aaec6d4a76ff1f536c488c608
+          contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+          source_fingerprint: f1d9790a834e8b6367132a95d4541e8188e34113ab3f83e47be64b465302fc84
+          evidence: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
+        head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+      evidence: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 32
+      spec_digest: 9299da545b92e2b8672c9c2c364ea719e6f31a4aaec6d4a76ff1f536c488c608
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: f1d9790a834e8b6367132a95d4541e8188e34113ab3f83e47be64b465302fc84
+      evidence: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
+    latest_evidence_file: .agent/evidence/P0-028/freeze-reval3-target-0927003326/result.json
 blocker: null
 migration:
   original_status: new
@@ -483,7 +531,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-27T00:49:12+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
-  AC'
+updated_at: '2026-09-27T02:06:01+00:00'
+concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
+next_action: Reverify if code, settings, contract, AC or global instructions change

@@ -169,14 +169,14 @@ verification:
   - 다른 사용자의 세션·run·thread 존재/본문 비노출, 새 프로세스에서 대화/진행 상태 조회.
   runner: pytest
 evidence_dir: .agent/evidence/P0-015
-latest_evidence_file: .agent/evidence/P0-015/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P0-015/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 5
   spec_digest: a09b75a3eb474eadf0ef26d146349d6e6a5a3b7a66c67132e72d898267d31558
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: e0b0c551213f7ce3c2fe71aa749ff9b612b93eb65fd1e9825438f8afbf7dc052
-  evidence: .agent/evidence/P0-015/completion-reference-review/result.json
+  source_fingerprint: 69b49d1265da9cab0f4de9d52dc899d22017fe3f7f690d7f423b23bbc1d672da
+  evidence: .agent/evidence/P0-015/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -184,14 +184,14 @@ integration:
   reservation: false
   submission_generation: 33
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-015
     branch: task/P0-015
     evidence: .agent/evidence/P0-015/freeze-reval3-worker-0927002527/result.json
     changed_files:
       docs/CONTRACT_CHANGELOG.md: 75a02ffbfb7c92ef97a730c29e7477108cf23cf60927305d79a7c9b71b38cb82
-      docs/INTEGRATION.md: ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9
+      docs/INTEGRATION.md: 0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a
       docs/contracts/extended.json: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
       scripts/contract_baseline.py: 8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85
       src/rfa_mas/adapters/local.py: e3a108373140047d7f302b7d50acb18ea9fc5884a155fcf82f4d5fddc854e19c
@@ -210,20 +210,20 @@ integration:
       spec_revision: 5
       spec_digest: a09b75a3eb474eadf0ef26d146349d6e6a5a3b7a66c67132e72d898267d31558
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: e0b0c551213f7ce3c2fe71aa749ff9b612b93eb65fd1e9825438f8afbf7dc052
-      evidence: .agent/evidence/P0-015/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: 69b49d1265da9cab0f4de9d52dc899d22017fe3f7f690d7f423b23bbc1d672da
+      evidence: .agent/evidence/P0-015/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P0-015/completion-reference-review/result.json
-revision: 296
+  evidence: .agent/evidence/P0-015/final-report-reference-review/result.json
+revision: 298
 spec_revision: 5
 claim_generation: 33
 claim: null
 attempts:
-  count: 66
+  count: 67
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P0-015/sessions-01/result.json
   - .agent/evidence/P0-015/sessions-02/result.json
@@ -261,6 +261,7 @@ attempts:
   - .agent/evidence/P0-015/pre-P1-007-worker-0926234635/result.json
   - .agent/evidence/P0-015/freeze-reval3-worker-0927002527/result.json
   - .agent/evidence/P0-015/completion-reference-review/result.json
+  - .agent/evidence/P0-015/final-report-reference-review/result.json
   approaches:
   - reason: clean 조사 상태에서 typed session API 계약 범위 승인; old claim만 fencing, 코드 삭제 없음
     at: '2026-09-26T06:52:17+00:00'
@@ -1827,6 +1828,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T01:09:18+00:00'
+updated_at: '2026-09-27T02:05:21+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

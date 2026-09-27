@@ -114,14 +114,14 @@ verification:
   - Model/Skill/OpenShell 결과와 독립된 증거 ref.
   runner: manual
 evidence_dir: .agent/evidence/P1-007A
-latest_evidence_file: .agent/evidence/P1-007A/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P1-007A/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 3
   spec_digest: 2b8c433f426bbfc716118a45f9ff262f2de1e35c0a9e6a495d1945f98e89f83a
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: 4adf262b579238ccdf4e13dc76d09944548911918f257ab0f42d3c1b8c69106f
-  evidence: .agent/evidence/P1-007A/completion-reference-review/result.json
+  source_fingerprint: 19051753350833e39dedc9820be2e78f58ead2ce253592785463046f4ad5bcf3
+  evidence: .agent/evidence/P1-007A/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -129,7 +129,7 @@ integration:
   reservation: false
   submission_generation: 1
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: 21e9bc186a01758b5eff53fa179a5771a917a656
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007A-completion
     branch: task/P1-007A-completion
@@ -137,7 +137,7 @@ integration:
     changed_files:
       deploy/nemoclaw/probes.sh: d45b0ca336a75bb3f8dcea0a0c7982de25f65a858406abc2f13bbb9e4d48d306
       deploy/nemoclaw/rfa-api-minimal.yaml: 404dd5e4a236b23c5a820f4ab3206f66df074144253d6b2acaf7a229c79325b1
-      docs/EDUCATION_MAPPING.md: 905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554
+      docs/EDUCATION_MAPPING.md: 37154abbb7882e875fe0594d840978669c7b08bb33d30bf292a46908ae7c14a4
       docs/evidence/nemoclaw-live.json: d6d25a061c906815c6a31180b700dc3aab78804e03d7d5502332b8c8b23cf874
       docs/evidence/nemoclaw.md: bb2c727fd0989e8e5d92f27aa970e27bda5fd8ed692f7df1b15c47f6d6a7b83b
       tests/integration/test_nemoclaw_live.py: c06f3809a45953d3c46da7067c688922aef32e62de3c899838288e88c02ea300
@@ -147,23 +147,24 @@ integration:
       spec_revision: 3
       spec_digest: 2b8c433f426bbfc716118a45f9ff262f2de1e35c0a9e6a495d1945f98e89f83a
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: 4adf262b579238ccdf4e13dc76d09944548911918f257ab0f42d3c1b8c69106f
-      evidence: .agent/evidence/P1-007A/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: 19051753350833e39dedc9820be2e78f58ead2ce253592785463046f4ad5bcf3
+      evidence: .agent/evidence/P1-007A/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P1-007A/completion-reference-review/result.json
-revision: 14
+  evidence: .agent/evidence/P1-007A/final-report-reference-review/result.json
+revision: 16
 spec_revision: 3
 claim_generation: 1
 claim: null
 attempts:
-  count: 3
+  count: 4
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P1-007A/worker-0927004950/result.json
   - .agent/evidence/P1-007A/completion-reference-review/result.json
+  - .agent/evidence/P1-007A/final-report-reference-review/result.json
   approaches: []
 blocker: null
 migration:
@@ -177,6 +178,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-27T01:09:45+00:00'
+updated_at: '2026-09-27T02:08:24+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

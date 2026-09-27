@@ -145,14 +145,14 @@ verification:
   - 출력·evidence에 key/Authorization 없음, Skill 출처·카탈로그 등재 기록
   runner: pytest
 evidence_dir: .agent/evidence/P1-003A
-latest_evidence_file: .agent/evidence/P1-003A/completion-reference-review/result.json
+latest_evidence_file: .agent/evidence/P1-003A/final-report-reference-review/result.json
 verification_summary:
   state: passed
   spec_revision: 2
   spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: 25a70a37dc9327b4a6b184390cd1b766560b83ed5a5973ca8d533476908fa639
-  evidence: .agent/evidence/P1-003A/completion-reference-review/result.json
+  source_fingerprint: 8109f863176bd9a842e7d0e29fa783f2ea52a125381e7228a1fda452e81b6b8a
+  evidence: .agent/evidence/P1-003A/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
@@ -160,13 +160,13 @@ integration:
   reservation: false
   submission_generation: 3
   submission:
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A-r2
     branch: task/P1-003A-r2
     evidence: .agent/evidence/P1-003A/freeze-reval3-worker-0927003032/result.json
     changed_files:
-      docs/EDUCATION_MAPPING.md: 905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554
+      docs/EDUCATION_MAPPING.md: 37154abbb7882e875fe0594d840978669c7b08bb33d30bf292a46908ae7c14a4
       docs/evidence/nvidia-skill.md: ff1900ada0c43a9ef7f6df2d2c3d360bbde07841c6d7ed19d12a808f8bd3f5a5
       tests/integration/fixtures/retriever/make_fixtures.py: 3c9fa529c7a54bcc22fa2bad673e7e40c03055cfcc0907a239a147c9211929a8
       tests/integration/fixtures/retriever/synthetic_alpha_minutes.pdf: 5323d8dd4f3bc670c13bb1ddeba72600926e5f801a2a27663bfbdc771f43d099
@@ -178,25 +178,26 @@ integration:
       spec_revision: 2
       spec_digest: 3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: 25a70a37dc9327b4a6b184390cd1b766560b83ed5a5973ca8d533476908fa639
-      evidence: .agent/evidence/P1-003A/completion-reference-review/result.json
-    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+      source_fingerprint: 8109f863176bd9a842e7d0e29fa783f2ea52a125381e7228a1fda452e81b6b8a
+      evidence: .agent/evidence/P1-003A/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
-  evidence: .agent/evidence/P1-003A/completion-reference-review/result.json
-revision: 33
+  evidence: .agent/evidence/P1-003A/final-report-reference-review/result.json
+revision: 35
 spec_revision: 2
 claim_generation: 3
 claim: null
 attempts:
-  count: 7
+  count: 8
   cycles: 1
   no_progress_count: 0
-  latest_attempt: completion-reference-review
+  latest_attempt: final-report-reference-review
   evidence_refs:
   - .agent/evidence/P1-003A/v1-live-a1/result.json
   - .agent/evidence/P1-003A/final-live-worker-0926225542/result.json
   - .agent/evidence/P1-003A/freeze-reval3-worker-0927003032/result.json
   - .agent/evidence/P1-003A/completion-reference-review/result.json
+  - .agent/evidence/P1-003A/final-report-reference-review/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -301,6 +302,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-27T01:09:33+00:00'
+updated_at: '2026-09-27T02:06:33+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
 next_action: Reverify if code, settings, contract, AC or global instructions change

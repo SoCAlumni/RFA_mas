@@ -10,7 +10,7 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -113,28 +113,28 @@ verification:
   - 0600·소유자·일반 파일·symlink 거절 보장이 유지되고 sidecar 삭제 경쟁(0 link)은 오류로 오판하지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P0-005A
-latest_evidence_file: .agent/evidence/P0-005A/target-0926213742/result.json
+latest_evidence_file: .agent/evidence/P0-005A/final-e2e-after-trace-target-0927012030/result.json
 verification_summary:
-  state: stale
+  state: passed
   spec_revision: 6
   spec_digest: b06f10419219806f736818e07ac14b1493c1cded1f47e0341ef3bec2b689f63f
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: b7122b30c3c13095ed16b2db64570a2ac25cf11eb28f1057e005cb514ad8da41
-  evidence: .agent/evidence/P0-005A/target-0926213742/result.json
+  source_fingerprint: cb412682cb374dda7db0ce9f16f2070325d97cb888a253a6233ad215e843399f
+  evidence: .agent/evidence/P0-005A/final-e2e-after-trace-target-0927012030/result.json
 integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: true
-  submission_generation: 1
+  reservation: false
+  submission_generation: 2
   submission:
-    head: 37284238d8d35a7353618a8e270bc29f2b875095
-    baseline_head: 71bf2af65d294ce1086c9231eff16f5d6ea95c3a
+    head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-005A-int-0926213656
     branch: task/P0-005A-int-0926213656
-    evidence: .agent/evidence/P0-005A/worker-0926213709/result.json
+    evidence: .agent/evidence/P0-005A/final-e2e-after-trace-worker-0927011956/result.json
     changed_files:
-      src/rfa_mas/adapters/local.py: 60bb28295460ec2056ce18cf69df3f74d6f804e9b37f1fe687af0c0996084819
+      src/rfa_mas/adapters/local.py: e3a108373140047d7f302b7d50acb18ea9fc5884a155fcf82f4d5fddc854e19c
       src/rfa_mas/reference/local_security.py: 6c23ef3c09bbf54eaf552c8f7d48bfc9fad5f5d94ee4fe1e5f4f9f0e97574ac5
       tests/test_knowledge.py: db25db6d8eec872ae89819a20e997092358c0759f996e83ce27ecc9076fa630d
       tests/test_sqlite_multiprocess.py: cfbb765124e6ee0aa4fb000d3fec22f085356b34aa17317aef0170d676206946
@@ -144,22 +144,67 @@ integration:
       spec_revision: 6
       spec_digest: b06f10419219806f736818e07ac14b1493c1cded1f47e0341ef3bec2b689f63f
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: b7122b30c3c13095ed16b2db64570a2ac25cf11eb28f1057e005cb514ad8da41
-      evidence: .agent/evidence/P0-005A/target-0926213742/result.json
-    head: 37284238d8d35a7353618a8e270bc29f2b875095
-  evidence: .agent/evidence/P0-005A/target-0926213742/result.json
-revision: 15
+      source_fingerprint: cb412682cb374dda7db0ce9f16f2070325d97cb888a253a6233ad215e843399f
+      evidence: .agent/evidence/P0-005A/final-e2e-after-trace-target-0927012030/result.json
+    head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+  evidence: .agent/evidence/P0-005A/final-e2e-after-trace-target-0927012030/result.json
+revision: 23
 spec_revision: 6
-claim_generation: 1
+claim_generation: 2
 claim: null
 attempts:
-  count: 2
+  count: 4
   cycles: 1
   no_progress_count: 0
-  latest_attempt: target-0926213742
+  latest_attempt: final-e2e-after-trace-target-0927012030
   evidence_refs:
   - .agent/evidence/P0-005A/worker-0926213709/result.json
-  approaches: []
+  - .agent/evidence/P0-005A/final-e2e-after-trace-worker-0927011956/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    reason: Resume remaining dependency checks after trace fixture correction; do not repeat completed
+      tasks; product source fixed
+    at: '2026-09-27T01:19:54+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: 37284238d8d35a7353618a8e270bc29f2b875095
+        baseline_head: 71bf2af65d294ce1086c9231eff16f5d6ea95c3a
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-005A-int-0926213656
+        branch: task/P0-005A-int-0926213656
+        evidence: .agent/evidence/P0-005A/worker-0926213709/result.json
+        changed_files:
+          src/rfa_mas/adapters/local.py: 60bb28295460ec2056ce18cf69df3f74d6f804e9b37f1fe687af0c0996084819
+          src/rfa_mas/reference/local_security.py: 6c23ef3c09bbf54eaf552c8f7d48bfc9fad5f5d94ee4fe1e5f4f9f0e97574ac5
+          tests/test_knowledge.py: db25db6d8eec872ae89819a20e997092358c0759f996e83ce27ecc9076fa630d
+          tests/test_sqlite_multiprocess.py: cfbb765124e6ee0aa4fb000d3fec22f085356b34aa17317aef0170d676206946
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 6
+          spec_digest: b06f10419219806f736818e07ac14b1493c1cded1f47e0341ef3bec2b689f63f
+          contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+          source_fingerprint: b7122b30c3c13095ed16b2db64570a2ac25cf11eb28f1057e005cb514ad8da41
+          evidence: .agent/evidence/P0-005A/target-0926213742/result.json
+        head: 37284238d8d35a7353618a8e270bc29f2b875095
+      evidence: .agent/evidence/P0-005A/target-0926213742/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 6
+      spec_digest: b06f10419219806f736818e07ac14b1493c1cded1f47e0341ef3bec2b689f63f
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: b7122b30c3c13095ed16b2db64570a2ac25cf11eb28f1057e005cb514ad8da41
+      evidence: .agent/evidence/P0-005A/target-0926213742/result.json
+    latest_evidence_file: .agent/evidence/P0-005A/target-0926213742/result.json
 blocker: null
 migration:
   original_status: new_coordinator_fix
@@ -171,7 +216,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:56:54+00:00'
+updated_at: '2026-09-27T01:21:03+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -129,26 +129,26 @@ verification:
   - 의도적으로 잘못된 ledger를 주면 verifier가 실패
   runner: pytest
 evidence_dir: .agent/evidence/P1-006E
-latest_evidence_file: .agent/evidence/P1-006E/target-0926175016/result.json
+latest_evidence_file: .agent/evidence/P1-006E/final-report-reference-review/result.json
 verification_summary:
-  state: stale
-  spec_revision: 17
-  spec_digest: c0475e8871cb31437d7d0ca1733c449f258fffe87b8aadf6dd54b70ce866cc6b
-  contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
-  source_fingerprint: 4221e3df5b33680babe55cba6841cd09a16d84d988f0f3d7d6d6d170775d7641
-  evidence: .agent/evidence/P1-006E/target-0926175016/result.json
+  state: passed
+  spec_revision: 25
+  spec_digest: 11724fc50e7b12845eb5b3f671b093589fa0082adece522c654bd609900da411
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: a141331c72dd73c3c3ca17e9ebe722171e042260bc99115aff1d25e83a28a551
+  evidence: .agent/evidence/P1-006E/final-report-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 1
+  reservation: false
+  submission_generation: 2
   submission:
-    head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
-    baseline_head: 6f01052da6045bae34c09c7fada871bb5b08d7a7
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006E-int-0926174953
     branch: task/P1-006E-int-0926174953
-    evidence: .agent/evidence/P1-006E/worker-0926175004/result.json
+    evidence: .agent/evidence/P1-006E/final-unlock-worker-0927012812/result.json
     changed_files:
       fixtures/eval/redteam_v1.jsonl: 561e2ee737d71d6f84efce1355746dea8dfedcba5decf1d7d5c8a6eed1d91a20
       tests/helpers/redteam.py: 5e851fbef5465af10d7defc09091e82709b3c05f88c759b5864315b0a6d0b8b3
@@ -156,25 +156,71 @@ integration:
   result:
     verification_summary:
       state: passed
+      spec_revision: 25
+      spec_digest: 11724fc50e7b12845eb5b3f671b093589fa0082adece522c654bd609900da411
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: a141331c72dd73c3c3ca17e9ebe722171e042260bc99115aff1d25e83a28a551
+      evidence: .agent/evidence/P1-006E/final-report-reference-review/result.json
+    head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
+    documentation_review: true
+  evidence: .agent/evidence/P1-006E/final-report-reference-review/result.json
+revision: 44
+spec_revision: 25
+claim_generation: 2
+claim: null
+attempts:
+  count: 5
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: final-report-reference-review
+  evidence_refs:
+  - .agent/evidence/P1-006E/worker-0926175004/result.json
+  - .agent/evidence/P1-006E/final-unlock-worker-0927012812/result.json
+  - .agent/evidence/P1-006E/final-report-reference-review/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    reason: Finish only remaining final acceptance prerequisites; known scope conflicts scheduled before
+      claim; stable source baseline
+    at: '2026-09-27T01:28:08+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
+        baseline_head: 6f01052da6045bae34c09c7fada871bb5b08d7a7
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006E-int-0926174953
+        branch: task/P1-006E-int-0926174953
+        evidence: .agent/evidence/P1-006E/worker-0926175004/result.json
+        changed_files:
+          fixtures/eval/redteam_v1.jsonl: 561e2ee737d71d6f84efce1355746dea8dfedcba5decf1d7d5c8a6eed1d91a20
+          tests/helpers/redteam.py: 5e851fbef5465af10d7defc09091e82709b3c05f88c759b5864315b0a6d0b8b3
+          tests/test_redteam_regression.py: 4c43c7b7b7a1a4d5a46fe06c3a78bf2ca9b0dd9758bfb2203e1de17104864b08
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 17
+          spec_digest: c0475e8871cb31437d7d0ca1733c449f258fffe87b8aadf6dd54b70ce866cc6b
+          contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
+          source_fingerprint: 4221e3df5b33680babe55cba6841cd09a16d84d988f0f3d7d6d6d170775d7641
+          evidence: .agent/evidence/P1-006E/target-0926175016/result.json
+        head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
+      evidence: .agent/evidence/P1-006E/target-0926175016/result.json
+    verification_summary:
+      state: stale
       spec_revision: 17
       spec_digest: c0475e8871cb31437d7d0ca1733c449f258fffe87b8aadf6dd54b70ce866cc6b
       contract_digest: 934608ac3f84917d2a36c9d4369d3ea4603f5b1d5a0a7ae3110a4ca49612eef8
       source_fingerprint: 4221e3df5b33680babe55cba6841cd09a16d84d988f0f3d7d6d6d170775d7641
       evidence: .agent/evidence/P1-006E/target-0926175016/result.json
-    head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
-  evidence: .agent/evidence/P1-006E/target-0926175016/result.json
-revision: 34
-spec_revision: 25
-claim_generation: 1
-claim: null
-attempts:
-  count: 2
-  cycles: 1
-  no_progress_count: 0
-  latest_attempt: target-0926175016
-  evidence_refs:
-  - .agent/evidence/P1-006E/worker-0926175004/result.json
-  approaches: []
+    latest_evidence_file: .agent/evidence/P1-006E/target-0926175016/result.json
 blocker: null
 migration:
   original_status: new
@@ -186,8 +232,6 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-27T00:17:07+00:00'
-concise_result: 'Specification changed: Full revalidation after shared-file freeze: settings.py/INTEGRATION.md/bootstrap
-  changes by P1-002/P1-003/P1-006C; no source change in these tasks'
-next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
-  AC'
+updated_at: '2026-09-27T02:07:53+00:00'
+concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
+next_action: Reverify if code, settings, contract, AC or global instructions change

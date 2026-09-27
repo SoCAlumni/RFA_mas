@@ -19,3 +19,8 @@ Next first action: submit unchanged source and fresh canonical target capture/re
 
 - 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
 - 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-nat (2026-09-27T01:27Z)
+
+- 사유: Final source now fixed; verify installed NAT wrapper against current local graph without another source change or real model claim
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

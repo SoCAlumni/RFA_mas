@@ -10,7 +10,7 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -128,29 +128,29 @@ verification:
   - 확정 거절은 FAILED, timeout·5xx·판독 불가는 outcome_unknown으로 조회만 하고 재전송하지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-008E
-latest_evidence_file: .agent/evidence/P1-008E/target-0926215653/result.json
+latest_evidence_file: .agent/evidence/P1-008E/final-local-unlock-target-0927014416/result.json
 verification_summary:
-  state: stale
+  state: passed
   spec_revision: 6
   spec_digest: 9fb5d8937972ffa62ede2593afd734038bab64dd06dd1f306d4b2ae0b2a41a1b
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: bc5c3d9226457dcb6ee62968b47ebb515db4c5e23510e301c92ee35ca4c2f8cd
-  evidence: .agent/evidence/P1-008E/target-0926215653/result.json
+  source_fingerprint: ae518f0fe8ef9ef97f10c493a0f0c6c8cf641265eeae7771f9faa9efc696e0af
+  evidence: .agent/evidence/P1-008E/final-local-unlock-target-0927014416/result.json
 integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: true
-  submission_generation: 1
+  reservation: false
+  submission_generation: 2
   submission:
-    head: 81b1c08f404aacd5e473fc8e255e87db0fcd59cf
-    baseline_head: 37284238d8d35a7353618a8e270bc29f2b875095
+    head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008E-int-0926215606
     branch: task/P1-008E-int-0926215606
-    evidence: .agent/evidence/P1-008E/worker-0926215620/result.json
+    evidence: .agent/evidence/P1-008E/final-local-unlock-worker-0927014333/result.json
     changed_files:
       src/rfa_mas/adapters/http.py: 0262bf6af254a91ef2a0328f71b302bcc0bc3626442891e6d7ef0249ed1d4dcd
-      src/rfa_mas/adapters/local.py: 4f712938ff61d61468b2b0fdfedf4626fc5e32ab7a90b0e6c85b2a7ef1481f6e
+      src/rfa_mas/adapters/local.py: e3a108373140047d7f302b7d50acb18ea9fc5884a155fcf82f4d5fddc854e19c
       src/rfa_mas/adapters/mock.py: aab4f494933038cdc7037e04774952c4d75738e381344c0202319059c5dcbe88
       src/rfa_mas/application/drafts.py: 1bcbc935766dadf2784d6f66ead9f554e62b57bab901a3f1ff5c170b09efc8f4
       src/rfa_mas/errors.py: 702a214984a5b625eb91078402e82e9092af08222dadd454f59511d0fd0c5ba1
@@ -162,22 +162,70 @@ integration:
       spec_revision: 6
       spec_digest: 9fb5d8937972ffa62ede2593afd734038bab64dd06dd1f306d4b2ae0b2a41a1b
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-      source_fingerprint: bc5c3d9226457dcb6ee62968b47ebb515db4c5e23510e301c92ee35ca4c2f8cd
-      evidence: .agent/evidence/P1-008E/target-0926215653/result.json
-    head: 81b1c08f404aacd5e473fc8e255e87db0fcd59cf
-  evidence: .agent/evidence/P1-008E/target-0926215653/result.json
-revision: 15
+      source_fingerprint: ae518f0fe8ef9ef97f10c493a0f0c6c8cf641265eeae7771f9faa9efc696e0af
+      evidence: .agent/evidence/P1-008E/final-local-unlock-target-0927014416/result.json
+    head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+  evidence: .agent/evidence/P1-008E/final-local-unlock-target-0927014416/result.json
+revision: 23
 spec_revision: 6
-claim_generation: 1
+claim_generation: 2
 claim: null
 attempts:
-  count: 2
+  count: 4
   cycles: 1
   no_progress_count: 0
-  latest_attempt: target-0926215653
+  latest_attempt: final-local-unlock-target-0927014416
   evidence_refs:
   - .agent/evidence/P1-008E/worker-0926215620/result.json
-  approaches: []
+  - .agent/evidence/P1-008E/final-local-unlock-worker-0927014333/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    reason: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent
+      claim runners or product edits
+    at: '2026-09-27T01:43:30+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: 81b1c08f404aacd5e473fc8e255e87db0fcd59cf
+        baseline_head: 37284238d8d35a7353618a8e270bc29f2b875095
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008E-int-0926215606
+        branch: task/P1-008E-int-0926215606
+        evidence: .agent/evidence/P1-008E/worker-0926215620/result.json
+        changed_files:
+          src/rfa_mas/adapters/http.py: 0262bf6af254a91ef2a0328f71b302bcc0bc3626442891e6d7ef0249ed1d4dcd
+          src/rfa_mas/adapters/local.py: 4f712938ff61d61468b2b0fdfedf4626fc5e32ab7a90b0e6c85b2a7ef1481f6e
+          src/rfa_mas/adapters/mock.py: aab4f494933038cdc7037e04774952c4d75738e381344c0202319059c5dcbe88
+          src/rfa_mas/application/drafts.py: 1bcbc935766dadf2784d6f66ead9f554e62b57bab901a3f1ff5c170b09efc8f4
+          src/rfa_mas/errors.py: 702a214984a5b625eb91078402e82e9092af08222dadd454f59511d0fd0c5ba1
+          tests/test_consumer_safety.py: d1958f29da37e8f2597ab6b3925e9d60dd3c9af98540c70a48c41e9fed25a7f7
+          tests/test_effect_ledger.py: ad5e2bf5c53ed4d2c6470c21c7857390333cad4acec49c51098f3798c5d78c2a
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 6
+          spec_digest: 9fb5d8937972ffa62ede2593afd734038bab64dd06dd1f306d4b2ae0b2a41a1b
+          contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+          source_fingerprint: bc5c3d9226457dcb6ee62968b47ebb515db4c5e23510e301c92ee35ca4c2f8cd
+          evidence: .agent/evidence/P1-008E/target-0926215653/result.json
+        head: 81b1c08f404aacd5e473fc8e255e87db0fcd59cf
+      evidence: .agent/evidence/P1-008E/target-0926215653/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 6
+      spec_digest: 9fb5d8937972ffa62ede2593afd734038bab64dd06dd1f306d4b2ae0b2a41a1b
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: bc5c3d9226457dcb6ee62968b47ebb515db4c5e23510e301c92ee35ca4c2f8cd
+      evidence: .agent/evidence/P1-008E/target-0926215653/result.json
+    latest_evidence_file: .agent/evidence/P1-008E/target-0926215653/result.json
 blocker: null
 migration:
   original_status: new_coordinator_fix
@@ -189,7 +237,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-26T22:20:08+00:00'
+updated_at: '2026-09-27T01:44:58+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

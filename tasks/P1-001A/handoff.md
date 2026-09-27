@@ -133,3 +133,8 @@
 
 - 사유: Remaining Judge/bootstrap-dependent prerequisites for retention and the observed Persona relevance fix; single bounded pass
 - 소스 변경 없이 현재 통합 HEAD d7d5bbb에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 final-local-unlock (2026-09-27T01:29Z)
+
+- 사유: NAT reservation is closed; finish remaining source-dependent tasks once, without extra concurrent claim runners or product edits
+- 소스 변경 없이 현재 통합 HEAD 93ae0a3에서 계획된 검증을 worker/target 단계로 재실행한다.

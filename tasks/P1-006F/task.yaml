@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P1
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -138,7 +138,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006F
 latest_evidence_file: .agent/evidence/P1-006F/target-0927010645/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 10
   spec_digest: 12475789d7babd775e355e21fd47100b3cfdd3139d7de88b59de824f6c74bb61
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -148,7 +148,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 45427134a5de9aefedbadb350efda3ac52be5edf
@@ -174,7 +174,7 @@ integration:
       evidence: .agent/evidence/P1-006F/target-0927010645/result.json
     head: 45427134a5de9aefedbadb350efda3ac52be5edf
   evidence: .agent/evidence/P1-006F/target-0927010645/result.json
-revision: 19
+revision: 20
 spec_revision: 10
 claim_generation: 1
 claim: null
@@ -197,6 +197,7 @@ migration:
   - langfuse_worker live 관찰
   judgment: P1-006C AC3의 보존 적용 부분을 외부 제약과 함께 분리.
   initial_spec_revision: 1
-updated_at: '2026-09-27T01:06:57+00:00'
+updated_at: '2026-09-27T01:56:51+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: 사용자 결정 대기(Enterprise 또는 자체 삭제 job).
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

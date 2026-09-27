@@ -924,3 +924,25 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 오류 처리: P1-001E 명세 갱신이 inactive reservation 때문에 거절되어 reservation만 명시적으로 해제 후 재시도했다(코드/이력 삭제 없음). P1-006C 재검증은 manual 관찰 인자 누락으로 실행 전 정지했고 실제 기록 검토를 전달해 완료했다. 보존 WIP의 INTEGRATION/WORK_LOG 충돌은 최신 문서를 유지하고 작업 로그를 이 절로 합쳤다. 무조건 재시도 루프는 사용하지 않았다.
 - 공식 제출 폼 재확인: 웹 도구 접근 실패, 직접 공개 HTTP 조회도 401. 브라우저 surface가 제공되지 않아 로그인 UI 우회하지 않았다. 기존 사용자 제공 요건은 유지하되 이번에 최신 내용을 확인했다고 표시하지 않는다.
 - 다음: 코드 변경을 더 늘리지 않고 P0-026에 필요한 선행 증거 → 10개 controlled 시나리오 → 전달 문서/잔여 real·UI gate 정리. 미검증 actual gate를 mock 결과로 완료 처리하지 않는다.
+
+## Coordinator — 최종 인수 연결 (2026-09-27 10:25 KST)
+
+- P0-019 `93ae0a3`: 새 relevance 규칙이 차단한 unknown 대문자 질의에서 source-policy 호출을 기대하던 trace 회귀 fixture를 보수했다. 허용 근거가 있는 기존 경로와 근거 없는 새 경로를 각각 단언한다. case-insensitive canary 검사도 유지하며 worker/target 각각 38+183 passed. 제품 권한/검색 규칙을 완화하지 않았다.
+- P0-026의 README/INTEGRATION/EDUCATION 소유권 중복을 기존 P1-009로 정리했다. P0-026은 demo/fixture/harness/DEMO.md를 소유하고 제품 소스 전체를 read-only fingerprint로 검증한다. AC와 실제 gate는 그대로다. 최종 보고 문서만 갱신해 E2E 전체가 stale이 되는 순환을 줄인다.
+- revalidation 예약 충돌은 실패 테스트로 간주하지 않고 시작 전 owned scope로 직렬 배치한다. 진행 중 작업이 없어도 같은 claim을 반복하던 경로는 중단하도록 보수했다. 완료한 선행은 재실행하지 않으며 남은 final dependency만 처리한다.
+- 실제 Chrome 154 / Playwright 1.63으로 합성 로컬 UI를 확인했다: 세션 생성, 노트 저장, 공격처럼 생긴 제목의 text 렌더링, waiting_approval → 수동 mock 승인 → completed. 외부 outbound/JS 오류/브라우저 저장소 기록 없음. 첫 시도는 macOS 임시 경로 symlink의 안전 경로 검사로 503; 경로를 resolve한 두 번째 시도가 통과했다. 정책 검사를 끄지 않았다. 전체 10개 UI E2E나 실제 게시 증거는 아니다. 증거: `/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/rfa-ui-completion-proof-p534yzmp/result.json`.
+- 공식 제출 폼의 공개 브라우저 재확인도 로그인 페이지로 이동했다(2026-09-27 01:23:39 UTC, 새 임시 프로필, 입력/제출 없음). 기존 사용자 제공 제출 요건을 유지하고 최신 폼 내용 확인은 불가로 남긴다.
+- NVIDIA 실제 대표 3개 시나리오×3회 측정 진행: 처음 두 시나리오에서 HTTP 연결은 되었으나 길이 제한 실패와 30초 성능 목표 미달을 발견했다. 성공 숫자만 요약하지 않고 실패/지연/기밀 marker 검사를 분리 보존한다. 추가 비교는 최대 3개 설정 내에서 오류 근거가 있을 때만 수행한다.
+- 실제 모델 비교 종료(총 3개 설정, 설정별 E2E-02/06/08 각각 3회): Lightning/1024는 7/9 완료, Lightning/4096은 8/9 완료이며 둘 다 `model_truncated`와 30초 지연 목표 미달이 남았다. 마지막 Ultra(`nvidia/nemotron-3-ultra-550b-a55b`)/4096은 9/9 완료, API 왕복 1,077.844~4,780.827ms, 모든 시나리오 기능·보안/실제 모델/30초 성능 gate 통과. E2E-02의 핵심 사실 기준도 통과했지만 E2E-06/08 의미 품질은 not_run이다. 전 설정 private outbound marker 0. NVIDIA 외의 검색·정책/runtime은 local, 검토·게시는 mock이다.
+- 위 비교는 `.env.dev`를 편집하지 않고 명시적 test 설정 override로 수행했다. product source `93ae0a3`, pinned harness `ea76550`; raw report의 code_commit은 harness를 가리키므로 제품 버전과 분리 기록한다. 증거 디렉터리: `/tmp/rfa-completion-real-model`, `/tmp/rfa-completion-real-model-4096`, `/tmp/rfa-completion-real-model-ultra`. 성공할 때까지 반복하지 않고 세 번째 설정에서 종료했다. 기본 모델을 몰래 바꾸지 않으며 전달 문서에 검증한 Ultra 실행 선택을 안내한다.
+
+## Coordinator — 최종 인수 완료와 전달 (2026-09-27 11:00 KST 이후)
+
+- P0-026 기존 WIP `ea76550`을 `7aadfa3`으로 회수하고 CLI retention import를 보존했다. 수정 `82b6919`, `72904f5`, `d6aaa91`까지 main 통합. 제품 graph/권한/예산 제한을 바꾸지 않았다.
+- 첫 두 E2E worker cycle: 각각 demo11 pass, scenario54 pass/3 fail. 실제2회 tool 호출인데 한도3에서 초과를 기대한 fixture, 이어서 최소한도3인 Benchmark가 한도1에서 생성 전에 거절하는 정상 동작을 잘못 기대한 fixture였다. `d6aaa91`은 정상·생성 전 거절·검색을 반복하는 역할의 실행 중 초과를 분리했다. 동일 실패를 무작정 반복하지 않았고 실패 source/result를 보존했다.
+- 세 번째 worker `completion-worker-0927015257`: 11+57+6+1=75 passed, 실패/skip0. main `completion-integration-0927015649`에서도75 passed. 실제 subprocess SIGKILL/재기동·동시 SQLite reader·예약복구·n100 부하 포함. scenario/variant65개와 미실행 gate를 수동 대조하고 P0-026을 done으로 닫았다. 이후 제품 전체 E2E를 다시 실행하지 않는다.
+- P1-009 `6e520f9`/`6cd4597` 기존 문서를 회수하고 `191378e`로 현재 README/INTEGRATION/교육·실패 포함 E2E 보고·안전한 측정 JSON·Chrome 증거·모델 비교 재현 helper를 정리했다. main fast-forward 완료. 공통 계약/설정/제품 소스 변경은 없고 frozen INTEGRATION 문서만 명시적 사유로 허용했다.
+- 문서 검증: 로컬 Markdown 링크 누락0, JSON 파싱65 controlled+9 real-model report, helper --help, diff check, ruff check/format. helper lint 첫 실패 B023은 closure의 original 기본 인자 binding으로 보수 후 통과. 문서 V2 demo11 passed. helper 휴대 경로판 추가 후 live 호출을 새로 실행한 것은 아니다.
+- P1-009 AC4 공식 폼 본문은 로그인 때문에 미확인이다. 이 조건을 삭제하지 않고 blocked로 남겼다. 이미 main에 반영한 문서의 광범위 reservation만 검사 후 해제하고, 남은 README/e2e-final의 공식 요건 갱신 범위만 예약했다. AC1~3 증거·기존 모든 AC는 유지했다.
+- 보고서만 달라진 task는 OPS-007 문서 검토로 원래 실행시각/결과를 유지(`tests_reexecuted=false`)한다. 실제 제품 source/계약 차이는 이 경로로 통과시키지 않는다. UI·relevance·CLI/adapter 등 실제 영향 범위만 현재 고정 main에서 마지막 검증하며 전체 cascade는 다시 시작하지 않는다.
+- 사용자의 `.gitignore`8줄 변경은 그대로 보존하며 이번 commit에 포함하지 않는다. 원격 push·게시·배포·실제 외부 write·추가 live 삭제는 수행하지 않았다.
