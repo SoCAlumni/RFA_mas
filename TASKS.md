@@ -47,7 +47,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P0-024](tasks/P0-024/task.yaml) | 변경 이벤트·누락 실행·안전한 알림 | P0 | done / passed | execution | 1 | P0-023, P1-004B, P2-003, P1-005 |
 | [P0-025](tasks/P0-025/task.yaml) | UI polling 상태·안전한 이벤트·readiness·registry | P0 | done / passed | integration/evaluation | 0.5 | P0-015, P0-020, P0-024, P1-008 |
 | [P0-025A](tasks/P0-025A/task.yaml) | 동일 출처 세션·노트·질의·검토 기본 UI | P0 | done / passed | integration/evaluation | 2 | P0-015, P1-001A, P1-008C |
-| [P0-026](tasks/P0-026/task.yaml) | 합성 end-to-end 데모·D3 전달 패키지 | P0 | verifying / passed | integration/evaluation | 4 | P0-021, P0-024, P0-025, P1-006, P1-008, P1-001B, P1-006E, P1-005B, P0-005A, P1-008E, P1-004C, P1-001E |
+| [P0-026](tasks/P0-026/task.yaml) | 합성 end-to-end 데모·D3 전달 패키지 | P0 | done / passed | integration/evaluation | 4 | P0-021, P0-024, P0-025, P1-006, P1-008, P1-001B, P1-006E, P1-005B, P0-005A, P1-008E, P1-004C, P1-001E |
 | [P0-027](tasks/P0-027/task.yaml) | NAT/LangGraph 호환성 spike·선택 extra 고정 | P0 | done / passed | integration/evaluation | 0.5 | P0-001, P0-007 |
 | [P0-028](tasks/P0-028/task.yaml) | NAT 평가 adapter·installed smoke와 native 동등성 | P0 | done / passed | integration/evaluation | 1.5 | P0-014, P0-027, P1-006D, P0-016 |
 | [P1-001](tasks/P1-001/task.yaml) | 노트·export 입력과 revision 저장 | P0 | done / passed | knowledge | 1 | P0-014, P0-015, P0-016 |
@@ -103,7 +103,7 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 
 ## 최종 gate
 
-- local_product: P0-026=not_passed
+- local_product: P0-026=passed
 - nat_installed_fake_provider: P0-028=passed
 - real_technology: P1-002A=passed, P1-003A=passed, P1-007A=passed, P1-007B=not_passed
 - teammate_modules: P1-008A=not_passed, P1-008B=not_passed

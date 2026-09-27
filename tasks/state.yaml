@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: becfa838ad2131c1b03c3f18a8c86e1a371f3be3669f56a8422c6605d443831f
+source_digest: 4eb3a6d7d5f9632e8dfad6ef712d7d717ae118e58ed32d3431b9c4ce64290138
 source_revisions:
   OPS-000: 8
   OPS-001: 13
@@ -39,7 +39,7 @@ source_revisions:
   P0-024: 55
   P0-025: 48
   P0-025A: 33
-  P0-026: 50
+  P0-026: 53
   P0-027: 122
   P0-028: 93
   P1-001: 260
@@ -88,19 +88,19 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T03:09:21+00:00'
+generated_at: '2026-09-27T03:14:21+00:00'
 counts:
   todo: 1
   in_progress: 0
-  verifying: 6
+  verifying: 5
   blocked: 4
-  done: 65
+  done: 66
   deferred: 9
   cancelled: 1
 final_acceptance:
   local_product:
   - id: P0-026
-    passed: false
+    passed: true
   nat_installed_fake_provider:
   - id: P0-028
     passed: true
@@ -277,7 +277,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-004
   status: done
   workstream: contracts/control
@@ -356,7 +355,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-009
   status: done
   workstream: integration/evaluation
@@ -409,7 +407,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
   - reserved:P1-009
 - id: P0-013
   status: done
@@ -424,7 +421,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-014
   status: done
   workstream: contracts/control
@@ -438,7 +434,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-015
   status: done
   workstream: execution
@@ -452,7 +447,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-016
   status: done
   workstream: execution
@@ -466,7 +460,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-017
   status: done
   workstream: contracts/control
@@ -480,7 +473,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-018
   status: done
   workstream: agents
@@ -585,7 +577,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-024
   status: done
   workstream: execution
@@ -612,7 +603,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P0-025A
   status: done
   workstream: integration/evaluation
@@ -627,18 +617,18 @@ tasks:
   reasons:
   - status:done
 - id: P0-026
-  status: verifying
+  status: done
   workstream: integration/evaluation
   owner: null
   recovery_required: false
-  integration: pending
-  reserved: true
+  integration: integrated
+  reserved: false
   blocker: null
   verification: passed
   planning_ready: false
   executable: false
   reasons:
-  - status:verifying
+  - status:done
 - id: P0-027
   status: done
   workstream: integration/evaluation
@@ -916,7 +906,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P1-006A
   status: done
   workstream: integration/evaluation
@@ -943,7 +932,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P1-006C
   status: done
   workstream: integration/evaluation
@@ -996,7 +984,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P1-007
   status: done
   workstream: integration/evaluation
@@ -1010,7 +997,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P1-007A
   status: done
   workstream: integration/evaluation
@@ -1066,7 +1052,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - reserved:P0-026
 - id: P1-008A
   status: blocked
   workstream: integration/evaluation
@@ -1082,8 +1067,6 @@ tasks:
   reasons:
   - status:blocked
   - spec unresolved
-  - dependency:P0-026
-  - reserved:P0-026
 - id: P1-008B
   status: blocked
   workstream: integration/evaluation
@@ -1099,8 +1082,6 @@ tasks:
   reasons:
   - status:blocked
   - spec unresolved
-  - dependency:P0-026
-  - reserved:P0-026
 - id: P1-008C
   status: done
   workstream: integration/evaluation
@@ -1153,7 +1134,6 @@ tasks:
   executable: false
   reasons:
   - status:done
-  - dependency:P0-026
 - id: P1-009
   status: blocked
   workstream: integration/evaluation
@@ -1168,7 +1148,6 @@ tasks:
   executable: false
   reasons:
   - status:blocked
-  - dependency:P0-026
 - id: P2-001
   status: deferred
   workstream: knowledge
@@ -1278,7 +1257,6 @@ tasks:
   reasons:
   - status:deferred
   - dependency:P1-008A
-  - reserved:P0-026
 - id: P2-009
   status: deferred
   workstream: agents
