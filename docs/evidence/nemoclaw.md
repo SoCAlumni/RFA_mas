@@ -262,6 +262,30 @@ RFA_NEMOCLAW_LIVE=1 RFA_NEMOCLAW_SANDBOX=rfa-demo RFA_P1007A_ENV_FILE=/abs/.env.
 ```
 
 
+## 8B. NemoClaw 운영 채널 — 사용자 PoC 연결 (P1-008M, 2026-09-27 KST)
+
+§8A(격리 profile·mock)를 사용자 PoC(.local/poc, 실제 NVIDIA 모델, 소유자 동의 egress)로 옮겼다.
+PoC가 `--channel-bind 192.168.123.191:8010`으로 인증 게이트웨이(bearer key 파일, `GET /healthz`·
+`POST /channel/chat`만)를 열고, sandbox `rfa-demo`에는 preset `rfa-assistant`(같은 두 route), 0600
+헤더 파일, 채널 env, OpenClaw skill `rfa-assistant`를 `deploy/nemoclaw/setup.sh`로 적용했다
+(기존 `rfa-api-minimal` preset은 제거).
+
+sandbox 안 probe: healthz(키) 200 / healthz(키 없음) 401(게이트웨이) / GET /v1/sessions·POST /v1/assistant·
+DELETE /v1/knowledge/sources/x 403 `policy_denied`(OCSF DENIED FORWARD_L7) / https://example.com 차단(exit 56,
+OCSF DENIED) / http://192.168.123.191:8780/ui/ 403(OCSF DENIED "not allowed by any policy").
+`POST /channel/chat "오로라 시연 마감이 언제야?"` → 201, 비서 fallback + `nvidia-chat-completions`
+(nemotron-3.5-lightning-30b-a3b, simulated=false) 답변·인용 1건, OCSF ALLOWED(opa+l7).
+
+OpenClaw agent 턴(`deploy/nemoclaw/ask.sh rfa-demo "양자화 INT4 논문 근거 조사 상태 알려줘"`, sandbox 모델
+nemotron-3-super-120b-a12b via inference.local): agent가 skill대로 `/channel/chat`을 호출해 RFA 비서의 답을
+그대로 보고했다 — LLM 담당 추론이 기존 Research Task 팀을 선택, 팀 3/3 succeeded, Supervisor 요약 LLM
+(host 측 nemotron lightning), "실험값 simulated" 표시 유지. 같은 대화가 PoC UI 최근 대화에 나타났다.
+agent가 같은 메시지로 `/channel/chat`을 두 번 호출해 세션 2개가 생긴 것을 관찰했다(skill의 재시도 문구;
+멱등 message_id 미지정). 키·헤더 값은 어떤 로그/문서에도 기록하지 않았다.
+
+증명하지 않는 것: RFA 코어의 sandbox 격리, 역할별 identity(P1-007B/P1-008B), managed MCP, middleware.
+
+
 ## 9. not_run
 
 - NemoClaw managed MCP·Supervisor middleware·credential binding·Kubernetes 경로 (§8A 시연은 Docker/Colima driver의 REST preset 경로만 실행)

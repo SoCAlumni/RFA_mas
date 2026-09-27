@@ -173,3 +173,25 @@ env 파일에서 `NVIDIA_BASE_URL`/`NVIDIA_MODEL`/`NVIDIA_API_KEY`만 읽고(값
   "Supervisor 요약 LLM"). 실험 수치는 여전히 합성 로그 파싱이며 실측이 아니다.
 
 mock 모드에서는 위 세 단계가 없고 규칙 기반·결정적 mock 답변이 그대로 동작한다.
+## NemoClaw 운영 채널 (`--channel-bind`)
+
+```sh
+# host: PoC + 채널 게이트웨이 (같은 데이터·같은 실제 모델)
+uv run python -m rfa_mas.poc --data-dir .local/poc --port 8780 --model nvidia --env-file .env.dev \
+  --channel-bind 192.168.123.191:8010
+# sandbox: preset(dry-run→apply)·bearer 헤더 파일(0600)·채널 env·rfa-assistant skill
+deploy/nemoclaw/setup.sh rfa-demo 192.168.123.191 8010 .local/poc
+# 한 턴: sandbox 안 OpenClaw agent가 skill로 RFA 비서를 호출해 답을 보고
+deploy/nemoclaw/ask.sh rfa-demo "양자화 INT4 논문 근거 조사 상태 알려줘"
+```
+
+`--channel-bind`는 non-loopback host IP 하나에 두 번째 listener를 열고, 그 listener로 온 요청만
+`ChannelGateway`(`src/rfa_mas/poc/channel.py`)가 받는다. 게이트웨이는 `<data-dir>/channel-api.key`
+(최초 생성, 0600, 출력 안 함)의 bearer를 요구하고, `GET /healthz`와 `POST /channel/chat`만 허용한다.
+`/channel/chat {text, session_id?}`는 UI와 같은 PoC 채팅 파이프라인(LLM 의도·담당 추론, Task 팀, KB,
+상태 단계)을 실행하므로 sandbox agent의 대화가 UI "최근 대화"에 그대로 보인다. 바깥 울타리는 OpenShell
+정책(`deploy/nemoclaw/rfa-assistant.yaml`: 같은 두 route만 allow, 다른 host/port/path 거부)이다.
+
+경계: RFA 코어 자체는 sandbox 밖 host 프로세스다. sandbox agent는 설치 소유자 권한으로 이 두 route만
+쓴다(역할별 identity·OpenShell RuntimePort는 P1-007B/P1-008B). managed MCP·Supervisor middleware는
+사용하지 않는다. 사용자가 8780 UI로 쓰는 것과 NemoClaw agent로 쓰는 것은 같은 KB·Task 팀·모델이다.
