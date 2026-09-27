@@ -1,0 +1,57 @@
+{
+  "attempt_id": "final-source-freeze-target-0927022012",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "전체 비교 runner missing/not_run. mock replay는 키 없이 가능, actual 비교는 provider readiness 의존. LLMOps 공수를 core와 별도 산정.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_evaluation.py"
+        ],
+        "assertions": [
+          "24개 persona×상황의 실제 fixture identity로 실행, 권한 사칭 문장은 권한 아님",
+          "baseline/candidate 입력·환경·버전 기록; 같은 fixture/policy 조건의 실제 두 실행이 있어야 전후 비교. fake seed는 관찰 재현, real LLM은 문장 재현 대신 실행 조건·버전 기록",
+          "simulated와 actual 집계 분리, not_run은 점수 없음, security gate 실패는 release 실패."
+        ],
+        "counts": {
+          "collected": 13,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 13,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 34.24,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T02:20:52.813375+00:00",
+        "id": "V1",
+        "log_excerpt": "13 passed, 8 warnings in 33.28s",
+        "result": "passed",
+        "started_at": "2026-09-27T02:20:18.570058+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "72632e74f08e50ce80a33c6ce924b1826e3bcb75",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T02:20:52.813509+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T02:20:18.569276+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "f2152770e50fede3418a12fa68b6048f0cc84b8c91a2337f1caf7d62b26f5711",
+  "source_manifest": ".agent/evidence/P1-006B/final-source-freeze-target-0927022012/source.json",
+  "spec_digest": "f92eb56a785ac4d8ac8ed19b8da7f71ba6dace2ada0c8fb6dfaf0dc02bae1019",
+  "spec_revision": 3,
+  "task_id": "P1-006B"
+}

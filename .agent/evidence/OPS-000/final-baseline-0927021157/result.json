@@ -1,0 +1,64 @@
+{
+  "attempt_id": "final-baseline-0927021157",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "development-control/local; product AC not_run",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "동일 repository identity의 깨끗한 integration branch/HEAD가 등록된다.",
+          "필요한 기존 파일은 baseline에 포함되고 real .env/secret은 추적되지 않는다.",
+          "서로 다른 feature worktree가 하나의 canonical task 상태를 조회하며 오래된 source baseline claim은 거절된다."
+        ],
+        "id": "V1",
+        "observed": {
+          "git": "main registered initial baseline retained, current head 72632e74f08e50ce80a33c6ce924b1826e3bcb75",
+          "preservation": "Only .env.example tracked; no product source/config/lock diff. User .gitignore eight-line change preserved uncommitted; operational task state changes belong to coordinator. No stash/reset/push/credential reading. Initial clean baseline was already adopted; not re-adopted while user changes exist.",
+          "temporary_checks": {
+            "argv": [
+              ".venv/bin/python",
+              "-m",
+              "pytest",
+              "-q",
+              "tests/test_taskctl.py::test_control_root_mismatch_never_falls_back_and_other_worktree_sees_same_owner",
+              "tests/test_taskctl.py::test_new_claim_requires_current_integrated_head_not_an_old_feature_branch"
+            ],
+            "assertions": [
+              "Wrong/copied control root rejected; distinct source worktree observes shared owner; stale source baseline rejected in temporary fixture."
+            ],
+            "counts": {
+              "collected": 2,
+              "deselected": 0,
+              "errors": 0,
+              "failed": 0,
+              "passed": 2,
+              "skipped": 0,
+              "xfailed": 0
+            },
+            "cwd": ".",
+            "elapsed_seconds": 1.85,
+            "exit_code": 0,
+            "finished_at": "2026-09-27T02:12:09.001693+00:00",
+            "id": "baseline-fixtures",
+            "log_excerpt": "2 passed in 0.95s",
+            "result": "passed",
+            "started_at": "2026-09-27T02:12:07.151700+00:00",
+            "timeout_seconds": 180
+          }
+        },
+        "procedure_performed": true,
+        "result": "passed"
+      }
+    ],
+    "finished_at": "2026-09-27T02:12:09.001734+00:00",
+    "limits": "Development baseline audit only, no product/live security claim.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T02:12:07.123751+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "c3daf879753ba13998373942b5ce7e7916190ed56a5e2774b785c1730e706b05",
+  "source_manifest": ".agent/evidence/OPS-000/final-baseline-0927021157/source.json",
+  "spec_digest": "2c62cfeba479d1d24011eb2b055e610c761060d5e3d097b1d54f217a693a44bf",
+  "spec_revision": 3,
+  "task_id": "OPS-000"
+}

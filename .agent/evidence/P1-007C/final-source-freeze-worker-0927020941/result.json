@@ -1,0 +1,74 @@
+{
+  "attempt_id": "final-source-freeze-worker-0927020941",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "real OpenShell(local standalone VM driver) + stand-in role spec; teammate runtime/identity(P1-008B)·NemoClaw(P1-007A)는 별도 gate",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/integration/test_openshell_live.py::test_network_deny_requires_policy_record_and_healthy_endpoint",
+          "tests/integration/test_openshell_live.py::test_network_allow_requires_openshell_allowed_record",
+          "tests/integration/test_openshell_live.py::test_filesystem_absence_or_unproven_permission_error_is_inconclusive",
+          "tests/integration/test_openshell_live.py::test_supervisor_bus_boundary_is_measured_without_openshell"
+        ],
+        "assertions": [
+          "파일 부재·endpoint 다운·정책 기록 없는 일반 오류는 denied_by_policy가 아니라 inconclusive로 분류된다.",
+          "SupervisorBus는 worker→worker를 direct_message_denied로 거절하고 worker→Supervisor를 전달한다(OpenShell 결과와 별도 판정)."
+        ],
+        "counts": {
+          "collected": 4,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.15,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T02:09:53.446330+00:00",
+        "id": "V1",
+        "log_excerpt": "4 passed in 0.02s",
+        "result": "passed",
+        "started_at": "2026-09-27T02:09:52.298641+00:00",
+        "timeout_seconds": 300
+      },
+      {
+        "assertions": [
+          "조사 worker 역할 sandbox에서 허용 endpoint 읽기는 성공하고, 비허용 endpoint·호스트 sentinel 경로 접근은 OpenShell 정책 로그/감사 기록과 함께 거절된다. 파일 부재·endpoint 다운은 정책 거절로 집계하지 않고 inconclusive로 둔다.",
+          "승인 작업 디렉터리의 계산은 성공하고 범위 밖 쓰기/실행 시도는 실제 실행 계층에서 거절되며, 증거에 sandbox/policy 식별자·명령·결과·지연(cold 준비/warm 실행/거절)이 연결된다.",
+          "애플리케이션 SupervisorBus 결정(직접 메시지 거절, Supervisor 전달 허용)을 OpenShell 결과와 별도 판정으로 기록한다. 한쪽 결과로 다른 쪽 통제를 증명하지 않는다.",
+          "기본 테스트 실행에서는 live 경로가 명시적 not_run(skip 사유)이며 skip을 통과로 세지 않는다. 실제 실행 결과는 docs/evidence/openshell.md에 real/local-standalone으로 기록하고 teammate runtime(다영) 연동·NemoClaw 증거로 표현하지 않는다."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T02:09:53.446444+00:00",
+        "id": "V2",
+        "observed": "Re-read actual /Users/minseop/.cache/rfa-mas/openshell-e2e05/runs/0926181417/report.json: status passed,14 matrix rows; scoped local standalone label explicitly excludes teammate identity/NemoClaw. Compared with docs/evidence/openshell.md. Historical live execution retained; only offline classification/Bus tests rerun. EDUCATION_MAPPING now distinguishes subsequent independent NemoClaw evidence; no new sandbox/runtime claim.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T02:09:53.446441+00:00"
+      }
+    ],
+    "environment": {
+      "head": "72632e74f08e50ce80a33c6ce924b1826e3bcb75",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007C-int-0927004458",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T02:09:53.446453+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T02:09:52.298131+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "9a7bbc9cc0064dcd10f8dfa2eb477f94a7359fda5178e54e9b63d3222363ebce",
+  "source_manifest": ".agent/evidence/P1-007C/final-source-freeze-worker-0927020941/source.json",
+  "spec_digest": "94bc3d131bcd31ea63052b8b60effc137e73c99a7afa77203b9f31ee27637475",
+  "spec_revision": 12,
+  "task_id": "P1-007C"
+}
