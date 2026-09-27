@@ -204,15 +204,17 @@ def onboard_env(routing: Routing, host_secrets: HostSecrets, ca_bundle: Path | N
     return env
 
 
-def onboard(sandbox: str, manifest: Path, env: dict[str, str], runner: Runner, nemoclaw_bin: str) -> None:
-    log(f"onboard {sandbox}: nemoclaw onboard --name {sandbox} --agents {manifest.name} "
-        "--non-interactive (provider=custom → egress-proxy, tier=restricted)")
+def onboard(sandbox: str, manifest: Path, env: dict[str, str], runner: Runner, nemoclaw_bin: str,
+            *, recreate: bool = False) -> None:
+    log(f"onboard {sandbox}: nemoclaw onboard{' --recreate-sandbox' if recreate else ''} --name {sandbox} "
+        f"--agents {manifest.name} --tool-disclosure direct --non-interactive (provider=custom → egress-proxy, tier=restricted)")
     started = time.monotonic()
-    result = runner.run(
-        [nemoclaw_bin, "onboard", "--fresh", "--name", sandbox, "--agents", str(manifest), "--non-interactive",
-         "--yes-i-accept-third-party-software"],  # --fresh: ignore a stale session left by another sandbox
-        timeout=2400, env=env,
-    )
+    argv = [nemoclaw_bin, "onboard", "--fresh", "--name", sandbox, "--agents", str(manifest),
+            "--tool-disclosure", "direct",  # progressive tool_search conflicts with per-agent allowlists
+            "--non-interactive", "--yes-i-accept-third-party-software"]
+    if recreate:
+        argv.insert(2, "--recreate-sandbox")  # re-bake manifest tools/models/subagents (destroy + create)
+    result = runner.run(argv, timeout=2400, env=env)  # --fresh: ignore a stale session left by another sandbox
     took = round(time.monotonic() - started)
     if not result.ok:
         tail = (result.stderr or result.stdout).strip().splitlines()[-12:]
@@ -306,6 +308,7 @@ def seed_sandbox(
 class BootstrapOptions:
     retire: tuple[str, ...] = LEGACY_SANDBOXES
     only: tuple[str, ...] = ()
+    recreate: tuple[str, ...] = ()  # existing sandboxes to re-bake with --recreate-sandbox
     skip_mcp: bool = False
     mcp_fallback: bool = False
     dry_run: bool = False
@@ -362,7 +365,13 @@ def bootstrap(options: BootstrapOptions, runner: Runner | None = None) -> dict:
         if sandbox not in active and sandbox not in options.only and sandbox not in live:
             log(f"onboard {sandbox}: opt-in sandbox with no agents placed, skipping (use --sandbox {sandbox} to force)")
             continue
-        if sandbox in live:
+        if sandbox in live and sandbox in options.recreate:
+            if options.dry_run:
+                log(f"dry-run: would recreate {sandbox}")
+                continue
+            onboard(sandbox, manifests[sandbox], env, runner, nb, recreate=True)
+            report["steps"].append(f"recreated:{sandbox}")
+        elif sandbox in live:
             log(f"onboard {sandbox}: exists, skipping")
         elif options.dry_run:
             log(f"dry-run: would onboard {sandbox}")

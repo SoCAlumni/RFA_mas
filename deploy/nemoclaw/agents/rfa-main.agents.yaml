@@ -9,6 +9,10 @@ main:
     allow:
     - read
     - sessions_spawn
+    - sessions_list
+    - session_status
+    - agents_list
+    - bundle-mcp
   subagents:
     requireAgentId: true
     allowAgents:
@@ -21,6 +25,7 @@ agents:
   description: 벤치마크 수치를 사내 API 에서 조회해 로컬 모델로만 답하는 담당.
   model: inference/rfa-internal
   tools:
+    profile: minimal
     allow:
     - read
     - exec
@@ -39,6 +44,7 @@ agents:
   description: 사내 지식 API 에서 근거를 찾아 요약하는 조사 담당.
   model: inference/rfa-external
   tools:
+    profile: minimal
     allow:
     - read
     - exec
@@ -48,6 +54,7 @@ agents:
   description: '전달받은 텍스트만 요약한다. 네트워크 도구 없음. (격리 예: sandbox 를 rfa-tasks-none 으로 지정)'
   model: inference/rfa-external
   tools:
+    profile: minimal
     allow:
     - read
   subagents:

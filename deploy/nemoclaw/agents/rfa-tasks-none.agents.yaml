@@ -9,5 +9,8 @@ main:
     allow:
     - read
     - sessions_spawn
+    - sessions_list
+    - session_status
+    - agents_list
   subagents:
     requireAgentId: true

@@ -174,7 +174,7 @@ def cmd_bootstrap(args) -> int:
     options = bs.BootstrapOptions(
         retire=tuple(args.retire) if args.retire is not None else bs.LEGACY_SANDBOXES,
         only=tuple(args.sandbox or ()), skip_mcp=args.skip_mcp, mcp_fallback=args.mcp_fallback,
-        dry_run=args.dry_run,
+        dry_run=args.dry_run, recreate=tuple(args.recreate or ()),
     )
     report = bs.bootstrap(options, _runner())
     print(bs.json_dumps(report))
@@ -285,6 +285,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--retire", nargs="*", help="legacy sandboxes to snapshot+destroy (default: rfa-demo)")
     p.add_argument("--sandbox", nargs="*"); p.add_argument("--skip-mcp", action="store_true")
     p.add_argument("--mcp-fallback", action="store_true"); p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--recreate", nargs="*", help="existing sandboxes to re-bake (nemoclaw onboard --recreate-sandbox)")
     p.set_defaults(func=cmd_bootstrap)
     p = sub.add_parser("teardown"); p.add_argument("sandbox", nargs="*"); p.set_defaults(func=cmd_teardown)
     p = sub.add_parser("switch-route"); p.add_argument("mode"); p.add_argument("--force-openshell", action="store_true")
