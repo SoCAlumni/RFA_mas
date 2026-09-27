@@ -320,8 +320,34 @@ def test_observer_parses_cli_json_and_yaml(tmp_path):
         ("nemoclaw", "rfa-main", "agents", "list", "--json"): "✓ Active gateway set to 'nemoclaw'\n"
         + json.dumps([{"id": "main", "isDefault": True}]),
         ("nemoclaw", "rfa-main", "mcp", "list", "--json"): json.dumps({"sandbox": "rfa-main", "bridges": [{"server": "broker"}]}),
+        ("nemoclaw", "rfa-main", "mcp", "status", "broker"): json.dumps(
+            {"provider": {"attached": True, "state": "configured"}, "policy": {"state": "configured"}}),
     })
     observed = Observer(runner).observe(["rfa-main", "rfa-tasks-none"])
     assert observed.exists("rfa-main") and not observed.exists("rfa-tasks-none")
     assert observed.agents["rfa-main"] == ["main"] and observed.mcp["rfa-main"] == {"broker"}
     assert "nvidia" in observed.policies["rfa-main"]["network_policies"]
+
+
+def test_unbound_mcp_registration_is_removed_and_re_added(assignments, rendered, tmp_path):
+    runner = FakeRunner({
+        ("nemoclaw", "rfa-main", "mcp", "list", "--json"): json.dumps({"bridges": [{"server": "broker"}]}),
+        ("nemoclaw", "rfa-main", "mcp", "status", "broker"): json.dumps(
+            {"provider": {"attached": False, "state": "unbound"}, "policy": {"state": "blocked"}}),
+    })
+    observer = Observer(runner)
+    assert observer.mcp_list("rfa-main") == set() and observer.stale_mcp == {"rfa-main": {"broker"}}
+    intranet = yaml.safe_load(rendered["sg-intranet-ro"].read_text())
+    observed = Observed(sandboxes={"rfa-main": {"name": "rfa-main"}},
+                        policies={"rfa-main": live_policy({"sg-intranet-ro": intranet}, excluded=set(assignments.baseline_excludes))},
+                        agents={"rfa-main": ["main", "benchmark", "censor", "research", "summarizer"]},
+                        mcp={"rfa-main": set()}, stale_mcp={"rfa-main": {"broker"}})
+    actions = plan(_inputs(assignments, observed, rendered, tmp_path,
+                           mcp_url="https://192.168.123.191:8798/mcp", mcp_credential_env="RFA_BROKER_MCP_TOKEN"))
+    assert [a.kind for a in actions] == ["mcp-remove", "mcp-add", "policy-explain"]
+    healthy = FakeRunner({
+        ("nemoclaw", "rfa-main", "mcp", "list", "--json"): json.dumps({"bridges": [{"server": "broker"}]}),
+        ("nemoclaw", "rfa-main", "mcp", "status", "broker"): json.dumps(
+            {"provider": {"attached": True, "state": "configured"}, "policy": {"state": "configured"}}),
+    })
+    assert Observer(healthy).mcp_list("rfa-main") == {"broker"}

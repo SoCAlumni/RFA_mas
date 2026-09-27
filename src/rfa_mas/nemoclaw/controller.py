@@ -29,6 +29,7 @@ class Observed:
     policies: dict[str, dict] = field(default_factory=dict)
     agents: dict[str, list[str]] = field(default_factory=dict)
     mcp: dict[str, set[str]] = field(default_factory=dict)
+    stale_mcp: dict[str, set[str]] = field(default_factory=dict)  # registered but provider unbound
 
     def exists(self, sandbox: str) -> bool:
         return sandbox in self.sandboxes
@@ -53,6 +54,7 @@ class Observer:
     def __init__(self, runner: Runner, nemoclaw_bin: str = "nemoclaw"):
         self.runner = runner
         self.bin = nemoclaw_bin
+        self.stale_mcp: dict[str, set[str]] = {}  # registered but unbound (needs remove + add)
 
     def list_sandboxes(self) -> dict[str, dict]:
         result = self.runner.run([self.bin, "list", "--json"], timeout=120, check=True)
@@ -75,6 +77,9 @@ class Observer:
         return sorted(str(e["id"]) for e in entries)
 
     def mcp_list(self, sandbox: str) -> set[str]:
+        """Registered MCP servers; an entry counts only when its OpenShell provider is attached
+        and its generated policy is configured (a recreated sandbox keeps the agent-side entry
+        but loses the provider binding, which must then be re-added)."""
         result = self.runner.run([self.bin, sandbox, "mcp", "list", "--json"], timeout=120)
         if not result.ok:
             return set()
@@ -85,14 +90,31 @@ class Observer:
         entries = data if isinstance(data, list) else (
             data.get("bridges") or data.get("servers") or data.get("mcpServers") or [])
         if isinstance(entries, dict):
-            return set(entries)
+            entries = [{"server": k} for k in entries]
         names = set()
         for entry in entries:
-            if isinstance(entry, dict):
-                name = entry.get("name") or entry.get("server") or entry.get("id")
-                if name:
-                    names.add(str(name))
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name") or entry.get("server") or entry.get("id")
+            if not name:
+                continue
+            if self.mcp_healthy(sandbox, str(name)):
+                names.add(str(name))
+            else:
+                self.stale_mcp.setdefault(sandbox, set()).add(str(name))
         return names
+
+    def mcp_healthy(self, sandbox: str, server: str) -> bool:
+        result = self.runner.run([self.bin, sandbox, "mcp", "status", server, "--json", "--no-probe"], timeout=120)
+        if not result.ok:
+            return False
+        try:
+            data = extract_json(result.stdout)
+        except ValueError:
+            return False
+        provider = data.get("provider") or {}
+        policy = data.get("policy") or {}
+        return bool(provider.get("attached")) and policy.get("state") == "configured"
 
     def observe(self, sandboxes: Iterable[str]) -> Observed:
         observed = Observed(sandboxes=self.list_sandboxes())
@@ -102,6 +124,7 @@ class Observer:
             observed.policies[sandbox] = self.policy_get(sandbox)
             observed.agents[sandbox] = self.agents_list(sandbox)
             observed.mcp[sandbox] = self.mcp_list(sandbox)
+            observed.stale_mcp[sandbox] = set(self.stale_mcp.get(sandbox, set()))
         return observed
 
 
@@ -243,6 +266,10 @@ def plan(inputs: PlanInputs) -> list[Action]:
             desired_mcp = set(a.sandbox_mcp_servers(sandbox))
             live_mcp = obs.mcp.get(sandbox, set())
             for server in sorted(desired_mcp - live_mcp):
+                if server in obs.stale_mcp.get(sandbox, set()):
+                    actions.append(Action("mcp-remove", sandbox,
+                                          [nb, sandbox, "mcp", "remove", server, "--force"],
+                                          "registration lost its OpenShell provider binding (recreated sandbox); re-adding"))
                 if inputs.mcp_url and inputs.mcp_credential_env:
                     actions.append(Action("mcp-add", sandbox,
                                           [nb, sandbox, "mcp", "add", server, "--url", inputs.mcp_url,
