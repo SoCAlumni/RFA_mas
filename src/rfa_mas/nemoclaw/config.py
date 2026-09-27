@@ -332,7 +332,8 @@ class Backend(Strict):
     credential_env: str | None = None
     env_file: str | None = None
     chat_template_kwargs: dict[str, object] | None = None  # e.g. NVIDIA enable_thinking=false
-    extras: dict[str, object] | None = None  # provider-specific top-level request fields (e.g. Gemini reasoning_effort=none)
+    extras: dict[str, object] | None = None  # provider-specific top-level request fields (e.g. Gemini reasoning_effort=low)
+    tool_call_extras: dict[str, object] | None = None  # merged into assistant tool_calls that lack them (Gemini thought_signature)
 
     @model_validator(mode="after")
     def _auth(self) -> Backend:
@@ -630,11 +631,14 @@ LLM_PROVIDERS: dict[str, dict] = {
     # thinking tokens on either model; "none" is rejected (400) by gemini-3.5-flash-lite).
     "nvidia": {"url": "https://integrate.api.nvidia.com/v1", "credential_env": "NVIDIA_API_KEY",
                "model": "nvidia/nemotron-3.5-lightning-30b-a3b", "model_env": "NVIDIA_MODEL", "models": None,
-               "chat_template_kwargs": {"enable_thinking": False}, "extras": None},
+               "chat_template_kwargs": {"enable_thinking": False}, "extras": None, "tool_call_extras": None},
     "gemini": {"url": "https://generativelanguage.googleapis.com/v1beta/openai", "credential_env": "GEMINI_API_KEY",
                "model": "gemini-3.5-flash-lite", "model_env": "GEMINI_MODEL",
                "models": ("gemini-3.5-flash-lite", "gemini-3.8-flash"),   # the two offered Gemini models (user, 2026-09-27)
-               "chat_template_kwargs": None, "extras": {"reasoning_effort": "low"}},
+               "chat_template_kwargs": None, "extras": {"reasoning_effort": "low"},
+               # Gemini 3.x rejects replayed function calls without a thought_signature; clients that do not
+               # echo extra_content (OpenClaw) get the documented validator bypass value instead.
+               "tool_call_extras": {"extra_content": {"google": {"thought_signature": "skip_thought_signature_validator"}}}},
 }
 PROVIDER_ENV = "RFA_LLM_PROVIDER"
 
@@ -678,7 +682,8 @@ def apply_llm_provider(routing: Routing, root: Path | None = None) -> Routing:
         provider, preset = llm_provider(env_file)
         routing.backends[name] = backend.model_copy(update={
             "url": preset["url"], "credential_env": preset["credential_env"],
-            "chat_template_kwargs": preset["chat_template_kwargs"], "extras": preset["extras"]})
+            "chat_template_kwargs": preset["chat_template_kwargs"], "extras": preset["extras"],
+            "tool_call_extras": preset.get("tool_call_extras")})
         for alias_name, alias in routing.aliases.items():
             if alias.backend == name:
                 routing.aliases[alias_name] = alias.model_copy(update={"model": preset["model"]})

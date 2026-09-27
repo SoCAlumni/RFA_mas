@@ -31,6 +31,7 @@ def test_gemini_from_env_file_rewrites_every_alias(tmp_path, monkeypatch):
     assert build.url.startswith("https://generativelanguage.googleapis.com/v1beta/openai")
     assert build.credential_env == "GEMINI_API_KEY" and build.chat_template_kwargs is None
     assert build.extras == {"reasoning_effort": "low"}
+    assert build.tool_call_extras == {"extra_content": {"google": {"thought_signature": "skip_thought_signature_validator"}}}
     assert {a.model for a in routing.aliases.values()} == {"gemini-3.5-flash-lite"}
 
 
@@ -74,6 +75,22 @@ def test_upstream_payload_is_identical_for_both_providers():
     assert nvidia == gemini == {"model": "m", "messages": msgs, "stream": False, "temperature": 0.2,
                                 "tools": [{"type": "function"}]}
     assert "stream_options" not in UPSTREAM_FIELDS and "reasoning" not in UPSTREAM_FIELDS
+
+
+def test_replayed_tool_calls_get_the_provider_signature_bypass():
+    msgs = [{"role": "user", "content": "x"},
+            {"role": "assistant", "content": None, "tool_calls": [
+                {"id": "c1", "type": "function", "function": {"name": "read", "arguments": "{}"}},
+                {"id": "c2", "type": "function", "function": {"name": "read", "arguments": "{}"},
+                 "extra_content": {"google": {"thought_signature": "real"}}}]},
+            {"role": "tool", "tool_call_id": "c1", "content": "r"}]
+    extras = {"extra_content": {"google": {"thought_signature": "skip_thought_signature_validator"}}}
+    out = upstream_payload({}, "m", msgs, None, None, extras)["messages"]
+    calls = out[1]["tool_calls"]
+    assert calls[0]["extra_content"]["google"]["thought_signature"] == "skip_thought_signature_validator"
+    assert calls[1]["extra_content"]["google"]["thought_signature"] == "real"  # a real signature is never replaced
+    assert out[0] == msgs[0] and out[2] == msgs[2] and "extra_content" not in msgs[1]["tool_calls"][0]  # input untouched
+    assert upstream_payload({}, "m", msgs, None, None, None)["messages"] == msgs  # nvidia: nothing added
 
 
 def test_normalize_completion_gives_one_shape():

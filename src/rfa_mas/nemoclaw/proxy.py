@@ -200,7 +200,8 @@ class EgressProxy:
         if backend.auth == "bearer":
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
         url = f"{backend.url.rstrip('/')}/chat/completions"
-        payload = upstream_payload(body, alias.model, messages, backend.chat_template_kwargs, backend.extras)
+        payload = upstream_payload(body, alias.model, messages, backend.chat_template_kwargs, backend.extras,
+                                   backend.tool_call_extras)
         timer = logs.Timer()
         try:
             response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
@@ -210,6 +211,11 @@ class EgressProxy:
             logs.external(f"upstream:{alias.backend}", type(exc).__name__, timer.ms, model=alias.model)
             return 502, {"error": {"message": f"upstream {alias.backend} unreachable: {type(exc).__name__}", "type": "upstream_error"}}
         if response.status_code != 200:
+            # the provider's error body is diagnostic text, not user content: keep a masked, truncated copy
+            logs.error("upstream_error", target=f"upstream:{alias.backend}", status=response.status_code,
+                       model=alias.model, body=response.text[:600],
+                       request_fields=sorted(payload), tools=len(payload.get("tools") or []),
+                       roles=[m.get("role") for m in messages][-6:])
             return 502, {"error": {"message": f"upstream {alias.backend} returned HTTP {response.status_code}", "type": "upstream_error"}}
         try:
             data = response.json()
@@ -315,18 +321,32 @@ UPSTREAM_FIELDS = frozenset({
 
 
 def upstream_payload(body: dict, model: str, messages: list[dict], chat_template_kwargs: dict | None = None,
-                     extras: dict | None = None) -> dict:
+                     extras: dict | None = None, tool_call_extras: dict | None = None) -> dict:
     """Provider-neutral request: allowlisted OpenAI fields, buffered (no stream), the alias model,
-    plus the backend's own extras (NVIDIA ``chat_template_kwargs``, Gemini ``reasoning_effort``)."""
+    plus the backend's own extras (NVIDIA ``chat_template_kwargs``, Gemini ``reasoning_effort``) and
+    per-tool-call extras for replayed assistant calls that lack them (Gemini ``thought_signature``)."""
     payload = {k: v for k, v in body.items() if k in UPSTREAM_FIELDS}
     payload["model"] = model
     payload["messages"] = messages
+    if tool_call_extras:
+        payload["messages"] = [_with_tool_call_extras(m, tool_call_extras) for m in messages]
     payload["stream"] = False
     if chat_template_kwargs:
         payload["chat_template_kwargs"] = dict(chat_template_kwargs)
     if extras:
         payload.update(extras)
     return payload
+
+
+def _with_tool_call_extras(message: dict, extras: dict) -> dict:
+    if message.get("role") != "assistant" or not message.get("tool_calls"):
+        return message
+    calls = []
+    for call in message["tool_calls"]:
+        if isinstance(call, dict) and not any(k in call for k in extras):
+            call = {**call, **extras}
+        calls.append(call)
+    return {**message, "tool_calls": calls}
 
 
 def normalize_completion(data: dict, model: str) -> dict:
@@ -345,8 +365,11 @@ def normalize_completion(data: dict, model: str) -> dict:
             arguments = function.get("arguments", "")
             if not isinstance(arguments, str):
                 arguments = json.dumps(arguments, ensure_ascii=False)
-            calls.append({"id": call.get("id") or f"call_{j}", "type": "function",
-                          "function": {"name": function.get("name") or "", "arguments": arguments}})
+            normalized = {"id": call.get("id") or f"call_{j}", "type": "function",
+                          "function": {"name": function.get("name") or "", "arguments": arguments}}
+            if call.get("extra_content"):  # provider signature (Gemini thought_signature): keep for clients that echo it
+                normalized["extra_content"] = call["extra_content"]
+            calls.append(normalized)
         if calls:
             out["tool_calls"] = calls
         choices.append({"index": choice.get("index", i), "message": out,
