@@ -26,6 +26,7 @@ from rfa_mas.nemoclaw.controller import (
 )
 from rfa_mas.nemoclaw.manifests import (
     manifest_agent_ids,
+    render_agents_md,
     render_identity,
     render_manifest,
     write_manifests,
@@ -178,6 +179,15 @@ def test_manifest_rendering_is_deterministic_and_schema_shaped(tmp_path, assignm
     for sandbox in first:
         assert first[sandbox].read_text() == second[sandbox].read_text()
         assert yaml.safe_load(first[sandbox].read_text()) == render_manifest(assignments, sandbox)
+
+
+def test_agents_md_carries_the_same_verifiable_marker_for_spawned_runs(assignments):
+    secret = b"y" * 64
+    text = render_agents_md(assignments, "research", secret)
+    markers = find_markers(text, secret)
+    assert len(markers) == 1 and markers[0].verified and markers[0].kind == "agent"
+    assert markers[0].fields == {"agent": "research", "sandbox": "rfa-main", "alias": "rfa-external"}
+    assert text.startswith("# AGENTS") and "`task-research`" in text and "# TEAM" not in text
 
 
 def test_identity_file_carries_a_verifiable_agent_marker(assignments):

@@ -1238,3 +1238,11 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 라이브: NPU(public) 36초 — research `curl /tasks` → `/tasks/npu_compiler_sdk/ask`, verifier 1차 revise(근거 없는 예제 링크) → 제거 후 pass, 미공개 릴리스 버전 비공개 유지, wait 29초/8턴. Inference(company) 24초 — research+benchmark 병렬 spawn, 둘 다 facade 조회, TRIV3 지연 수치·출처 인용, wait 19초/6턴. (facade 에 npu_compiler_sdk/inference_optimization 도메인은 병행 세션이 추가.)
 - 테스트: `tests/test_session_wait.py`(폴러를 실제 python 으로 실행: yield→final, timeout, missing, error; SessionWaiter argv), test_broker 3개(대기·타임아웃·제자리 답), 관련 240 passed.
 - 남은 것: infer-opt 는 여전히 identity marker 를 멤버 task 에 복사하는 경우가 있음(프록시는 user 메시지의 agent 마커를 강등 처리해 internal 로 귀속) — 라벨 변경 후 재확인 필요. `TeamService._apply`(POST /teams) 는 아직 agents apply 만 함.
+
+## SG-12 — 팀 멤버 추론 귀속: 스폰된 subagent 는 IDENTITY.md 를 싣지 않는다 → AGENTS.md 에 같은 마커 (2026-09-28 03:50~04:20)
+
+- 증상(rfa-mas-2c 관측): 최근 90분 inference 감사 106건이 agent=None. 팀 멤버(t-*) 턴은 채널 마커로만 귀속돼 프로파일은 맞지만 에이전트 통계(`/admin/agents`)에 잡히지 않음.
+- 원인: 멤버 trajectory 에 `rfa-agent v1`/`IDENTITY` 문자열 0건, `workspace-<id>/skills` 경로는 5건 → OpenClaw 는 `sessions_spawn` 자식 run 에 워크스페이스 IDENTITY.md 를 주입하지 않는다(primary run 만). AGENTS.md 는 주입된다: t-npu-research 워크스페이스에 서명 마커를 담은 AGENTS.md 를 올리고 실행하니 그 멤버 턴 4건이 `agent=t-npu-research alias=rfa-external` 로 귀속됨(다른 멤버는 여전히 None).
+- 조치: `manifests.render_agents_md`(같은 서명 마커 + 역할·스킬 안내, `# TEAM` 없음) 를 `bootstrap.seed_sandbox` 가 모든 secondary 워크스페이스에 `AGENTS.md` 로 업로드(main 은 IDENTITY 만). seed rfa-main → AGENTS.md 20개. 테스트: render_agents_md 마커 검증, seed 가 멤버 AGENTS.md 를 올리는지.
+- 결과: NPU 공개 요청(ask-sg12-npu-attr-1) 36초 — 프록시 감사 npu-sdk 6 / t-npu-research 4(rfa-external) / t-npu-verifier 2(rfa-internal), agent=None 0건. 주의: 마커가 붙으면 멤버의 role alias 가 적용된다(research=rfa-external 은 그대로 external 검열; benchmark/verifier=rfa-internal 은 external 채널에서 min-exposure 로 internal 선택 → 프록시 검열 없음 — supervisor 와 같은 기존 설계).
+- 부수 관측: supervisor 스킬에 `context: "isolated"` 를 못박기 전에는 fork 시도로 매 요청 1턴 낭비. IDENTITY 의 agent 마커 라벨을 "identity marker" 로 바꾼 뒤 infer-opt 도 `⟦rfa-channel …⟧` 줄을 멤버에게 넘김(공개 요청 실측: 멤버 턴 전부 ch=external alias=rfa-external tampered=0).

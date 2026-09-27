@@ -193,6 +193,8 @@ async def test_real_apply_runs_agents_apply_then_seeds_and_records_failures(tmp_
     apply_call = next(c for c in ok.calls if c[2:4] == ["agents", "apply"])
     assert apply_call[:2] == ["nemoclaw", "rfa-main"] and apply_call[-2:] == ["--yes", "--non-interactive"]
     assert any("IDENTITY-t-aurora_dash-sup.md" in " ".join(c) for c in ok.calls)  # supervisor identity seeded
+    # members run as spawned subagents, which load AGENTS.md but not IDENTITY.md: the marker goes there too
+    assert any(c[-1].endswith("workspace-t-aurora_dash-research/AGENTS.md") for c in ok.calls if "upload" in c)
     bad = Runner(fail_apply=True)
     service2 = make_service(tmp_path / "b", fake=False, runner=bad)
     status, payload = await service2.create(name=REQ["name"], description=REQ["description"], task_id="aurora_dash", sandbox=None)

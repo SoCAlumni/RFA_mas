@@ -31,6 +31,7 @@ from rfa_mas.nemoclaw.config import (
 )
 from rfa_mas.nemoclaw.manifests import (
     openclaw_agent_id,
+    render_agents_md,
     render_head_identity,
     render_identity,
     workspace_path,
@@ -276,7 +277,8 @@ def seed_sandbox(
     assignments: Assignments, sandbox: str, secret: bytes, runner: Runner, nemoclaw_bin: str,
     skills_dir: Path | None = None,
 ) -> list[str]:
-    """Upload IDENTITY.md (signed agent marker) and the agent skill into every agent workspace."""
+    """Upload IDENTITY.md (signed agent marker) and the agent skill into every agent workspace; secondaries
+    also get AGENTS.md (same marker) because spawned subagent runs load AGENTS.md but not IDENTITY.md."""
     skills_dir = skills_dir or DEPLOY_DIR / "skills"
     uploaded: list[str] = []
     targets: list[tuple[str, str, str | None]] = []  # (openclaw id, identity text, skill name)
@@ -299,6 +301,12 @@ def seed_sandbox(
             runner.run([nemoclaw_bin, sandbox, "upload", str(local), f"{workspace}/IDENTITY.md"],
                        timeout=120, check=True)
             uploaded.append(f"{workspace}/IDENTITY.md")
+            if openclaw_id != "main":
+                agents_md = Path(tmp) / f"AGENTS-{openclaw_id}.md"
+                agents_md.write_text(render_agents_md(assignments, openclaw_id, secret), encoding="utf-8")
+                runner.run([nemoclaw_bin, sandbox, "upload", str(agents_md), f"{workspace}/AGENTS.md"],
+                           timeout=120, check=True)
+                uploaded.append(f"{workspace}/AGENTS.md")
             if skill and (skills_dir / skill).is_dir():
                 if openclaw_id == "main":
                     runner.run([nemoclaw_bin, sandbox, "skill", "install", str(skills_dir / skill)],

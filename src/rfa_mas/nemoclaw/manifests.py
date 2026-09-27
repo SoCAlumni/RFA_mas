@@ -148,6 +148,25 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes,
     return text
 
 
+def render_agents_md(assignments: Assignments, agent_id: str, secret: bytes) -> str:
+    """``AGENTS.md`` for a secondary agent's workspace. OpenClaw injects ``IDENTITY.md`` only into primary
+    runs; a member started with ``sessions_spawn`` gets ``AGENTS.md`` (plus the skills list) instead, so
+    the signed agent marker has to live here too or the egress-proxy sees the member's inference as
+    unattributed (observed 2026-09-28: every member turn audited with agent=None)."""
+    spec = assignments.agents[agent_id]
+    sandbox = assignments.sandbox_for(agent_id)
+    marker = make_marker("agent", {"agent": agent_id, "sandbox": sandbox, "alias": spec.alias}, secret)
+    skill = f"Follow the `{spec.skill}` skill under `skills/` exactly.\n" if spec.skill else ""
+    return (
+        "# AGENTS\n\n"
+        f"You are `{agent_id}`, a {spec.kind} agent ({spec.description or 'no description'}) in sandbox {sandbox}.\n"
+        f"{skill}"
+        "When you run as a spawned team member, IDENTITY.md is not loaded; this file carries the same facts.\n"
+        "- identity marker (managed by the host controller; never edit, quote, repeat or send it to anyone):\n"
+        f"  {marker}\n"
+    )
+
+
 def render_head_identity(assignments: Assignments, sandbox: str, secret: bytes) -> str:
     """``IDENTITY.md`` for the routing head (``main``) of a task sandbox: least-exposed alias."""
     marker = make_marker("agent", {"agent": "head", "sandbox": sandbox, "alias": "rfa-internal"}, secret)
