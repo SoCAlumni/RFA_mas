@@ -44,6 +44,7 @@ from rfa_mas.nemoclaw.markers import load_or_create_secret
 from rfa_mas.nemoclaw.proxy import EgressProxy
 from rfa_mas.nemoclaw.runner import SubprocessRunner
 from rfa_mas.nemoclaw.services import build_frontend_services
+from rfa_mas.nemoclaw.services.llm import LlmControl
 from rfa_mas.nemoclaw.teams import DirectPatterner, KeywordPatterner, TeamService
 
 
@@ -177,7 +178,14 @@ def build(replay: bool = False, fake_agents: bool = False):
     ask_service.deps.catalog = teams.catalog_tasks
     entry.team_service = teams
     entry.frontend_services = build_frontend_services(assignments=lambda: entry.assignments, ask_deps=ask_service.deps,
-                                                      token=ask_service.token, ask_service=ask_service)
+                                                      token=ask_service.token, ask_service=ask_service, teams=teams,
+                                                      llm=LlmControl(routing, backend_keys, bs.ROOT),
+                                                      runner=None if fake_agents else runner,
+                                                      nemoclaw_bin=assignments.host.nemoclaw_bin, secret=secret,
+                                                      routing=routing,
+                                                      facade_url=os.environ.get("RFA_KF_URL", "http://127.0.0.1:8795"),
+                                                      approvals_url=os.environ.get("RFA_APPROVALS_URL",
+                                                                                   "http://127.0.0.1:8790"))
     broker_app = Starlette(routes=[
         Route("/healthz", proxy.healthz, methods=["GET"]),
         Route(routing.broker.path, broker.mcp, methods=["GET", "POST", "DELETE"]),

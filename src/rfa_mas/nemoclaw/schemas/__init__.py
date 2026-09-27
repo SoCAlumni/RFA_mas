@@ -4,11 +4,12 @@ the front-end; only ``routes/`` and this package change when they do."""
 
 from rfa_mas.nemoclaw.schemas.common import (
     SSE_ENVELOPE_VERSION,
-    AgentRef,
+    AgentView,
+    Color,
     Me,
     Role,
     SseEnvelope,
     TaskView,
 )
 
-__all__ = ["SSE_ENVELOPE_VERSION", "AgentRef", "Me", "Role", "SseEnvelope", "TaskView"]
+__all__ = ["SSE_ENVELOPE_VERSION", "AgentView", "Color", "Me", "Role", "SseEnvelope", "TaskView"]

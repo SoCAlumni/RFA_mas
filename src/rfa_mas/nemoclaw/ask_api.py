@@ -51,9 +51,11 @@ class AskService:
         for rid in [r for r, e in self.entries.items() if e.payload is not None and e.created < cutoff]:
             self.entries.pop(rid, None)
 
-    async def submit(self, req: AskRequest, emit=None) -> tuple[int, dict]:
+    async def submit(self, req: AskRequest, emit=None, *, timeout_seconds: float | None = None,
+                     route=None) -> tuple[int, dict]:
         """Run ``ask()`` synchronously; a repeated ``request_id`` waits for / returns the first outcome.
-        ``emit(type, data)`` receives progress events (stage …) for streaming callers."""
+        ``emit(type, data)`` receives progress events (stage …) for streaming callers; ``timeout_seconds``
+        overrides ``server.timeout_seconds``; ``route`` is a caller-made routing decision (see ``ask``)."""
         async with self._lock:
             self._evict()
             entry = self.entries.get(req.request_id)
@@ -66,7 +68,7 @@ class AskService:
             await entry.done.wait()
             return 200, entry.payload or {}
         try:
-            outcome, pending = await ask_with_timeout(req, self.deps, self.cfg.timeout_seconds, emit)
+            outcome, pending = await ask_with_timeout(req, self.deps, timeout_seconds or self.cfg.timeout_seconds, emit, route)
             if pending is not None:  # the timed-out sandbox turn keeps running; retrieve its result silently
                 pending.add_done_callback(lambda t: t.cancelled() or t.exception())
             entry.payload = outcome.response.model_dump(mode="json")

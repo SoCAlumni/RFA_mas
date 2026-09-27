@@ -1,44 +1,48 @@
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Callable
 
-from rfa_mas.nemoclaw.config import Assignments
+from rfa_mas.nemoclaw.services.presentation import Presentation
+from rfa_mas.nemoclaw.services.tasks import TaskService
 
-PALETTE = ("#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#be185d", "#4d7c0f",
-           "#b45309", "#1d4ed8", "#0f766e", "#9333ea")
-
-
-def color_for(agent_id: str) -> str:
-    digest = hashlib.sha1(agent_id.encode()).digest()[0]
-    return PALETTE[digest % len(PALETTE)]
-
-
-def display_name(agent_id: str, description: str) -> str:
-    """Korean role name from the description's first clause, else the id."""
-    head = (description or "").split(".")[0].split("(")[0].strip()
-    return head[:40] if head else agent_id
+ASSISTANT_ID = "assistant"
+TASK_TO_AGENT_STATUS = {"ready": "running", "applying": "applying", "failed": "stopped"}
 
 
 class AgentService:
-    def __init__(self, assignments: Callable[[], Assignments]):
-        self._assignments = assignments
+    """Chat partners: the assistant plus one agent per task (D-10). The censor is never listed."""
 
-    def list(self, *, include_assistant: bool = True) -> list[dict]:
-        a = self._assignments()
-        placement = a.placement()
-        out = []
-        for agent_id, spec in a.agents.items():
-            if spec.kind == "task" and not spec.delegatable:
-                continue  # the censor is never a conversation partner
-            if spec.kind == "fixed" and not include_assistant:
-                continue
-            kind = "assistant" if spec.kind == "fixed" else ("supervisor" if getattr(spec, "team", None) and
-                                                              agent_id.endswith("-sup") else "task")
-            out.append({"id": agent_id, "name": display_name(agent_id, spec.description), "color": color_for(agent_id),
-                        "sandbox": placement.get(agent_id), "description": spec.description or "", "kind": kind,
-                        "groups": list(spec.groups or []), "alias": spec.alias})
-        return out
+    def __init__(self, tasks: TaskService, presentation: Callable[[], Presentation]):
+        self.tasks, self._presentation = tasks, presentation
+
+    def assistant(self) -> dict:
+        look = self._presentation().assistant
+        return {"id": ASSISTANT_ID, "name": look.name, "kind": "assistant", "icon": look.icon,
+                "color": look.color.model_dump(), "initials": "", "description": look.description,
+                "taskId": None, "taskName": None, "desk": None, "status": "running", "itemCount": 0, "tags": [],
+                "suggestions": list(look.suggestions)}
+
+    @staticmethod
+    def from_task(task: dict) -> dict:
+        return {"id": task["agentId"], "name": task["agentName"], "kind": "task", "icon": task["icon"],
+                "color": task["color"], "initials": task["initials"], "description": task["description"],
+                "taskId": task["id"], "taskName": task["name"], "desk": task["desk"],
+                "status": TASK_TO_AGENT_STATUS.get(task["status"], "running"), "itemCount": task["itemCount"],
+                "tags": task["tags"], "suggestions": task["suggestions"]}
+
+    def list(self) -> list[dict]:
+        return [self.assistant(), *(self.from_task(t) for t in self.tasks.list())]
 
     def get(self, agent_id: str) -> dict | None:
-        return next((x for x in self.list() if x["id"] == agent_id), None)
+        if agent_id == ASSISTANT_ID:
+            return self.assistant()
+        task = self.tasks.get(agent_id)
+        return self.from_task(task) if task else None
+
+    def names(self) -> set[str]:
+        """Every name a new task or agent may not reuse (UI rule: agent names and task names, incl. the
+        assistant and the censor)."""
+        out = {self._presentation().assistant.name, "검열 에이전트"}
+        for t in self.tasks.list(include_failed=False):
+            out |= {t["name"], t["agentName"]}
+        return out

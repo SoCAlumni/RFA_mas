@@ -403,7 +403,7 @@
           "frontend"
         ],
         "summary": "List Agents",
-        "description": "대화 가능한 에이전트(assistant + task 에이전트 + 팀 supervisor). censor 는 제외.",
+        "description": "대화 상대: 비서(assistant) + task 마다 에이전트 1개(D-10). 검열 에이전트는 제외. 등급 필드는 없다(등급은 요청 단위).",
         "operationId": "listAgents",
         "responses": {
           "200": {
@@ -412,7 +412,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/AgentRef"
+                    "$ref": "#/components/schemas/AgentView"
                   },
                   "type": "array",
                   "title": "Response Listagents"
@@ -479,7 +479,7 @@
           "frontend"
         ],
         "summary": "List Tasks",
-        "description": "head 가 라우팅할 수 있는 task 목록: ask.yaml 카탈로그 + 스폰된 팀. gradeLabel 은 배치 샌드박스의 보안 등급.",
+        "description": "좌측 태스크 목록: ask.yaml 카탈로그 + 만든 태스크(팀). 생성 중(applying)도 포함, 실패는 제외.",
         "operationId": "listTasks",
         "responses": {
           "200": {
@@ -487,14 +487,2228 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/TaskView"
                   },
-                  "type": "array",
                   "title": "Response Listtasks"
                 }
               }
             }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "Create Task",
+        "description": "태스크 추가(태스크 1 = 에이전트 1). owner 전용. 검증 실패는 스트림 전에 JSON 오류(403/409/422/503), 통과하면 SSE 로 요구사항 분석 → 팀 설계(패턴 선택) → spawning 을 보낸다. 연결이 끊겨도 생성은 계속되며 `GET /tasks/{id}` 로 확인한다. 봉투 `{type, runId, seq, ts, data}`; type: `task.start` {taskId, name, agentName}, `task.stage` {stage: analyze|design|spawn, status: running|done|error, ms, detail} — analyze.detail {capabilities: [{id, label}], source}, design.detail {roles, supervisor, members: [{agentId, role}], sandbox}, spawn.detail {agentsApply, seeded}, `task.log` {stage, text}, `task.done` {task: TaskView, agent: AgentView, ms}, `task.error` {stage, code: no_role_for_requirement|invalid_team|apply_failed|task_create_failed, message, detail}",
+        "operationId": "createTask",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of SseEnvelope frames",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "schema": {
+                  "description": "Every SSE event of every stream: ``{type, runId, seq, ts, data}``. ``type`` names may change\nwith the front-end; the envelope does not.",
+                  "properties": {
+                    "type": {
+                      "description": "event name, e.g. run.started | stage | delta | guard.final | done | error",
+                      "title": "Type",
+                      "type": "string"
+                    },
+                    "runId": {
+                      "title": "Runid",
+                      "type": "string"
+                    },
+                    "seq": {
+                      "description": "0-based, strictly increasing within a run",
+                      "minimum": 0,
+                      "title": "Seq",
+                      "type": "integer"
+                    },
+                    "ts": {
+                      "description": "unix seconds",
+                      "title": "Ts",
+                      "type": "number"
+                    },
+                    "data": {
+                      "additionalProperties": true,
+                      "title": "Data",
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "runId",
+                    "seq",
+                    "ts"
+                  ],
+                  "title": "SseEnvelope",
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}": {
+      "get": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "Get Task",
+        "description": "태스크 하나. 생성 스트림이 끊겼을 때 applying → ready|failed 를 확인한다(failed 도 돌려준다).",
+        "operationId": "getTask",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations": {
+      "get": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "List Conversations",
+        "description": "대화 내역(최신순). owner 대화만 저장되므로 guest 는 항상 빈 목록(D-7).",
+        "operationId": "listConversations",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agentid"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummary"
+                  },
+                  "title": "Response Listconversations"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "Create Conversation",
+        "description": "새 대화. owner 는 저장, guest 는 id 만 받는다(persisted=false, 대화는 클라이언트가 들고 `history` 로 보냄).",
+        "operationId": "createConversation",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "Get Conversation",
+        "description": "대화 다시 열기: 사용자 메시지와 완성된 비서 턴(진행 과정 포함). owner 전용.",
+        "operationId": "getConversation",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/agents": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Agents",
+        "description": "에이전트 목록: 백엔드 에이전트 전부, 태스크 에이전트(태스크 담당·팀 supervisor·멤버) 먼저, 관리 에이전트(assistant·censor) 뒤(읽기 전용). `오늘 N회` 는 감사 기록의 LLM 호출 수. 사이드바 「에이전트 N」 = counts.total.",
+        "operationId": "adminListAgents",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAgentList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/agents/{agent_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Agent",
+        "description": "에이전트 상세: 컨텍스트(마지막 LLM 호출의 프록시 실측), 불러오는 자료, 오늘 호출 통계와 최근 7일.",
+        "operationId": "adminGetAgent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAgentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/admin/agents/{agent_id}/compact": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Compact",
+        "description": "대화 압축: 가장 최근 대화 기록만 남기고 이전 세션 기록을 지운다. owner, 태스크 에이전트만.",
+        "operationId": "adminCompactAgent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentActionResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/admin/agents/{agent_id}/clear-memory": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Clear Memory",
+        "description": "기억 비우기: 세션 기록과 워크스페이스 기억(MEMORY.md, memory/)을 지운다. owner, 태스크 에이전트만.",
+        "operationId": "adminClearAgentMemory",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentActionResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/admin/agents/{agent_id}/prompt": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Prompt",
+        "description": "시스템 프롬프트 보기: IDENTITY.md(서명 마커 가림)·스킬·운영자 추가 지시.",
+        "operationId": "adminGetAgentPrompt",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptView"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Set Prompt",
+        "description": "운영자 추가 지시 저장 → IDENTITY.md 다시 올림(다음 대화부터). owner, 태스크 에이전트만.",
+        "operationId": "adminSetAgentPrompt",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptUpdateResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/admin/agents/{agent_id}/sources/{source_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Toggle Source",
+        "description": "불러오는 자료 켜기/끄기 → IDENTITY.md 에 반영(지시 수준). 사내 지식 경로가 없는 구획이면 409.",
+        "operationId": "adminToggleAgentSource",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceToggle"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceToggleResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/admin/sandboxes": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Sandboxes",
+        "description": "샌드박스 목록(assignments.yaml 선언 + 실시간 상태). 데모 한도 limit=2.",
+        "operationId": "adminListSandboxes",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Add Sandbox",
+        "description": "샌드박스 추가: 데모 한도(2개) 때문에 항상 거절(409 sandbox_limit, 안내 문구 포함).",
+        "operationId": "adminAddSandbox",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/admin/sandboxes/{sandbox_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get Sandbox",
+        "description": "샌드박스 상세: 보안 그룹, LLM 추론(제공자·모델·컨텍스트 길이), 게이트웨이.",
+        "operationId": "adminGetSandbox",
+        "parameters": [
+          {
+            "name": "sandbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Sandbox",
+        "description": "변경 적용: provider/model 은 바로 적용(모든 샌드박스가 같은 프록시 경로를 쓴다), contextLength/maxOutputTokens 는 저장 후 다시 만들 때 적용. owner 전용.",
+        "operationId": "adminUpdateSandbox",
+        "parameters": [
+          {
+            "name": "sandbox_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sandbox Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SandboxPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxUpdateResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/inbox": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Inbox List",
+        "description": "결재함 목록: RFA_module 결재(:8790) + rfa_mas 접수 기록(작성 중 포함), 최신순. guest 는 사외 항목만(D-23). status: all | needs_approval | drafting | pending | regenerating | posting | publish_failed | posted | closed.",
+        "operationId": "inboxList",
+        "parameters": [
+          {
+            "name": "task",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InboxItem"
+                  },
+                  "title": "Response Inboxlist"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/inbox/summary": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Inbox Summary",
+        "description": "결재 필요 수(결재함 배지·「결재 필요 N」), 태스크별 결재 필요 수, 상태별 수.",
+        "operationId": "inboxSummary",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxSummary"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/inbox/{item_id}": {
+      "get": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Inbox Detail",
+        "description": "결재 상세: 원본 화면, 주입 의심 문장, 초안 카드(단계 RAG 검색·검증·LLM 초안, 재생성 이력, 게시 결과), 기록.",
+        "operationId": "inboxDetail",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/inbox/{item_id}/respond": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Inbox Respond",
+        "description": "바로 응답 = RFA_module approve(게시). owner. 화면의 초안이 저장된 초안과 다르면 409 `draft_edit_unsupported`(D-22). 게시 실패는 502, 다시 부르면 재시도.",
+        "operationId": "inboxRespond",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RespondIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/inbox/{item_id}/regenerate": {
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Inbox Regenerate",
+        "description": "재생성 요청 = RFA_module reject(사유 = 요청 내용). owner. 대응 에이전트가 다시 써서 round+1 로 올린다. 3번째 요청이면 결재가 닫힌다(응답하지 않기).",
+        "operationId": "inboxRegenerate",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InboxDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}/sources": {
+      "get": {
+        "tags": [
+          "inbox",
+          "inbox"
+        ],
+        "summary": "List Sources",
+        "description": "태스크 에이전트의 소스(문의가 들어오는 곳).",
+        "operationId": "listTaskSources",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceOut"
+                  },
+                  "title": "Response Listtasksources"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Add Source",
+        "description": "소스 연결(owner): GitHub `owner/repo` 또는 Slack `#채널`·`DM · 팀이름`, 받을 범위, 기본 등급. 이 소스로 들어온 요청은 이 등급·태스크를 쓴다(D-24).",
+        "operationId": "addTaskSource",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/tasks/{task_id}/sources/{source_id}": {
+      "delete": {
+        "tags": [
+          "inbox"
+        ],
+        "summary": "Remove Source",
+        "description": "소스 떼기(owner).",
+        "operationId": "removeTaskSource",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         }
       }
@@ -505,7 +2719,7 @@
           "frontend"
         ],
         "summary": "Chat Stream",
-        "description": "개인 채팅 SSE. 이벤트 봉투 `{type, runId, seq, ts, data}`; type: `run.started` {role, audience, profile, conversationId, requestId}, `stage` {stage: head|task:<id>|censor, ms, outcome, …}, `guard.final` guest only — {verdict: allow|redact|block, redactions: [reason], blocked: bool, reason?}, `delta` {text} — one sentence of the censored answer, `done` {requestId, task: {id,name}|null, refusal: {code,message}|null, censor: {profile,verdict,redactions}, ms}, `error` {code, message}",
+        "description": "검색하거나 물어보기 SSE. 담당자 탐색(점수 ≥ head.select_threshold 전부 병렬 위임) → 위임 → 합치기/직접 답변 → 등급 검사(owner 사내, guest 사외) → 답변. 봉투 `{type, runId, seq, ts, data}`; type: `run.start` {runId, conversationId, messageId, role, agentId, level: public|company, requestId}, `assistant.delta` {text} — the 요청 파악 preface, `agents.search` {query, candidates: [{agentId, reason, score 0..1}]}, `agents.select` {selected: [{agentId, task}], skipped: [{agentId, reason}]} — every candidate ≥ head.select_threshold, `delegate.start` {callId, agentId, task}, `delegate.log` {callId, text} — guest: fixed phrases only, `delegate.end` {callId, status: ok|none|blocked|error, summary, refs: [], durationMs}, `guard.start` {level: public(사외)|company(사내)}, `guard.end` {status: pass|redacted|blocked, note, redactions: int}, `answer.delta` {text} — one sentence of the checked answer, `run.end` {status: done|error, durationMs, messageId, error?, code?} (stop = the client closes the stream)",
         "operationId": "chatStream",
         "parameters": [
           {
@@ -584,6 +2798,68 @@
               }
             }
           },
+          "409": {
+            "description": "a run is already streaming in this conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/head/ask": {
+      "post": {
+        "tags": [
+          "head"
+        ],
+        "summary": "Head Ask",
+        "description": "RFA_module head 계약 v0.2.0 호환(D-21): RFA_module `.env` 의 `HEAD_URL=http://127.0.0.1:8799/v1/head`. 인증 없이 루프백만 받는다. request_id 는 url+차수(거절 수+1)로 서버가 만들어 재시도에 멱등, refusal 은 한국어 문자열, 크기 초과는 잘라서 처리, 서버 한도 110초. 들어오는 즉시 결재함에 「작성 중」 항목이 생긴다.",
+        "operationId": "headAsk",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeadAskIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadAskOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -600,7 +2876,7 @@
   },
   "components": {
     "schemas": {
-      "AgentRef": {
+      "AdminAgent": {
         "properties": {
           "id": {
             "type": "string",
@@ -608,12 +2884,57 @@
           },
           "name": {
             "type": "string",
-            "title": "Name"
+            "title": "Name",
+            "description": "agent id (list line 1)"
           },
-          "color": {
+          "title": {
             "type": "string",
-            "title": "Color",
-            "description": "#rrggbb, stable per agent id"
+            "title": "Title"
+          },
+          "subtitle": {
+            "type": "string",
+            "title": "Subtitle",
+            "description": "list line 2: `{태스크} 태스크`, team role, or the management role"
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "task",
+              "management"
+            ],
+            "title": "Group",
+            "description": "task agents first; management agents are read-only"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "task",
+              "supervisor",
+              "member",
+              "assistant",
+              "censor"
+            ],
+            "title": "Role"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid",
+            "description": "team member → its supervisor"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRefOut"
+            },
+            "type": "array",
+            "title": "Tasks",
+            "default": []
           },
           "sandbox": {
             "anyOf": [
@@ -626,30 +2947,633 @@
             ],
             "title": "Sandbox"
           },
-          "description": {
+          "sandboxLine": {
             "type": "string",
-            "title": "Description",
-            "default": ""
+            "title": "Sandboxline",
+            "description": "list line 3, e.g. `rfa-main 샌드박스`"
           },
-          "kind": {
+          "securityLabel": {
+            "type": "string",
+            "title": "Securitylabel"
+          },
+          "status": {
             "type": "string",
             "enum": [
-              "assistant",
-              "task",
-              "supervisor"
+              "running",
+              "stopped",
+              "applying"
             ],
-            "title": "Kind",
-            "default": "task"
+            "title": "Status"
+          },
+          "observed": {
+            "type": "boolean",
+            "title": "Observed",
+            "description": "false until the first live `nemoclaw` snapshot (status is then declared)"
+          },
+          "callsToday": {
+            "type": "integer",
+            "title": "Callstoday",
+            "description": "LLM calls today (오늘 N회)"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon",
+            "default": "generic"
+          },
+          "color": {
+            "$ref": "#/components/schemas/Color"
+          },
+          "initials": {
+            "type": "string",
+            "title": "Initials"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable"
+          },
+          "readOnlyReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Readonlyreason",
+            "description": "데모에서는 관리 에이전트를 수정할 수 없습니다."
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
+          "title",
+          "subtitle",
+          "group",
+          "role",
+          "sandbox",
+          "sandboxLine",
+          "securityLabel",
+          "status",
+          "observed",
+          "callsToday",
           "color",
-          "sandbox"
+          "initials",
+          "editable"
         ],
-        "title": "AgentRef"
+        "title": "AdminAgent"
+      },
+      "AdminAgentDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "agent id (list line 1)"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "subtitle": {
+            "type": "string",
+            "title": "Subtitle",
+            "description": "list line 2: `{태스크} 태스크`, team role, or the management role"
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "task",
+              "management"
+            ],
+            "title": "Group",
+            "description": "task agents first; management agents are read-only"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "task",
+              "supervisor",
+              "member",
+              "assistant",
+              "censor"
+            ],
+            "title": "Role"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentid",
+            "description": "team member → its supervisor"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRefOut"
+            },
+            "type": "array",
+            "title": "Tasks",
+            "default": []
+          },
+          "sandbox": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandbox"
+          },
+          "sandboxLine": {
+            "type": "string",
+            "title": "Sandboxline",
+            "description": "list line 3, e.g. `rfa-main 샌드박스`"
+          },
+          "securityLabel": {
+            "type": "string",
+            "title": "Securitylabel"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "stopped",
+              "applying"
+            ],
+            "title": "Status"
+          },
+          "observed": {
+            "type": "boolean",
+            "title": "Observed",
+            "description": "false until the first live `nemoclaw` snapshot (status is then declared)"
+          },
+          "callsToday": {
+            "type": "integer",
+            "title": "Callstoday",
+            "description": "LLM calls today (오늘 N회)"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon",
+            "default": "generic"
+          },
+          "color": {
+            "$ref": "#/components/schemas/Color"
+          },
+          "initials": {
+            "type": "string",
+            "title": "Initials"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable"
+          },
+          "readOnlyReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Readonlyreason",
+            "description": "데모에서는 관리 에이전트를 수정할 수 없습니다."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alias"
+          },
+          "skill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "tools": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tools"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null until the agent's first LLM call is recorded"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/LoadedSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/CallStats"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions"
+          },
+          "instructionsUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructionsupdatedat"
+          },
+          "actions": {
+            "$ref": "#/components/schemas/AgentActions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "title",
+          "subtitle",
+          "group",
+          "role",
+          "sandbox",
+          "sandboxLine",
+          "securityLabel",
+          "status",
+          "observed",
+          "callsToday",
+          "color",
+          "initials",
+          "editable",
+          "description",
+          "groups",
+          "tools",
+          "model",
+          "context",
+          "sources",
+          "stats",
+          "instructions",
+          "instructionsUpdatedAt",
+          "actions"
+        ],
+        "title": "AdminAgentDetail"
+      },
+      "AdminAgentList": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AdminAgent"
+            },
+            "type": "array",
+            "title": "Agents"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AgentCounts",
+            "description": "sidebar 「에이전트 N」 = total"
+          },
+          "observedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observedat"
+          },
+          "hint": {
+            "type": "string",
+            "title": "Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agents",
+          "counts",
+          "observedAt",
+          "hint"
+        ],
+        "title": "AdminAgentList"
+      },
+      "AgentActionResult": {
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "title": "Agentid"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "clear-memory"
+            ],
+            "title": "Action"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          },
+          "removedSessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removedsessions"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agentId",
+          "action",
+          "applied",
+          "note"
+        ],
+        "title": "AgentActionResult"
+      },
+      "AgentActions": {
+        "properties": {
+          "compact": {
+            "type": "boolean",
+            "title": "Compact"
+          },
+          "clearMemory": {
+            "type": "boolean",
+            "title": "Clearmemory"
+          },
+          "editPrompt": {
+            "type": "boolean",
+            "title": "Editprompt"
+          },
+          "toggleSources": {
+            "type": "boolean",
+            "title": "Togglesources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "compact",
+          "clearMemory",
+          "editPrompt",
+          "toggleSources"
+        ],
+        "title": "AgentActions"
+      },
+      "AgentCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "task": {
+            "type": "integer",
+            "title": "Task"
+          },
+          "management": {
+            "type": "integer",
+            "title": "Management"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "task",
+          "management"
+        ],
+        "title": "AgentCounts"
+      },
+      "AgentView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "chat route id (`#chat/{id}`); equals taskId for task agents"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "assistant",
+              "task"
+            ],
+            "title": "Kind"
+          },
+          "icon": {
+            "type": "string",
+            "enum": [
+              "star",
+              "github",
+              "research",
+              "slack",
+              "mail",
+              "shield",
+              "generic"
+            ],
+            "title": "Icon",
+            "default": "generic"
+          },
+          "color": {
+            "$ref": "#/components/schemas/Color"
+          },
+          "initials": {
+            "type": "string",
+            "title": "Initials",
+            "description": "shown when icon is generic",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "taskId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taskid"
+          },
+          "taskName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taskname"
+          },
+          "desk": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desk"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "waiting_decision",
+              "stopped",
+              "applying"
+            ],
+            "title": "Status",
+            "default": "running"
+          },
+          "itemCount": {
+            "type": "integer",
+            "title": "Itemcount",
+            "description": "pending approvals of this task (0 until the approval server is wired)",
+            "default": 0
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "default": []
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions",
+            "description": "assistant: the global suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "color"
+        ],
+        "title": "AgentView",
+        "description": "A chat partner: the assistant or one task's agent (one task = one agent). No 사내/사외 grade here —\nthe grade belongs to each request (in chat: to the asker's role)."
+      },
+      "ApprovalEvent": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "who": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Who"
+          },
+          "what": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "What"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "who",
+          "what",
+          "detail"
+        ],
+        "title": "ApprovalEvent"
       },
       "AskRequest": {
         "properties": {
@@ -788,6 +3712,125 @@
         ],
         "title": "AskResponse"
       },
+      "Badge": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "작성 중 | 초안 없음 | 결재 필요 | 차단됨 | 재생성 중 | 보내는 중 | 게시 실패 | 응답 완료 | 결재 완료"
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warn",
+              "danger",
+              "ok",
+              "muted"
+            ],
+            "title": "Tone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "tone"
+        ],
+        "title": "Badge"
+      },
+      "BlockedAttempt": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "kind",
+          "action",
+          "reason"
+        ],
+        "title": "BlockedAttempt"
+      },
+      "CallStats": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "calls": {
+            "type": "integer",
+            "title": "Calls"
+          },
+          "tokens": {
+            "type": "integer",
+            "title": "Tokens"
+          },
+          "tokensThousands": {
+            "type": "number",
+            "title": "Tokensthousands"
+          },
+          "avgLatencySeconds": {
+            "type": "number",
+            "title": "Avglatencyseconds"
+          },
+          "blockedCalls": {
+            "type": "integer",
+            "title": "Blockedcalls"
+          },
+          "last7Days": {
+            "items": {
+              "$ref": "#/components/schemas/DailyCount"
+            },
+            "type": "array",
+            "title": "Last7Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "calls",
+          "tokens",
+          "tokensThousands",
+          "avgLatencySeconds",
+          "blockedCalls",
+          "last7Days"
+        ],
+        "title": "CallStats"
+      },
       "CensorSummary": {
         "properties": {
           "profile": {
@@ -816,6 +3859,130 @@
           "verdict"
         ],
         "title": "CensorSummary"
+      },
+      "ChatMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "ts": {
+            "type": "number",
+            "title": "Ts"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "preface": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preface"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selection"
+          },
+          "calls": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calls"
+          },
+          "guard": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guard"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "ts"
+        ],
+        "title": "ChatMessage",
+        "description": "A user message ``{id, role: user, text, ts}`` or a finished assistant turn (the front-end reducer's\nshape: ``status, phase, preface, search, selection, calls, guard, answer, runId, durationMs, error``)."
       },
       "ChatRequest": {
         "properties": {
@@ -884,13 +4051,27 @@
             ],
             "title": "Conversationid"
           },
+          "agentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentid",
+            "description": "pinned chat partner (`#chat/{agentId}`): skip ranking, delegate to it"
+          },
           "history": {
             "items": {
               "$ref": "#/components/schemas/HistoryItem"
             },
             "type": "array",
             "maxItems": 50,
-            "title": "History"
+            "title": "History",
+            "description": "guest only"
           }
         },
         "type": "object",
@@ -898,7 +4079,55 @@
           "text"
         ],
         "title": "ChatStreamRequest",
-        "description": "``POST /chat`` (SSE). ``role`` is what the front-end claims; only an authenticated caller\n(bearer RFA_ASK_TOKEN) is granted ``owner`` — anyone else is treated as ``guest``."
+        "description": "``POST /chat`` (SSE). ``role`` is what the front-end claims; only an authenticated caller\n(bearer RFA_ASK_TOKEN) is granted ``owner`` — anyone else is treated as ``guest``. The owner's\nconversation is stored (earlier turns come from the server); a guest's is not, so a guest sends its\nearlier turns in ``history``."
+      },
+      "Color": {
+        "properties": {
+          "bg": {
+            "type": "string",
+            "title": "Bg",
+            "description": "#rrggbb background"
+          },
+          "fg": {
+            "type": "string",
+            "title": "Fg",
+            "description": "#rrggbb foreground"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bg",
+          "fg"
+        ],
+        "title": "Color"
+      },
+      "ContextBreakdown": {
+        "properties": {
+          "systemPrompt": {
+            "type": "integer",
+            "title": "Systemprompt"
+          },
+          "toolDefinitions": {
+            "type": "integer",
+            "title": "Tooldefinitions"
+          },
+          "memoryNotes": {
+            "type": "integer",
+            "title": "Memorynotes"
+          },
+          "conversation": {
+            "type": "integer",
+            "title": "Conversation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "systemPrompt",
+          "toolDefinitions",
+          "memoryNotes",
+          "conversation"
+        ],
+        "title": "ContextBreakdown"
       },
       "ContextItem": {
         "properties": {
@@ -927,6 +4156,312 @@
         "title": "ContextItem",
         "description": "One message of the external thread (untrusted input: shown to the head as data only)."
       },
+      "ContextUsage": {
+        "properties": {
+          "usedTokens": {
+            "type": "integer",
+            "title": "Usedtokens"
+          },
+          "limitTokens": {
+            "type": "integer",
+            "title": "Limittokens",
+            "description": "the sandbox's context-length setting"
+          },
+          "measured": {
+            "type": "boolean",
+            "title": "Measured",
+            "description": "true: total from the upstream's usage.prompt_tokens; parts estimated"
+          },
+          "measuredAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measuredat"
+          },
+          "compaction": {
+            "type": "string",
+            "title": "Compaction",
+            "default": "safeguard"
+          },
+          "preserveRecentTurns": {
+            "type": "integer",
+            "title": "Preserverecentturns",
+            "default": 1
+          },
+          "breakdown": {
+            "$ref": "#/components/schemas/ContextBreakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "usedTokens",
+          "limitTokens",
+          "measured",
+          "measuredAt",
+          "breakdown"
+        ],
+        "title": "ContextUsage"
+      },
+      "ConversationCreate": {
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Agentid",
+            "default": "assistant"
+          }
+        },
+        "type": "object",
+        "title": "ConversationCreate"
+      },
+      "ConversationDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "agentId": {
+            "type": "string",
+            "title": "Agentid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "first user message, else 새 대화"
+          },
+          "preview": {
+            "type": "string",
+            "title": "Preview",
+            "default": ""
+          },
+          "createdAt": {
+            "type": "number",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "number",
+            "title": "Updatedat"
+          },
+          "busy": {
+            "type": "boolean",
+            "title": "Busy",
+            "description": "a run is streaming in this conversation"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "user messages"
+          },
+          "persisted": {
+            "type": "boolean",
+            "title": "Persisted",
+            "description": "false for a guest: the client keeps the turns"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "agentId",
+          "title",
+          "createdAt",
+          "updatedAt",
+          "busy",
+          "count",
+          "persisted",
+          "messages"
+        ],
+        "title": "ConversationDetail"
+      },
+      "ConversationSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "agentId": {
+            "type": "string",
+            "title": "Agentid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "first user message, else 새 대화"
+          },
+          "preview": {
+            "type": "string",
+            "title": "Preview",
+            "default": ""
+          },
+          "createdAt": {
+            "type": "number",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "number",
+            "title": "Updatedat"
+          },
+          "busy": {
+            "type": "boolean",
+            "title": "Busy",
+            "description": "a run is streaming in this conversation"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "user messages"
+          },
+          "persisted": {
+            "type": "boolean",
+            "title": "Persisted",
+            "description": "false for a guest: the client keeps the turns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "agentId",
+          "title",
+          "createdAt",
+          "updatedAt",
+          "busy",
+          "count",
+          "persisted"
+        ],
+        "title": "ConversationSummary"
+      },
+      "DailyCount": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "title": "Day"
+          },
+          "calls": {
+            "type": "integer",
+            "title": "Calls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "calls"
+        ],
+        "title": "DailyCount"
+      },
+      "DraftView": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          },
+          "round": {
+            "type": "integer",
+            "title": "Round"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "drafting",
+              "stalled",
+              "ready",
+              "regenerating",
+              "posting",
+              "publish_failed",
+              "posted",
+              "closed"
+            ],
+            "title": "Phase"
+          },
+          "regenerations": {
+            "items": {
+              "$ref": "#/components/schemas/Regeneration"
+            },
+            "type": "array",
+            "title": "Regenerations"
+          },
+          "lastRequest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastrequest"
+          },
+          "postedUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postedurl"
+          },
+          "publishError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisherror"
+          },
+          "canRespond": {
+            "type": "boolean",
+            "title": "Canrespond"
+          },
+          "canRegenerate": {
+            "type": "boolean",
+            "title": "Canregenerate"
+          },
+          "regenerationsLeft": {
+            "type": "integer",
+            "title": "Regenerationsleft"
+          },
+          "closesOnRegenerate": {
+            "type": "boolean",
+            "title": "Closesonregenerate",
+            "description": "RFA_module closes the approval on its 3rd rejection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "chars",
+          "round",
+          "phase",
+          "regenerations",
+          "lastRequest",
+          "postedUrl",
+          "publishError",
+          "canRespond",
+          "canRegenerate",
+          "regenerationsLeft",
+          "closesOnRegenerate"
+        ],
+        "title": "DraftView"
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -950,6 +4485,25 @@
           "code"
         ],
         "title": "ErrorBody"
+      },
+      "ErrorOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorOut",
+        "description": "Front-end error body: ``code`` for the client, ``message`` ready to show (Korean)."
       },
       "FeedbackItem": {
         "properties": {
@@ -979,6 +4533,93 @@
         "title": "FeedbackItem",
         "description": "One rejected draft. ``reason`` is human input (trusted, fed back into the censor rules);\n``draft`` is external text (data only)."
       },
+      "GatewayInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port"
+          },
+          "registeredProvider": {
+            "type": "string",
+            "title": "Registeredprovider"
+          },
+          "hasKey": {
+            "type": "boolean",
+            "title": "Haskey"
+          },
+          "sandboxModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandboxmodel"
+          },
+          "sandboxProvider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sandboxprovider"
+          },
+          "currentRoute": {
+            "type": "string",
+            "title": "Currentroute"
+          },
+          "sharedWith": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sharedwith"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "url",
+          "port",
+          "registeredProvider",
+          "hasKey",
+          "currentRoute",
+          "sharedWith"
+        ],
+        "title": "GatewayInfo"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -991,6 +4632,158 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HeadAskIn": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "github",
+              "slack"
+            ],
+            "title": "Channel"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "public",
+              "company"
+            ],
+            "title": "Audience"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "requester": {
+            "type": "string",
+            "title": "Requester",
+            "default": ""
+          },
+          "context": {
+            "items": {
+              "$ref": "#/components/schemas/ThreadMessageIn"
+            },
+            "type": "array",
+            "title": "Context"
+          },
+          "feedback": {
+            "items": {
+              "$ref": "#/components/schemas/RejectionIn"
+            },
+            "type": "array",
+            "title": "Feedback",
+            "description": "every earlier rejection of this approval"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "channel",
+          "audience",
+          "target",
+          "url"
+        ],
+        "title": "HeadAskIn",
+        "description": "RFA_module ``AskRequest``. No size limits here: oversized fields are cut, never refused."
+      },
+      "HeadAskOut": {
+        "properties": {
+          "knowledge": {
+            "type": "string",
+            "title": "Knowledge"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "requestId": {
+            "type": "string",
+            "title": "Requestid",
+            "description": "derived: rfa-<sha1(url)>-r<round>; retries of a round share it"
+          },
+          "itemId": {
+            "type": "string",
+            "title": "Itemid",
+            "description": "결재함 item id of this mention"
+          },
+          "round": {
+            "type": "integer",
+            "title": "Round"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "public",
+              "company"
+            ],
+            "title": "Grade",
+            "description": "the request's grade (source grade wins, D-24)"
+          },
+          "gradeSource": {
+            "type": "string",
+            "enum": [
+              "source",
+              "channel"
+            ],
+            "title": "Gradesource"
+          },
+          "sourceId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceid"
+          },
+          "censor": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Censor",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "knowledge",
+          "task",
+          "refusal",
+          "requestId",
+          "itemId",
+          "round",
+          "grade",
+          "gradeSource"
+        ],
+        "title": "HeadAskOut",
+        "description": "RFA_module ``AskResponse`` (+ rfa_mas extras). ``knowledge`` is already censored; when it is\nempty ``refusal`` is a Korean reason."
       },
       "HistoryItem": {
         "properties": {
@@ -1015,6 +4808,636 @@
         ],
         "title": "HistoryItem"
       },
+      "InboxAgent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "desk": {
+            "type": "string",
+            "title": "Desk",
+            "description": "agent tag text (e.g. infer-opt)"
+          },
+          "icon": {
+            "type": "string",
+            "title": "Icon"
+          },
+          "color": {
+            "$ref": "#/components/schemas/Color"
+          },
+          "initials": {
+            "type": "string",
+            "title": "Initials"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "desk",
+          "icon",
+          "color",
+          "initials"
+        ],
+        "title": "InboxAgent"
+      },
+      "InboxDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "stable per mention URL (before and after the approval exists)"
+          },
+          "approvalId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvalid",
+            "description": "RFA_module approval id (결재 N); null while drafting"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "channelLabel": {
+            "type": "string",
+            "title": "Channellabel"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "requester": {
+            "type": "string",
+            "title": "Requester"
+          },
+          "requesterInitials": {
+            "type": "string",
+            "title": "Requesterinitials"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "public",
+              "company"
+            ],
+            "title": "Grade"
+          },
+          "gradeLabel": {
+            "type": "string",
+            "title": "Gradelabel",
+            "description": "사외 | 사내"
+          },
+          "gradeSource": {
+            "type": "string",
+            "enum": [
+              "source",
+              "channel"
+            ],
+            "title": "Gradesource"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "drafting",
+              "stalled",
+              "pending",
+              "regenerating",
+              "posting",
+              "publish_failed",
+              "posted",
+              "closed"
+            ],
+            "title": "Status"
+          },
+          "badge": {
+            "$ref": "#/components/schemas/Badge"
+          },
+          "statusLine": {
+            "type": "string",
+            "title": "Statusline"
+          },
+          "round": {
+            "type": "integer",
+            "title": "Round"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InboxTask"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InboxAgent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "injection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InjectionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "arrivedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrivedat"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceView"
+          },
+          "refusal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refusal"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/DraftView"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "blockedAttempts": {
+            "items": {
+              "$ref": "#/components/schemas/BlockedAttempt"
+            },
+            "type": "array",
+            "title": "Blockedattempts"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovalEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "approvalId",
+          "sourceUrl",
+          "channel",
+          "channelLabel",
+          "target",
+          "requester",
+          "requesterInitials",
+          "title",
+          "grade",
+          "gradeLabel",
+          "gradeSource",
+          "status",
+          "badge",
+          "statusLine",
+          "round",
+          "task",
+          "agent",
+          "injection",
+          "arrivedAt",
+          "updatedAt",
+          "question",
+          "source",
+          "refusal",
+          "draft",
+          "steps",
+          "blockedAttempts",
+          "events"
+        ],
+        "title": "InboxDetail"
+      },
+      "InboxItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "stable per mention URL (before and after the approval exists)"
+          },
+          "approvalId": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approvalid",
+            "description": "RFA_module approval id (결재 N); null while drafting"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "channelLabel": {
+            "type": "string",
+            "title": "Channellabel"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "requester": {
+            "type": "string",
+            "title": "Requester"
+          },
+          "requesterInitials": {
+            "type": "string",
+            "title": "Requesterinitials"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "public",
+              "company"
+            ],
+            "title": "Grade"
+          },
+          "gradeLabel": {
+            "type": "string",
+            "title": "Gradelabel",
+            "description": "사외 | 사내"
+          },
+          "gradeSource": {
+            "type": "string",
+            "enum": [
+              "source",
+              "channel"
+            ],
+            "title": "Gradesource"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "drafting",
+              "stalled",
+              "pending",
+              "regenerating",
+              "posting",
+              "publish_failed",
+              "posted",
+              "closed"
+            ],
+            "title": "Status"
+          },
+          "badge": {
+            "$ref": "#/components/schemas/Badge"
+          },
+          "statusLine": {
+            "type": "string",
+            "title": "Statusline"
+          },
+          "round": {
+            "type": "integer",
+            "title": "Round"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InboxTask"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InboxAgent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "injection": {
+            "type": "boolean",
+            "title": "Injection"
+          },
+          "arrivedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrivedat"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "approvalId",
+          "sourceUrl",
+          "channel",
+          "channelLabel",
+          "target",
+          "requester",
+          "requesterInitials",
+          "title",
+          "grade",
+          "gradeLabel",
+          "gradeSource",
+          "status",
+          "badge",
+          "statusLine",
+          "round",
+          "task",
+          "agent",
+          "injection",
+          "arrivedAt",
+          "updatedAt"
+        ],
+        "title": "InboxItem"
+      },
+      "InboxSummary": {
+        "properties": {
+          "needsApproval": {
+            "type": "integer",
+            "title": "Needsapproval",
+            "description": "「결재 필요 N」, 결재함 badge"
+          },
+          "byTask": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Bytask",
+            "description": "pending per task id (left-nav badges)"
+          },
+          "byStatus": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Bystatus"
+          },
+          "autoReplied": {
+            "type": "integer",
+            "title": "Autoreplied",
+            "default": 0
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "needsApproval",
+          "byTask",
+          "byStatus",
+          "total"
+        ],
+        "title": "InboxSummary"
+      },
+      "InboxTask": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "InboxTask"
+      },
+      "InferenceSettings": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "providerLabel": {
+            "type": "string",
+            "title": "Providerlabel"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "providerOptions": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderOption"
+            },
+            "type": "array",
+            "title": "Provideroptions"
+          },
+          "contextLength": {
+            "type": "integer",
+            "title": "Contextlength"
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "title": "Maxoutputtokens"
+          },
+          "contextLengthChoices": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Contextlengthchoices"
+          },
+          "maxOutputChoices": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Maxoutputchoices"
+          },
+          "pendingRecreate": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pendingrecreate",
+            "description": "stored settings that wait for the next recreate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "providerLabel",
+          "model",
+          "providerOptions",
+          "contextLength",
+          "maxOutputTokens",
+          "contextLengthChoices",
+          "maxOutputChoices",
+          "pendingRecreate"
+        ],
+        "title": "InferenceSettings"
+      },
+      "InjectionView": {
+        "properties": {
+          "sentences": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sentences"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sentences",
+          "note"
+        ],
+        "title": "InjectionView"
+      },
+      "LoadedSource": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "unavailableReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailablereason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "enabled",
+          "available"
+        ],
+        "title": "LoadedSource"
+      },
       "Me": {
         "properties": {
           "authenticated": {
@@ -1032,15 +5455,194 @@
           "isAdmin": {
             "type": "boolean",
             "title": "Isadmin"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
           }
         },
         "type": "object",
         "required": [
           "authenticated",
           "role",
-          "isAdmin"
+          "isAdmin",
+          "name"
         ],
         "title": "Me"
+      },
+      "PromptUpdate": {
+        "properties": {
+          "instructions": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Instructions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instructions"
+        ],
+        "title": "PromptUpdate"
+      },
+      "PromptUpdateResult": {
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "title": "Agentid"
+          },
+          "identity": {
+            "type": "string",
+            "title": "Identity",
+            "description": "IDENTITY.md as seeded (signed marker hidden)"
+          },
+          "skill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill"
+          },
+          "skillText": {
+            "type": "string",
+            "title": "Skilltext"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "owner's extra instructions (appended to IDENTITY.md)"
+          },
+          "instructionsUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructionsupdatedat"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agentId",
+          "identity",
+          "skill",
+          "skillText",
+          "instructions",
+          "instructionsUpdatedAt",
+          "applied",
+          "note"
+        ],
+        "title": "PromptUpdateResult"
+      },
+      "PromptView": {
+        "properties": {
+          "agentId": {
+            "type": "string",
+            "title": "Agentid"
+          },
+          "identity": {
+            "type": "string",
+            "title": "Identity",
+            "description": "IDENTITY.md as seeded (signed marker hidden)"
+          },
+          "skill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill"
+          },
+          "skillText": {
+            "type": "string",
+            "title": "Skilltext"
+          },
+          "instructions": {
+            "type": "string",
+            "title": "Instructions",
+            "description": "owner's extra instructions (appended to IDENTITY.md)"
+          },
+          "instructionsUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instructionsupdatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agentId",
+          "identity",
+          "skill",
+          "skillText",
+          "instructions",
+          "instructionsUpdatedAt"
+        ],
+        "title": "PromptView"
+      },
+      "ProviderOption": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "selectable": {
+            "type": "boolean",
+            "title": "Selectable"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "label",
+          "selectable",
+          "models"
+        ],
+        "title": "ProviderOption"
       },
       "Redaction": {
         "properties": {
@@ -1079,6 +5681,835 @@
         ],
         "title": "Refusal"
       },
+      "RegenerateIn": {
+        "properties": {
+          "request": {
+            "type": "string",
+            "maxLength": 400,
+            "title": "Request",
+            "description": "재생성 요청 내용 (RFA_module reject 사유로 전달)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request"
+        ],
+        "title": "RegenerateIn"
+      },
+      "Regeneration": {
+        "properties": {
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request",
+          "at",
+          "draft"
+        ],
+        "title": "Regeneration"
+      },
+      "RejectionIn": {
+        "properties": {
+          "draft": {
+            "type": "string",
+            "title": "Draft",
+            "default": ""
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "at": {
+            "type": "string",
+            "title": "At",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "RejectionIn"
+      },
+      "RespondIn": {
+        "properties": {
+          "draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft",
+            "description": "the text on screen; must equal the stored draft (D-22)"
+          }
+        },
+        "type": "object",
+        "title": "RespondIn"
+      },
+      "SandboxAgentRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind"
+        ],
+        "title": "SandboxAgentRef"
+      },
+      "SandboxDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "privilege": {
+            "type": "integer",
+            "title": "Privilege"
+          },
+          "securityLabel": {
+            "type": "string",
+            "title": "Securitylabel"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "stopped",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "observed": {
+            "type": "boolean",
+            "title": "Observed"
+          },
+          "agentCount": {
+            "type": "integer",
+            "title": "Agentcount"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRefOut"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "gatewayPort": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatewayport"
+          },
+          "agentsManifest": {
+            "type": "string",
+            "title": "Agentsmanifest"
+          },
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/SandboxAgentRef"
+            },
+            "type": "array",
+            "title": "Agents"
+          },
+          "securityGroups": {
+            "items": {
+              "$ref": "#/components/schemas/SecurityGroupView"
+            },
+            "type": "array",
+            "title": "Securitygroups"
+          },
+          "inference": {
+            "$ref": "#/components/schemas/InferenceSettings"
+          },
+          "gateway": {
+            "$ref": "#/components/schemas/GatewayInfo"
+          },
+          "applyNote": {
+            "type": "string",
+            "title": "Applynote"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "default",
+          "groups",
+          "privilege",
+          "securityLabel",
+          "status",
+          "observed",
+          "agentCount",
+          "tasks",
+          "provider",
+          "model",
+          "gatewayPort",
+          "agentsManifest",
+          "agents",
+          "securityGroups",
+          "inference",
+          "gateway",
+          "applyNote"
+        ],
+        "title": "SandboxDetail"
+      },
+      "SandboxItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "privilege": {
+            "type": "integer",
+            "title": "Privilege"
+          },
+          "securityLabel": {
+            "type": "string",
+            "title": "Securitylabel"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "stopped",
+              "unknown"
+            ],
+            "title": "Status"
+          },
+          "observed": {
+            "type": "boolean",
+            "title": "Observed"
+          },
+          "agentCount": {
+            "type": "integer",
+            "title": "Agentcount"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRefOut"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "gatewayPort": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatewayport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "default",
+          "groups",
+          "privilege",
+          "securityLabel",
+          "status",
+          "observed",
+          "agentCount",
+          "tasks",
+          "provider",
+          "model",
+          "gatewayPort"
+        ],
+        "title": "SandboxItem"
+      },
+      "SandboxList": {
+        "properties": {
+          "sandboxes": {
+            "items": {
+              "$ref": "#/components/schemas/SandboxItem"
+            },
+            "type": "array",
+            "title": "Sandboxes"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "canAdd": {
+            "type": "boolean",
+            "title": "Canadd"
+          },
+          "limitMessage": {
+            "type": "string",
+            "title": "Limitmessage"
+          },
+          "observedAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sandboxes",
+          "limit",
+          "canAdd",
+          "limitMessage",
+          "observedAt"
+        ],
+        "title": "SandboxList"
+      },
+      "SandboxPatch": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "contextLength": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextlength"
+          },
+          "maxOutputTokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxoutputtokens"
+          }
+        },
+        "type": "object",
+        "title": "SandboxPatch",
+        "description": "Only present fields change. provider/model apply now; the lengths wait for a recreate."
+      },
+      "SandboxUpdateResult": {
+        "properties": {
+          "sandboxId": {
+            "type": "string",
+            "title": "Sandboxid"
+          },
+          "applied": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Applied"
+          },
+          "requiresRecreate": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requiresrecreate"
+          },
+          "sandbox": {
+            "$ref": "#/components/schemas/SandboxDetail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sandboxId",
+          "applied",
+          "requiresRecreate",
+          "sandbox"
+        ],
+        "title": "SandboxUpdateResult"
+      },
+      "SecurityGroupView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "privilege": {
+            "type": "integer",
+            "title": "Privilege"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "presets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Presets"
+          },
+          "mcpServers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mcpservers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "privilege",
+          "description",
+          "presets",
+          "mcpServers"
+        ],
+        "title": "SecurityGroupView"
+      },
+      "SourceIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "github",
+              "slack"
+            ],
+            "title": "Kind"
+          },
+          "target": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Target"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "title": "Scopes"
+          },
+          "grade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade",
+            "description": "public|company (사외|사내); default github 사외, slack 사내"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "target"
+        ],
+        "title": "SourceIn"
+      },
+      "SourceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "taskId": {
+            "type": "string",
+            "title": "Taskid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "github",
+              "slack"
+            ],
+            "title": "Kind"
+          },
+          "kindLabel": {
+            "type": "string",
+            "title": "Kindlabel"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "public",
+              "company"
+            ],
+            "title": "Grade"
+          },
+          "gradeLabel": {
+            "type": "string",
+            "title": "Gradelabel"
+          },
+          "status": {
+            "type": "string",
+            "const": "connected",
+            "title": "Status"
+          },
+          "createdAt": {
+            "type": "number",
+            "title": "Createdat"
+          },
+          "requestCount": {
+            "type": "integer",
+            "title": "Requestcount"
+          },
+          "lastRequestAt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastrequestat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "taskId",
+          "kind",
+          "kindLabel",
+          "target",
+          "scopes",
+          "grade",
+          "gradeLabel",
+          "status",
+          "createdAt",
+          "requestCount",
+          "lastRequestAt"
+        ],
+        "title": "SourceOut"
+      },
+      "SourceToggle": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "SourceToggle"
+      },
+      "SourceToggleResult": {
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/LoadedSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sources",
+          "applied",
+          "note"
+        ],
+        "title": "SourceToggleResult"
+      },
+      "SourceView": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "github",
+              "slack"
+            ],
+            "title": "Kind"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "kind",
+          "url"
+        ],
+        "title": "SourceView",
+        "description": "원본 화면: GitHub (repo, number, title, body, comments) or Slack (channel, messages)."
+      },
+      "Step": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "rag",
+              "verify",
+              "draft"
+            ],
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "error",
+              "skipped",
+              "unknown"
+            ],
+            "title": "State"
+          },
+          "ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ms"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/StepDetail"
+            },
+            "type": "array",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "state",
+          "ms",
+          "summary",
+          "details"
+        ],
+        "title": "Step"
+      },
+      "StepDetail": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "meta": {
+            "type": "string",
+            "title": "Meta"
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warn",
+              "block"
+            ],
+            "title": "Tone",
+            "default": "ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "meta"
+        ],
+        "title": "StepDetail"
+      },
+      "TaskCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 30,
+            "title": "Name",
+            "description": "태스크명 (비면 422 task_name_required)",
+            "default": ""
+          },
+          "agentName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agentname",
+            "description": "비면 「{태스크명} 대응 에이전트」"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "비면 「{태스크명} 태스크를 맡은 에이전트입니다.」"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 32,
+            "title": "Tags",
+            "description": "≤8 kept; # stripped, trimmed, de-duplicated. A tag in a question routes it here"
+          }
+        },
+        "type": "object",
+        "title": "TaskCreateRequest",
+        "description": "``POST /tasks`` (「태스크 추가」). No 사내/사외 grade: it belongs to each request, not the task."
+      },
       "TaskRef": {
         "properties": {
           "id": {
@@ -1097,7 +6528,7 @@
         ],
         "title": "TaskRef"
       },
-      "TaskView": {
+      "TaskRefOut": {
         "properties": {
           "id": {
             "type": "string",
@@ -1106,10 +6537,108 @@
           "name": {
             "type": "string",
             "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TaskRefOut"
+      },
+      "TaskView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "task name (left-nav title)"
           },
           "agentId": {
             "type": "string",
-            "title": "Agentid"
+            "title": "Agentid",
+            "description": "its chat partner (`GET /agents`)"
+          },
+          "agentName": {
+            "type": "string",
+            "title": "Agentname"
+          },
+          "desk": {
+            "type": "string",
+            "title": "Desk",
+            "description": "left-nav subtitle"
+          },
+          "icon": {
+            "type": "string",
+            "enum": [
+              "star",
+              "github",
+              "research",
+              "slack",
+              "mail",
+              "shield",
+              "generic"
+            ],
+            "title": "Icon",
+            "default": "generic"
+          },
+          "color": {
+            "$ref": "#/components/schemas/Color"
+          },
+          "initials": {
+            "type": "string",
+            "title": "Initials",
+            "default": ""
+          },
+          "itemCount": {
+            "type": "integer",
+            "title": "Itemcount",
+            "default": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "applying",
+              "failed"
+            ],
+            "title": "Status",
+            "default": "ready"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "catalog",
+              "team"
+            ],
+            "title": "Source",
+            "default": "catalog"
+          },
+          "worker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker",
+            "description": "backend agent that answers (task agent or team supervisor)"
           },
           "sandbox": {
             "anyOf": [
@@ -1122,19 +6651,11 @@
             ],
             "title": "Sandbox"
           },
-          "gradeLabel": {
+          "securityLabel": {
             "type": "string",
-            "title": "Gradelabel",
-            "description": "security grade of the task agent's sandbox (privilege + groups)"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "catalog",
-              "team"
-            ],
-            "title": "Source",
-            "default": "catalog"
+            "title": "Securitylabel",
+            "description": "sandbox network privilege (admin), not the 사내/사외 grade",
+            "default": ""
           }
         },
         "type": "object",
@@ -1142,8 +6663,9 @@
           "id",
           "name",
           "agentId",
-          "sandbox",
-          "gradeLabel"
+          "agentName",
+          "desk",
+          "color"
         ],
         "title": "TaskView"
       },
@@ -1411,6 +6933,28 @@
           "status"
         ],
         "title": "TeamResponse"
+      },
+      "ThreadMessageIn": {
+        "properties": {
+          "author": {
+            "type": "string",
+            "title": "Author",
+            "default": ""
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          },
+          "at": {
+            "type": "string",
+            "title": "At",
+            "description": "ISO date-time",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "ThreadMessageIn"
       },
       "ValidationError": {
         "properties": {

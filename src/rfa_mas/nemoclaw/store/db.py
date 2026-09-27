@@ -35,7 +35,35 @@ CREATE TABLE IF NOT EXISTS blocklist (id TEXT PRIMARY KEY, requester TEXT NOT NU
     enabled INTEGER NOT NULL DEFAULT 1, created REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, name TEXT NOT NULL, agent_id TEXT NOT NULL,
     sandbox TEXT, grade_label TEXT NOT NULL DEFAULT '', created REAL NOT NULL, updated REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS sandbox_settings (sandbox TEXT PRIMARY KEY, context_length INTEGER,
+    max_output_tokens INTEGER, updated REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS agent_sources (agent_id TEXT NOT NULL, source_id TEXT NOT NULL, enabled INTEGER NOT NULL,
+    updated REAL NOT NULL, PRIMARY KEY (agent_id, source_id));
+CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY, task_id TEXT NOT NULL, kind TEXT NOT NULL, target TEXT NOT NULL,
+    scopes TEXT NOT NULL DEFAULT '[]', grade TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL);
+CREATE INDEX IF NOT EXISTS sources_task ON sources(task_id);
+CREATE TABLE IF NOT EXISTS intake (url TEXT NOT NULL, round INTEGER NOT NULL, item_id TEXT NOT NULL,
+    request_id TEXT NOT NULL, channel TEXT NOT NULL, audience TEXT NOT NULL, grade_source TEXT NOT NULL,
+    source_id TEXT, target TEXT NOT NULL, requester TEXT NOT NULL DEFAULT '', question TEXT NOT NULL,
+    context TEXT NOT NULL DEFAULT '[]', title TEXT NOT NULL DEFAULT '', task_id TEXT, task_name TEXT, agent TEXT,
+    status TEXT NOT NULL, steps TEXT NOT NULL DEFAULT '{}', injection TEXT NOT NULL DEFAULT '[]', refusal TEXT,
+    refusal_code TEXT, started REAL NOT NULL, finished REAL, updated REAL NOT NULL, PRIMARY KEY (url, round));
+CREATE INDEX IF NOT EXISTS intake_item ON intake(item_id, round);
+CREATE TABLE IF NOT EXISTS inbox_state (approval_id INTEGER PRIMARY KEY, publish_error TEXT, updated REAL NOT NULL);
 """
+
+# columns added after the first release of a table: (table, column, declaration)
+MIGRATIONS = (
+    ("tasks", "agent_name", "TEXT NOT NULL DEFAULT ''"),
+    ("tasks", "description", "TEXT NOT NULL DEFAULT ''"),
+    ("tasks", "tags", "TEXT NOT NULL DEFAULT '[]'"),
+    ("tasks", "suggestions", "TEXT NOT NULL DEFAULT '[]'"),
+    ("tasks", "desk", "TEXT NOT NULL DEFAULT ''"),
+    ("tasks", "icon", "TEXT NOT NULL DEFAULT 'generic'"),
+    ("tasks", "color", "TEXT NOT NULL DEFAULT ''"),
+    ("tasks", "status", "TEXT NOT NULL DEFAULT 'ready'"),
+    ("tasks", "error", "TEXT"),
+)
 
 
 def store_path() -> Path:
@@ -61,6 +89,10 @@ class Store:
             conn = self._connect()
             try:
                 conn.executescript(SCHEMA)
+                for table, column, decl in MIGRATIONS:
+                    have = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+                    if column not in have:
+                        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
                 conn.commit()
             finally:
                 conn.close()

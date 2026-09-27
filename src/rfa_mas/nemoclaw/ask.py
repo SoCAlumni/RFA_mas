@@ -51,7 +51,17 @@ INJECTION_PATTERNS = [
         r"system prompt", r"dump (all|the) (raw|source|internal)", r"reveal (your|the) (instructions|prompt)",
     )
 ]
-NO_EVIDENCE = re.compile(r"근거(가|를)?\s*(없|찾을 수 없|부족)|no (relevant )?evidence|could not find", re.IGNORECASE)
+# OpenClaw's text when an agent turn failed — an error, never knowledge
+AGENT_FAILURE_TEXTS = frozenset({"No response from OpenClaw.", "LLM request failed."})
+NO_EVIDENCE = re.compile(r"근거(가|를)?\s*(없|찾을 수 없|부족)|no (relevant )?evidence|NO_EVIDENCE|could not find", re.IGNORECASE)
+
+
+_CITATION = re.compile(r"\[((?:source_[0-9a-f]{6,})|(?:[a-z0-9][a-z0-9_.-]{2,60}@\d+))\]")
+
+
+def citations(text: str, limit: int = 10) -> list[str]:
+    """Evidence ids a task agent cited (``[source_8d14…]``, ``[triv3-public-overview@1]``) — ids only."""
+    return list(dict.fromkeys(m.group(1) for m in _CITATION.finditer(text or "")))[:limit]
 
 
 # --------------------------------------------------------------------------- external input
@@ -372,7 +382,10 @@ def _refuse(req: AskRequest, profile: str, code: str, message: str, task: TaskSp
 Emit = Callable[[str, dict], None]  # (event type, data) progress hook for streaming callers
 
 
-async def ask(req: AskRequest, deps: AskDeps, emit: Emit | None = None) -> AskOutcome:
+async def ask(req: AskRequest, deps: AskDeps, emit: Emit | None = None,
+              route: HeadDecision | None = None) -> AskOutcome:
+    """``route`` (optional) is a routing decision made by the caller — e.g. the request came from a
+    source registered to a task — and replaces the head; its query gets the learned constraints."""
     started = time.monotonic()
     notify = emit or (lambda t, d: None)
     cfg = deps.config
@@ -403,7 +416,11 @@ async def ask(req: AskRequest, deps: AskDeps, emit: Emit | None = None) -> AskOu
     # the head sees every reason learned for this audience (task unknown yet) plus this request's own feedback
     head_reasons = list(dict.fromkeys(reasons + deps.learned.reasons(req.audience, any_task=True)))
     timer = logs.Timer()
-    decision = await deps.head.route(req, deps.tasks_catalog(), head_reasons)
+    if route is not None:
+        decision = HeadDecision(route.task, route.agent, (route.query or req.question.strip()) + _constraints(head_reasons),
+                                route.reason, route.source)
+    else:
+        decision = await deps.head.route(req, deps.tasks_catalog(), head_reasons)
     logs.stage("head", timer.ms, "task" if decision.task else "no_task", source=decision.source,
                task=decision.task.id if decision.task else None, agent=decision.agent)
     notify("stage", {"stage": "head", "ms": timer.ms, "outcome": "task" if decision.task else "no_task",
@@ -423,14 +440,18 @@ async def ask(req: AskRequest, deps: AskDeps, emit: Emit | None = None) -> AskOu
     logs.stage(f"task:{task.id}", timer.ms, "ok" if reply.ok else "error", agent=decision.agent,
                route=reply.detail.get("route"), chars=len(reply.text or ""))
     notify("stage", {"stage": f"task:{task.id}", "ms": timer.ms, "outcome": "ok" if reply.ok else "error",
-                     "agent": decision.agent, "route": reply.detail.get("route")})
+                     "agent": decision.agent, "route": reply.detail.get("route"), "chars": len(reply.text or ""),
+                     "citations": citations(reply.text or "")})
     logs.raw("task_reply", reply.text, task=task.id)
     detail["task_agent"] = {k: (str(v)[:240] if k == "error" else v) for k, v in reply.detail.items()} | {"ok": reply.ok}
     if not reply.ok:
         return finish(_refuse(req, profile, "no_knowledge", f"task agent failed: {reply.detail.get('error') or 'error'}", task),
                       "error", decision.agent)
     text = reply.text.strip()
-    if not text or text == "(empty reply)" or (len(text) < 200 and NO_EVIDENCE.search(text)):
+    if text in AGENT_FAILURE_TEXTS:
+        return finish(_refuse(req, profile, "no_knowledge", f"task agent failed: {text}", task), "error", decision.agent)
+    if (not text or text == "(empty reply)" or text.startswith("NO_EVIDENCE")   # team supervisor: members found nothing
+            or (len(text) < 200 and NO_EVIDENCE.search(text))):
         return finish(_refuse(req, profile, "no_knowledge", "no evidence for this question", task), "refused", decision.agent)
 
     timer = logs.Timer()
@@ -451,10 +472,11 @@ async def ask(req: AskRequest, deps: AskDeps, emit: Emit | None = None) -> AskOu
 
 
 async def ask_with_timeout(req: AskRequest, deps: AskDeps, timeout: float,
-                           emit: Emit | None = None) -> tuple[AskOutcome, asyncio.Task | None]:
+                           emit: Emit | None = None, route: HeadDecision | None = None
+                           ) -> tuple[AskOutcome, asyncio.Task | None]:
     """Run ``ask`` under the server-side timeout. On timeout the refusal is ``no_knowledge``/"timeout"
     and the still-running task is returned so the caller can release its slot when it ends."""
-    task = asyncio.ensure_future(ask(req, deps, emit))
+    task = asyncio.ensure_future(ask(req, deps, emit, route))
     try:
         return await asyncio.wait_for(asyncio.shield(task), timeout), None
     except TimeoutError:
