@@ -369,8 +369,12 @@ def _refuse(req: AskRequest, profile: str, code: str, message: str, task: TaskSp
                        censor=CensorSummary(profile=profile, verdict="allow", redactions=[]))
 
 
-async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
+Emit = Callable[[str, dict], None]  # (event type, data) progress hook for streaming callers
+
+
+async def ask(req: AskRequest, deps: AskDeps, emit: Emit | None = None) -> AskOutcome:
     started = time.monotonic()
+    notify = emit or (lambda t, d: None)
     cfg = deps.config
     spec = cfg.audiences[req.audience]
     profile, channel = spec.profile, spec.channel
@@ -402,6 +406,8 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     decision = await deps.head.route(req, deps.tasks_catalog(), head_reasons)
     logs.stage("head", timer.ms, "task" if decision.task else "no_task", source=decision.source,
                task=decision.task.id if decision.task else None, agent=decision.agent)
+    notify("stage", {"stage": "head", "ms": timer.ms, "outcome": "task" if decision.task else "no_task",
+                     "task": decision.task.id if decision.task else None, "agent": decision.agent, "source": decision.source})
     detail["head"] = decision.source
     detail["head_reason"] = decision.reason[:200]
     task = decision.task
@@ -416,6 +422,8 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     reply = await deps.tasks.ask(decision.agent, decision.query, sid, channel, task.id)
     logs.stage(f"task:{task.id}", timer.ms, "ok" if reply.ok else "error", agent=decision.agent,
                route=reply.detail.get("route"), chars=len(reply.text or ""))
+    notify("stage", {"stage": f"task:{task.id}", "ms": timer.ms, "outcome": "ok" if reply.ok else "error",
+                     "agent": decision.agent, "route": reply.detail.get("route")})
     logs.raw("task_reply", reply.text, task=task.id)
     detail["task_agent"] = {k: (str(v)[:240] if k == "error" else v) for k, v in reply.detail.items()} | {"ok": reply.ok}
     if not reply.ok:
@@ -429,6 +437,8 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     result = await asyncio.to_thread(deps.pipeline.run, text, profile, None, hints)
     logs.stage("censor", timer.ms, result.verdict, redactions=list(result.redactions), blocked_by=result.blocked_by,
                hints=len(hints))
+    notify("stage", {"stage": "censor", "ms": timer.ms, "outcome": result.verdict, "redactions": list(result.redactions),
+                     "blocked_by": result.blocked_by})
     detail["censor"] = result.summary()["stages"]
     if result.verdict == "block":
         return finish(_refuse(req, profile, "blocked_by_policy", f"censor blocked the knowledge: {result.blocked_by}", task),
@@ -440,10 +450,11 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     return finish(response, result.verdict, decision.agent, redactions=result.redactions)
 
 
-async def ask_with_timeout(req: AskRequest, deps: AskDeps, timeout: float) -> tuple[AskOutcome, asyncio.Task | None]:
+async def ask_with_timeout(req: AskRequest, deps: AskDeps, timeout: float,
+                           emit: Emit | None = None) -> tuple[AskOutcome, asyncio.Task | None]:
     """Run ``ask`` under the server-side timeout. On timeout the refusal is ``no_knowledge``/"timeout"
     and the still-running task is returned so the caller can release its slot when it ends."""
-    task = asyncio.ensure_future(ask(req, deps))
+    task = asyncio.ensure_future(ask(req, deps, emit))
     try:
         return await asyncio.wait_for(asyncio.shield(task), timeout), None
     except TimeoutError:
@@ -465,7 +476,7 @@ def build_fake_deps(config: AskConfig, censors, learned_path: Path, *, task_dela
 
 
 __all__ = [
-    "AskDeps", "AskOutcome", "ask", "ask_with_timeout", "build_fake_deps", "external_input", "head_messages",
+    "AskDeps", "AskOutcome", "Emit", "ask", "ask_with_timeout", "build_fake_deps", "external_input", "head_messages",
     "injection_flags", "KeywordHead", "DirectHead", "BrokerTasks", "FakeTasks", "HintJudge", "Lineage", "HeadDecision",
     "TaskReply",
 ]

@@ -177,7 +177,7 @@ def build(replay: bool = False, fake_agents: bool = False):
     ask_service.deps.catalog = teams.catalog_tasks
     entry.team_service = teams
     entry.frontend_services = build_frontend_services(assignments=lambda: entry.assignments, ask_deps=ask_service.deps,
-                                                      token=ask_service.token)
+                                                      token=ask_service.token, ask_service=ask_service)
     broker_app = Starlette(routes=[
         Route("/healthz", proxy.healthz, methods=["GET"]),
         Route(routing.broker.path, broker.mcp, methods=["GET", "POST", "DELETE"]),

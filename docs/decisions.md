@@ -10,5 +10,5 @@
 
 ## 대화로 정할 것
 
-- **D-1 스트리밍 방식**: 조사 완료(게이트웨이 `/v1/chat/completions stream:true` 가능하나 `chatCompletions.enabled` + `gateway restart` + 포워드 필요; guest 는 검열 후에만 전송 가능). 추천: 문장 단위 의사 스트리밍 + `stage` 이벤트, delta 공급원은 `services/` 에서 교체 가능하게. **미결.**
+- **D-1 스트리밍 방식**: 토큰 스트리밍(게이트웨이 HTTP) vs 문장 단위 의사 스트리밍? / **둘 다, 병렬 트랙**. SSE 계약은 A(의사 스트리밍: `run.started → stage → delta… → guard.final → done`, 봉투 `{type,runId,seq,ts,data}`)로 지금 구현하고, B(샌드박스 게이트웨이 `/v1/chat/completions` HTTP 전송)는 브로커 전송 교체로 병렬 진행. 성공하면 delta 공급원만 교체(owner 만 토큰, guest 는 검열 후) / 실측: 턴 14.8초 중 모델 호출 4.2초, 나머지 ≈10초가 `nemoclaw agent` CLI 경로 오버헤드 → B 는 스트리밍보다 지연 제거가 본질. 사용자: "그렇게 오래 걸릴 작업이 아니다, 병렬로" / 2026-09-28
 - D-2 ~ D-9: 미착수.

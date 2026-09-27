@@ -58,9 +58,10 @@ def _entry_app():
     teams = TeamService(roles=load_roles(), routing=load_routing(), ask_cfg=ask_cfg, patterner=KeywordPatterner(),
                         teams_path=tmp / "teams.yaml", fake=True)
     assignments = load_assignments(teams_path=tmp / "no-teams.yaml")  # static declaration only
+    service = AskService(deps, None)
     frontend = build_frontend_services(assignments=lambda: assignments, ask_deps=deps, token=None,
-                                       store=Store(tmp / "frontend.db"))
-    return create_ask_app(AskService(deps, None), teams, frontend)
+                                       store=Store(tmp / "frontend.db"), ask_service=service)
+    return create_ask_app(service, teams, frontend)
 
 
 def _ask():

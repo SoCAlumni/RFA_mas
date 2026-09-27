@@ -42,9 +42,12 @@ profiles:
             pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
             replacement: '[REDACTED:email]'
           - id: credential
-            pattern: '(?i)(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}'
+            pattern: '(?i)\b(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}'   # \b: 세션 id ask-… 의 sk- 는 자격증명이 아니다 (2026-09-28 실측 오탐)
             replacement: '[REDACTED:credential]'
             action: block            # 자격증명이 보이면 redact 가 아니라 전송 자체를 막는다
+          - id: citation-id          # 지식 응답의 근거 인용 id(32자 hex)를 LLM 판정 전에 지운다: 판정 모델이 자격증명으로 오인해 block (2026-09-28 실측)
+            pattern: '\[source_[0-9a-f]{16,}\]'
+            replacement: '[source]'
       - &external_llm
         id: llm
         type: llm
@@ -81,6 +84,6 @@ profiles:
             pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
             replacement: '[REDACTED:email]'
           - id: credential
-            pattern: '(?i)(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}'
+            pattern: '(?i)\b(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}'   # \b: 세션 id ask-… 의 sk- 는 자격증명이 아니다 (2026-09-28 실측 오탐)
             replacement: '[REDACTED:credential]'
             action: block

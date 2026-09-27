@@ -51,8 +51,9 @@ class AskService:
         for rid in [r for r, e in self.entries.items() if e.payload is not None and e.created < cutoff]:
             self.entries.pop(rid, None)
 
-    async def submit(self, req: AskRequest) -> tuple[int, dict]:
-        """Run ``ask()`` synchronously; a repeated ``request_id`` waits for / returns the first outcome."""
+    async def submit(self, req: AskRequest, emit=None) -> tuple[int, dict]:
+        """Run ``ask()`` synchronously; a repeated ``request_id`` waits for / returns the first outcome.
+        ``emit(type, data)`` receives progress events (stage …) for streaming callers."""
         async with self._lock:
             self._evict()
             entry = self.entries.get(req.request_id)
@@ -65,7 +66,7 @@ class AskService:
             await entry.done.wait()
             return 200, entry.payload or {}
         try:
-            outcome, pending = await ask_with_timeout(req, self.deps, self.cfg.timeout_seconds)
+            outcome, pending = await ask_with_timeout(req, self.deps, self.cfg.timeout_seconds, emit)
             if pending is not None:  # the timed-out sandbox turn keeps running; retrieve its result silently
                 pending.add_done_callback(lambda t: t.cancelled() or t.exception())
             entry.payload = outcome.response.model_dump(mode="json")
@@ -111,9 +112,9 @@ def create_ask_app(service: AskService, teams=None, frontend=None) -> FastAPI:
         status, payload = await service.submit(body)
         return JSONResponse(status_code=status, content=payload)
 
-    @app.post("/chat", operation_id="chat", response_model=AskResponse, tags=["personal"],
-              description="개인 채팅(audience self). 진입점은 loopback 전용이라 bearer 없이 같은 ask() 를 호출한다.")
-    async def post_chat(body: ChatRequest):
+    @app.post("/chat/sync", operation_id="chatSync", response_model=AskResponse, tags=["personal"],
+              description="개인 채팅 JSON 동기 버전(CLI 용, audience self). 프런트는 SSE `POST /chat` 을 쓴다.")
+    async def post_chat_sync(body: ChatRequest):
         rid = f"chat-{body.session_id or uuid.uuid4().hex[:10]}-{uuid.uuid4().hex[:6]}"
         req = AskRequest(request_id=rid, question=body.question, channel=body.channel, audience="self",
                          target=f"self:{body.session_id or 'anon'}")

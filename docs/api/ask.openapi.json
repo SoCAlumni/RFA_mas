@@ -612,6 +612,52 @@
         "title": "ChatRequest",
         "description": "Personal chat (audience self) — same ``ask()`` function, request_id issued by the server."
       },
+      "ChatStreamRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "guest"
+            ],
+            "title": "Role",
+            "default": "guest"
+          },
+          "conversationId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9_.:-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversationid"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ChatStreamRequest",
+        "description": "``POST /chat`` (SSE). ``role`` is what the front-end claims; only an authenticated caller\n(bearer RFA_ASK_TOKEN) is granted ``owner`` — anyone else is treated as ``guest``."
+      },
       "ContextItem": {
         "properties": {
           "author": {
@@ -703,6 +749,29 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HistoryItem": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "default": "user"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 8000,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "HistoryItem"
       },
       "Me": {
         "properties": {

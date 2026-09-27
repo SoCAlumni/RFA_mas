@@ -172,6 +172,25 @@ class EgressProxy:
         censored = await walk(parsed)
         return json.dumps(censored, ensure_ascii=False), redacted, blocked
 
+    def _blocking_snippets(self, messages: list[dict], profile: str, context: int = 60) -> str:
+        from rfa_mas.nemoclaw.config import RegexStage
+
+        spec = self.pipeline.censors.profiles.get(profile)
+        out = []
+        for stage in (spec.stages if spec else []):
+            if not isinstance(stage, RegexStage):
+                continue
+            for rule in stage.rules:
+                if rule.action != "block":
+                    continue
+                pattern = self.pipeline._pattern(rule)
+                for i, m in enumerate(messages):
+                    text = m.get("content") if isinstance(m.get("content"), str) else ""
+                    for hit in pattern.finditer(text or ""):
+                        a, b = max(0, hit.start() - context), min(len(text), hit.end() + context)
+                        out.append(f"[{rule.id} msg#{i} role={m.get('role')}] …{text[a:b]}…")
+        return "\n".join(out)[:4000]
+
     async def _censor_messages(self, messages: list[dict], profile: str) -> tuple[list[dict], list[CensorResult], CensorResult | None]:
         """Regex on every message; the LLM judge only on the newest non-system message. The system
         prompt is OpenClaw's own text and earlier turns were judged when they were the newest one, so
@@ -256,6 +275,9 @@ class EgressProxy:
             if blocked is not None:
                 base_detail["blocked_by"] = blocked.blocked_by
                 base_detail["censor"] = blocked.summary()["stages"]
+                if logs.raw_enabled():  # debug only: which spans tripped a blocking rule (never in app/audit logs)
+                    logs.raw("proxy_request_blocked", self._blocking_snippets(body.get("messages") or [], profile),
+                             agent=attr.agent, alias=alias_name, blocked_by=blocked.blocked_by)
                 audit.record(kind="inference", verdict="block", action="request", channel=attr.channel,
                              profile=profile, sandbox=attr.sandbox, agent=attr.agent,
                              session_id=attr.session_id, detail={**base_detail, "ms": _ms(started)})

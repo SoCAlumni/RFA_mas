@@ -254,7 +254,7 @@ def cmd_chat(args) -> int:
         payload = asyncio.run(ask(req, deps)).response.model_dump(mode="json")
     else:
         routing = load_routing()
-        url = f"http://{routing.entry.bind}/chat"
+        url = f"http://{routing.entry.bind}/chat/sync"
         try:
             response = httpx.post(url, json={"question": args.question, "session_id": args.session, "channel": "cli"},
                                   timeout=load_ask().server.timeout_seconds + 10)

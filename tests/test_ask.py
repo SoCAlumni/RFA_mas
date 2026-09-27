@@ -74,7 +74,7 @@ async def test_public_ask_returns_contract_shape_and_censors_with_public_profile
 async def test_company_and_self_use_internal_profile_and_local_channel(deps):
     async with client(AskService(deps, "tok")) as c:
         r = await c.post("/ask", json=body(request_id="c1", audience="company", question="오로라 예산과 마감 일정"), headers=H)
-        chat = await c.post("/chat", json={"question": "오로라 결과 대시보드 문의처", "session_id": "me"})
+        chat = await c.post("/chat/sync", json={"question": "오로라 결과 대시보드 문의처", "session_id": "me"})
     assert r.json()["censor"]["profile"] == "internal" and "1,200,000" in r.json()["knowledge"]
     assert chat.status_code == 200 and chat.json()["censor"]["profile"] == "internal"
     assert "[REDACTED:email]" in chat.json()["knowledge"] and "aurora-dash.intra.local" in chat.json()["knowledge"]

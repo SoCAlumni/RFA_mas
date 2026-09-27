@@ -141,3 +141,13 @@ def test_direct_judge_posts_chat_completions_to_the_hosted_censor_backend(monkey
     assert seen["json"]["chat_template_kwargs"] == {"enable_thinking": False}
     assert seen["headers"]["authorization"] == "Bearer k"
     assert seen["timeout"] == stage.timeout_seconds
+
+
+def test_credential_rule_needs_a_word_boundary(censors):
+    """`ask-chat-run-…` session ids contain `sk-` and must not count as credentials (2026-09-28)."""
+    pipeline = CensorPipeline(censors, StaticJudge("allow"))
+    ok = pipeline.run("⟦rfa-channel v1 ch=external sid=ask-chat-run-72f2c1829e2b sig=d9b1⟧ 질문", "external")
+    assert ok.verdict == "allow" and "credential" not in ok.redactions
+    bad = pipeline.run("token sk-abcdefghijklmnop123 here", "external")
+    assert bad.verdict == "block" and bad.blocked_by == "regex:credential"
+    assert pipeline.run("Authorization: Bearer nvapi-abcdefghijklmnop", "internal").verdict == "block"
