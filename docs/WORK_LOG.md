@@ -904,3 +904,10 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
   - 근거 부족 답변 → P1-001E.
   - 승인 전 게시의 영구 실패 receipt → P1-008E.
 
+## Coordinator — 2026-09-27 작업 완료 중심 재개
+
+- 사용자가 다른 세션 종료와 단일 책임자의 완료 중심 진행을 요청했다. 남아 있던 `freeze-reval3` 자동 재검증 프로세스와 그 테스트 자식을 중단했다. 기존 커밋·실행 결과·사용자 `.gitignore` 변경은 보존한다.
+- 반복 원인: 공유 계약 발행과 `docs/INTEGRATION.md` 같은 넓은 입력 경로 변경이 통합 완료 task를 stale로 만들었고, 각 통합 앞에서 전이 의존성의 worker/target 검증을 반복했다. 예: P0-020/P1-006C는 마지막 성공 후 INTEGRATION 문서만 달랐으며, P0-005A는 실제 local/settings 소스 변경도 있었다. 두 경우를 구분해 검토한다.
+- 실행 순서를 고정한다: 남은 선행 검증 → 기존 WIP(Judge·보존 처리·OpenShell/NemoClaw 증거) 회수 → P0-026 E2E 통합 → P1-009 전달 문서 → 최종 변경 범위 검증. 실패는 로그를 보고 최대 3회 수정하며 전체 자동 재실행을 다시 걸지 않는다.
+- 이미 main에 반영된 P0-024~025·피드백·검색/추출 품질·SQLite 다중 프로세스 보수, NVIDIA 모델·Skill 경로의 커밋과 evidence를 보존한다. P1-002A의 JSON 응답 truncation 실패 뒤 1회 재시도 성공도 실패 기록과 함께 남아 있다.
+- 새로 회수한 미통합 결과: P1-006A Judge(actual, 합성 public n=1), P1-006F 자체 보존 삭제 job(local Langfuse), P1-007A NemoClaw 제한 API 시연(n=1). 구현/실행 기록이 있다는 사실과 main 통합·최종 사용자 흐름 통과를 구분한다.
