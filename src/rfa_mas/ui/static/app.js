@@ -255,6 +255,7 @@
 
   function renderReview(view) {
     const card = el("article", null, "review");
+    card.dataset.draftId = view.draft_id;
     card.append(el("h3", "공개 초안 · 버전 " + view.version));
     card.append(badge(view.mode + " / " + view.authority, "mock"));
     card.append(el("p", "결정: " + view.decision + (view.decided_by ? " by " + view.decided_by : "")));
