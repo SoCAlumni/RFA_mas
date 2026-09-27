@@ -10,17 +10,26 @@ and never fails the run.
 
 Egress requires three things together: TRACE_BACKEND=langfuse, a loopback
 LANGFUSE_BASE_URL, and LANGFUSE_EXPORT_ENABLED=true. Keys alone grant nothing.
+
+Retention (P1-006F): community/OSS Langfuse ignores project retention without the
+Enterprise "data-retention" entitlement, so LangfuseRetentionSweeper deletes this app's own
+exported traces by ID once they are older than TRACE_RETENTION_DAYS and confirms the
+deletion by querying again. It never touches traces without this app's export schema.
 """
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import json
 import logging
+import re
+import time
 from collections import OrderedDict
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, Protocol
 
 import httpx
@@ -35,6 +44,8 @@ from rfa_mas.security import SecretRedactor
 logger = logging.getLogger(__name__)
 
 OTLP_TRACES_PATH = "/api/public/otel/v1/traces"
+OBSERVATIONS_PATH = "/api/public/v2/observations"
+TRACES_PATH = "/api/public/traces"
 EXPORT_SCHEMA = "rfa-langfuse-export-v1"
 SERVICE_NAME = "rfa-mas"
 TRACE_NAME = "rfa-run"
@@ -307,12 +318,7 @@ class LangfuseOtlpExporter:
         self._timeout = timeout_seconds
 
     def _authorization(self) -> str | None:
-        if self._public_key is None or self._secret_key is None:
-            return None
-        public, secret = self._public_key.get_secret_value(), self._secret_key.get_secret_value()
-        if not public or not secret:
-            return None
-        return "Basic " + base64.b64encode(f"{public}:{secret}".encode()).decode("ascii")
+        return _basic_authorization(self._public_key, self._secret_key)
 
     def _contains_secret(self, body: str) -> bool:
         keys = (self._public_key, self._secret_key)
@@ -452,3 +458,287 @@ class LangfuseExportTrace:
 
     def export_receipts(self) -> tuple[TraceExportReceipt, ...]:
         return tuple(self._receipts.values())
+
+
+def _basic_authorization(public_key: SecretStr | None, secret_key: SecretStr | None) -> str | None:
+    if public_key is None or secret_key is None:
+        return None
+    public, secret = public_key.get_secret_value(), secret_key.get_secret_value()
+    if not public or not secret:
+        return None
+    return "Basic " + base64.b64encode(f"{public}:{secret}".encode()).decode("ascii")
+
+
+# ---------------------------------------------------------------------------------------
+# P1-006F: self-run retention job for community (OSS) Langfuse.
+# ---------------------------------------------------------------------------------------
+
+SweepStatus = Literal["completed", "partial", "failed", "not_attempted"]
+SweepReason = Literal[
+    "ok",
+    "egress_not_permitted",
+    "credentials_missing",
+    "invalid_retention",
+    "connection_error",
+    "timeout",
+    "auth_error",
+    "http_error",
+    "invalid_response",
+    "budget_exhausted",
+    "delete_unconfirmed",
+]
+_OTEL_TRACE_ID = re.compile(r"^[0-9a-f]{32}$")
+# Oldest start time the sweep looks at. Wider than any retention the setting allows.
+_SCAN_HORIZON = timedelta(days=3650)
+
+
+@dataclass(frozen=True)
+class RetentionSweepReport:
+    """Counts and fixed codes only. No trace content, server text, key or raw ID list."""
+
+    status: SweepStatus
+    reason: SweepReason
+    retention_days: int
+    cutoff: str
+    dry_run: bool
+    scanned_observations: int = 0
+    foreign_observations: int = 0
+    expired_traces: int = 0
+    kept_recent_traces: int = 0
+    deleted_traces: int = 0
+    confirmed_gone: int = 0
+    still_queryable: int = 0
+    delete_failed: int = 0
+
+    def as_dict(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in self.__dataclass_fields__}
+
+
+class _SweepError(Exception):
+    def __init__(self, reason: SweepReason) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+def _iso(value: datetime) -> str:
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _is_own_observation(row: dict[str, Any]) -> bool:
+    """Only rows written by this app's exporter (schema marker + our service name)."""
+    metadata = row.get("metadata")
+    if not isinstance(metadata, dict) or metadata.get("schema") != EXPORT_SCHEMA:
+        return False
+    service = metadata.get("resourceAttributes.service.name")
+    return service == SERVICE_NAME
+
+
+class LangfuseRetentionSweeper:
+    """Delete this app's Langfuse traces older than the retention period, by trace ID.
+
+    A trace is expired only when it has an own observation older than the cutoff and no
+    observation at or after the cutoff. Deletion is confirmed by querying the trace ID
+    again; an acknowledged DELETE that is still queryable after the bound is reported as
+    still_queryable, never as gone. Page, delete and wait budgets are explicit.
+    """
+
+    def __init__(
+        self,
+        *,
+        client: httpx.AsyncClient,
+        egress: LangfuseEgress,
+        public_key: SecretStr | None,
+        secret_key: SecretStr | None,
+        retention_days: int,
+        page_limit: int = 500,
+        max_pages: int = 40,
+        max_deletes: int = 500,
+        confirm_seconds: float = 180.0,
+        poll_seconds: float = 5.0,
+        timeout_seconds: float = 10.0,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        monotonic: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._client = client
+        self.egress = egress
+        self._public_key = public_key
+        self._secret_key = secret_key
+        self.retention_days = retention_days
+        self._page_limit = page_limit
+        self._max_pages = max_pages
+        self._max_deletes = max_deletes
+        self._confirm_seconds = confirm_seconds
+        self._poll_seconds = poll_seconds
+        self._timeout = timeout_seconds
+        self._sleep = sleep
+        self._monotonic = monotonic
+
+    async def _request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        authorization = _basic_authorization(self._public_key, self._secret_key)
+        if authorization is None:
+            raise _SweepError("credentials_missing")
+        if not self.egress.permitted():
+            raise _SweepError("egress_not_permitted")
+        try:
+            response = await self._client.request(
+                method,
+                path,
+                headers={"Authorization": authorization},
+                timeout=self._timeout,
+                **kwargs,
+            )
+        except httpx.TimeoutException:
+            raise _SweepError("timeout") from None
+        except (httpx.HTTPError, OSError):
+            raise _SweepError("connection_error") from None
+        if response.status_code in {401, 403}:
+            raise _SweepError("auth_error")
+        return response
+
+    async def _query(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+        trace_id: str | None = None,
+        cursor: str | None = None,
+        page: int | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        params: dict[str, Any] = {
+            "fields": "core,basic,metadata",
+            "limit": self._page_limit,
+            "fromStartTime": _iso(start),
+            "toStartTime": _iso(end),
+        }
+        if trace_id is not None:
+            params["filter"] = json.dumps(
+                [{"type": "string", "column": "traceId", "operator": "=", "value": trace_id}]
+            )
+        if cursor is not None:
+            params["cursor"] = cursor
+        elif page is not None:
+            params["page"] = page
+        response = await self._request("GET", OBSERVATIONS_PATH, params=params)
+        if response.status_code != 200:
+            raise _SweepError("http_error")
+        try:
+            body = response.json()
+        except ValueError:
+            raise _SweepError("invalid_response") from None
+        rows = body.get("data") if isinstance(body, dict) else None
+        if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+            raise _SweepError("invalid_response")
+        meta = body.get("meta") if isinstance(body.get("meta"), dict) else {}
+        next_cursor = meta.get("cursor") if isinstance(meta.get("cursor"), str) else None
+        total_pages = meta.get("totalPages")
+        has_more_pages = (
+            isinstance(total_pages, int) and page is not None and page < total_pages
+        )
+        if trace_id is not None:
+            rows = [row for row in rows if row.get("traceId") == trace_id]
+        return rows, next_cursor or None, has_more_pages
+
+    async def _expired_candidates(
+        self, cutoff: datetime
+    ) -> tuple[set[str], int, int, bool]:
+        candidates: set[str] = set()
+        foreign_trace_ids: set[str] = set()
+        scanned = foreign = 0
+        cursor: str | None = None
+        page = 1
+        for _ in range(self._max_pages):
+            rows, cursor, more = await self._query(
+                start=cutoff - _SCAN_HORIZON, end=cutoff, cursor=cursor, page=page
+            )
+            scanned += len(rows)
+            for row in rows:
+                trace_id = row.get("traceId")
+                if not _is_own_observation(row):
+                    foreign += 1
+                    if isinstance(trace_id, str):
+                        foreign_trace_ids.add(trace_id)
+                elif isinstance(trace_id, str) and _OTEL_TRACE_ID.fullmatch(trace_id):
+                    candidates.add(trace_id)
+            if cursor is None and not more:
+                return candidates - foreign_trace_ids, scanned, foreign, False
+            page += 1
+        return candidates - foreign_trace_ids, scanned, foreign, True
+
+    async def _queryable(self, trace_id: str, now: datetime) -> bool:
+        rows, _, _ = await self._query(
+            start=now - _SCAN_HORIZON, end=now + timedelta(hours=1), trace_id=trace_id
+        )
+        return bool(rows)
+
+    async def sweep(
+        self, *, dry_run: bool = False, now: datetime | None = None
+    ) -> RetentionSweepReport:
+        """Run one sweep. `now` is injectable for tests only; the CLI always uses the clock."""
+        current = (now or datetime.now(UTC)).astimezone(UTC)
+        days = self.retention_days
+        valid = isinstance(days, int) and not isinstance(days, bool) and 1 <= days <= 365
+        cutoff = current - timedelta(days=days if valid else 0)
+        base = {"retention_days": days, "cutoff": _iso(cutoff), "dry_run": dry_run}
+        if not valid:
+            return RetentionSweepReport("not_attempted", "invalid_retention", **base)
+        if _basic_authorization(self._public_key, self._secret_key) is None:
+            return RetentionSweepReport("not_attempted", "credentials_missing", **base)
+        if not self.egress.permitted():
+            return RetentionSweepReport("not_attempted", "egress_not_permitted", **base)
+        counts: dict[str, int] = {}
+        try:
+            candidates, scanned, foreign, truncated = await self._expired_candidates(cutoff)
+            counts |= {"scanned_observations": scanned, "foreign_observations": foreign}
+            if truncated:
+                # An unseen page may contain a foreign span sharing a candidate trace.
+                # A trace-wide delete is safe only after the complete bounded scan.
+                return RetentionSweepReport("partial", "budget_exhausted", **base, **counts)
+            expired: list[str] = []
+            kept = 0
+            for trace_id in sorted(candidates):
+                recent, _, _ = await self._query(
+                    start=cutoff, end=current + timedelta(hours=1), trace_id=trace_id
+                )
+                if recent:
+                    kept += 1
+                else:
+                    expired.append(trace_id)
+            counts |= {"expired_traces": len(expired), "kept_recent_traces": kept}
+            if len(expired) > self._max_deletes:
+                truncated = True
+                expired = expired[: self._max_deletes]
+            if dry_run:
+                status: SweepStatus = "partial" if truncated else "completed"
+                reason: SweepReason = "budget_exhausted" if truncated else "ok"
+                return RetentionSweepReport(status, reason, **base, **counts)
+            deleted: list[str] = []
+            failed = 0
+            for trace_id in expired:
+                response = await self._request("DELETE", f"{TRACES_PATH}/{trace_id}")
+                if 200 <= response.status_code < 300:
+                    deleted.append(trace_id)
+                else:
+                    failed += 1
+            counts |= {"deleted_traces": len(deleted), "delete_failed": failed}
+            pending = set(deleted)
+            started = self._monotonic()
+            while pending:
+                for trace_id in sorted(pending):
+                    if not await self._queryable(trace_id, current):
+                        pending.discard(trace_id)
+                if not pending or self._monotonic() - started >= self._confirm_seconds:
+                    break
+                await self._sleep(self._poll_seconds)
+            counts |= {
+                "confirmed_gone": len(deleted) - len(pending),
+                "still_queryable": len(pending),
+            }
+        except _SweepError as exc:
+            return RetentionSweepReport("failed", exc.reason, **base, **counts)
+        if failed:
+            return RetentionSweepReport("partial", "http_error", **base, **counts)
+        if pending:
+            return RetentionSweepReport("partial", "delete_unconfirmed", **base, **counts)
+        if truncated:
+            return RetentionSweepReport("partial", "budget_exhausted", **base, **counts)
+        return RetentionSweepReport("completed", "ok", **base, **counts)

@@ -19,7 +19,13 @@ from rfa_mas.adapters.http import (
     ToolHttpAdapter,
     require_loopback_reference_url,
 )
-from rfa_mas.adapters.langfuse import LangfuseEgress, LangfuseExportTrace, LangfuseOtlpExporter
+from rfa_mas.adapters.langfuse import (
+    LangfuseEgress,
+    LangfuseExportTrace,
+    LangfuseOtlpExporter,
+    LangfuseRetentionSweeper,
+    RetentionSweepReport,
+)
 from rfa_mas.adapters.local import (
     LocalAnalysisTools,
     LocalJsonlTrace,
@@ -491,6 +497,39 @@ def _langfuse_trace(
         timeout_seconds=timeout,
     )
     return LangfuseExportTrace(local_trace, exporter)
+
+
+async def run_langfuse_retention(
+    settings: Settings,
+    *,
+    dry_run: bool = False,
+    transport: httpx.AsyncBaseTransport | None = None,
+    **sweeper_options,
+) -> RetentionSweepReport:
+    """P1-006F: one self-run retention sweep against the loopback community Langfuse.
+
+    Uses the same egress permission as the exporter (loopback LANGFUSE_BASE_URL, keys and
+    LANGFUSE_EXPORT_ENABLED=true). Only this app's exported traces are ever deleted; local
+    JSONL traces are untouched; TRACE_RETENTION_DAYS governs both stores' retention.
+    """
+    base_url = settings.langfuse_base_url or ""
+    egress = LangfuseEgress(base_url, settings.langfuse_export_enabled)
+    async with httpx.AsyncClient(
+        base_url=base_url.rstrip("/") if egress.permitted() else "http://127.0.0.1:9",
+        timeout=httpx.Timeout(min(settings.http_timeout_seconds, 10.0)),
+        transport=transport,
+        follow_redirects=False,
+        trust_env=False,
+    ) as client:
+        sweeper = LangfuseRetentionSweeper(
+            client=client,
+            egress=egress,
+            public_key=settings.langfuse_public_key,
+            secret_key=settings.langfuse_secret_key,
+            retention_days=settings.trace_retention_days,
+            **sweeper_options,
+        )
+        return await sweeper.sweep(dry_run=dry_run)
 
 
 def _staged_context(repository, policy, settings: Settings, observer: Observations,

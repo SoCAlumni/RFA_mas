@@ -14,7 +14,12 @@ from pydantic import ValidationError
 from pydantic_settings import SettingsError
 
 from rfa_mas.api.app import create_app
-from rfa_mas.bootstrap import build_container, build_scheduler_runner, inspect_configuration
+from rfa_mas.bootstrap import (
+    build_container,
+    build_scheduler_runner,
+    inspect_configuration,
+    run_langfuse_retention,
+)
 from rfa_mas.contracts import (
     Audience,
     DomainId,
@@ -68,6 +73,16 @@ def _parser() -> argparse.ArgumentParser:
     demo.add_argument("--query", default=None)
 
     subparsers.add_parser("doctor", help="Show configured/missing variable names without values")
+
+    retention = subparsers.add_parser(
+        "langfuse-retention",
+        help="Delete this app's Langfuse traces older than TRACE_RETENTION_DAYS (run daily)",
+    )
+    retention.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Count expired traces without deleting anything",
+    )
 
     scheduler = subparsers.add_parser(
         "scheduler",
@@ -374,6 +389,11 @@ def main() -> None:
         return
     if args.command == "doctor":
         raise SystemExit(_doctor(settings))
+    if args.command == "langfuse-retention":
+        report = asyncio.run(run_langfuse_retention(settings, dry_run=args.dry_run))
+        print(json.dumps(report.as_dict(), ensure_ascii=False, sort_keys=True))
+        exit_codes = {"completed": 0, "partial": 1, "failed": 1, "not_attempted": 2}
+        raise SystemExit(exit_codes[report.status])
     if args.command == "scheduler":
         try:
             raise SystemExit(asyncio.run(_scheduler(args, settings)))

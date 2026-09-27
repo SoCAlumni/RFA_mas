@@ -11,18 +11,21 @@ What it verifies (P1-006C AC1-AC3), with synthetic data only:
 * unreported tokens are not sent: usageDetails stays empty and metadata says
   token_usage=not_reported (Langfuse's own aggregate columns render that as 0);
 * DELETE /api/public/traces/{id} removes the trace from the v2 query within a bound;
-* the project retention requested at init is reported back by Langfuse (fails on OSS: the
-  data-retention entitlement is Enterprise-only, so the value is dropped at init);
+* the community (OSS) project reports no server-side retention (the data-retention
+  entitlement is Enterprise-only), so retention is enforced by the app's own sweep;
+* P1-006F: `LangfuseRetentionSweeper` deletes only this app's traces older than
+  TRACE_RETENTION_DAYS by ID and confirms by query; a foreign trace is never touched;
 * a closed loopback port is a failed export, never a success.
 
-Actual expiry is not asserted (nightly job, not verifiable in one session).
+Expiry is exercised with an injected clock (real clock: nothing deleted; clock + 8 days:
+own traces deleted). Langfuse's own nightly expiry does not exist on the community edition.
 
 Run explicitly (a skipped run is not evidence):
     RFA_LANGFUSE_LIVE=1 RFA_LANGFUSE_ENV_FILE=/abs/tmp/langfuse-live.env \
     .venv/bin/python -m pytest -q tests/integration/test_langfuse_live.py
 
 The env file lives OUTSIDE the repository and holds only LANGFUSE_BASE_URL (loopback),
-LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY and optionally RFA_LANGFUSE_EXPECTED_RETENTION_DAYS.
+LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY.
 Values are never printed. RFA_LANGFUSE_EVIDENCE_OUT optionally receives a value-free JSON
 summary (opaque aliases and hex span ids only, no keys).
 """
@@ -33,6 +36,8 @@ import asyncio
 import json
 import os
 import socket
+import subprocess
+import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -56,7 +61,6 @@ ALLOWED_NAMES = {
     "LANGFUSE_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "RFA_LANGFUSE_EXPECTED_RETENTION_DAYS",
 }
 # Langfuse copies our own fixed OTel constants into observation metadata.
 LANGFUSE_BOOKKEEPING = {
@@ -276,33 +280,27 @@ async def test_live_delete_by_trace_id_removes_it_from_the_query(
     )
 
 
-async def test_live_project_retention_matches_requested_days() -> None:
+async def test_live_community_project_has_no_server_retention_so_sweep_is_required() -> None:
+    """Community Langfuse keeps traces indefinitely; the app's sweep is the retention."""
     values = _live_values()
-    expected = values.get("RFA_LANGFUSE_EXPECTED_RETENTION_DAYS")
-    if not expected:
-        pytest.fail("RFA_LANGFUSE_EXPECTED_RETENTION_DAYS is required for the retention check")
     async with _client(values) as client:
         response = await client.get("/api/public/projects")
     response.raise_for_status()
     projects = response.json().get("data", [])
     assert len(projects) == 1
     project = projects[0]
+    assert project.get("retentionDays") in (None, 0), (
+        "server-side retention is reported; re-check whether the app sweep is still needed"
+    )
     _record_evidence(
         "retention",
         {
-            "requested_days": int(expected),
             "project_keys": sorted(project),
             "reported_retention_days": project.get("retentionDays"),
-            "expiry_observed": "not_verified",
+            "server_retention": "not_available_on_community_edition",
+            "enforced_by": "rfa langfuse-retention (P1-006F)",
         },
     )
-    if project.get("retentionDays") != int(expected):
-        pytest.fail(
-            "Langfuse did not report the requested project retention "
-            f"(keys: {sorted(project)}). Langfuse 4.46 applies "
-            "LANGFUSE_INIT_PROJECT_RETENTION only with the Enterprise 'data-retention' "
-            "entitlement; without it retention is unset and traces are kept indefinitely."
-        )
 
 
 async def test_live_closed_loopback_port_is_a_failed_export(tmp_path: Path, principal) -> None:
@@ -333,3 +331,162 @@ async def test_live_closed_loopback_port_is_a_failed_export(tmp_path: Path, prin
         "closed_port",
         {"receipts": len(receipts), "statuses": ["failed:connection_error"]},
     )
+
+
+def _otlp_foreign_span(trace_id: str, span_id: str) -> dict[str, Any]:
+    now_ns = time.time_ns()
+    return {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [{"key": "service.name", "value": {"stringValue": "other-app"}}]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {"name": "other-app"},
+                        "spans": [
+                            {
+                                "traceId": trace_id,
+                                "spanId": span_id,
+                                "name": "other.work",
+                                "kind": 1,
+                                "startTimeUnixNano": str(now_ns - 1_000_000),
+                                "endTimeUnixNano": str(now_ns),
+                                "attributes": [],
+                                "status": {"code": 1},
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+
+async def _wait_queryable(client, trace_id: str, *, present: bool) -> float:
+    started = time.monotonic()
+    while time.monotonic() - started < READBACK_SECONDS:
+        rows = await _observations(client, "traceId", trace_id)
+        if bool(rows) == present:
+            return time.monotonic() - started
+        await asyncio.sleep(3)
+    pytest.fail(f"trace {'never appeared' if present else 'still queryable'} within bound")
+
+
+async def test_live_retention_sweep_deletes_only_expired_own_traces(
+    tmp_path: Path, principal
+) -> None:
+    """P1-006F: community Langfuse has no retention, so the app's own sweep enforces it.
+
+    Real clock: fresh traces are inside retention and nothing is deleted. Clock advanced by
+    retention+1 days (injected, test-only): the app's traces are deleted by ID and confirmed
+    gone by query, while a foreign app's trace in the same project is never touched.
+    """
+    from rfa_mas.adapters.langfuse import LangfuseEgress, LangfuseRetentionSweeper
+
+    values = _live_values()
+    _, _, receipts = await _export_canary_run(tmp_path, values, principal)
+    (own_trace,) = {r.otel_trace_id for r in receipts}
+    foreign_trace, foreign_span = os.urandom(16).hex(), os.urandom(8).hex()
+    settings = _settings(tmp_path, values, trace_retention_days=7)
+    async with _client(values) as client:
+        await _read_back(client, receipts)
+        sent = await client.post(
+            "/api/public/otel/v1/traces",
+            json=_otlp_foreign_span(foreign_trace, foreign_span),
+            headers={"x-langfuse-ingestion-version": "4"},
+        )
+        assert 200 <= sent.status_code < 300
+        await _wait_queryable(client, own_trace, present=True)
+        await _wait_queryable(client, foreign_trace, present=True)
+
+        def sweeper() -> LangfuseRetentionSweeper:
+            return LangfuseRetentionSweeper(
+                client=client,
+                egress=LangfuseEgress(values["LANGFUSE_BASE_URL"], True),
+                public_key=settings.langfuse_public_key,
+                secret_key=settings.langfuse_secret_key,
+                retention_days=settings.trace_retention_days,
+            )
+
+        real_now = datetime.now(UTC)
+        inside = await sweeper().sweep(now=real_now)
+        assert (inside.status, inside.expired_traces, inside.deleted_traces) == ("completed", 0, 0)
+        assert await _observations(client, "traceId", own_trace)
+
+        dry = await sweeper().sweep(now=real_now + timedelta(days=8), dry_run=True)
+        assert dry.status == "completed" and dry.expired_traces >= 1 and dry.deleted_traces == 0
+        assert dry.foreign_observations >= 1
+        assert await _observations(client, "traceId", own_trace)
+
+        started = time.monotonic()
+        swept = await sweeper().sweep(now=real_now + timedelta(days=8))
+        sweep_seconds = time.monotonic() - started
+        assert (swept.status, swept.reason) == ("completed", "ok"), swept
+        assert swept.deleted_traces == swept.expired_traces == dry.expired_traces
+        assert swept.confirmed_gone == swept.deleted_traces and swept.still_queryable == 0
+        assert not await _observations(client, "traceId", own_trace)
+        assert await _observations(client, "traceId", foreign_trace)
+    _record_evidence(
+        "retention_sweep",
+        {
+            "retention_days": 7,
+            "real_clock": {"expired": inside.expired_traces, "deleted": inside.deleted_traces},
+            "clock_plus_8_days_dry_run": {
+                "expired": dry.expired_traces,
+                "deleted": dry.deleted_traces,
+                "foreign_observations": dry.foreign_observations,
+            },
+            "clock_plus_8_days": {
+                "expired": swept.expired_traces,
+                "deleted": swept.deleted_traces,
+                "confirmed_gone": swept.confirmed_gone,
+                "still_queryable": swept.still_queryable,
+                "sweep_seconds": round(sweep_seconds, 1),
+            },
+            "own_trace_after": "gone",
+            "foreign_trace_after": "kept",
+            "own_otel_trace_id": own_trace,
+        },
+    )
+
+
+def test_live_retention_cli_dry_run_uses_settings_and_prints_counts_only(tmp_path: Path) -> None:
+    values = _live_values()
+    env_file = tmp_path / "retention.env"
+    env_file.write_text(
+        "\n".join(
+            [
+                f"DATABASE_URL=sqlite:///{tmp_path / 'rfa.db'}",
+                f"TRACE_DIR={tmp_path / 'traces'}",
+                f"LANGFUSE_BASE_URL={values['LANGFUSE_BASE_URL']}",
+                f"LANGFUSE_PUBLIC_KEY={values['LANGFUSE_PUBLIC_KEY']}",
+                f"LANGFUSE_SECRET_KEY={values['LANGFUSE_SECRET_KEY']}",
+                "LANGFUSE_EXPORT_ENABLED=true",
+                "TRACE_RETENTION_DAYS=7",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    env_file.chmod(0o600)
+    completed = subprocess.run(
+        [sys.executable, "-m", "rfa_mas.cli", "--env-file", str(env_file),
+         "langfuse-retention", "--dry-run"],
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    output = completed.stdout + completed.stderr
+    assert values["LANGFUSE_PUBLIC_KEY"] not in output
+    assert values["LANGFUSE_SECRET_KEY"] not in output
+    report = json.loads(completed.stdout.strip().splitlines()[-1])
+    assert completed.returncode == 0, report
+    assert (report["status"], report["retention_days"], report["dry_run"]) == (
+        "completed",
+        7,
+        True,
+    )
+    assert report["deleted_traces"] == 0
+    _record_evidence("retention_cli", {"exit_code": completed.returncode, "report": report})

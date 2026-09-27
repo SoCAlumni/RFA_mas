@@ -177,7 +177,7 @@ response can self-authorize a Team selection, access grant or approval.
 | `PolicyPort` | 자료 접근·공유·tool 정책 | `LocalPolicy` | `PolicyHttpAdapter` | application policy이며 OS 강제 아님 |
 | `JudgePort` | 근거 충실도·질문 해결도·작업 후보 유용성의 비권위적 보조 평가 | `MockJudge` | 실제 Judge는 P1 opt-in | privacy/access 규칙은 application의 결정적 evaluator가 별도 판정 |
 | `WorkRepositoryPort` | run, DRAFT, checkpoint, KB | `SqliteWorkRepository` | 미정 | 다른 서비스 DB를 공유하지 않음 |
-| `TracePort` | metadata trace | `LocalJsonlTrace` | `LangfuseExportTrace`(P1-006C): 로컬 trace를 감싸는 opt-in loopback OTLP export | 로컬 JSONL/SQLite 원장이 원본이고 Langfuse는 allowlist metadata 사본이다. 본문 관측 아님, 비loopback은 미구현 |
+| `TracePort` | metadata trace | `LocalJsonlTrace` | `LangfuseExportTrace`(P1-006C): 로컬 trace를 감싸는 opt-in loopback OTLP export | 로컬 JSONL/SQLite 원장이 원본이고 Langfuse는 allowlist metadata 사본이다. 본문 관측 아님, 비loopback은 미구현. 별도 `rfa langfuse-retention` 실행이 `TRACE_RETENTION_DAYS` 기준 앱 소유 trace 보존을 적용한다(docs/evidence/llmops.md P1-006F) |
 
 ## 공통 DTO
 

@@ -55,7 +55,7 @@
 
 연결 실패는 14건 모두 `failed: connection_error`로 기록됐다. 이 경우에도 run과 로컬 trace는 정상이었다. trace ID 기반 삭제(`DELETE /api/public/traces/{id}`)도 실제로 동작했다. 조회에서 사라지기까지 10–51초가 걸렸다.
 
-Langfuse 쪽 보존 기간은 적용되지 않았다(blocked). `LANGFUSE_INIT_PROJECT_RETENTION=7`을 설정했지만 Langfuse 4.46은 Enterprise `data-retention` entitlement가 있을 때만 이 값을 적용한다. OSS에서는 값이 조용히 무시되어 project `retention_days`가 NULL로 남는다. 따라서 삭제하지 않는 한 export된 metadata는 무기한 보관된다. 실제 만료(nightly job)는 검증하지 않았다.
+Langfuse 쪽 보존 기간은 적용되지 않았다. `LANGFUSE_INIT_PROJECT_RETENTION=7`을 설정했지만 Langfuse 4.46은 Enterprise `data-retention` entitlement가 있을 때만 이 값을 적용한다. OSS에서는 값이 조용히 무시되어 project `retention_days`가 NULL로 남는다. 이 공백은 아래 P1-006F의 자체 삭제 job으로 해결했다.
 
 ### 구현 요약
 
@@ -123,8 +123,53 @@ colima stop
 
 ### 한계와 후속
 
-- Langfuse 보존 기간을 적용하려면 Enterprise license(`data-retention`)가 있거나, 운영자가 오래된 trace를 ID로 지우는 sweeper와 MinIO `events/otel` lifecycle 규칙을 둬야 한다. 셋 다 구현·검증하지 않았다.
+- Langfuse 보존 기간은 P1-006F의 `rfa langfuse-retention`과 MinIO `mc rm --older-than` 정리로 적용한다(아래 절).
 - export는 관측마다 동기 요청 1회다(timeout ≤5초, batch·retry 없음). Langfuse가 느리면 run 지연이 늘어난다.
 - receipt는 메모리에만 있다. 원본은 로컬 JSONL과 SQLite 원장이다.
 - 비loopback Langfuse(Cloud 등)는 reserved다. 원격 egress 정책은 별도 작업이다.
 - 진단 과정에서 폐기용 stack의 생성된 public key(secret key 아님)가 응답 본문 일부로 한 번 화면에 표시됐다. stack은 `down -v`로 volume까지 삭제되어 그 key는 더 이상 유효하지 않다. 이 문서에는 값을 남기지 않았다.
+
+
+## P1-006F — community Langfuse 보존 기간을 앱의 자체 삭제 job으로 적용 (2026-09-27 KST)
+
+### 결론
+
+무료 community(OSS) Langfuse만 쓴다는 결정에 따라 Enterprise 보존 기능 대신 앱이 직접 보존 기간을 적용한다. `rfa langfuse-retention`이 기존 `TRACE_RETENTION_DAYS`(기본 7일)보다 오래된 **이 앱의 trace만** ID로 삭제하고, 다시 조회해 사라졌는지 확인한다. 아래 6개 live 통과 기록은 기존 branch `task/P1-006F`의 실제 실행이다. 통합 시 설정을 기존 보존 값으로 합쳤고, 서비스 표식 누락·외부 span 혼합·페이지 스캔 불완전 시 삭제 금지를 보강했다. 이 보강의 검증은 offline 회귀이며 새 live 삭제 실행으로 표시하지 않는다.
+
+- 실제 시계: 방금 export한 trace는 보존 기간 안이라 만료 0건, 삭제 0건이었다.
+- 시계를 8일 앞으로 주입(테스트 전용): 이 앱 trace 2개가 만료로 잡혔고 2개 삭제, 2개 모두 조회에서 사라짐(`still_queryable=0`)을 확인했다. 같은 project에 넣은 다른 앱(`service.name=other-app`) trace는 그대로 남았다. dry-run은 같은 2개를 세기만 하고 삭제 요청을 보내지 않았다.
+- CLI: 실제 설정 파일로 `rfa --env-file <tmp> langfuse-retention --dry-run`을 실행해 exit 0, `status=completed`, `retention_days=7`을 받았다. 출력에는 개수와 고정 코드만 있고 key나 trace ID는 없다.
+- MinIO 원본 upload 파일: trace 삭제 뒤에도 남는 `events/otel/` 원본 파일은 MinIO에 포함된 무료 `mc`로 정리한다. 44개 중 `--older-than 7d`는 0개를 지웠고(보존 기간 안), 70초 뒤 `--older-than 1m`은 44개를 지워 0개가 됐다.
+
+Langfuse 자체의 야간 만료는 community 버전에 없으므로 검증 대상이 아니다. live test는 대신 project가 서버 쪽 보존 값을 보고하지 않는다는 사실(`retentionDays` 없음)을 확인한다.
+
+### 동작
+
+| 항목 | 내용 |
+| --- | --- |
+| 대상 선택 | `GET /api/public/v2/observations`로 cutoff(`now - TRACE_RETENTION_DAYS`) 이전 관측을 cursor로 페이지 조회한다. metadata `schema=rfa-langfuse-export-v1`과 명시적 service `rfa-mas`가 필요하다. 동일 trace에 외부/표식 누락 관측이 있으면 제외한다. 32자리 hex가 아닌 ID는 URL에 넣지 않는다. 조회 범위는 cutoff 이전 10년으로 제한된다 |
+| 만료 판정 | 후보 trace에 cutoff 이후 관측이 하나라도 있으면 보존한다(`kept_recent_traces`). 기간에 걸친 run을 반쯤 지우지 않는다 |
+| 삭제·확인 | `DELETE /api/public/traces/{id}` 후 traceId로 다시 조회한다. 180초 안에 사라지지 않으면 `partial: delete_unconfirmed`이며 성공으로 보고하지 않는다 |
+| 허가 | exporter와 같다. loopback `LANGFUSE_BASE_URL`, key pair, `LANGFUSE_EXPORT_ENABLED=true`가 모두 있어야 요청을 보낸다. 없으면 요청 0건으로 `not_attempted` |
+| 예산 | 페이지 40×500, 삭제 500건/회. 전체 스캔이 예산에 걸리면 삭제 0건으로 `partial: budget_exhausted`; 운영자가 범위를 점검해야 하며 자동 진전은 보장하지 않는다. 완전 스캔 후 삭제 개수만 초과하면 한도까지만 처리한다 |
+| 출력 | 개수, cutoff, 고정 사유 코드만 담는다. exit code는 completed 0, partial/failed 1, not_attempted 2 |
+| 범위 밖 | 로컬 JSONL trace(`TRACE_RETENTION_DAYS`가 관리), 다른 앱의 trace |
+
+### live 실행
+
+- 환경: 위 P1-006C와 같은 공식 compose(sha256 `d0309ef3…`), Langfuse web/worker 4.46.0, colima 0.10.1. web·minio·postgres host port는 `127.0.0.1`에만 바인딩했다. `CHANGEME` 값과 project key pair는 `openssl rand`로 저장소 밖 0600 파일에 생성했고 출력하지 않았다. `TELEMETRY_ENABLED=false`.
+- 명령: `RFA_LANGFUSE_LIVE=1 RFA_LANGFUSE_ENV_FILE=<tmp>/langfuse-live.env .venv/bin/python -m pytest -q tests/integration/test_langfuse_live.py`
+- 결과(2026-09-26T22:41–22:46Z, branch `task/P1-006F`): export·조회, ID 삭제, 닫힌 port 실패, community 보존 부재, retention sweep, CLI dry-run 6개 모두 passed. sweep의 삭제 확인까지 107.8초가 걸렸다.
+- 페이지 확인: 같은 stack에서 `limit=2`로 조회하자 `meta.cursor`로 3페이지 6행을 중복 없이 받았다. sweeper의 cursor 처리와 같다.
+- 오프라인: `tests/test_langfuse_retention.py` 17개(가짜 Langfuse)가 만료·보존·다른 앱 trace 구분, dry-run 삭제 0건, 허가/키 없음 요청 0건, 잘못된 보존 값, 삭제 미확인 partial, 401/5xx/연결 실패, 페이지 예산, 출력의 key·ID 부재를 확인한다.
+
+### 운영
+
+하루 1회 실행한다. 예시 cron(03:17 KST):
+
+```
+17 3 * * * cd /path/to/rfa_mas && .venv/bin/rfa --env-file .env langfuse-retention >> .local/langfuse-retention.log 2>&1
+27 3 * * * docker exec <project>-minio-1 sh -c 'mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc rm --recursive --force --older-than 7d local/langfuse/events/otel/'
+```
+
+MinIO 정리는 project 전체의 원본 upload 파일에 적용된다. 이 Langfuse stack이 이 앱 전용이라는 전제다. 원본 파일은 수집 처리에만 쓰이고 조회 데이터는 ClickHouse에 있다.
