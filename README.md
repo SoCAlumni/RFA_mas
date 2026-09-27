@@ -57,6 +57,7 @@ Bearer `RFA_ASK_TOKEN`이 맞으면 owner, 없거나 틀리면 guest로 처리�
 | 문서 | 내용 |
 | --- | --- |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 기술 키워드, 실제 흐름, 에이전트 호출·생성, 보안 상세 |
+| [docs/JUDGING_KEYWORDS.md](docs/JUDGING_KEYWORDS.md) | 심사 키워드 ↔ 구현·증거·상태 대응표, 정정표, 예상 질문 |
 | [docs/FE_API_GUIDE.md](docs/FE_API_GUIDE.md) · [docs/openapi.yaml](docs/openapi.yaml) · [docs/api/](docs/api/) | 프런트 연동 가이드, API 계약 |
 | [docs/decisions.md](docs/decisions.md) | 설계 결정 D-0.1 ~ D-24 |
 | [docs/WORK_LOG.md](docs/WORK_LOG.md) | 작업 기록 (SG-N, FE-N) |
