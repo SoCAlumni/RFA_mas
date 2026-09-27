@@ -1,0 +1,122 @@
+F....F                                                                   [100%]
+=================================== FAILURES ===================================
+________ test_poc_process_manual_approval_publish_restart_and_security _________
+
+tmp_path = PosixPath('/private/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/pytest-of-minseop/pytest-560/test_poc_process_manual_approv0')
+
+    def test_poc_process_manual_approval_publish_restart_and_security(tmp_path):
+        root, port = tmp_path / "poc", free_port()
+>       with server(root, port) as (client, _):
+             ^^^^^^^^^^^^^^^^^^
+
+tests/test_poc.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/minseop/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/private/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/pytest-of-minseop/pytest-560/test_poc_process_manual_approv0/poc')
+port = 57796
+
+    @contextmanager
+    def server(root, port):
+        command = [sys.executable, "-m", "rfa_mas.poc", "--data-dir", str(root), "--port", str(port)]
+        process = subprocess.Popen(
+            command, env=clean_env(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        base = f"http://127.0.0.1:{port}"
+        try:
+            with httpx.Client(
+                base_url=base,
+                trust_env=False,
+                timeout=5,
+                headers={"Origin": base, "Sec-Fetch-Site": "same-origin"},
+            ) as client:
+                for _ in range(150):
+                    if process.poll() is not None:
+                        output = process.communicate()
+>                       pytest.fail(f"PoC startup exited {process.returncode}: {output}")
+E                       Failed: PoC startup exited 3: ('RFA PoC: http://127.0.0.1:57796/ui/ (local/mock; Ctrl-C to stop)\n', 'ERROR:    Traceback (most recent call last):\n  File "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008F-poc/.venv/lib/python3.12/site-packages/starlette/routing.py", line 654, in lifespan\n    async with self.lifespan_context(app) as maybe_state:\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "/Users/minseop/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/contextlib.py", line 210, in __aenter__\n    return await anext(self.gen)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008F-poc/src/rfa_mas/poc/bootstrap.py", line 251, in lifespan\n    previous.observer,\n    ^^^^^^^^^^^^^^^^^\nAttributeError: \'EffectGuardedResponse\' object has no attribute \'observer\'\n\nERROR:    Application startup failed. Exiting.\n')
+
+tests/test_poc.py:50: Failed
+___________ test_acl_revocation_blocks_publication_at_core_boundary ____________
+
+tmp_path = PosixPath('/private/var/folders/4l/brc8y7px63929n3z3lhxfms80000gn/T/pytest-of-minseop/pytest-560/test_acl_revocation_blocks_pub0')
+
+    async def test_acl_revocation_blocks_publication_at_core_boundary(tmp_path):
+        app = create_poc_app(tmp_path / "guard")
+        async with (
+>           app.router.lifespan_context(app),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://127.0.0.1:8780",
+                headers={"Origin": "http://127.0.0.1:8780"},
+            ) as client,
+        ):
+
+tests/test_poc.py:254: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/minseop/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/contextlib.py:210: in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+app = <starlette.applications.Starlette object at 0x10a2807d0>
+
+    @asynccontextmanager
+    async def lifespan(app):
+        with data_lock(root):
+            token = SecretStr(secrets.token_urlsafe(32))
+            transport = ReviewTransport()
+            container = build_container(local_settings(root, token), http_transport=transport)
+            try:
+                await container.startup()
+                owner = await container.service_owner_id()
+                review_app = create_local_response_app(
+                    db_path=root / "review" / "review.db",
+                    boundary=LocalServiceBoundary.create(
+                        owner_id=owner,
+                        service_token=token,
+                        allowed_hosts=["127.0.0.1:18781"],
+                    ),
+                )
+                transport.inner = httpx.ASGITransport(app=review_app)
+                core_app = create_app(container=container)
+                async with (
+                    httpx.AsyncClient(
+                        transport=transport,
+                        base_url=REVIEW_URL,
+                        headers={"Authorization": f"Bearer {token.get_secret_value()}"},
+                        trust_env=False,
+                    ) as review_client,
+                    httpx.AsyncClient(
+                        transport=httpx.ASGITransport(app=core_app),
+                        base_url=CORE_URL,
+                        trust_env=False,
+                    ) as core_client,
+                ):
+                    response = PocResponse(
+                        ReferenceHttpClient(review_client, token=token, max_read_retries=1),
+                        container,
+                    )
+                    previous = container.service._dependencies.response
+                    container.service._dependencies = replace(
+                        container.service._dependencies,
+                        response=ObservedPort(
+                            response,
+>                           previous.observer,
+                            ^^^^^^^^^^^^^^^^^
+                            "approval",
+                            mode="mock",
+                            provider_kind="reference_http",
+                        ),
+                    )
+E                   AttributeError: 'EffectGuardedResponse' object has no attribute 'observer'
+
+src/rfa_mas/poc/bootstrap.py:251: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_poc.py::test_poc_process_manual_approval_publish_restart_and_security
+FAILED tests/test_poc.py::test_acl_revocation_blocks_publication_at_core_boundary
+2 failed, 4 passed in 2.20s

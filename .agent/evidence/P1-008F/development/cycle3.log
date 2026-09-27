@@ -1,0 +1,8 @@
+......                                                                   [100%]
+=============================== warnings summary ===============================
+tests/test_poc.py::test_acl_revocation_blocks_publication_at_core_boundary
+  /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008F-poc/.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3230: UserWarning: `durability` has no effect when no checkpointer is present.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 1 warning in 4.68s
