@@ -1,0 +1,44 @@
+{
+  "task": "P1-006A",
+  "kind": "live_judge_smoke",
+  "simulated": false,
+  "generated_at": "2026-09-26T22:47:23+00:00",
+  "rubric_version": "rfa-judge-rubric-v1",
+  "prompt_version": "rfa-judge-prompt-v1",
+  "note": "auxiliary quality score over one synthetic public mock Run; not a privacy, access or user-satisfaction measurement; n=1",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+  "run_status": "completed",
+  "draft_sha256": "9fa9baa7e308901d8b254f68110dccc219369e2b86fb15ba7cbf546ac915d5b1",
+  "draft_evidence": [
+    "triv3-public-overview"
+  ],
+  "judge_seconds": 2.24,
+  "evaluation": {
+    "schema_version": "1.0",
+    "case_id": "judge-live-01",
+    "run_id": "run_596bcffaebc64c439a44ffe19039a754",
+    "trace_id": "trace_2df46b6974ba41ce93decf804d5fee1a",
+    "rule_checks": {
+      "run_result_available": true,
+      "draft_available": true,
+      "forbidden_information_absent": true,
+      "evidence_within_allowed_scope": true,
+      "expected_evidence_present": true,
+      "target_audience_matches_scope": true,
+      "domain_matches_scope": true
+    },
+    "judge_kind": "actual",
+    "judge_score": 0.6,
+    "judge_reason": "[rubric=rfa-judge-rubric-v1 prompt=rfa-judge-prompt-v1 model=nvidia/nemotron-3-ultra-550b-a55b] 초안은 근거 문장을 그대로 인용해 충실하나, 요청한 '세 트랙 요약' 중 공개 트랙만 다루고 상세 설명이 부족하다. 다음 행동 제안이 없어 실용성이 낮다. (expression_and_team_fit=0.70) 보조 점수이며 권한·개인정보 판정과 실제 사용자 만족도 측정이 아닙니다.",
+    "judge_dimensions": {
+      "schema_version": "1.0",
+      "evidence_faithfulness": 1.0,
+      "question_resolution": 0.5,
+      "task_candidate_usefulness": 0.3
+    },
+    "judge_adapter": "nvidia-judge",
+    "executed": true,
+    "simulated": false
+  }
+}
