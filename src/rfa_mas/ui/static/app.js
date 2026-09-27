@@ -6,6 +6,53 @@
   const byId = (id) => document.getElementById(id);
   const labels = {store_note:"KB에 저장", query:"내 자료 검색", external_draft:"공개 초안", clarify:"확인 필요", task_run:"Task 팀 실행"};
   const routeKinds = {task:"Task 팀", new_task:"새 Task 팀", domain:"자료 공간", assistant:"비서"};
+  const routeReasons = {
+    explicit_task:"사용자가 Task 팀을 직접 지정", existing_task_subject_match:"기존 Task 목표와 주제 일치",
+    ambiguous_tasks:"후보 Task 팀이 동점이라 억지 배정 안 함", explicit_domain:"자료 공간 직접 지정",
+    domain_subject_match:"자료 공간 주제 언급(영속 Task 아님)", ambiguous_domains:"자료 공간 후보 모호",
+    no_suitable_assignee:"적합한 담당 없음 → 비서 직접 처리", explicit_task_request_no_match:"명시적 요청이지만 기존 팀 없음 → 새 팀"
+  };
+  let liveTurn = null;
+  function stageDetail(s) {
+    // Every value is rendered as text. Details never include note bodies, keys or answers.
+    const d=s.detail||{}, lines=[];
+    if(s.stage==="understanding") lines.push(["의도",(d.intent_label||d.intent||"")+" · "+(d.rule||"")]);
+    if(s.stage==="routing" && d.route) {
+      const r=d.route;
+      lines.push(["담당",(routeKinds[r.kind]||r.kind)+(r.label?" · "+r.label:"")]);
+      lines.push(["근거",(routeReasons[r.reason]||r.reason||"")+(typeof r.considered==="number"?" · 검토한 내 Task 팀 "+r.considered+"개":"")]);
+      (r.candidates||[]).forEach((c)=>lines.push(["후보",c.goal+" (공통 주제: "+(c.shared_subjects||[]).join(", ")+")"]));
+      if(r.task_id) lines.push(["Task",r.task_id+(r.team_id?" · 팀 "+r.team_id:"")]);
+    }
+    if(s.stage==="team_spawn") { lines.push(["패턴",d.pattern]); lines.push(["예정 역할",(d.planned_roles||[]).join(", ")]); if(d.selector) lines.push(["선택",d.selector]); }
+    if(s.stage==="team") {
+      lines.push(["구성",(d.spawned?"새로 생성":"기존 팀 재사용")+" · "+d.pattern+(d.team_state?" · 상태 "+d.team_state:"")+(d.runtime_kind?" · runtime "+d.runtime_kind:"")]);
+      lines.push(["Task",d.task_id+" · 팀 "+d.team_id]);
+      (d.members||[]).forEach((m)=>lines.push([m.role,m.agent_id+(m.capabilities&&m.capabilities.length?" · "+m.capabilities.join(", "):"")+(m.tools&&m.tools.length?" · tools: "+m.tools.join(", "):"")]));
+    }
+    if(s.stage==="team_result") {
+      lines.push(["실행",d.status+(d.stop_reason?" · "+d.stop_reason:"")+(d.simulated?" · 실험값 simulated(mock)":"")]);
+      (d.roles||[]).forEach((r)=>lines.push([r.role,r.status+" · steps "+(r.steps||0)+" · tool calls "+(r.tool_calls||0)]));
+    }
+    if(s.stage==="completed") lines.push(["결과",d.status+(d.run_id?" · run "+d.run_id:"")+(d.source_id?" · source "+d.source_id:"")]);
+    if(s.stage==="error") lines.push(["오류",s.message||""]);
+    return lines;
+  }
+  function renderProcess(turn, live) {
+    const list=byId("process-list"); clear(list);
+    byId("process-title").textContent=turn?turn.text:"아직 처리한 요청이 없어요";
+    const status=byId("process-status"); status.classList.toggle("live",Boolean(live));
+    status.textContent=!turn?"":live?"진행 중":({stored:"완료",answered:"완료",clarify:"확인 필요",outcome_unknown:"결과 미확정",pending:"결과 미확정"}[turn.status]||turn.status||"");
+    if(!turn) return;
+    (turn.stages||[]).forEach((s,i,all)=>{
+      const item=el("li",null,live&&i===all.length-1?"active":(s.stage==="error"?"error":"done"));
+      item.append(el("span",live&&i===all.length-1?"●":(s.stage==="error"?"!":"✓"),"mark"));
+      const body=el("div"); body.append(el("span",s.label,"stage-label"));
+      stageDetail(s).forEach(([k,v])=>{ const line=el("span",null,"stage-detail"); line.append(el("b",k+": "),document.createTextNode(String(v))); body.append(line); });
+      item.append(body); list.append(item);
+    });
+    if(live) list.scrollTop=list.scrollHeight;
+  }
   function el(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined && text !== null) node.textContent = String(text);
@@ -206,6 +253,7 @@
       const list=byId("messages"); clear(list);
       if(!turns.length) list.append(welcome.cloneNode(true));
       turns.forEach(renderTurn); wireExamples(); list.scrollTop=list.scrollHeight;
+      if(!liveTurn) renderProcess(turns.length?turns[turns.length-1]:null,false);
       await loadSessions();
     } catch(e){ showError(byId("global-error"),e); }
   }
@@ -236,25 +284,28 @@
       const progress=message("assistant","요청 접수 중…");
       const timeline=el("ol",null,"stage-timeline live"); progress.append(timeline); list.append(progress);
       list.scrollTop=list.scrollHeight;
+      liveTurn={text, stages:[], status:"pending"}; renderProcess(liveTurn,true);
       await streamChat(currentSession, {
         text, message_id:newKey("chat"), ...assigneeBody()
       }, (stage)=>{
         progress.querySelector(".bubble").textContent=stage.label;
         timeline.append(el("li",stage.label));
         byId("chat-notice").textContent=stage.label;
+        liveTurn.stages.push(stage); renderProcess(liveTurn,true);
         list.scrollTop=list.scrollHeight;
-      });
+      }, (result)=>{ liveTurn=null; renderProcess(result,false); });
       input.value=""; byId("chat-notice").textContent="";
       await selectSession(currentSession); await Promise.all([loadNotes(),loadAssignees()]);
     } catch(e) {
       byId("chat-notice").textContent="전송 결과를 확인해 주세요. 자동 재전송하지 않습니다.";
+      if(liveTurn){ liveTurn.stages.push({stage:"error",label:"오류 · 결과를 확인해 주세요",message:e.message||e.code||""}); liveTurn.status="outcome_unknown"; renderProcess(liveTurn,false); liveTurn=null; }
       showError(byId("global-error"),e);
     } finally {
       busy=false; byId("send-message").disabled=false; byId("create-session").disabled=false;
       byId("messages").setAttribute("aria-busy","false"); input.focus();
     }
   }
-  async function streamChat(session, body, onStage) {
+  async function streamChat(session, body, onStage, onResult) {
     const response=await fetch("/ui/api/sessions/"+encodeURIComponent(session)+"/chat/stream",{
       method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
       headers:{"Content-Type":"application/json","X-RFA-CSRF":await ensureCsrf()},
@@ -267,7 +318,7 @@
       if(!line.trim()) return;
       const event=JSON.parse(line);
       if(event.type==="stage") onStage(event);
-      if(event.type==="result") finished=true;
+      if(event.type==="result") { finished=true; if(onResult) onResult(event.result); }
       if(event.type==="error") throw event;
     }
     try {

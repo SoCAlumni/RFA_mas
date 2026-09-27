@@ -82,6 +82,7 @@ class LocalChatRouter:
     async def resolve(self, body):
         principal = await self.repository.local_principal()
         teams = await self.catalog.list_for(principal)
+        considered = len(teams)
         if body.task_id:
             # Explicit assignee: must be one of the owner's own selectable Task teams.
             for record in teams:
@@ -90,7 +91,10 @@ class LocalChatRouter:
                         raise RfaError(
                             "task_unavailable", "선택한 Task 팀은 지금 사용할 수 없습니다."
                         )
-                    return self.task_route(record, "explicit_task")
+                    return self.task_route(record, "explicit_task") | {
+                        "considered": considered,
+                        "candidates": [],
+                    }
             raise RfaError("not_found", "선택한 Task 팀을 찾을 수 없습니다.")
         words = subjects(body.text)
         matches = []
@@ -107,10 +111,19 @@ class LocalChatRouter:
             if shared:
                 matches.append((len(shared), record))
         matches.sort(key=lambda item: -item[0])
+        candidates = [
+            {
+                "task_id": r.task.task_id,
+                "goal": r.task.goal[:60],
+                "shared_subjects": sorted(subjects(r.task.goal) & words),
+            }
+            for _, r in matches
+        ]
+        extra = {"considered": considered, "candidates": candidates}
         if matches and (len(matches) == 1 or matches[0][0] > matches[1][0]):
-            return self.task_route(matches[0][1], "existing_task_subject_match")
+            return self.task_route(matches[0][1], "existing_task_subject_match") | extra
         if matches:
-            return self.fallback("ambiguous_tasks")
+            return self.fallback("ambiguous_tasks") | extra
         domains = []
         if re.search(r"(?<![a-z0-9])triv3(?![a-z0-9])", body.text.lower()):
             domains.append("triv3")
@@ -127,8 +140,8 @@ class LocalChatRouter:
                 "task_id": None,
                 "team_id": None,
                 "reason": "explicit_domain" if body.domain_id else "domain_subject_match",
-            }
-        return self.fallback("ambiguous_domains" if domains else "no_suitable_assignee")
+            } | extra
+        return self.fallback("ambiguous_domains" if domains else "no_suitable_assignee") | extra
 
     @staticmethod
     def fallback(reason):

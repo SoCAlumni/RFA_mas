@@ -26,6 +26,32 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.errors import RfaError
 
+# Approved template compositions (informational; the core TeamFactory decides the team).
+PATTERN_ROLES = {
+    "benchmark": ("supervisor", "paper_scout", "experiment_runner", "result_analyst"),
+    "research": ("supervisor", "source_scout", "evidence_reviewer"),
+}
+INTENT_LABELS = {
+    "store_note": "저장 요청",
+    "query": "내 자료 질의",
+    "external_draft": "공개용 초안 요청",
+    "task_run": "조사/검증 Task 요청",
+    "clarify": "의도 불명확",
+}
+
+
+def team_members(lifecycle):
+    """Safe composition summary: role/agent IDs and capabilities only (no instructions/memory)."""
+    return [
+        {
+            "role": m.role,
+            "agent_id": m.spec.agent_id,
+            "capabilities": list(m.spec.capabilities),
+            "tools": list(m.tool_names),
+        }
+        for m in lifecycle.team.spec.members
+    ]
+
 
 class LocalChat:
     def __init__(self, path: Path, core: httpx.AsyncClient, router):
@@ -211,7 +237,7 @@ class LocalChat:
         if old is not None:
             return await self.present(dict(old))
 
-        async def stage(code, label):
+        async def stage(code, label, detail=None):
             with self.connect() as db:
                 sequence = (
                     db.execute(
@@ -225,6 +251,7 @@ class LocalChat:
                     "sequence": sequence,
                     "stage": code,
                     "label": label,
+                    "detail": detail or {},
                     "at": datetime.now(UTC).isoformat(),
                 }
                 db.execute(
@@ -236,16 +263,25 @@ class LocalChat:
             return event
 
         source_id = run_id = None
+        existing = None
         try:
             first = {"store_note": "입력 이해 중", "task_run": "요청 이해 중"}
-            await stage("understanding", first.get(intent, "질문 이해 중"))
+            await stage(
+                "understanding",
+                first.get(intent, "질문 이해 중"),
+                {
+                    "intent": intent,
+                    "intent_label": INTENT_LABELS.get(intent, intent),
+                    "rule": "local deterministic chat_intent (no model)",
+                },
+            )
             route = await self.router.resolve(body)
             domain = route["domain_id"] or domain
             if intent == "task_run" and route["kind"] != "task":
                 # Explicit research/benchmark request with no suitable existing Task team:
                 # the core Supervisor creates exactly one durable Task + team for it.
                 lowered = body.text.lower()
-                route = {
+                route = route | {
                     "kind": "new_task",
                     "label": "새 Task 팀 구성",
                     "reason": "explicit_task_request_no_match",
@@ -267,7 +303,40 @@ class LocalChat:
                 label = "적합한 담당자 없음 또는 후보 모호 · " + label
             elif route["kind"] == "new_task":
                 label = "적합한 기존 Task 팀 없음 · " + label
-            await stage("routing", "담당자 확인: " + label)
+            await stage("routing", "담당자 확인: " + label, {"route": route})
+            if route["task_id"] and intent != "store_note":
+                # Fresh authoritative ownership/template check; never trust message fields.
+                principal = await self.router.repository.local_principal()
+                existing = await self.router.repository.get_team_lifecycle(
+                    route["task_id"], principal
+                )
+                members = team_members(existing)
+                await stage(
+                    "team",
+                    f"기존 Task 팀 구성 확인: {existing.team.spec.template.pattern} · "
+                    f"역할 {len(members)}개 ({', '.join(m['role'] for m in members)})",
+                    {
+                        "spawned": False,
+                        "task_id": existing.task.task_id,
+                        "team_id": existing.task.team_id,
+                        "pattern": existing.team.spec.template.pattern,
+                        "team_state": existing.team.state,
+                        "runtime_kind": existing.team.spec.template.runtime_kind,
+                        "members": members,
+                    },
+                )
+            elif route["kind"] == "new_task":
+                planned = PATTERN_ROLES[route["pattern"]]
+                await stage(
+                    "team_spawn",
+                    f"새 Task 팀 구성 중: {route['pattern']} 패턴 · 예정 역할 {len(planned)}개 "
+                    f"({', '.join(planned)})",
+                    {
+                        "pattern": route["pattern"],
+                        "planned_roles": list(planned),
+                        "selector": "core TeamSelector/TeamFactory (rule-based, local runtime)",
+                    },
+                )
             await stage(
                 "preparing",
                 {"store_note": "자료 저장 준비", "task_run": "Task 팀 실행 준비"}.get(
@@ -308,12 +377,7 @@ class LocalChat:
                         (execution_id, session_id),
                     )
                 team = None
-                if route["task_id"]:
-                    # Fresh authoritative ownership/template check; never trust message fields.
-                    principal = await self.router.repository.local_principal()
-                    existing = await self.router.repository.get_team_lifecycle(
-                        route["task_id"], principal
-                    )
+                if existing is not None:
                     pattern = existing.team.spec.template.pattern
                     team = TeamExecutionRequest(
                         goal=existing.task.goal,
@@ -341,22 +405,66 @@ class LocalChat:
                     "POST", f"/v1/sessions/{execution_id}/work", work.model_dump(mode="json")
                 )
                 run_id, status = run["run_id"], "answered"
-                if route["kind"] == "new_task":
-                    # Record the durable Task/team the core actually created for this Run.
+                outcome = None
+                if route["kind"] in {"new_task", "task"}:
                     with suppress(RfaError):
-                        created = await self.call("GET", f"/v1/runs/{run_id}/team")
-                        route = route | {
-                            "task_id": created["task_id"],
-                            "team_id": created["team_id"],
-                            "pattern": created["pattern"],
-                            "label": body.text[:80],
+                        outcome = await self.call("GET", f"/v1/runs/{run_id}/team")
+                if route["kind"] == "new_task" and outcome is not None:
+                    # Record the durable Task/team the core actually created for this Run.
+                    route = route | {
+                        "task_id": outcome["task_id"],
+                        "team_id": outcome["team_id"],
+                        "pattern": outcome["pattern"],
+                        "label": body.text[:80],
+                    }
+                    with self.connect() as db:
+                        db.execute(
+                            "UPDATE chat_turns SET route_json=? "
+                            "WHERE session_id=? AND message_id=?",
+                            (json.dumps(route), session_id, body.message_id),
+                        )
+                    members = []
+                    with suppress(RfaError):
+                        principal = await self.router.repository.local_principal()
+                        created = await self.router.repository.get_team_lifecycle(
+                            outcome["task_id"], principal
+                        )
+                        members = team_members(created)
+                    await stage(
+                        "team",
+                        f"새 Task 팀 구성 완료: {outcome['pattern']} · 역할 {len(members)}개 "
+                        f"({', '.join(m['role'] for m in members)})",
+                        {
+                            "spawned": True,
+                            "task_id": outcome["task_id"],
+                            "team_id": outcome["team_id"],
+                            "pattern": outcome["pattern"],
+                            "members": members,
+                        },
+                    )
+                if outcome is not None:
+                    roles = [
+                        {
+                            "role": r["role"],
+                            "agent_id": r["agent_id"],
+                            "status": r["status"],
+                            "steps": r.get("steps", 0),
+                            "tool_calls": r.get("tool_calls", 0),
                         }
-                        with self.connect() as db:
-                            db.execute(
-                                "UPDATE chat_turns SET route_json=? "
-                                "WHERE session_id=? AND message_id=?",
-                                (json.dumps(route), session_id, body.message_id),
-                            )
+                        for r in outcome.get("roles", [])
+                    ]
+                    ok = sum(1 for r in roles if r["status"] == "succeeded")
+                    await stage(
+                        "team_result",
+                        f"팀 실행 결과: {outcome['status']} · 역할 {ok}/{len(roles)} succeeded"
+                        + (" · 실험값 simulated(mock)" if outcome.get("simulated") else ""),
+                        {
+                            "status": outcome["status"],
+                            "stop_reason": outcome.get("stop_reason"),
+                            "simulated": outcome.get("simulated"),
+                            "roles": roles,
+                        },
+                    )
             else:
                 status = "clarify"
         except (Exception, asyncio.CancelledError):
@@ -386,6 +494,7 @@ class LocalChat:
                 "저장 완료"
                 if status == "stored"
                 else ("Task 팀 결과" if row["intent"] == "task_run" else "답변"),
+                {"status": status, "run_id": run_id, "source_id": source_id},
             )
         )
         return result

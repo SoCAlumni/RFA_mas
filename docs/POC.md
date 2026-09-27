@@ -51,6 +51,15 @@ Task+팀을 만든다. 같은 메시지 재전송은 멱등 재조회이며 두 
 질의는 자동으로 그 Task 팀에 배정된다. 메모/일반 질의만으로는 Task를 만들지 않는다. 실험 수치는
 mock(simulated)이며 실측이 아니다.
 
+**처리 상태 카드.** 대화 버블 위에 고정(sticky)된 카드가 마지막 요청의 처리 상태를 답변 본문과 별도로
+목록으로 보여준다. 스트리밍 중에는 "진행 중"으로 단계가 도착하는 대로 추가되고, 완료 후에도 유지되며
+새로고침하면 마지막 턴의 상태가 복원된다(단계 detail은 대화 DB의 `chat_stages`에 보존). 단계는
+`understanding`(의도·규칙) → `routing`(담당 종류·사유·검토한 Task 팀 수·후보와 공통 주제) →
+`team`(기존 팀 재사용: 패턴·상태·runtime·역할별 agent_id/capabilities) 또는 `team_spawn`(새 팀: 패턴·예정
+역할) → `preparing` → `team`(새로 생성된 실제 구성) → `team_result`(실행 상태·역할별
+succeeded/steps/tool calls·simulated) → `completed`(결과·run/source ID)이다. detail에는 메모 원문·답변·
+키가 들어가지 않는다. 역할 구성은 core TeamFactory가 결정한 실제 값이며 예정 역할은 승인된 템플릿 정보다.
+
 ## 조립·교체 경계
 
 | 부분 | 이 PoC | 팀원 모듈 교체 위치 |
