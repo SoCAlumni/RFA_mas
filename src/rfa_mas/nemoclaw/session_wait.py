@@ -31,6 +31,7 @@ root, agent, key, since_ms, timeout_s, poll_s = sys.argv[1:7]
 since_ms, timeout_s, poll_s = int(since_ms) - 1500, float(timeout_s), float(poll_s)
 deadline = time.monotonic() + timeout_s
 started = time.monotonic()
+ERROR_GRACE_S = 45.0  # a failed turn after accepted spawns is not the end: the members' announces resume the run
 
 
 def transcript_path():
@@ -55,46 +56,62 @@ def stamp(d, m):
 
 
 def inspect(path):
-    """(state, text, turns, last): the last assistant message after since_ms decides."""
+    """(state, text, turns, last, spawned): the last assistant message after since_ms decides; ``spawned``
+    counts members accepted by ``sessions_spawn`` in this turn (their completion restarts the run)."""
     last = None
-    turns = 0
+    turns = spawned = 0
     try:
         with open(path, encoding="utf-8") as fh:
             lines = fh.read().splitlines()
     except OSError:
-        return "missing", "", 0, ""
+        return "missing", "", 0, "", 0
     for line in lines:
         try:
             d = json.loads(line)
         except ValueError:
             continue  # a line still being written
         m = d.get("message") or {}
-        if d.get("type") != "message" or m.get("role") != "assistant" or stamp(d, m) < since_ms:
+        if d.get("type") != "message" or stamp(d, m) < since_ms:
+            continue
+        if m.get("role") == "toolResult":
+            body = json.dumps(m.get("content"), ensure_ascii=False)
+            if '\\"accepted\\"' in body and "childSessionKey" in body:
+                spawned += 1
+            continue
+        if m.get("role") != "assistant":
             continue
         turns += 1
         last = m
     if last is None:
-        return "pending", "", 0, ""
+        return "pending", "", 0, "", spawned
     content = last.get("content")
     parts = content if isinstance(content, list) else [{"type": "text", "text": str(content or "")}]
     text = "\n".join((p.get("text") or "") for p in parts if p.get("type") == "text").strip()
     calls = [p.get("name") or "" for p in parts if p.get("type") == "toolCall"]
     if last.get("stopReason") == "error":
-        return "error", text or "[assistant turn failed]", turns, "error"
+        return "error", text or "[assistant turn failed]", turns, "error", spawned
     if calls:
-        return "pending", text, turns, calls[-1]   # yield or any tool call: the run is not finished
+        return "pending", text, turns, calls[-1], spawned   # yield or any tool call: the run is not finished
     if text:
-        return "final", text, turns, "text"
-    return "pending", "", turns, "empty"
+        return "final", text, turns, "text", spawned
+    return "pending", "", turns, "empty", spawned
 
 
-state, text, turns, last = "missing", "", 0, ""
+state, text, turns, last, spawned = "missing", "", 0, "", 0
+error_since = None
 while True:
     path = transcript_path()
     if path:
-        state, text, turns, last = inspect(path)
-        if state in ("final", "error"):
+        state, text, turns, last, spawned = inspect(path)
+        if state == "final":
             break
+        if state == "error":
+            # nothing spawned: nobody will resume this run. Spawned members: give their announces time.
+            error_since = error_since or time.monotonic()
+            if not spawned or time.monotonic() - error_since >= ERROR_GRACE_S:
+                break
+        else:
+            error_since = None
     if time.monotonic() >= deadline:
         if state == "pending":
             state = "timeout"
