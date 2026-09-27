@@ -6,7 +6,7 @@
 시스템은 두 층이다. **운영층**(`src/rfa_mas/nemoclaw/`, `deploy/nemoclaw/`)은 NemoClaw/OpenShell 샌드박스 안의
 에이전트들을 보안 그룹으로 배치하고, 유일한 inference 경로(egress-proxy)에서 검열하며, 대응 측(desk)에 `POST /ask`
 지식 서버 계약 하나를 노출한다. **코어층**(`src/rfa_mas/application` 등)은 KB·정책·팀 실행·관측 원장을 제공하고
-운영층에는 사내 지식 API(knowledge facade :8791)로 보인다.
+운영층에는 사내 지식 API(knowledge facade :8795)로 보인다.
 
 문서 구성: 1장 전체 아키텍처(1.1 운영층 · 1.2 `ask()` 파이프라인 · 1.3 검열·되먹임·admission · 1.4 팀 스폰 · 1.5 코어층) →
 2장 팀원/대응 측 모듈 통합 → 3장 기술 스택 → 4장 Agent 인벤토리 → 5장 팀 에이전트 생성 → 6장 라우팅 규칙 →
@@ -34,7 +34,7 @@ flowchart LR
     CTRL["컨트롤러 python -m rfa_mas.nemoclaw<br/>assignments/routing/censors/ask.yaml → reconcile"]
     AUDIT[("감사 원장 .local/sg/audit.db<br/>/audit/ 화면 · kind=ask/broker/inference/policy…")]
     LEARN[("censor-rules/learned.yaml<br/>{audience, task, reason, at}")]
-    KF["사내 API = 코어층 knowledge facade :8791"]
+    KF["사내 API = 코어층 knowledge facade :8795"]
   end
   subgraph GW["OpenShell 게이트웨이 (NemoClaw 관리)"]
     ROUTE["inference.local → host.openshell.internal:8797<br/>route model = 전체 모드 (rfa-auto | rfa-internal | rfa-external)"]
@@ -80,7 +80,7 @@ sequenceDiagram
     participant H as head (DirectHead: egress-proxy → hosted 모델)
     participant B as 브로커
     participant T as task 에이전트 (rfa-main, OpenClaw)
-    participant K as knowledge facade :8791
+    participant K as knowledge facade :8795
     participant C as CensorPipeline (regex → LLM, hints)
     participant L as learned.yaml
     participant A as 감사 원장
@@ -164,7 +164,7 @@ flowchart LR
 ### 1.5 코어층
 
 의존 방향은 `API → application/graph → port`로 고정이며, adapter 주입은 `bootstrap.py`에서만 한다.
-graph 노드 내부에서 mock/real adapter를 분기하지 않는다. 운영층에서 코어층은 knowledge facade(:8791) 하나로 보이며,
+graph 노드 내부에서 mock/real adapter를 분기하지 않는다. 운영층에서 코어층은 knowledge facade(:8795) 하나로 보이며,
 task 에이전트는 `sg-intranet-ro` preset 이 허용하는 두 route(`GET /tasks`, `POST /tasks/{id}/ask`)로만 닿는다.
 
 ```mermaid
@@ -172,7 +172,7 @@ flowchart TB
     subgraph ENTRY["진입점 (독립 프로세스)"]
         UI["PoC 채팅 UI/서버 :8780<br/>python -m rfa_mas.poc"]
         API["Core FastAPI :8000<br/>rfa api (/v1/*)"]
-        KF["Knowledge Facade :8791<br/>승희 RFA_module 계약"]
+        KF["Knowledge Facade :8795<br/>승희 RFA_module 계약"]
         INBOX["Inbox reference :8793<br/>다영 결재 UI 계약"]
         SCHED["rfa scheduler<br/>전용 단일 프로세스"]
     end
@@ -315,7 +315,7 @@ flowchart LR
 
     subgraph GLUE["이 저장소의 연결 모듈 (교체 지점)"]
         direction TB
-        G_KF["knowledge_facade :8791<br/>승희 knowledge 계약을 core 위에서 제공"]
+        G_KF["knowledge_facade :8795<br/>승희 knowledge 계약을 core 위에서 제공"]
         G_MAP["adapters/rfa_module.py<br/>Review → RequestDetail 매퍼"]
         G_INBOX["inbox reference :8793<br/>결재 UI 계약 표본"]
         G_LR["reference/local_response<br/>검토·게시·READ tool stand-in"]
@@ -358,7 +358,7 @@ flowchart LR
 sequenceDiagram
     participant CH as 외부 채널 (GitHub 등)
     participant WF as 승희 rfa_workflow
-    participant KF as knowledge_facade :8791 (민섭)
+    participant KF as knowledge_facade :8795 (민섭)
     participant CORE as core application
     participant REV as 승희 review :8790
     participant H as 사람 결재 (다영 인박스 UI)
@@ -785,7 +785,7 @@ NDJSON 스트림은 실제 실행 경계의 단계이며 LLM 토큰 스트리밍
 
 ```mermaid
 flowchart LR
-    SH["승희 RFA_module<br/>워크플로"] -->|"GET /tasks, POST /tasks/id/ask"| KF["knowledge_facade :8791<br/>정책→audience 제한 검색→모델→canary 치환"]
+    SH["승희 RFA_module<br/>워크플로"] -->|"GET /tasks, POST /tasks/id/ask"| KF["knowledge_facade :8795<br/>정책→audience 제한 검색→모델→canary 치환"]
     KF --> CORE["core application"]
     DY["다영 결재 UI"] -->|"docs/api/inbox.openapi.yaml"| IB["inbox reference :8793<br/>in-memory 표본, 결정 전이·멱등 receipt"]
     DY2["다영 OpenShell"] -.->|"RuntimePort http (prepare/cleanup만, 실행 not_run)"| CORE

@@ -60,7 +60,7 @@ flowchart LR
     BROKER["브로커 :8798<br/>MCP(HTTPS) + REST 폴백<br/>ask_task_agent / drain"]
     CTRL["컨트롤러<br/>assignments/routing/censors.yaml<br/>nemoclaw policy add·exclude / agents apply / mcp add / explain"]
     AUDIT["감사 로그 :8799/audit/<br/>channel·profile·agent·verdict·정책 차단·승인"]
-    KF["사내 API<br/>knowledge facade :8791"]
+    KF["사내 API<br/>knowledge facade :8795"]
   end
   subgraph GW["OpenShell 게이트웨이 (NemoClaw 관리)"]
     ROUTE["inference.local → host.openshell.internal:8797<br/>(route model = 전체 모드 rfa-auto / rfa-internal)"]

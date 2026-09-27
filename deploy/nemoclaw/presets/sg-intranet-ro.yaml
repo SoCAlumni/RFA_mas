@@ -9,7 +9,7 @@ network_policies:
     name: sg_intranet_ro
     endpoints:
       - host: __HOST__
-        port: 8791
+        port: 8795                        # 8791 은 RFA_module head_stub 포트 (충돌)
         protocol: rest
         enforcement: enforce
         rules:

@@ -5,5 +5,5 @@ description: Benchmark task agent. Reads benchmark figures from the company know
 
 # Benchmark
 
-- Query `http://192.168.123.191:8791/tasks/<id>/ask` for latency/accuracy figures and report them as
+- Query `http://192.168.123.191:8795/tasks/<id>/ask` for latency/accuracy figures and report them as
   a short table with the source id. Numbers are synthetic demo data.

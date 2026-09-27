@@ -1178,3 +1178,9 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 라이브: owner 14.8초(head 1.7 + research 턴 13.1 + censor 0) delta 20개; guest 13.7초 guard.final allow, 수치·프로젝트명 없는 공개용 답.
 - 오탐 2건: (1) credential 규칙 `(?:bearer|nvapi-|sk-)` 가 세션 id `ask-…` 의 `sk-` 에 걸려 external 채널의 모든 task 턴을 프록시가 차단(guest 답이 `[RFA censor blocked … regex:credential]` → 최종 판정도 `llm:credential`). `\b` 추가. (2) 근거 인용 id `[source_<32hex>]` 를 판정 모델이 자격증명으로 오인 → public/external regex 로 `[source]` 치환 후 판정. `LOG_RAW=1` 이면 차단을 일으킨 span 을 `logs/debug.jsonl` 에만 남긴다(`proxy_request_blocked`).
 - 검증: 프런트 API 테스트 10개 포함 전체 통과(보류 2 제외), `make mock-e2e` 4/4.
+
+## SG-8 — knowledge facade 포트 8791 → 8795 (2026-09-28)
+
+- 원인: RFA_module 의 `head_stub` 가 8791 을 쓰고, 그 `scripts/run_demo.sh`/`run_services.sh` 는 기동 전에 8791 리스너를 종료한다. 우리 `make knowledge-facade`(0.0.0.0:8791)와 충돌.
+- 조치: 실행 중이던 facade(pid 79920) 종료 → 기본 포트 8795(8790~8792 팀 호스트 서비스, 8797~8799 프록시·브로커·진입점과 겹치지 않음). `cli.py` 기본값, Makefile `KF_PORT ?= 8795`, preset `sg-intranet-ro` endpoint, task-research/task-benchmark skill URL, README/ARCHITECTURE/TEAM_ALIGNMENT/API_USAGE_SCENARIOS 현재 서술 변경. 네 곳 일치·8791 회피는 `tests/test_knowledge_facade_port.py` 가 검사. RFA_module `.env` 의 `HEAD_URL=:8791` 은 그쪽 head_stub 주소라 그대로, `KNOWLEDGE_URL` 은 RFA_module 에서 이미 제거됨. `fixtures/contracts/rfa_module/knowledge.openapi.yaml`(upstream 고정 사본)과 과거 기록은 유지.
+- 라이브 migration: `make knowledge-facade` → 8795 healthz ok(LAN IP 로도 200). `make plan` = rfa-main `policy-add sg-intranet-ro`(content drift) + `policy explain` → `make apply` ok(8.3초) → 재plan no changes. `seed rfa-main` 으로 skill 재업로드. 샌드박스 안 확인: `curl :8795/tasks` 200, `:8791/tasks` 403(정책 차단), skill 안 URL 3개 모두 :8795.

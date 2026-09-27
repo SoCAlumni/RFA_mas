@@ -85,10 +85,12 @@ serve-stop:
 	@if [ -f $(SERVE_PID) ]; then kill $$(cat $(SERVE_PID)) 2>/dev/null || true; rm -f $(SERVE_PID); echo "serve stopped"; fi
 
 # Intranet API that the intranet-ro security group may reach (public audience: no bearer needed).
+# 8795: RFA_module head_stub owns 8791. Keep in sync with presets/sg-intranet-ro.yaml and task skills.
+KF_PORT ?= 8795
 knowledge-facade:
 	@mkdir -p $(SG_DIR)
 	@if [ -f $(SG_DIR)/kf.pid ] && kill -0 $$(cat $(SG_DIR)/kf.pid) 2>/dev/null; then echo "knowledge-facade running"; else \
-	  nohup $(UV) rfa knowledge-facade --host 0.0.0.0 --port 8791 --audience public > $(SG_DIR)/kf.log 2>&1 & echo $$! > $(SG_DIR)/kf.pid; \
+	  nohup $(UV) rfa knowledge-facade --host 0.0.0.0 --port $(KF_PORT) --audience public > $(SG_DIR)/kf.log 2>&1 & echo $$! > $(SG_DIR)/kf.pid; \
 	  echo "knowledge-facade started (pid $$(cat $(SG_DIR)/kf.pid))"; fi
 
 knowledge-facade-stop:

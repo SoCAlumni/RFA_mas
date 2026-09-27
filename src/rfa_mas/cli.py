@@ -159,7 +159,9 @@ def _parser() -> argparse.ArgumentParser:
     facade.add_argument(
         "--host", default="127.0.0.1", help="RequestForApproval modules.yaml runs it on 0.0.0.0"
     )
-    facade.add_argument("--port", type=int, default=8791)
+    facade.add_argument(
+        "--port", type=int, default=8795, help="8791 is RFA_module head_stub's port; do not reuse it"
+    )
     facade.add_argument(
         "--audience",
         choices=("public", "company", "business_unit"),

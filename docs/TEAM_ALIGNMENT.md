@@ -18,8 +18,8 @@
 1. 이 저장소에서 facade를 띄운다. 기본은 loopback·public audience다.
 
    ```sh
-   uv run rfa knowledge-facade --host 0.0.0.0 --port 8791          # 다영 modules.yaml 형태
-   uv run rfa knowledge-facade --port 8791 --audience company        # 사내 채널용; KNOWLEDGE_FACADE_API_KEY 필요
+   uv run rfa knowledge-facade --host 0.0.0.0 --port 8795          # 다영 modules.yaml 형태
+   uv run rfa knowledge-facade --port 8795 --audience company        # 사내 채널용; KNOWLEDGE_FACADE_API_KEY 필요
    ```
 
 2. RFA_module `.env`의 `KNOWLEDGE_URL`을 facade 주소로 바꾼다. 워크플로 코드 변경은 없다.
@@ -53,7 +53,7 @@
 
 | 다영 산출물 | 내용 | 이 저장소의 대응 |
 | --- | --- | --- |
-| `modules.yaml` | 모듈 레포·ref·포트·실행 명령. knowledge 8791은 "민섭 구현으로 교체 예정" | `uv run rfa knowledge-facade --host 0.0.0.0 --port 8791`이 그 실행 명령이 된다. 교체 후 `ref`를 이 저장소 커밋으로 갱신 요청 |
+| `modules.yaml` | 모듈 레포·ref·포트·실행 명령. knowledge 8791은 "민섭 구현으로 교체 예정" | `uv run rfa knowledge-facade --host 0.0.0.0 --port 8795`이 그 실행 명령이 된다(8791 은 RFA_module head_stub 가 쓰므로 facade 는 8795). 교체 후 `ref`를 이 저장소 커밋으로 갱신 요청 |
 | `docs/ports.md` | 8080 게이트웨이, 18789 대시보드, 8790/8791/8792 호스트 서비스, `inference.local`, 프록시 10.200.0.1:3128 | core API(8000)는 아직 샌드박스 허용 목록에 없다. 필요하면 `docs/INTEGRATION.md`의 agent 허용 4 route(`/healthz`, `POST /v1/sessions`, `POST /v1/sessions/{id}/work`, `GET /v1/runs/{id}`)만 추가 |
 | `policies/rfa-host-services.yaml` | `rfa_review`/`rfa_knowledge` REST 규칙, approve/reject/republish·`POST /policy/**` deny | facade는 허용 두 경로만 노출하므로 추가 정책 불필요 |
 | `agents/rfa.yaml` | public-desk 에이전트 허용 도구 3개, main 잠금 | 이 저장소의 로컬 runtime은 sandbox가 아니다(README "실제 vs mock"). OpenShell 실행 증거는 P1-007C, 역할별 identity는 P1-007B(blocked) |

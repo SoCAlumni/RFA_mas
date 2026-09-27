@@ -5,7 +5,7 @@ Pydantic 모델이며 OpenAPI와 이 문서는 파생물이다.
 
 | OpenAPI | 제공자 | 소비자 | 실행 | 상태 |
 | --- | --- | --- | --- | --- |
-| [knowledge-facade.openapi.json](api/knowledge-facade.openapi.json) | rfa_mas core (민섭) | 승희 RFA_module 워크플로(writer) | `uv run rfa knowledge-facade --host 0.0.0.0 --port 8791` | 실제 로컬 코드. 모델은 설정된 provider(기본 mock) |
+| [knowledge-facade.openapi.json](api/knowledge-facade.openapi.json) | rfa_mas core (민섭) | 승희 RFA_module 워크플로(writer) | `uv run rfa knowledge-facade --host 0.0.0.0 --port 8795` | 실제 로컬 코드. 모델은 설정된 provider(기본 mock) |
 | [inbox.openapi.yaml](api/inbox.openapi.yaml) | reference 서버(PoC 표본) → 실제 원본은 route별 `x-rfa-authority` | 다영 결재 인박스 UI | `uv run python -m rfa_mas.inbox --port 8793` | reference/mock. 승인·게시·샌드박스 제어 없음 |
 
 core API(8000, `uv run rfa openapi`)는 기존 [INTEGRATION.md](INTEGRATION.md)를 따른다.
@@ -22,7 +22,7 @@ core API(8000, `uv run rfa openapi`)는 기존 [INTEGRATION.md](INTEGRATION.md)�
 시나리오: 워크플로가 멘션 "@zetwhite ORBIT 벤치마크 진행 어때?"를 받고 어느 task에 물을지 고르기 위해 목록을 가져온다.
 
 ```sh
-curl -s http://127.0.0.1:8791/tasks
+curl -s http://127.0.0.1:8795/tasks
 ```
 
 ```json
@@ -43,7 +43,7 @@ curl -s http://127.0.0.1:8791/tasks
 시나리오 A · 정상 답변: 워크플로가 `triv3`를 고르고 질문한다. 답과 근거 한 줄씩을 받아 `POST /reviews/{id}/knowledge`에 첨부한다.
 
 ```sh
-curl -s -X POST http://127.0.0.1:8791/tasks/triv3/ask \
+curl -s -X POST http://127.0.0.1:8795/tasks/triv3/ask \
   -H 'Content-Type: application/json' -H 'X-RFA-Actor: knowledge' \
   -d '{"question": "TRIV3 벤치마크 트랙 진행 상황을 알려줘"}'
 ```
@@ -71,7 +71,7 @@ curl -s -X POST http://127.0.0.1:8791/tasks/triv3/ask \
 
 시나리오 E · 없는 task: `POST /tasks/orbit/ask` → `404 {"error": "not_found", "id": "orbit"}`. 워크플로는 목록에 없는 id를 고르지 않으므로 정상 흐름에서는 나오지 않는다.
 
-시나리오 F · 사내 채널(company audience): `uv run rfa knowledge-facade --port 8791 --audience company`로 띄우면 `KNOWLEDGE_FACADE_API_KEY`가 필수이며 모든 호출에 `Authorization: Bearer <키>`가 필요하다. 없으면 `401 {"error": "authentication_required"}`. 이때도 owner/팀 내부 자료는 나가지 않는다.
+시나리오 F · 사내 채널(company audience): `uv run rfa knowledge-facade --port 8795 --audience company`로 띄우면 `KNOWLEDGE_FACADE_API_KEY`가 필수이며 모든 호출에 `Authorization: Bearer <키>`가 필요하다. 없으면 `401 {"error": "authentication_required"}`. 이때도 owner/팀 내부 자료는 나가지 않는다.
 
 시나리오 G · 형식 오류: `question`이 비어 있으면 422. 본문의 추가 필드(hint 등)는 무시한다.
 
