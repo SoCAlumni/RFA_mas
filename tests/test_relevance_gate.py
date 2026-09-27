@@ -83,7 +83,7 @@ def body_spy(repo, monkeypatch):
 
 # -- rule units ------------------------------------------------------------------------------
 def test_rules_are_versioned_and_distinctive_words_skip_request_and_question_words():
-    assert RELEVANCE_RULES_VERSION == "relevance-gate-v1"
+    assert RELEVANCE_RULES_VERSION == "relevance-gate-v2"
     words = {w: d for w, _, d, _ in query_words("오늘 경쟁사 SDK 출시일이 언제야? 요약해줘 a")}
     assert words["경쟁사"] and words["sdk"] and words["출시일"]
     assert not words["오늘"] and not words["a"] and not words.get("언제야", False)
@@ -98,7 +98,7 @@ def test_r1_no_distinctive_term_covered_is_insufficient():
 def test_r2_unknown_korean_qualifier_before_a_known_latin_subject_is_insufficient():
     docs = [" ".join(LAUNCH)]
     assert gate("경쟁사 SDK 출시일이 언제야?", docs)  # "경쟁사" is in no authorized document
-    # An uncovered Latin word is an English synonym candidate, never a withholding reason.
+    # An uncovered lowercase Latin word remains an English synonym candidate.
     assert not gate("SDK launch 출시일", docs)
     # A Hangul word counts as covered through its bigrams (the P1-001D matching rule).
     assert not gate("출시일정 SDK", docs)
@@ -117,6 +117,27 @@ def test_r2_needs_a_modifier_link_and_a_conjunction_ends_the_phrase():
 def test_terms_the_ranker_did_not_count_are_treated_as_covered():
     assert not relevance_insufficient("경쟁사 SDK", {})
     assert relevance_insufficient("경쟁사 SDK", {"경쟁사": 0, "경쟁": 0, "쟁사": 0, "sdk": 0})
+
+
+@pytest.mark.parametrize("identifier", ["OMEGA", "SIGMA-2", "DELTA_01"])
+def test_r3_uncovered_explicit_identifier_cannot_borrow_generic_evidence(identifier):
+    query = f"{identifier} 사내 식당 메뉴 변경 일정을 알려 줘."
+    assert gate(query, ["사내 가이드: 연락 방법과 회의실 사용 규칙"])
+    assert not gate(query, [f"{identifier.lower()} 사내 식당 메뉴 변경 일정: 아직 미정"])
+    assert not relevance_insufficient(query, {})  # uncounted is not evidence of absence
+
+
+async def test_r3_uses_only_authorized_subjects_and_does_not_load_generic_body(kb, monkeypatch):
+    repo, service = kb
+    await service.write(note("guide", "사내 가이드", "사내 가이드와 회의실 규칙", audience="public"), OWNER)
+    named = await service.write(note("subject", "OMEGA 식당", "OMEGA 메뉴 변경: 아직 미정"), OWNER)
+    reads = body_spy(repo, monkeypatch)
+    adapter = LocalRetrieval(repo, policy_version="local-v1")
+    query = "OMEGA 사내 식당 메뉴 변경 일정을 알려 줘."
+    missing = await adapter.search(search(query, OTHER))
+    assert missing.insufficient and not missing.items and reads == []
+    found = await adapter.search(search(query))
+    assert not found.insufficient and named.document.source_id in {i.source_id for i in found.items}
 
 
 # -- retrieval --------------------------------------------------------------------------------
