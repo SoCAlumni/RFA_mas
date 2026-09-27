@@ -1,168 +1,182 @@
-schema_version: "1.0"
-id: "P1-007"
-title: "NemoClaw 지원 경로·교육 연결 설계"
-objective: "지원 runtime에서 제한된 RFA MCP/API를 호출하는 최소 시연 경로와 교육 항목을 정한다."
-kind: "task"
+schema_version: '1.0'
+id: P1-007
+title: NemoClaw 지원 경로·교육 연결 설계
+objective: 지원 runtime에서 제한된 RFA MCP/API를 호출하는 최소 시연 경로와 교육 항목을 정한다.
+kind: task
 source_tasks:
-  - "P1-007"
+- P1-007
 requirement_refs:
-  - "docs/PRODUCT_REQUIREMENTS.md"
-  - "docs/archive/TASKS_2026-09-26.md"
-priority: "P1"
-status: "todo"
-spec_state: "ready"
+- docs/PRODUCT_REQUIREMENTS.md
+- docs/archive/TASKS_2026-09-26.md
+priority: P1
+status: done
+spec_state: ready
 unresolved: []
-workstream: "integration/evaluation"
-execution_role: "coordinator"
+workstream: integration/evaluation
+execution_role: coordinator
 estimated_effort: 0.5
-product_owner: "민섭, 다영(환경 경계 확인)"
-execution_class: "팀원 통합"
-product_mode: "경계 문서 일부 implemented, 이번 경로 설계 missing/not_run. 설계 local, simulated N/A. 외부 환경 없이 설계 가능; 실제 운영 증거는 P1-007A."
+product_owner: 민섭, 다영(환경 경계 확인)
+execution_class: 팀원 통합
+product_mode: 경계 문서 일부 implemented, 이번 경로 설계 missing/not_run. 설계 local, simulated N/A. 외부 환경 없이 설계 가능;
+  실제 운영 증거는 P1-007A.
 scope:
   included:
-    - "runtime/version·호출 가능한 최소 API·identity·egress allowlist·배치 경계와 안전한 합성 입력 계획. 기존 API 우선, 별도 MCP wrapper는 승희 경계가 제공할 때 사용."
+  - runtime/version·호출 가능한 최소 API·identity·egress allowlist·배치 경계와 안전한 합성 입력 계획. 기존 API 우선, 별도 MCP wrapper는
+    승희 경계가 제공할 때 사용.
   excluded:
-    - "다른 task의 제품 기능·외부 게시/배포·실제 .env 접근"
-    - "공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리"
+  - 다른 task의 제품 기능·외부 게시/배포·실제 .env 접근
+  - 공통 계약의 임의 변경; 필요한 변경은 coordinator가 계약 변경 절차로 관리
   owned_paths:
-    - "docs/EDUCATION_MAPPING.md"
-    - "docs/INTEGRATION.md"
-    - "docs/evidence/nemoclaw.md"
+  - docs/EDUCATION_MAPPING.md
+  - docs/INTEGRATION.md
+  - docs/evidence/nemoclaw.md
   read_only_paths:
-    - "AGENTS.md"
-    - "src/rfa_mas/contracts"
-    - "src/rfa_mas/ports/interfaces.py"
+  - AGENTS.md
+  - src/rfa_mas/contracts
+  - src/rfa_mas/ports/interfaces.py
   planned_paths:
-    - "docs/evidence/nemoclaw.md"
+  - docs/evidence/nemoclaw.md
   shared_resources:
-    - "contract-docs"
+  - contract-docs
 depends_on:
-  -
-    id: "P0-014"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
-  -
-    id: "P0-025"
-    condition: "integrated_done"
-    required_output: "해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조"
+- id: P0-014
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
+- id: P0-025
+  condition: integrated_done
+  required_output: 해당 task의 명시된 산출물과 필수 AC 검증이 통합 대상에 반영된 done; handoff/evidence 참조
 contract_refs:
-  -
-    id: "RFA-DTO"
-    version: "1.0"
-    digest: "8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6"
-    role: "consumer"
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
 context:
   global_refs:
-    - "docs/PROJECT_CONTEXT.md"
-    - "TASK_EXECUTION_RULES.md"
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
   read:
-    -
-      path: "docs/archive/TASKS_2026-09-26.md"
-      section: "P1-007 — NemoClaw 지원 경로·교육 연결 설계"
-      reason: "이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기"
-    -
-      path: "docs/EDUCATION_MAPPING.md"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-    -
-      path: "docs/INTEGRATION.md"
-      section: "task에 관련된 정의/호출부"
-      reason: "기존 구현을 보존하면서 범위 내 공백 확인"
-  handoff: "tasks/P1-007/handoff.md"
+  - path: docs/archive/TASKS_2026-09-26.md
+    section: P1-007 — NemoClaw 지원 경로·교육 연결 설계
+    reason: 이관 전 요구·AC·주석·외부 의존성 원문; 이 카드 섹션만 읽기
+  - path: docs/EDUCATION_MAPPING.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  - path: docs/INTEGRATION.md
+    section: task에 관련된 정의/호출부
+    reason: 기존 구현을 보존하면서 범위 내 공백 확인
+  handoff: tasks/P1-007/handoff.md
   dependency_results:
-    - "tasks/P0-014/handoff.md"
-    - "tasks/P0-025/handoff.md"
+  - tasks/P0-014/handoff.md
+  - tasks/P0-025/handoff.md
 deliverables:
-  -
-    path: "docs/EDUCATION_MAPPING.md"
-    availability: "existing"
-    description: "runtime/version·호출 가능한 최소 API·identity·egress allowlist·배치 경계와 안전한 합성 입력 계획. 기존 API 우선, 별도 MCP wrapper는 승희 경계가 제공할 때 사용."
-  -
-    path: "docs/INTEGRATION.md"
-    availability: "existing"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
-  -
-    path: "docs/evidence/nemoclaw.md"
-    availability: "planned"
-    description: "범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음"
+- path: docs/EDUCATION_MAPPING.md
+  availability: existing
+  description: runtime/version·호출 가능한 최소 API·identity·egress allowlist·배치 경계와 안전한 합성 입력 계획. 기존 API 우선,
+    별도 MCP wrapper는 승희 경계가 제공할 때 사용.
+- path: docs/INTEGRATION.md
+  availability: existing
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/evidence/nemoclaw.md
+  availability: planned
+  description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
 acceptance_criteria:
-  -
-    id: "AC1"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "공식 지원 runtime/platform 확인, 임의 LangGraph 앱 자동 수용 가정 금지"
-    required: true
-  -
-    id: "AC2"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "서비스가 sandbox 밖이면 그 backend/process와 보호되지 않는 범위를 명시"
-    required: true
-  -
-    id: "AC3"
-    given: "합성 fixture와 허용된 identity; 선행 task 산출물을 사용"
-    expect: "교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지."
-    required: true
+- id: AC1
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 공식 지원 runtime/platform 확인, 임의 LangGraph 앱 자동 수용 가정 금지
+  required: true
+- id: AC2
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 서비스가 sandbox 밖이면 그 backend/process와 보호되지 않는 범위를 명시
+  required: true
+- id: AC3
+  given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
+  expect: 교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지.
+  required: true
 verification:
-  -
-    id: "V1"
-    ac_ids:
-      - "AC1"
-      - "AC2"
-      - "AC3"
-    type: "manual"
-    availability: "available"
-    prerequisites:
-      - "공식 문서·노출 API/계약 대조(문서 작업에 새 테스트 없음)."
-      - "작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은 성공 아님."
-    cwd: "."
-    argv: []
-    timeout_seconds: 120
-    procedure:
-      - "공식 문서·노출 API/계약 대조(문서 작업에 새 테스트 없음)."
-      - "현재 소스/공식 문서와 산출물을 대조하고 확인자·실제 관찰·시각을 결과 보고서에 남긴다."
-    assertions:
-      - "공식 지원 runtime/platform 확인, 임의 LangGraph 앱 자동 수용 가정 금지"
-      - "서비스가 sandbox 밖이면 그 backend/process와 보호되지 않는 범위를 명시"
-      - "교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지."
-    runner: "manual"
-evidence_dir: ".agent/evidence/P1-007"
-latest_evidence_file: null
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: manual
+  availability: available
+  prerequisites:
+  - 공식 문서·노출 API/계약 대조(문서 작업에 새 테스트 없음).
+  - 작업 control 상태가 아닌 source worktree에서 실행. 실제 .env 읽기 금지; test fixture/명시 설정만. live 검증은 opt-in이며 skip은
+    성공 아님.
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - 공식 문서·노출 API/계약 대조(문서 작업에 새 테스트 없음).
+  - 현재 소스/공식 문서와 산출물을 대조하고 확인자·실제 관찰·시각을 결과 보고서에 남긴다.
+  assertions:
+  - 공식 지원 runtime/platform 확인, 임의 LangGraph 앱 자동 수용 가정 금지
+  - 서비스가 sandbox 밖이면 그 backend/process와 보호되지 않는 범위를 명시
+  - 교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지.
+  runner: manual
+evidence_dir: .agent/evidence/P1-007
+latest_evidence_file: .agent/evidence/P1-007/completion-reference-review/result.json
 verification_summary:
-  state: "not_run"
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: passed
+  spec_revision: 2
+  spec_digest: c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: fbe8d32cdbbb1ee9fd6ad213387a6b3641fd562a2feb0bda118ea3cf9dc0ecdd
+  evidence: .agent/evidence/P1-007/completion-reference-review/result.json
 integration:
-  state: "pending"
-  target: "canonical integration branch after OPS-000"
+  state: integrated
+  target: canonical integration branch after OPS-000
   reason: null
   reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 2
+  submission_generation: 1
+  submission:
+    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007-int-0927001544
+    branch: task/P1-007-int-0927001544
+    evidence: .agent/evidence/P1-007/worker-0927001601/result.json
+    changed_files:
+      docs/EDUCATION_MAPPING.md: 905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554
+      docs/INTEGRATION.md: ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9
+      docs/evidence/nemoclaw.md: bb2c727fd0989e8e5d92f27aa970e27bda5fd8ed692f7df1b15c47f6d6a7b83b
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 2
+      spec_digest: c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: fbe8d32cdbbb1ee9fd6ad213387a6b3641fd562a2feb0bda118ea3cf9dc0ecdd
+      evidence: .agent/evidence/P1-007/completion-reference-review/result.json
+    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    documentation_review: true
+  evidence: .agent/evidence/P1-007/completion-reference-review/result.json
+revision: 14
 spec_revision: 2
-claim_generation: 0
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 4
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: completion-reference-review
+  evidence_refs:
+  - .agent/evidence/P1-007/worker-0927001601/result.json
+  - .agent/evidence/P1-007/openshell-reference-review/result.json
+  - .agent/evidence/P1-007/completion-reference-review/result.json
+  approaches: []
 blocker: null
 migration:
-  initial_spec_revision: 2
-  original_status: "todo"
-  source_ref: "docs/archive/TASKS_2026-09-26.md — P1-007"
-  prior_claim: "경계 문서 일부 implemented, 이번 경로 설계 missing/not_run. 설계 local, simulated N/A. 외부 환경 없이 설계 가능; 실제 운영 증거는 P1-007A."
-  implementation_facts: "확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다."
+  original_status: todo
+  source_ref: docs/archive/TASKS_2026-09-26.md — P1-007
+  prior_claim: 경계 문서 일부 implemented, 이번 경로 설계 missing/not_run. 설계 local, simulated N/A. 외부 환경 없이 설계 가능;
+    실제 운영 증거는 P1-007A.
+  implementation_facts: 확장 작업은 아직 미구현. 기존 기반과 미완성 경계는 원문 현재 구현 표에 조사 기록. 이번 이관은 제품 구현 증거가 아니다.
   previous_evidence: []
   checks_this_migration:
-    - "원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑"
-  judgment: "ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리."
-updated_at: "2026-09-26T03:13:39.816Z"
-concise_result: "이관 완료; 제품 구현/검증 not_run."
-next_action: "공식 문서·노출 API/계약 대조(문서 작업에 새 테스트 없음)."
+  - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
+  judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
+  initial_spec_revision: 2
+updated_at: '2026-09-27T01:09:42+00:00'
+concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
+next_action: Reverify if code, settings, contract, AC or global instructions change

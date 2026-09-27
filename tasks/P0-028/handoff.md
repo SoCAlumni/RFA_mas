@@ -14,3 +14,8 @@ Next first action: submit unchanged source and fresh canonical target capture/re
 
 - 사유: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED 1.1 888c3d6d
 - 소스 변경 없이 현재 통합 HEAD 11aedac에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:32Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

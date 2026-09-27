@@ -9,9 +9,8 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
 status: verifying
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 1.0
@@ -52,7 +51,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 80371a7fb873c34733e353ad6b0a7d5b80e25c8258f1014b514ec86386c82adf
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
   role: consumer
 context:
   global_refs:
@@ -164,8 +163,8 @@ integration:
       evidence: .agent/evidence/P1-006E/target-0926175016/result.json
     head: 204d2b6d0d2731f7dfc6408975fcb349ba85627f
   evidence: .agent/evidence/P1-006E/target-0926175016/result.json
-revision: 33
-spec_revision: 24
+revision: 34
+spec_revision: 25
 claim_generation: 1
 claim: null
 attempts:
@@ -187,7 +186,8 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:15:47+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-27T00:17:07+00:00'
+concise_result: 'Specification changed: Full revalidation after shared-file freeze: settings.py/INTEGRATION.md/bootstrap
+  changes by P1-002/P1-003/P1-006C; no source change in these tasks'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

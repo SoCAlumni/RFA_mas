@@ -1,0 +1,161 @@
+schema_version: '1.0'
+id: OPS-007
+title: 문서만 변경된 통합 task의 근거 보존 검토
+objective: 코드·계약·명세·공통 규칙이 동일한 경우 coordinator의 명시적 문서 영향 검토로 기존 실행 근거를 보존하여 불필요한 전체 재실행을 멈춘다.
+kind: task
+source_tasks:
+- OPS-005
+- OPS-006
+requirement_refs:
+- TASK_EXECUTION_RULES.md
+- docs/TASK_REVALIDATION.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: contracts/control
+execution_role: coordinator
+estimated_effort: 1.0
+product_owner: 민섭(개발 운영)
+execution_class: 개발 운영 도구 보수
+product_mode: 개발 task-control 전용; 제품 기능 아님
+scope:
+  included:
+  - 문서 delta만 허용하는 명시적 coordinator 검토 명령
+  - 기존 실행 시각·원본 근거 불변 보존, 새 문서 영향 검토 기록
+  - 코드/계약/AC/공통 규칙 변경·활성 claim·잘못된 reviewer 거절
+  excluded:
+  - 테스트 재실행 주장
+  - 제품 source 변경을 문서 검토로 통과
+  - 자동 stale 해제
+  owned_paths:
+  - scripts/tasklib/cli.py
+  - scripts/tasklib/doc_review.py
+  - tests/test_task_doc_review.py
+  - docs/TASK_REVALIDATION.md
+  read_only_paths:
+  - scripts/tasklib/evidence.py
+  - scripts/tasklib/store.py
+  - scripts/tasklib/schema.py
+  planned_paths:
+  - scripts/tasklib/doc_review.py
+  - tests/test_task_doc_review.py
+  shared_resources:
+  - task-control
+depends_on: []
+contract_refs: []
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: scripts/tasklib/evidence.py
+    section: valid_evidence/source_manifest
+    reason: 기존 binding과 AC 검증을 유지
+  handoff: tasks/OPS-007/handoff.md
+  dependency_results: []
+deliverables:
+- path: scripts/tasklib/cli.py
+  availability: existing
+  description: 문서 영향 검토·회귀·운영 절차
+- path: scripts/tasklib/doc_review.py
+  availability: planned
+  description: 문서 영향 검토·회귀·운영 절차
+- path: tests/test_task_doc_review.py
+  availability: planned
+  description: 문서 영향 검토·회귀·운영 절차
+- path: docs/TASK_REVALIDATION.md
+  availability: existing
+  description: 문서 영향 검토·회귀·운영 절차
+acceptance_criteria:
+- id: AC1
+  given: 기존 integrated passed 근거 이후 docs 참고 문서만 변경
+  expect: coordinator가 정확한 delta와 사유를 검토하면 원본 근거를 보존하고 별도 review로 완료를 유지한다. 실제 테스트 재실행으로 기록하지 않는다.
+  required: true
+- id: AC2
+  given: 코드·설정·계약·AC·공통 규칙 변경, 활성 claim, stale revision, 다른 reviewer
+  expect: 검토를 거절하고 기존 검증·의존성 상태를 유지한다.
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  type: command
+  availability: planned
+  prerequisites:
+  - 임시 control/Git fixture만 사용
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_task_doc_review.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 문서 영향 검토 성공/거절 및 원본 근거 불변·의존성 해제 경계
+  runner: pytest
+evidence_dir: .agent/evidence/OPS-007
+latest_evidence_file: .agent/evidence/OPS-007/target-0927004235/result.json
+verification_summary:
+  state: passed
+  spec_revision: 1
+  spec_digest: 8f7c790aad2521a5f3c62000a9c2899313c1a7b1eb35e5326f4fd3798b9bcd8e
+  contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+  source_fingerprint: fe5bb1ea4bc0535737e4c667916a02365ff3f2725eeea6f0c3f748303a525204
+  evidence: .agent/evidence/OPS-007/target-0927004235/result.json
+integration:
+  state: integrated
+  target: main
+  reason: null
+  reservation: false
+  submission_generation: 2
+  submission:
+    head: 4e0a55b743176a0cf0b961b1a86f371f020ea929
+    baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-007
+    branch: task/OPS-007
+    evidence: .agent/evidence/OPS-007/worker-0927004151/result.json
+    changed_files:
+      docs/TASK_REVALIDATION.md: 28a85765732cc07093ba63f445a9f6eb8819b22fa36024f764707877d6b475f2
+      scripts/tasklib/cli.py: c69fdd03c48e19dfd508b7feb6a831cb0172bfc35f0b3e0296c3a564a226f329
+      scripts/tasklib/doc_review.py: 066dea59c53168a08bf78b774c0113bb327ca7ede07781d0f57198ef11288bc0
+      tests/test_task_doc_review.py: 10c54dd29c3efea6f8802b756d95a9e44d0a7c6e4f731dcec4bc6e4f22919866
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: 8f7c790aad2521a5f3c62000a9c2899313c1a7b1eb35e5326f4fd3798b9bcd8e
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: fe5bb1ea4bc0535737e4c667916a02365ff3f2725eeea6f0c3f748303a525204
+      evidence: .agent/evidence/OPS-007/target-0927004235/result.json
+    head: 4e0a55b743176a0cf0b961b1a86f371f020ea929
+  evidence: .agent/evidence/OPS-007/target-0927004235/result.json
+revision: 9
+spec_revision: 1
+claim_generation: 2
+claim: null
+attempts:
+  count: 2
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: target-0927004235
+  evidence_refs:
+  - .agent/evidence/OPS-007/worker-0927004151/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new
+  source_ref: 2026-09-27 사용자 완료 중심 재개 요청
+  prior_claim: 없음
+  implementation_facts: 문서만 달라 재검증되는 실제 사례 확인; 구현 전
+  previous_evidence: []
+  checks_this_migration:
+  - P0-020/P1-006C 등 이전 manifest delta 조사
+  judgment: 실행 관련 변경은 계속 stale; 문서 변경만 명시적으로 검토
+  initial_spec_revision: 1
+updated_at: '2026-09-27T00:43:33+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: claim 후 명시적 문서 검토와 거절 경계를 구현

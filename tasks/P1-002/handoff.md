@@ -38,3 +38,7 @@
 - egress/budget seam은 provisional이다(NVIDIA_MAX_OUTPUT_TOKENS 기본 1024).
 - live는 n=1이다. 품질 평가는 P1-006A 소관이다.
 
+## 재검증 completion (2026-09-27T00:45Z)
+
+- 사유: Actual bootstrap/settings changes since prior adapter verification; bounded offline contract tests only
+- 소스 변경 없이 현재 통합 HEAD fa2a882에서 계획된 검증을 worker/target 단계로 재실행한다.

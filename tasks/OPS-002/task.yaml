@@ -10,7 +10,7 @@ requirement_refs:
 - docs/WORK_LOG.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: verifying
+status: todo
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -166,50 +166,32 @@ verification:
   - source worktree에서는 명시 root 사용; cloned/wrong root 보호 유지
   runner: pytest
 evidence_dir: .agent/evidence/OPS-002
-latest_evidence_file: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
+latest_evidence_file: .agent/evidence/OPS-002/freeze-reval-worker-0927001239/result.json
 verification_summary:
   state: stale
   spec_revision: 4
   spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-  source_fingerprint: a6a55f9740e873172ca3074756f83c9315859aad3d2e01317c0a1e562e1c5948
-  evidence: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
+  source_fingerprint: 392f967d92a7613c41bb1435c25ca13fd0c9e85178979d83bb5b801ee49fbbc4
+  evidence: .agent/evidence/OPS-002/freeze-reval-worker-0927001239/result.json
 integration:
-  state: integrated
+  state: pending
   target: canonical main
   reason: null
-  reservation: true
-  submission_generation: 17
-  submission:
-    head: 501aebfca1b32d4e7f537bbafaef39e83461159f
-    baseline_head: 501aebfca1b32d4e7f537bbafaef39e83461159f
-    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-int-0926175134
-    branch: task/OPS-002-int-0926175134
-    evidence: .agent/evidence/OPS-002/pre-OPS-003-worker-0926194342/result.json
-    changed_files:
-      docs/TASK_REVALIDATION.md: edb3cffd7330baee12364720aff81dc643a0052919954de1e73dd98eba4e9fd0
-      scripts/tasklib/cli.py: fcf1c32208d02208eb7925c6496f5fe00b0ebedf67f2cda2f3da28a90135c044
-      tests/test_task_migration.py: c31f88c8876c57d9040d7418ec6158587657c1dc44aa0b9f97efb1338ea8b7c1
-      tests/test_taskctl.py: 2ada1c8bcb2d46a97bd1c3e60a04a7d57d5a3a1ffd7278fdeb30d79182f256bc
-  result:
-    verification_summary:
-      state: passed
-      spec_revision: 4
-      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
-      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
-      source_fingerprint: a6a55f9740e873172ca3074756f83c9315859aad3d2e01317c0a1e562e1c5948
-      evidence: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
-    head: 501aebfca1b32d4e7f537bbafaef39e83461159f
-  evidence: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
-revision: 110
+  reservation: false
+  submission_generation: null
+  submission: null
+  result: null
+  evidence: null
+revision: 114
 spec_revision: 4
-claim_generation: 17
+claim_generation: 19
 claim: null
 attempts:
-  count: 23
-  cycles: 1
+  count: 24
+  cycles: 0
   no_progress_count: 0
-  latest_attempt: pre-OPS-003-target-0926194655
+  latest_attempt: freeze-reval-worker-0927001239
   evidence_refs:
   - .agent/evidence/OPS-002/recovery-01/result.json
   - .agent/evidence/OPS-002/contract-recovery-01/result.json
@@ -224,6 +206,7 @@ attempts:
   - .agent/evidence/OPS-002/post-ops004-worker-0926161010/result.json
   - .agent/evidence/OPS-002/worker-0926175138/result.json
   - .agent/evidence/OPS-002/pre-OPS-003-worker-0926194342/result.json
+  - .agent/evidence/OPS-002/freeze-reval-worker-0927001239/result.json
   approaches:
   - kind: recovery
     generation: 2
@@ -699,6 +682,85 @@ attempts:
       source_fingerprint: 454ca5d74c2b7e7358bdf0c17a01b1764815f8d2a9c3be26884b39209d1abeca
       evidence: .agent/evidence/OPS-002/target-0926175442/result.json
     latest_evidence_file: .agent/evidence/OPS-002/target-0926175442/result.json
+  - kind: integrated_revalidation
+    generation: 18
+    baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
+    reason: 'Full revalidation after shared-file freeze: settings.py/INTEGRATION.md/bootstrap changes
+      by P1-002/P1-003/P1-006C; no source change in these tasks'
+    at: '2026-09-27T00:12:36+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical main
+      reason: null
+      reservation: true
+      submission_generation: 17
+      submission:
+        head: 501aebfca1b32d4e7f537bbafaef39e83461159f
+        baseline_head: 501aebfca1b32d4e7f537bbafaef39e83461159f
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-int-0926175134
+        branch: task/OPS-002-int-0926175134
+        evidence: .agent/evidence/OPS-002/pre-OPS-003-worker-0926194342/result.json
+        changed_files:
+          docs/TASK_REVALIDATION.md: edb3cffd7330baee12364720aff81dc643a0052919954de1e73dd98eba4e9fd0
+          scripts/tasklib/cli.py: fcf1c32208d02208eb7925c6496f5fe00b0ebedf67f2cda2f3da28a90135c044
+          tests/test_task_migration.py: c31f88c8876c57d9040d7418ec6158587657c1dc44aa0b9f97efb1338ea8b7c1
+          tests/test_taskctl.py: 2ada1c8bcb2d46a97bd1c3e60a04a7d57d5a3a1ffd7278fdeb30d79182f256bc
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 4
+          spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+          contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+          source_fingerprint: a6a55f9740e873172ca3074756f83c9315859aad3d2e01317c0a1e562e1c5948
+          evidence: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
+        head: 501aebfca1b32d4e7f537bbafaef39e83461159f
+      evidence: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: a6a55f9740e873172ca3074756f83c9315859aad3d2e01317c0a1e562e1c5948
+      evidence: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/pre-OPS-003-target-0926194655/result.json
+  - kind: recovery
+    generation: 19
+    baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
+    reason: 사용자 반복 중단 요청; 실패 근거 보존 후 관리 범위 직렬 인계
+    at: '2026-09-27T00:39:30+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-002-int-0926175134
+      branch: task/OPS-002-int-0926175134
+      generation: 18
+      claimed_at: '2026-09-27T00:12:36+00:00'
+      heartbeat_at: '2026-09-27T00:12:36+00:00'
+      lease_expires_at: '2026-09-27T00:27:36+00:00'
+      baseline_head: 71b2d09d1293c69bf83994e46456792da2b370a8
+      recovery_required: false
+      context_digest: 86319593681636feda6f954a2b580cec25fcc19fd45c49b554791fc9377994a0
+    integration:
+      state: pending
+      target: canonical main
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: failed
+      spec_revision: 4
+      spec_digest: e55c3b5672b522fa69a507c6f22775905635ae444455d18d8f30ba4dfc4366c3
+      contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+      source_fingerprint: 392f967d92a7613c41bb1435c25ca13fd0c9e85178979d83bb5b801ee49fbbc4
+      evidence: .agent/evidence/OPS-002/freeze-reval-worker-0927001239/result.json
+    latest_evidence_file: .agent/evidence/OPS-002/freeze-reval-worker-0927001239/result.json
 blocker: null
 migration:
   original_status: new
@@ -711,7 +773,7 @@ migration:
   - 원래 66 task/완료 이력 보존; 독립 보수 결과만 추가
   judgment: 독립 제어 결함 보수로 분할; 기능/보안 AC 완화 아님
   initial_spec_revision: 1
-updated_at: '2026-09-26T19:54:11+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
+updated_at: '2026-09-27T00:39:30+00:00'
+concise_result: 'Recovery inspected: 사용자 반복 중단 요청; 실패 근거 보존 후 관리 범위 직렬 인계'
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

@@ -911,3 +911,16 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 실행 순서를 고정한다: 남은 선행 검증 → 기존 WIP(Judge·보존 처리·OpenShell/NemoClaw 증거) 회수 → P0-026 E2E 통합 → P1-009 전달 문서 → 최종 변경 범위 검증. 실패는 로그를 보고 최대 3회 수정하며 전체 자동 재실행을 다시 걸지 않는다.
 - 이미 main에 반영된 P0-024~025·피드백·검색/추출 품질·SQLite 다중 프로세스 보수, NVIDIA 모델·Skill 경로의 커밋과 evidence를 보존한다. P1-002A의 JSON 응답 truncation 실패 뒤 1회 재시도 성공도 실패 기록과 함께 남아 있다.
 - 새로 회수한 미통합 결과: P1-006A Judge(actual, 합성 public n=1), P1-006F 자체 보존 삭제 job(local Langfuse), P1-007A NemoClaw 제한 API 시연(n=1). 구현/실행 기록이 있다는 사실과 main 통합·최종 사용자 흐름 통과를 구분한다.
+
+## Coordinator — 완료 중심 통합 결과 (2026-09-27 10:10 KST)
+
+- OPS-007 `4e0a55b`: 기존 통과 증거와 정확한 문서-only delta를 검토하는 명령을 추가했다. 13개 테스트를 worker/target에서 통과했다. 원래 실행 시각을 보존하고 `tests_reexecuted=false`로 기록한다. 코드·설정·계약·AC 변경에는 사용하지 않는다.
+- P1-007C `fa2a882`: standalone OpenShell 실행 기록과 재현 스크립트 통합, offline 4개 + recorded-live matrix 14행 검토. 팀원 Runtime identity 증거로 대체하지 않는다.
+- P1-006A `096ff8c`: NVIDIA Judge adapter/opt-in 배선·기록된 실호출 JSON 통합. offline 138개와 recorded-live 합성 public n=1을 구분했다. Judge 0.6은 보안 통과나 사용자 만족도 수치가 아니다.
+- P1-007A `d7d5bbb`: NemoClaw 제한 API 시연 기록 통합. 호스트 RFA backend는 sandbox 밖이다. 5개 허용 요청/7개 거절 probe와 CLI replay 오류/모델의 403 설명 오류도 기록했다.
+- P1-006F `4542713`: community Langfuse 자체 보존 job 통합 완료. 중복 `LANGFUSE_RETENTION_DAYS` 대신 기존 `TRACE_RETENTION_DAYS` 재사용, proxy env 비활성, 명시적 service 표식 요구, 타 앱 span 혼합 trace 제외, 스캔 예산 초과 시 삭제 0건으로 보강했다. worker/target 각각 111 passed. 기존 branch `8f80676`의 live 6 passed/전용 MinIO 실험은 과거 실행 기록으로 유지하며 이번에는 운영 데이터 삭제를 실행하지 않았다.
+- P1-001E `0ab54f1`, 통합 `54118a0`: Persona `OMEGA` 질의가 일반 단어만으로 근거를 얻던 실제 결함 수정. ALL-CAPS 명시 식별자가 허용 자료에 없으면 insufficient. 기존 소문자 동의어·접속사 규칙 유지. 단위/검색/context 65 passed, pinned E2E harness 4 passed(20문서 3회+1000문서; Recall@5 각각 1.0). target에서도 동일 4+65 통과. Persona v2는 수정 전 23/24→수정 후 24/24, 보안 실패 0; mock/simulated이며 semantic quality는 not_run.
+- Recall 측정 harness commit은 `ea76550`, 제품 source는 worker `0ab54f1`/target `54118a0`이다. 외부 harness의 `code_commit` 필드를 제품 commit으로 오인하지 않도록 evidence에 분리 기록했다. 최종 P0-026 통합 후 자체 harness 결과로 다시 묶는다.
+- 오류 처리: P1-001E 명세 갱신이 inactive reservation 때문에 거절되어 reservation만 명시적으로 해제 후 재시도했다(코드/이력 삭제 없음). P1-006C 재검증은 manual 관찰 인자 누락으로 실행 전 정지했고 실제 기록 검토를 전달해 완료했다. 보존 WIP의 INTEGRATION/WORK_LOG 충돌은 최신 문서를 유지하고 작업 로그를 이 절로 합쳤다. 무조건 재시도 루프는 사용하지 않았다.
+- 공식 제출 폼 재확인: 웹 도구 접근 실패, 직접 공개 HTTP 조회도 401. 브라우저 surface가 제공되지 않아 로그인 UI 우회하지 않았다. 기존 사용자 제공 요건은 유지하되 이번에 최신 내용을 확인했다고 표시하지 않는다.
+- 다음: 코드 변경을 더 늘리지 않고 P0-026에 필요한 선행 증거 → 10개 controlled 시나리오 → 전달 문서/잔여 real·UI gate 정리. 미검증 actual gate를 mock 결과로 완료 처리하지 않는다.

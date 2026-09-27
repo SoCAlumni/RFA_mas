@@ -13,3 +13,7 @@
 
 - RuntimeHttpAdapter prepare/cleanup 추가와 bootstrap 지원 표시는 P1-008(공유 파일) 범위.
 
+## 재검증 freeze-reval3 (2026-09-27T00:26Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

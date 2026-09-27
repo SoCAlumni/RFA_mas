@@ -6,3 +6,7 @@
   - tool 예산 한도에서는 남은 후보를 skipped(tool_budget)로 보고하고 run을 완료한다. coordinator가 이 동작 변경을 승인했다.
 - 개발 검증: test_team_execution 14 passed. stack 구간 126 passed.
 
+## 재검증 freeze-reval (2026-09-27T00:12Z)
+
+- 사유: Full revalidation after shared-file freeze: settings.py/INTEGRATION.md/bootstrap changes by P1-002/P1-003/P1-006C; no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.

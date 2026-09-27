@@ -9,10 +9,9 @@ requirement_refs:
 - docs/LOCAL_MODULES.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: verifying
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: done
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 2.0
@@ -53,7 +52,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 888c3d6dd38e2922aebc253ef3ae92dde19f9313e9dd81a9bebcd08b929e7eaa
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
   role: consumer
 context:
   global_refs:
@@ -132,26 +131,26 @@ verification:
   - 공용 local_security 거절; 결과/오류에 비밀/본문 반사 없음. native core의 HTTP 실행 완료라고 보고하지 않는다.
   runner: pytest
 evidence_dir: .agent/evidence/P1-008D
-latest_evidence_file: .agent/evidence/P1-008D/target-0926163416/result.json
+latest_evidence_file: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
 verification_summary:
-  state: stale
-  spec_revision: 3
-  spec_digest: bf4bfd4ce525b79cada2b4df6df20a72105fcdc9e01e2ce8c4d03917f9e95d6e
-  contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
-  source_fingerprint: 5c52720426261e87392473a6f9d9f3349ac0db2329e87abea65b0646a776c35e
-  evidence: .agent/evidence/P1-008D/target-0926163416/result.json
+  state: passed
+  spec_revision: 16
+  spec_digest: f0032bdb75420cbece2d1b872d6fc6f05de83a4ed8145d1f09c041ffe625e7c3
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 39d07f20ac37166dfb0573646d04b1cf7798a1680270206c77aa286a8915fdb3
+  evidence: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
 integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: true
-  submission_generation: 1
+  reservation: false
+  submission_generation: 2
   submission:
-    head: ab9cf68dae463d3f70af60499cbdb282a69d4f0a
-    baseline_head: d28731adafe16b2f597504f389865a125a894087
+    head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+    baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008D-int-0926163359
     branch: task/P1-008D-int-0926163359
-    evidence: .agent/evidence/P1-008D/worker-0926163404/result.json
+    evidence: .agent/evidence/P1-008D/freeze-reval3-worker-0927002647/result.json
     changed_files:
       src/rfa_mas/reference/local_runtime.py: 940b8bb613a7c9e9a5b5ef145b0f28f124de59adc11b0315bdaffb6ec9a75cbf
       src/rfa_mas/reference/local_runtime_store.py: 618eb44708dfa4ba01834cf4c59a0d1136769df8ecc55494fd2d3f893a48d37e
@@ -159,25 +158,69 @@ integration:
   result:
     verification_summary:
       state: passed
+      spec_revision: 16
+      spec_digest: f0032bdb75420cbece2d1b872d6fc6f05de83a4ed8145d1f09c041ffe625e7c3
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 39d07f20ac37166dfb0573646d04b1cf7798a1680270206c77aa286a8915fdb3
+      evidence: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
+    head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+  evidence: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
+revision: 33
+spec_revision: 16
+claim_generation: 2
+claim: null
+attempts:
+  count: 4
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: freeze-reval3-target-0927002705
+  evidence_refs:
+  - .agent/evidence/P1-008D/worker-0926163404/result.json
+  - .agent/evidence/P1-008D/freeze-reval3-worker-0927002647/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+    reason: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored);
+      no source change in these tasks
+    at: '2026-09-27T00:26:45+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: ab9cf68dae463d3f70af60499cbdb282a69d4f0a
+        baseline_head: d28731adafe16b2f597504f389865a125a894087
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008D-int-0926163359
+        branch: task/P1-008D-int-0926163359
+        evidence: .agent/evidence/P1-008D/worker-0926163404/result.json
+        changed_files:
+          src/rfa_mas/reference/local_runtime.py: 940b8bb613a7c9e9a5b5ef145b0f28f124de59adc11b0315bdaffb6ec9a75cbf
+          src/rfa_mas/reference/local_runtime_store.py: 618eb44708dfa4ba01834cf4c59a0d1136769df8ecc55494fd2d3f893a48d37e
+          tests/test_local_runtime.py: 9cc8d56bc1214cb1fdf10a9946eb7ca6d692a024e81e8e24f25ee2aefbab9cd6
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 3
+          spec_digest: bf4bfd4ce525b79cada2b4df6df20a72105fcdc9e01e2ce8c4d03917f9e95d6e
+          contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
+          source_fingerprint: 5c52720426261e87392473a6f9d9f3349ac0db2329e87abea65b0646a776c35e
+          evidence: .agent/evidence/P1-008D/target-0926163416/result.json
+        head: ab9cf68dae463d3f70af60499cbdb282a69d4f0a
+      evidence: .agent/evidence/P1-008D/target-0926163416/result.json
+    verification_summary:
+      state: stale
       spec_revision: 3
       spec_digest: bf4bfd4ce525b79cada2b4df6df20a72105fcdc9e01e2ce8c4d03917f9e95d6e
       contract_digest: 4f5216736bf14510e942ec8ae47e4d251171aac5dc7b8632de8373804be33f14
       source_fingerprint: 5c52720426261e87392473a6f9d9f3349ac0db2329e87abea65b0646a776c35e
       evidence: .agent/evidence/P1-008D/target-0926163416/result.json
-    head: ab9cf68dae463d3f70af60499cbdb282a69d4f0a
-  evidence: .agent/evidence/P1-008D/target-0926163416/result.json
-revision: 24
-spec_revision: 15
-claim_generation: 1
-claim: null
-attempts:
-  count: 2
-  cycles: 1
-  no_progress_count: 0
-  latest_attempt: target-0926163416
-  evidence_refs:
-  - .agent/evidence/P1-008D/worker-0926163404/result.json
-  approaches: []
+    latest_evidence_file: .agent/evidence/P1-008D/target-0926163416/result.json
 blocker: null
 migration:
   original_status: new_user_authorized
@@ -189,7 +232,7 @@ migration:
   - 기존 DTO/port/reference app/API와 파일 소유권 확인
   judgment: 기존 ID/완료 근거/실제 연동 gate 보존. 새 사용자 승인 범위의 독립 2h task 추가.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:15:47+00:00'
+updated_at: '2026-09-27T00:27:18+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

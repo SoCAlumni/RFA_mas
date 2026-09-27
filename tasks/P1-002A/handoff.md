@@ -23,3 +23,8 @@
 
 - worker-nvidia-1 claim(gen 2)은 15:01Z 만료, 해당 세션은 약 15:49Z 이후 유휴. 그 worktree가 claim baseline(a92912c) 이후로 FF되어 submit이 범위 밖 변경으로 막힌 상태였다(reval2-worker 통과 증거는 미제출).
 - coordinator가 recover(resume)로 baseline a92912c의 새 worktree(P1-002A-r3)에서 이어받아, 인수 기록을 소유 증거 문서에 남기고 live V1을 worker/target 단계로 다시 실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:29Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

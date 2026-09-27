@@ -17,3 +17,18 @@ Next first action: fresh source capture, manual installed metadata/lock/source c
 
 - 사유: P0-020 integrated 86d770f changed shared contracts/local/service sources and published RFA-EXTENDED 1.1 888c3d6d
 - 소스 변경 없이 현재 통합 HEAD 975baae에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval (2026-09-27T00:14Z)
+
+- 사유: Full revalidation after shared-file freeze: settings.py/INTEGRATION.md/bootstrap changes by P1-002/P1-003/P1-006C; no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval2 (2026-09-27T00:22Z)
+
+- 사유: Revalidate after hook-induced half-applied main state (restored) and shared-file changes; no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:24Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

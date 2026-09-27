@@ -18,3 +18,8 @@
 
 - 사유: OPS-005 changed TASK_EXECUTION_RULES.md (global context ref) at 4bf0ec9; direct dependencies of P1-008D/P0-025A/P1-001B only
 - 소스 변경 없이 현재 통합 HEAD d28731a에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:26Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

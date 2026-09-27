@@ -102,3 +102,13 @@ Worker actual: V1 teams38 passed (wall1.361s), exact V2 seven-file regression182
 
 - 사유: Direct/transitive dependencies of P1-003 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 8b06ac8에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-007 (2026-09-26T23:55Z)
+
+- 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:27Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

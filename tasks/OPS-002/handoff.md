@@ -1,55 +1,7 @@
-# OPS-002 — current approved effort regression maintenance
+# OPS-002 중단 재검증 정리
 
-Goal: preserve all existing protocol, migration, security and final acceptance gates while aligning only the numeric schedule regression with current approved task estimates. Parent archived/discarded inactive historical reservation generation7, applied reviewed AC4/V2/spec patch and committed canonical85d747ee4c837566aa8d2cdc54878ee580ebfe69. Existing historical implementations, failures and successful attempts remain preserved.
-
-Actual source preparation: idle clean OPS-002-r2 worktree at a8d288846e43c377cebd48fe18beb8147c150284 fast-forwarded to85d747ee; uv sync --locked succeeded, only editable package rebuilt. Existing feature Python3.12.13/SQLite3.50.4 retained and explicitly recorded for control-only tests; no shared environment upgrade and no product SQLite validation claim. Normal claim worker-control generation8/revision48 succeeded without scope bypass. Parent concurrently assigned non-overlapping product prerequisite revalidation; canonical HEAD/source remains parent-controlled.
-
-Failure basis (cycle1): .agent/evidence/P0-019/full-regression-01.json records actual full ordered run597 collected/596 passed/1 failed, D3 old expectation11h versus current12h after approved P1-0061→2h. Trace-cache/NAT/team cases passed in that same run; whole suite still failed. No historical failure is overwritten or reset. New P0-0201.5→3h was then approved before this maintenance baseline. Locked canonical task/project sums were directly checked: D1=8.5/D2=10/D3=12/D4=8; TECH_D1=2.5/TECH_D2=2.5/TECH_D3=1 (total6); serial D1–D3+TECH=36.5; separate LLMOps3.5. Initial31.5h and intermediate34h remain historical facts.
-
-Only source changes: tests/test_task_migration.py current per-day and serial assertions plus history comment; docs/TASK_REVALIDATION.md history/current sums/failed-evidence reference and limits. CLI/framework code, test_taskctl.py, root WORK_LOG and all functional/security/final-gate assertions unchanged. No actual dotenv/credentials/provider/network access.
-
-Preparation diagnostics before canonical spec application: functions JS structuredClone unavailable, replaced by JSON clone; read_input returned text rather than parsed YAML, validator corrected to yaml.safe_load after checking function. Third preparation check passed Task schema and unchanged AC1/2/3/5/V1; these are tool preparation errors, not product-test reruns. No source changes were made before authorized claim.
-
-Current corrected verification is cycle2 relative to the preserved full-suite failure, attempt current-effort-worker-02. Exact V1 tests/test_taskctl.py (timeout180) and V2 tests/test_task_migration.py (timeout120) run with env-i PATH and explicit canonical TASK_CONTROL_ROOT, normal pytest plugins. Protocol mutations use temporary fixture/control directories; migration audit reads canonical state. Ruff and git diff --check passed. Final counts/evidence are attached after both commands finish. Maximum3 meaningful cycles; no unchanged retry or lowered AC.
-
-Actual corrected worker verification PASSED: V1 94 passed112.50s (timeout180), V2 17 passed6.23s (timeout120), no skips/errors/failures/xfails. Immutable .agent/evidence/OPS-002/current-effort-worker-02/{source,result}.json records unchanged-source capture and exact assertions/commands/output. Root full-regression-01 remains the first failure; this correction passed without a further retry.
-
-Next first action: scoped feature commit, then submit verifying. Parent coordinates main merge after the existing product revalidation window; no worker merge, publication or done before independent target evidence. These are task-management tests, not product E2E/live technology/security certification.
-
-## 재검증 post-retrieval (2026-09-26T14:10Z)
-
-- 사유: P1-001A integrated 66b2d49 changed shared KB/retrieval/service/contract sources and published RFA-EXTENDED 1.1 f711bab8
-- 소스 변경 없이 현재 통합 HEAD 62422a2에서 계획된 검증을 worker/target 단계로 재실행한다.
-
-## 재검증 post-team (2026-09-26T15:25Z)
-
-- 사유: P0-020 integrated 86d770f (shared contracts/local/service) and OPS-003 tool fix; RFA-EXTENDED 1.1 888c3d6d
-- 소스 변경 없이 현재 통합 HEAD 11aedac에서 계획된 검증을 worker/target 단계로 재실행한다.
-
-## 재검증 post-ops004 (2026-09-26T16:10Z)
-
-- 사유: OPS-004 tasklib git memo integrated at 7553a20 (control tool only)
-- 소스 변경 없이 현재 통합 HEAD 7553a20에서 계획된 검증을 worker/target 단계로 재실행한다.
-
-
-## 2026-09-27 revalidation 중단(discard)
-
-- post-ops004 재검증 claim(generation 14, baseline 7553a20) 중 다른 통합(P1-008C, a0a9347)이 target을 이동시켜 submit이 "current integrated HEAD" 조건으로 거절됨.
-- FF하면 범위 밖 파일이 diff에 들어가고, claim 중인 task는 revalidation recover가 불가하여 도구 공백이 확인됨(OPS-005에서 보정).
-- 소스 변경 없는 재검증 claim이므로 discard로 정리한다. 이전 통합 이력은 attempts.approaches에 보존된다. OPS-005 후 절차 문서를 갱신하는 실제 변경으로 다시 완료한다.
-
-
-## 재통합(2026-09-27) — OPS-005 이후 재검증 운영 절차 문서화
-
-- 이전 통합 이력은 attempts.approaches에 보존. post-ops004 재검증은 target 이동으로 멈춰 discard했다.
-- 변경: docs/TASK_REVALIDATION.md에 운영 절차를 추가했다.
-  - 직접(전이) 의존성 우선 재검증, 최종 전체 재검증 1회.
-  - global context 문서 변경 시 전체 stale 주의.
-  - 재검증 중 target 이동은 FF 후 재캡처.
-  - nohup 백그라운드 작업 소멸 사건, OPS-002/OPS-003 discard 사건 기록.
-- 검증: 계획된 V1(test_taskctl)·V2(test_task_migration)를 worker/target 단계에서 실행한다.
-
-## 재검증 pre-OPS-003 (2026-09-26T19:43Z)
-
-- 사유: docs/WORK_LOG.md commits (OPS-002 read-only path); dependency of OPS-003
-- 소스 변경 없이 현재 통합 HEAD 501aebf에서 계획된 검증을 worker/target 단계로 재실행한다.
+구현은 main에 이미 통합되어 있다. 재검증의 tests/test_taskctl.py가 180초 timeout,
+test_task_migration.py는 17 passed였다. 실패를 통과로 변경하지 않는다.
+사용자의 반복 중단 지시에 따라 관련 재검증 프로세스를 종료하고 clean worktree를 확인했다.
+OPS-007 문서 영향 검토 보수가 단일 관리 범위를 점유하도록 중단 재검증 예약만 반납한다.
+기존 통합/evidence는 attempts 이력에 보존한다. 다음 행동: 최종 관리 도구 회귀의 실제 결과로 재검증.

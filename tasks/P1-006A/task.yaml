@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P1
-status: todo
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -33,6 +33,11 @@ scope:
   - tests/test_evaluation.py
   - src/rfa_mas/adapters/nvidia_judge.py
   - tests/integration/test_judge_live.py
+  - src/rfa_mas/adapters/nvidia.py
+  - tests/test_nvidia_judge_contract.py
+  - tests/test_nvidia_contract.py
+  - tests/test_settings.py
+  - docs/evidence/nvidia-judge.json
   read_only_paths:
   - AGENTS.md
   - src/rfa_mas/ports/interfaces.py
@@ -41,6 +46,8 @@ scope:
   planned_paths:
   - src/rfa_mas/adapters/nvidia_judge.py
   - tests/integration/test_judge_live.py
+  - tests/test_nvidia_judge_contract.py
+  - docs/evidence/nvidia-judge.json
   shared_resources:
   - canonical-contracts
   - composition
@@ -99,6 +106,9 @@ deliverables:
 - path: tests/integration/test_judge_live.py
   availability: planned
   description: 범위 내 연결 구현·문서·회귀 산출물; 새 API는 구현/검증 전 사용 가능으로 표시하지 않음
+- path: docs/evidence/nvidia-judge.json
+  availability: planned
+  description: 기록된 합성 public live Judge 결과; secret/raw prompt 제외
 acceptance_criteria:
 - id: AC1
   given: 합성 fixture와 허용된 identity; 선행 task 산출물을 사용
@@ -134,8 +144,10 @@ verification:
   - pytest
   - -q
   - tests/test_evaluation.py
-  - tests/integration/test_judge_live.py
-  timeout_seconds: 120
+  - tests/test_nvidia_judge_contract.py
+  - tests/test_nvidia_contract.py
+  - tests/test_settings.py
+  timeout_seconds: 300
   procedure: []
   assertions:
   - ENABLE_JUDGE opt-in일 때만 합성/전송 허가된 자료 평가; endpoint별 egress 허가와 opt-in 둘 다 필요, key 존재만으로 private trace/문서
@@ -145,34 +157,75 @@ verification:
   - actual/simulated/not_run 및 provider 실패 구분. disabled/error/skip/증거 부족은 semantic not_run/error, 결정적
     rule 결과는 보존하고 미실행 점수 null
   runner: pytest
+- id: V2
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: manual
+  availability: available
+  prerequisites:
+  - 기록된 실제 합성 Judge 실행과 변경한 adapter의 payload/루브릭 대조
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - docs/evidence/nvidia-judge.json의 actual/simulated·차원·rule gate·버전을 실제 live 기록과 대조한다. 이는 기록 검토이며 새
+    API 호출 주장이 아니다.
+  assertions:
+  - 실제 Judge 평가와 결정적 rule gate가 별도이며 모델·rubric·prompt·시간·전송된 public source가 기록되어 있다.
+  runner: manual
 evidence_dir: .agent/evidence/P1-006A
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-006A/completion-target-0927004910/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 6
+  spec_digest: f3496883eaad32c45f31e21c546680e24c1dda87b59030be5787dbf43d9d8012
+  contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+  source_fingerprint: 8a1f203fe034419eabb3bcc41864c75842277081e3603da6e7e47e8fff3788a8
+  evidence: .agent/evidence/P1-006A/completion-target-0927004910/result.json
 integration:
-  state: pending
+  state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 4
-spec_revision: 4
-claim_generation: 0
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: 096ff8cf0291fbdda03f9ffc80e8e8a58598de9b
+    baseline_head: 21e9bc186a01758b5eff53fa179a5771a917a656
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-006A-completion
+    branch: task/P1-006A-completion
+    evidence: .agent/evidence/P1-006A/worker-0927004724/result.json
+    changed_files:
+      docs/evidence/nvidia-judge.json: c4e465ac3548654065e40f2f2ffb20e711fd55954a812dffa2538682e37bb474
+      src/rfa_mas/adapters/nvidia.py: 65e3dec900ac4cfa568d5410d37d39e733168250f9d36deee8dbe9702bc08018
+      src/rfa_mas/adapters/nvidia_judge.py: 04f3edc5d3905d7946a4236b88bfc7ef76807484aba2dd85b6ef29cbdcb6c2da
+      src/rfa_mas/bootstrap.py: 2b0582a8cd6d0b5e52d6d4c1b71042c02aab7d2487ba86fa5e050bd912dc8c5c
+      tests/integration/test_judge_live.py: cc2c068a5597e8ef388a00065a9473bd9faaa43fbdc463be378db8a2d1bb9157
+      tests/test_nvidia_contract.py: 53b3118d6d4eb30ed1a3ece80ce9eb755be92524b6d9cad219c16b47182bebbf
+      tests/test_nvidia_judge_contract.py: 95b23936c4bf663599645fb57761bb3c4462300bccef50dd82659803ab3fd415
+      tests/test_settings.py: ac59db40c97f954aad92c54ac18db2ab9cdada3f9567b9e5f25b60b0dd908e4b
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 6
+      spec_digest: f3496883eaad32c45f31e21c546680e24c1dda87b59030be5787dbf43d9d8012
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 8a1f203fe034419eabb3bcc41864c75842277081e3603da6e7e47e8fff3788a8
+      evidence: .agent/evidence/P1-006A/completion-target-0927004910/result.json
+    head: 096ff8cf0291fbdda03f9ffc80e8e8a58598de9b
+  evidence: .agent/evidence/P1-006A/completion-target-0927004910/result.json
+revision: 15
+spec_revision: 6
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: completion-target-0927004910
+  evidence_refs:
+  - .agent/evidence/P1-006A/worker-0927004724/result.json
   approaches: []
 blocker: null
 migration:
@@ -186,6 +239,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-26T03:49:28+00:00'
-concise_result: 'Specification changed: 관련 설계 문서를 readonly fingerprint에 포함; 계약·증거 변경 감지 범위 명시'
-next_action: mock transport schema/timeout·gate 회귀 후 실제 합성 Judge 요청. 계정 준비 전 실제 점수 기입 금지.
+updated_at: '2026-09-27T01:06:47+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

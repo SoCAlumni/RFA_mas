@@ -138,3 +138,18 @@ Coordinator: review/merge09bdb65, capture new integration evidence on stable tar
 
 - 사유: Direct/transitive dependencies of P1-003 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 8b06ac8에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-007 (2026-09-26T23:50Z)
+
+- 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:29Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 completion-prerequisites (2026-09-27T00:51Z)
+
+- 사유: Remaining Judge/bootstrap-dependent prerequisites for retention and the observed Persona relevance fix; single bounded pass
+- 소스 변경 없이 현재 통합 HEAD d7d5bbb에서 계획된 검증을 worker/target 단계로 재실행한다.

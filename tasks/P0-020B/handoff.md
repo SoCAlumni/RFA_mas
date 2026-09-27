@@ -6,3 +6,7 @@
   - extended.json을 재생성했다.
 - 개발 검증: test_api(+team_execution, effect_ledger) 95 passed.
 
+## 재검증 freeze-reval (2026-09-27T00:15Z)
+
+- 사유: Full revalidation after shared-file freeze: settings.py/INTEGRATION.md/bootstrap changes by P1-002/P1-003/P1-006C; no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.

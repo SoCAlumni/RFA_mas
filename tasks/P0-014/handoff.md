@@ -102,3 +102,8 @@ Worker actual: post-knowledge-worker-01 V1=15 passed (wall0.883s), V2=50 passed 
 
 - 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 6f3f361에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 freeze-reval3 (2026-09-27T00:24Z)
+
+- 사유: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored); no source change in these tasks
+- 소스 변경 없이 현재 통합 HEAD a6c271d에서 계획된 검증을 worker/target 단계로 재실행한다.

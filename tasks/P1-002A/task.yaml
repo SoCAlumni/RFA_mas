@@ -9,7 +9,7 @@ requirement_refs:
 - docs/PRODUCT_REQUIREMENTS.md
 - docs/archive/TASKS_2026-09-26.md
 priority: P1
-status: verifying
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -134,29 +134,29 @@ verification:
   - 출력·evidence에 key/Authorization/reasoning_content 없음
   runner: pytest
 evidence_dir: .agent/evidence/P1-002A
-latest_evidence_file: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
+latest_evidence_file: .agent/evidence/P1-002A/completion-reference-review/result.json
 verification_summary:
-  state: stale
+  state: passed
   spec_revision: 2
   spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-  source_fingerprint: 5302977cc06d52a5ee4cf1a6b13b5746c3fb3bc31fc036b2fbff59f9833a7418
-  evidence: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
+  source_fingerprint: 38a2fb943baa80e62ab238297fe91665194950fb06f4294a44318df4de50e435
+  evidence: .agent/evidence/P1-002A/completion-reference-review/result.json
 integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: true
-  submission_generation: 3
+  reservation: false
+  submission_generation: 4
   submission:
-    head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
-    baseline_head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-002A-r4
     branch: task/P1-002A-r4
-    evidence: .agent/evidence/P1-002A/takeover-worker-0926224808/result.json
+    evidence: .agent/evidence/P1-002A/freeze-reval3-worker-0927002916/result.json
     changed_files:
-      docs/EDUCATION_MAPPING.md: 32af81d3a93f2d10aa148b21e172d2d09f2a8cb0dce07c1ba11e8ab1f4c65466
-      docs/evidence/nvidia-model.md: e636995aa92a3a79d48f6a99552af80da81c256ad56401317cf0c655fb4070d1
+      docs/EDUCATION_MAPPING.md: 905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554
+      docs/evidence/nvidia-model.md: a595dca25f7ca73ee5e6512e550f2a0d454051e697161400e976cfc7b3ee6fb6
       tests/integration/test_nvidia_live.py: cb442c345da51af5c926f42404ec15e6f8cf7665e91105d23f17ab685eb5d582
   result:
     verification_summary:
@@ -164,24 +164,27 @@ integration:
       spec_revision: 2
       spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
       contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
-      source_fingerprint: 5302977cc06d52a5ee4cf1a6b13b5746c3fb3bc31fc036b2fbff59f9833a7418
-      evidence: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
-    head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
-  evidence: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
-revision: 32
+      source_fingerprint: 38a2fb943baa80e62ab238297fe91665194950fb06f4294a44318df4de50e435
+      evidence: .agent/evidence/P1-002A/completion-reference-review/result.json
+    head: 54118a0834634bc1563071dce69dd678a8bea3a9
+    documentation_review: true
+  evidence: .agent/evidence/P1-002A/completion-reference-review/result.json
+revision: 42
 spec_revision: 2
-claim_generation: 3
+claim_generation: 4
 claim: null
 attempts:
-  count: 7
+  count: 10
   cycles: 1
   no_progress_count: 0
-  latest_attempt: takeover-target-retry1-0926225337
+  latest_attempt: completion-reference-review
   evidence_refs:
   - .agent/evidence/P1-002A/v1-live-a1/result.json
   - .agent/evidence/P1-002A/reval1-worker/result.json
   - .agent/evidence/P1-002A/reval2-worker/result.json
   - .agent/evidence/P1-002A/takeover-worker-0926224808/result.json
+  - .agent/evidence/P1-002A/freeze-reval3-worker-0927002916/result.json
+  - .agent/evidence/P1-002A/completion-reference-review/result.json
   approaches:
   - kind: integrated_revalidation
     generation: 2
@@ -279,6 +282,49 @@ attempts:
       source_fingerprint: 5699c788dcca119078b355eacc200653ce9ec43a6f42a8bc2201f10a9c49e28d
       evidence: .agent/evidence/P1-002A/reval2-worker/result.json
     latest_evidence_file: .agent/evidence/P1-002A/reval2-worker/result.json
+  - kind: integrated_revalidation
+    generation: 4
+    baseline_head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
+    reason: Revalidate after P1-007 batched integration and shared-file changes (hook incident restored);
+      no source change in these tasks
+    at: '2026-09-27T00:29:14+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 3
+      submission:
+        head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+        baseline_head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-002A-r4
+        branch: task/P1-002A-r4
+        evidence: .agent/evidence/P1-002A/takeover-worker-0926224808/result.json
+        changed_files:
+          docs/EDUCATION_MAPPING.md: 32af81d3a93f2d10aa148b21e172d2d09f2a8cb0dce07c1ba11e8ab1f4c65466
+          docs/evidence/nvidia-model.md: e636995aa92a3a79d48f6a99552af80da81c256ad56401317cf0c655fb4070d1
+          tests/integration/test_nvidia_live.py: cb442c345da51af5c926f42404ec15e6f8cf7665e91105d23f17ab685eb5d582
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 2
+          spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
+          contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+          source_fingerprint: 5302977cc06d52a5ee4cf1a6b13b5746c3fb3bc31fc036b2fbff59f9833a7418
+          evidence: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
+        head: 88c33d9c79c936fd3f0006fb46df3c7d177d4e04
+      evidence: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
+    verification_summary:
+      state: stale
+      spec_revision: 2
+      spec_digest: 125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747
+      contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
+      source_fingerprint: 5302977cc06d52a5ee4cf1a6b13b5746c3fb3bc31fc036b2fbff59f9833a7418
+      evidence: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
+    latest_evidence_file: .agent/evidence/P1-002A/takeover-target-retry1-0926225337/result.json
 blocker: null
 migration:
   original_status: blocked
@@ -291,7 +337,6 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 1
-updated_at: '2026-09-26T23:16:53+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
-  AC'
+updated_at: '2026-09-27T01:09:30+00:00'
+concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
+next_action: Reverify if code, settings, contract, AC or global instructions change

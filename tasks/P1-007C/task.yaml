@@ -10,10 +10,9 @@ requirement_refs:
 - docs/LOCAL_MODULES.md
 - docs/EDUCATION_MAPPING.md
 priority: P1
-status: todo
-spec_state: draft
-unresolved:
-- Re-read RFA-EXTENDED 1.1; coordinator edit-spec must accept new digest
+status: verifying
+spec_state: ready
+unresolved: []
 workstream: integration/evaluation
 execution_role: worker
 estimated_effort: 2.0
@@ -60,7 +59,7 @@ contract_refs:
   role: consumer
 - id: RFA-EXTENDED
   version: '1.1'
-  digest: 7b61a759c697390f998c39c34c952fcbf7b1d4fccd3374402ac045f68c936012
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
   role: consumer
 context:
   global_refs:
@@ -166,33 +165,65 @@ verification:
     real/local-standalone으로 기록하고 teammate runtime(다영) 연동·NemoClaw 증거로 표현하지 않는다.
   runner: manual
 evidence_dir: .agent/evidence/P1-007C
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-007C/target-0927004536/result.json
 verification_summary:
-  state: not_run
-  spec_revision: null
-  spec_digest: null
-  contract_digest: null
-  source_fingerprint: null
-  evidence: null
+  state: stale
+  spec_revision: 12
+  spec_digest: 94bc3d131bcd31ea63052b8b60effc137e73c99a7afa77203b9f31ee27637475
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 570d4a257c0c3b926482f21da199701990f809ee97623b499a7e13125f8dd5e1
+  evidence: .agent/evidence/P1-007C/target-0927004536/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
-  submission_generation: null
-  submission: null
-  result: null
-  evidence: null
-revision: 11
-spec_revision: 11
-claim_generation: 0
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: fa2a882d1ccb270ad97207709c72422be5ffda72
+    baseline_head: 4e0a55b743176a0cf0b961b1a86f371f020ea929
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007C-int-0927004458
+    branch: task/P1-007C-int-0927004458
+    evidence: .agent/evidence/P1-007C/worker-0927004518/result.json
+    changed_files:
+      deploy/openshell/build_rootfs.sh: d5b81777b97c284a55cea9a77dd926bd9ab0c09c91d5aafd552845f3f5602ebe
+      deploy/openshell/endpoints/allowed/internal/R02_roadmap.txt: 912c3ecefe5a263fa7ffc4dad8c2d27e7234bf602f1abd971175b6bd8768319f
+      deploy/openshell/endpoints/allowed/public/R01_release_notice_v1.txt: c4fa0ab7e5b0e049cf646b8555d5ab599b4d0cf82b250fc4576aa8a977104d3b
+      deploy/openshell/endpoints/denied/index.txt: 6422e5a26935a452dc768c5cedf88467999488c8de15092bb7b9650cfb1ac419
+      deploy/openshell/image/Dockerfile: 6bb28ced1864027c11136b0959895337d64e6f4899c30432cd54427351006337
+      deploy/openshell/image/opt/rfa-unapproved/unapproved_tool.sh: e57224fdfea488560ac486aec6332a5d043e482c2009b940746a621f8a08907f
+      deploy/openshell/image/srv/rfa-private/SENTINEL_E2E05.txt: 2bf172e27cd85e3b9af0def8ff5607c282fcf2b1b8f658e2bc10c7800b6d1a9c
+      deploy/openshell/policies/execution-control.yaml: 94ad49ae8440456665cb9626ab6a3d4c623ab559c7ae46134145400ea32d8096
+      deploy/openshell/policies/execution.yaml: dc0c08a48b347c5ab598bdf84df1cca12ed9933518eb03e5b28e1515fa6592ee
+      deploy/openshell/policies/research-control.yaml.tmpl: b2644e3060edfcac30902bc5f28a7b521b9914ea6d635072a593bd6a8b9a2c80
+      deploy/openshell/policies/research.yaml.tmpl: 9d07eedf6189d527cb3915de49af6a24b78c961ce3e319edcd1cac87a210d7ab
+      deploy/openshell/workdir/benchmarks.json: 6c7a6a376ffc6f783b3ea199f1d3702f1b3465cfc0b5a80fa078574a7ea0b656
+      deploy/openshell/workdir/metric_compare.py: 400ceee2fc4a72dca54dc7909d67bddf28fcebdad62a9a3bd1c1422a4903120b
+      docs/EDUCATION_MAPPING.md: 29df635ae9c9249e12d5565c4e88e32f72cf6e2bc122deee026b5ef3bdaba161
+      docs/evidence/openshell.md: 65bd328cffd79054cd9443e179b8fa7b1554c46f5a88800b0eb6b1ab8fec5ea4
+      scripts/openshell_e2e05.py: 945ce78d54559bb51189ede6234c718d41db4eb080a0b609a2d67e793d90adaf
+      tests/integration/test_openshell_live.py: 808419675fcc54497a333256fe1c1775cbe27d4bd59bf0e5d95cd78ab81051fb
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 12
+      spec_digest: 94bc3d131bcd31ea63052b8b60effc137e73c99a7afa77203b9f31ee27637475
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 570d4a257c0c3b926482f21da199701990f809ee97623b499a7e13125f8dd5e1
+      evidence: .agent/evidence/P1-007C/target-0927004536/result.json
+    head: fa2a882d1ccb270ad97207709c72422be5ffda72
+  evidence: .agent/evidence/P1-007C/target-0927004536/result.json
+revision: 21
+spec_revision: 12
+claim_generation: 1
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 2
+  cycles: 1
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
+  latest_attempt: target-0927004536
+  evidence_refs:
+  - .agent/evidence/P1-007C/worker-0927004518/result.json
   approaches: []
 blocker: null
 migration:
@@ -205,7 +236,7 @@ migration:
   - P1-007B는 P1-008B(teammate identity) 대기로 blocked 유지 확인
   judgment: P1-007B 실제 teammate gate를 대체하지 않는 별도 로컬 실제 OpenShell 증거 task.
   initial_spec_revision: 1
-updated_at: '2026-09-26T21:15:47+00:00'
-concise_result: 'Specification changed: Accept current RFA-EXTENDED; add EDUCATION_MAPPING.md (OpenShell
-  rows point to the real local evidence)'
-next_action: worktree에서 스크립트·정책 작성 후 실제 실행.
+updated_at: '2026-09-27T00:50:08+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

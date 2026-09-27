@@ -23,3 +23,7 @@
 
 - 원격(비 loopback) Langfuse는 미구현이며 거절한다.
 
+## 재검증 completion-prerequisites (2026-09-27T01:03Z)
+
+- 사유: Remaining Judge/bootstrap-dependent prerequisites for retention and the observed Persona relevance fix; single bounded pass
+- 소스 변경 없이 현재 통합 HEAD d7d5bbb에서 계획된 검증을 worker/target 단계로 재실행한다.

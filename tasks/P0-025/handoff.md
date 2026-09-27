@@ -9,3 +9,7 @@
 - 개발 검증: test_api 15 passed(stack 병합 후 18). stack tip 전체 947 passed / 0 failed / 11 skipped(opt-in live).
 - 한계: notification 이벤트 kind는 예약만 있고 producer가 없다(P0-024 연결은 후속).
 
+## 재검증 pre-P1-007 (2026-09-27T00:14Z)
+
+- 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.

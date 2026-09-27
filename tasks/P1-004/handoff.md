@@ -28,3 +28,8 @@
 
 - 사유: Direct/transitive dependencies of P0-005A before claim (OPS-005)
 - 소스 변경 없이 현재 통합 HEAD 71bf2af에서 계획된 검증을 worker/target 단계로 재실행한다.
+
+## 재검증 pre-P1-007 (2026-09-27T00:04Z)
+
+- 사유: Direct/transitive dependencies of P1-007 before claim (OPS-005)
+- 소스 변경 없이 현재 통합 HEAD 71b2d09에서 계획된 검증을 worker/target 단계로 재실행한다.
