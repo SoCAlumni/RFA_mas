@@ -8,7 +8,7 @@
 지식 서버 계약 하나를 노출한다. **코어층**(`src/rfa_mas/application` 등)은 KB·정책·팀 실행·관측 원장을 제공하고
 운영층에는 사내 지식 API(knowledge facade :8791)로 보인다.
 
-문서 구성: 1장 전체 아키텍처(1.1 운영층 · 1.2 `ask()` 파이프라인 · 1.3 검열·되먹임·admission · 1.4 코어층) →
+문서 구성: 1장 전체 아키텍처(1.1 운영층 · 1.2 `ask()` 파이프라인 · 1.3 검열·되먹임·admission · 1.4 팀 스폰 · 1.5 코어층) →
 2장 팀원/대응 측 모듈 통합 → 3장 기술 스택 → 4장 Agent 인벤토리 → 5장 팀 에이전트 생성 → 6장 라우팅 규칙 →
 7장 시나리오별 workflow(S0 `/ask`, S1~S8 코어) → 8장 LLMOps → 9장 실제/mock 경계.
 
@@ -140,7 +140,30 @@ flowchart LR
   표식이다. 방어는 태깅+규칙이며, 키워드 head 는 애초에 `question`만으로 라우팅한다.
 - learned.yaml 은 호스트 파일이다. 샌드박스에 마운트하지 않고 프롬프트(요청 본문)로 실어 보낸다.
 
-### 1.4 코어층
+### 1.4 팀 스폰 — 요구사항 → task 대표(supervisor) + 멤버 팀 (`POST /teams`)
+
+```mermaid
+flowchart LR
+    IN["name + description (자연어)"] --> P["패터닝<br/>DirectPatterner(프록시→로컬 모델 JSON) | KeywordPatterner 폴백"]
+    P --> CAP["capabilities ⊆ roles.yaml<br/>+ always[verify] − excludes[no_egress]"]
+    CAP --> C["compose: 역할 ≤ max_members, 팀 전용 멤버 id,<br/>supervisor alias = 멤버 최소 exposure, 배치(기본 | no_egress→rfa-tasks-none)"]
+    C --> V{"병합 검증<br/>groups ⊆ 샌드박스, id 충돌"} -->|422| X["refused (감사 team/refused)"]
+    V -->|ok| T[("teams.yaml status=applying")]
+    T --> RL["assignments 재로드 → 브로커·진입점 roster 갱신"]
+    RL --> M["manifest: maxSpawnDepth 2,<br/>supervisor.subagents.allowAgents = 멤버, 멤버는 spawn 도구 없음"]
+    M --> AP["nemoclaw <sb> agents apply -f → seed_sandbox(IDENTITY # TEAM + 스킬)"]
+    AP -->|ok| R[("status=ready · /ask 카탈로그에 task(agent=supervisor)")]
+    AP -->|error| F[("status=failed (재시도 가능, roster 불변)")]
+```
+
+- supervisor 는 `rfa-main` 의 secondary(`delegatable: true`)이고 멤버는 `delegatable: false` 라 브로커·assistant 가 직접 부르지 못한다.
+  브로커의 `nemoclaw … agent --agent <supervisor>` 는 최상위 세션(depth 0)이므로 supervisor→멤버 spawn 은 depth 1; assistant(main)→supervisor→멤버는
+  depth 2 라 manifest `defaults.subagents.maxSpawnDepth: 2`(NemoClaw 검증기 1~5 허용). 대상 제한은 요청자 에이전트의 `allowAgents` 로 강제된다.
+- 역할 카탈로그 밖 생성은 없다. description 의 도구·네트워크 요구는 프롬프트 규칙으로 무시되고, 멤버 egress 는 역할에 고정된 `groups` 뿐이다.
+- verifier(`task-verifier` 스킬)는 항상 포함되며 supervisor(`team-supervisor` 스킬)가 초안+근거를 보내 `pass|revise` JSON 을 받아 1회 수정한다.
+- CLI `python -m rfa_mas.nemoclaw teams list|create|remove`, 감사 `kind=team`(pattern source·roles·apply 결과, 설명 원문 미저장).
+
+### 1.5 코어층
 
 의존 방향은 `API → application/graph → port`로 고정이며, adapter 주입은 `bootstrap.py`에서만 한다.
 graph 노드 내부에서 mock/real adapter를 분기하지 않는다. 운영층에서 코어층은 knowledge facade(:8791) 하나로 보이며,
@@ -441,6 +464,8 @@ Domain Graph의 `generate` 노드(ModelPort)와 knowledge facade의 생성 단�
 | research | `rfa-main`, skill `task-research` | intranet-ro / `rfa-external` | `/ask` 기본 담당. facade 2 route 로 근거 조회, `[이전 거절 사유]` 블록 준수 |
 | benchmark | `rfa-main`, skill `task-benchmark` | intranet-ro / `rfa-internal` | 수치 조회, 로컬 모델만 |
 | summarizer | `rfa-main`(격리 시 `rfa-tasks-none`), skill `task-summarizer` | groups 없음 / `rfa-external` | 전달 텍스트만 요약, 네트워크 도구 없음 |
+| `t-<task>-sup` (스폰된 팀의 supervisor) | `rfa-main` secondary, skill `team-supervisor`, IDENTITY `# TEAM` | groups 없음 / 멤버 최소 exposure, `allowAgents`=멤버 | `/ask` 가 그 task 를 고르면 브로커가 호출. 멤버 spawn → 초안 → verifier → 답 |
+| `t-<task>-<role>` (멤버: research/benchmark/summarizer/verifier) | `rfa-main`, 역할 스킬 | 역할 고정 groups/alias, `delegatable: false` | supervisor 만 spawn. verifier 는 `{"verdict": pass\|revise, unsupported[]}` JSON |
 
 배치 규칙(sg-4c): 모든 에이전트는 기본 샌드박스 `rfa-main` 에 놓이고, agent 의 `groups`는 "필요한 egress"로서 샌드박스 groups 의
 부분집합이어야 한다. 격리가 필요하면 agent 에 `sandbox:` 를 지정해야 그 샌드박스가 온보딩된다(`relocate --to-sandbox`).
@@ -600,6 +625,7 @@ stateDiagram-v2
 | ④ 거절 → feedback | public, "결과 대시보드 어디서" (KB 에 사내 주소) | 1라운드 결재 rejected(사내 주소) → learned.yaml → 2라운드 `[REDACTED:llm]`, approved, 같은 사유 재발 없음 |
 | 개인 채팅 (데모 03) | `POST /chat` self | `internal` 프로파일: 이메일만 마스킹, 사내 주소는 소유자에게 그대로. 같은 질문 public 은 프로젝트명·수치까지 마스킹 |
 | admission queue (데모 06) | 동시 2건 (company) | 두 번째 `202 {queued, position 1}` → `GET /ask/{id}` 폴링 → 200. 같은 request_id 재요청은 캐시 |
+| 팀 스폰 (데모 10) | `POST /teams {name, description}` | 201 supervisor+멤버(verifier 마지막), 기본 샌드박스, `/ask` 가 새 task 로 라우팅, 감사 team, DELETE 202 |
 
 라이브(실제 샌드박스)에서는 head 와 202 경로가 확인됐고, 샌드박스 턴 실패는 `refusal no_knowledge`로 닫힌다(README "검증 상태").
 

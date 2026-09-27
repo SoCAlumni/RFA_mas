@@ -50,6 +50,7 @@ class Entry:
     proxy_key: str | None = None
     proxy_url: str = "http://127.0.0.1:8797/v1/chat/completions"
     ask_service: AskService | None = None
+    team_service: object | None = None
     _sandboxes_cache: tuple[float, list[str]] = (0.0, [])
 
     def app(self) -> Starlette:
@@ -68,7 +69,7 @@ class Entry:
             Route("/broker/admin/ask", self.broker_ask, methods=["POST"]),
         ]
         if self.ask_service is not None:  # /ask, /ask/{id}, /chat (+ /docs, /openapi.json) — matched after the routes above
-            routes.append(Mount("/", app=create_ask_app(self.ask_service)))
+            routes.append(Mount("/", app=create_ask_app(self.ask_service, self.team_service)))
         return Starlette(routes=routes)
 
     async def healthz(self, request: Request) -> Response:

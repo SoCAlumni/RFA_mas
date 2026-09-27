@@ -2,7 +2,7 @@
 # Applied with `nemoclaw onboard --agents` (bake) or `nemoclaw <sb> agents apply -f` (live).
 defaults:
   subagents:
-    maxSpawnDepth: 1
+    maxSpawnDepth: 2
 main:
   tools:
     profile: minimal

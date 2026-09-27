@@ -15,18 +15,34 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 
 from rfa_mas.nemoclaw import bootstrap as bs
-from rfa_mas.nemoclaw.ask import AskDeps, BrokerTasks, DirectHead, HintJudge, KeywordHead, FakeTasks
+from rfa_mas.nemoclaw.ask import AskDeps, BrokerTasks, DirectHead, FakeTasks, HintJudge, KeywordHead
 from rfa_mas.nemoclaw.ask_api import AskService
 from rfa_mas.nemoclaw.broker import Broker
-from rfa_mas.nemoclaw.censor import CensorPipeline, JudgeError, JudgeVerdict, SandboxAgentJudge, parse_judge_output
+from rfa_mas.nemoclaw.censor import (
+    CensorPipeline,
+    JudgeError,
+    JudgeVerdict,
+    SandboxAgentJudge,
+    parse_judge_output,
+)
 from rfa_mas.nemoclaw.config import (
-    AskConfig, LlmStage, Routing, cross_check, load_ask, load_assignments, load_censors, load_routing,
+    DEPLOY_DIR,
+    AskConfig,
+    LlmStage,
+    Routing,
+    cross_check,
+    load_ask,
+    load_assignments,
+    load_censors,
+    load_roles,
+    load_routing,
 )
 from rfa_mas.nemoclaw.entry import Entry
 from rfa_mas.nemoclaw.learned import LearnedRules
 from rfa_mas.nemoclaw.markers import load_or_create_secret
 from rfa_mas.nemoclaw.proxy import EgressProxy
 from rfa_mas.nemoclaw.runner import SubprocessRunner
+from rfa_mas.nemoclaw.teams import DirectPatterner, KeywordPatterner, TeamService
 
 
 class DirectJudge:
@@ -109,8 +125,8 @@ def build_ask_service(ask_cfg: AskConfig, pipeline: CensorPipeline, broker: Brok
 
 
 def build(replay: bool = False, fake_agents: bool = False):
-    assignments, routing, censors, ask_cfg = load_assignments(), load_routing(), load_censors(), load_ask()
-    problems = cross_check(assignments, routing, censors, ask_cfg)
+    assignments, routing, censors, ask_cfg, roles = load_assignments(), load_routing(), load_censors(), load_ask(), load_roles()
+    problems = cross_check(assignments, routing, censors, ask_cfg, roles)
     if problems:
         raise SystemExit("configuration problems: " + "; ".join(problems))
     secret = load_or_create_secret(bs.ROOT / routing.proxy.marker_key_file)
@@ -138,6 +154,19 @@ def build(replay: bool = False, fake_agents: bool = False):
     entry = Entry(assignments, routing, pipeline, broker, secret, runner, replay=replay,
                   proxy_key=host_secrets.values[routing.proxy.credential_env],
                   proxy_url=proxy_url, ask_service=ask_service)
+
+    def reload_assignments(updated):  # a spawned team changes the roster the broker/entry route on
+        broker.assignments = updated
+        entry.assignments = updated
+
+    patterner = (KeywordPatterner() if fake_agents or ask_cfg.head.runner != "direct"
+                 else DirectPatterner(proxy_url, host_secrets.values[routing.proxy.credential_env], secret,
+                                      timeout_seconds=ask_cfg.head.timeout_seconds))
+    teams = TeamService(roles=roles, routing=routing, ask_cfg=ask_cfg, patterner=patterner, teams_path=DEPLOY_DIR / "teams.yaml",
+                        runner=None if fake_agents else runner, nemoclaw_bin=assignments.host.nemoclaw_bin, secret=secret,
+                        on_reload=reload_assignments, fake=fake_agents)
+    ask_service.deps.catalog = teams.catalog_tasks
+    entry.team_service = teams
     broker_app = Starlette(routes=[
         Route("/healthz", proxy.healthz, methods=["GET"]),
         Route(routing.broker.path, broker.mcp, methods=["GET", "POST", "DELETE"]),

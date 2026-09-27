@@ -49,8 +49,14 @@ def _ask():
     from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
     from rfa_mas.nemoclaw.config import load_ask, load_censors
 
-    learned = Path(tempfile.mkdtemp(prefix="rfa-openapi-")) / "learned.yaml"
-    return create_ask_app(AskService(build_fake_deps(load_ask(), load_censors(), learned), None)).openapi()
+    from rfa_mas.nemoclaw.config import load_roles, load_routing
+    from rfa_mas.nemoclaw.teams import KeywordPatterner, TeamService
+
+    tmp = Path(tempfile.mkdtemp(prefix="rfa-openapi-"))
+    ask_cfg = load_ask()
+    teams = TeamService(roles=load_roles(), routing=load_routing(), ask_cfg=ask_cfg, patterner=KeywordPatterner(),
+                        teams_path=tmp / "teams.yaml", fake=True)
+    return create_ask_app(AskService(build_fake_deps(ask_cfg, load_censors(), tmp / "learned.yaml"), None), teams).openapi()
 
 
 EXPORTS: dict[str, Callable[[], dict]] = {

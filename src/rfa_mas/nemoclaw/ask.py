@@ -18,7 +18,7 @@ import json
 import re
 import threading
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
@@ -240,7 +240,7 @@ class FakeTasks:
         self.calls.append((agent, query))
         if self.delay:
             await asyncio.sleep(self.delay)
-        notes = [n for n in self.notes if n["domain_id"] == task_id]
+        notes = [n for n in self.notes if n["domain_id"] == task_id] or list(self.notes)  # team tasks: search every note
         if not notes:
             return TaskReply("", True, {"agent": agent, "fake": True})
         if self.DUMP.search(query.split("[이전 거절 사유")[0]):
@@ -346,6 +346,12 @@ class AskDeps:
     tasks: TaskRunner
     learned: LearnedRules
     lineage: Lineage = field(default_factory=Lineage)
+    catalog: Callable[[], list[TaskSpec]] | None = None  # dynamic tasks (spawned teams), appended to config.tasks
+
+    def tasks_catalog(self) -> list[TaskSpec]:
+        """Spawned teams first: they are more specific than the static catalogue and win keyword ties."""
+        extra = self.catalog() if self.catalog else []
+        return [*[t for t in extra if self.config.task(t.id) is None], *self.config.tasks]
 
 
 @dataclass
@@ -389,7 +395,7 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
 
     # the head sees every reason learned for this audience (task unknown yet) plus this request's own feedback
     head_reasons = list(dict.fromkeys(reasons + deps.learned.reasons(req.audience, any_task=True)))
-    decision = await deps.head.route(req, cfg.tasks, head_reasons)
+    decision = await deps.head.route(req, deps.tasks_catalog(), head_reasons)
     detail["head"] = decision.source
     detail["head_reason"] = decision.reason[:200]
     task = decision.task

@@ -14,6 +14,7 @@ Commands (all read deploy/nemoclaw/{assignments,routing,censors}.yaml):
   switch-route    change the gateway route mode without restarting sandboxes
   serve           run egress-proxy + broker + channel entry/audit + /ask (see serve.py; --fake-agents for no sandbox)
   chat            personal chat: one question through ask() (audience self → internal censor)
+  teams           list|create|remove resident task teams through the running entry (/teams, bearer)
   relocate        move an agent between security groups (promote/demote policy)
   requests        list/approve/deny blocked network requests (OCSF DENIED → preset)
   audit           print audit events
@@ -37,7 +38,9 @@ from rfa_mas.nemoclaw.config import (
     load_ask,
     load_assignments,
     load_censors,
+    load_roles,
     load_routing,
+    load_teams,
 )
 from rfa_mas.nemoclaw.manifests import write_manifests
 from rfa_mas.nemoclaw.runner import SubprocessRunner
@@ -48,14 +51,17 @@ def _runner() -> SubprocessRunner:
 
 
 def cmd_validate(args) -> int:
-    a, r, c, k = load_assignments(), load_routing(), load_censors(), load_ask()
-    problems = cross_check(a, r, c, k)
+    a, r, c, k, roles = load_assignments(), load_routing(), load_censors(), load_ask(), load_roles()
+    problems = cross_check(a, r, c, k, roles)
     print(json.dumps({"assignments": {"sandboxes": a.ordered_sandboxes(), "placement": a.placement()},
                       "routing": {"aliases": sorted(r.aliases), "channels": sorted(r.channels),
                                   "default_mode": r.proxy.default_mode},
                       "censors": {"profiles": sorted(c.profiles)},
                       "ask": {"audiences": {n: s.profile for n, s in k.audiences.items()}, "tasks": [t.id for t in k.tasks],
                               "max_inflight": k.admission.max_inflight},
+                      "teams": {"roles": sorted(roles.roles), "declared": [{"team_id": t.team_id, "task": t.task.id, "status": t.status,
+                                                                             "supervisor": t.supervisor, "members": [m.agent_id for m in t.members]}
+                                                                            for t in load_teams().teams]},
                       "problems": problems}, ensure_ascii=False, indent=2))
     return 1 if problems else 0
 
@@ -199,6 +205,38 @@ def cmd_serve(args) -> int:
     return serve(replay=args.replay, fake_agents=args.fake_agents)
 
 
+def cmd_teams(args) -> int:
+    """Operator CLI for the team spawn API on the running entry (bearer from .env.dev)."""
+    if args.action == "create" and not (args.name and args.description):
+        print("error: create needs --name and --description", file=sys.stderr)
+        return 2
+    if args.action == "remove" and not args.team_id:
+        print("error: remove needs team_id", file=sys.stderr)
+        return 2
+    import httpx
+
+    from rfa_mas.nemoclaw.serve import ask_token
+
+    routing, ask_cfg = load_routing(), load_ask()
+    token = ask_token(ask_cfg)
+    if not token:
+        return 2
+    base, headers = f"http://{routing.entry.bind}", {"Authorization": f"Bearer {token}"}
+    try:
+        if args.action == "list":
+            r = httpx.get(f"{base}/teams", headers=headers, timeout=30)
+        elif args.action == "create":
+            body = {"name": args.name, "description": args.description, "task_id": args.task_id, "sandbox": args.sandbox}
+            r = httpx.post(f"{base}/teams", json=body, headers=headers, timeout=900)
+        else:
+            r = httpx.delete(f"{base}/teams/{args.team_id}", headers=headers, timeout=900)
+    except httpx.HTTPError as exc:
+        print(f"error: entry not reachable at {base} ({type(exc).__name__}); run `make serve`", file=sys.stderr)
+        return 1
+    print(json.dumps(r.json(), ensure_ascii=False, indent=2))
+    return 0 if r.status_code < 400 else 1
+
+
 def cmd_chat(args) -> int:
     """Personal chat through the running entry (`/chat`, loopback), or in-process with --fake-agents."""
     import asyncio
@@ -293,6 +331,11 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("serve"); p.add_argument("--replay", action="store_true", help="no upstream calls; canned answers")
     p.add_argument("--fake-agents", action="store_true", help="/ask with keyword head, KB-seed task agents, hint judge (no sandbox)")
     p.set_defaults(func=cmd_serve)
+    p = sub.add_parser("teams", help="resident task teams via the running entry")
+    p.add_argument("action", choices=["list", "create", "remove"])
+    p.add_argument("--name"); p.add_argument("--description"); p.add_argument("--task-id"); p.add_argument("--sandbox")
+    p.add_argument("team_id", nargs="?")
+    p.set_defaults(func=cmd_teams)
     p = sub.add_parser("chat", help="personal chat through ask() (audience self)")
     p.add_argument("question"); p.add_argument("--session", default="owner"); p.add_argument("--json", action="store_true")
     p.add_argument("--audience", default="self", choices=["self", "company", "public"], help="fake-agents only; /chat is always self")

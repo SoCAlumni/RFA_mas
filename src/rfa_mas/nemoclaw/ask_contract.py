@@ -96,6 +96,55 @@ class ErrorBody(BaseModel):
     detail: str | None = None
 
 
+class TeamCreateRequest(BaseModel):
+    """`POST /teams`: requirements in natural language → resident task team (supervisor + members)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    task_id: str | None = Field(default=None, pattern=r"^[a-z][a-z0-9_-]{0,31}$", description="생략 시 name 에서 slug")
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=4000)
+    sandbox: str | None = Field(default=None, description="선언된 샌드박스로 격리할 때만. 기본은 기본 샌드박스")
+
+
+class TeamMemberView(BaseModel):
+    agent_id: str
+    role: str
+    groups: list[str] = []
+    alias: str | None = None
+
+
+class TeamPatternView(BaseModel):
+    capabilities: list[str] = []
+    roles: list[str] = []
+    source: Literal["direct", "keywords", "fallback", "manual"] = "manual"
+    reason: str = ""
+
+
+class TeamApplied(BaseModel):
+    manifest: str | None = None
+    agents_apply: Literal["ok", "error", "skipped"] = "skipped"
+    seeded: int = 0
+    error: str | None = None
+
+
+class TeamResponse(BaseModel):
+    team_id: str
+    task: TaskRef
+    pattern: TeamPatternView
+    supervisor: str
+    members: list[TeamMemberView]
+    sandbox: str | None
+    status: Literal["ready", "applying", "failed", "declared"]
+    applied: TeamApplied | None = None
+    error: str | None = None
+    created_at: str = ""
+
+
+class TeamList(BaseModel):
+    teams: list[TeamResponse]
+
+
 class ChatRequest(BaseModel):
     """Personal chat (audience self) — same ``ask()`` function, request_id issued by the server."""
 
@@ -109,4 +158,5 @@ class ChatRequest(BaseModel):
 __all__ = [
     "ASK_CONTRACT_VERSION", "AskRequest", "AskResponse", "QueuedResponse", "ErrorBody", "ChatRequest",
     "ContextItem", "FeedbackItem", "TaskRef", "Refusal", "Redaction", "CensorSummary",
+    "TeamCreateRequest", "TeamResponse", "TeamList", "TeamApplied", "TeamPatternView", "TeamMemberView",
 ]

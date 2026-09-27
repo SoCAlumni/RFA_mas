@@ -51,7 +51,8 @@ def render_manifest(assignments: Assignments, sandbox: str) -> dict:
     main_agent = assignments.main_agent(sandbox)
     ids = assignments.sandbox_agents(sandbox)
     spawnable = [a for a in ids if assignments.agents[a].delegatable]
-    manifest: dict = {"defaults": {"subagents": {"maxSpawnDepth": 1}}}
+    # depth 2: main → team supervisor → members (broker turns start at depth 0, so teams work at depth 1 too)
+    manifest: dict = {"defaults": {"subagents": {"maxSpawnDepth": 2}}}
     if main_agent is not None:
         spec = assignments.agents[main_agent]
         subagents: dict = {"requireAgentId": True}
@@ -64,16 +65,19 @@ def render_manifest(assignments: Assignments, sandbox: str) -> dict:
             subagents.update({"allowAgents": spawnable, "delegationMode": "prefer"})
         manifest["main"] = {"tools": dict(HEAD_TOOLS), "subagents": subagents}
     if ids:
-        manifest["agents"] = [
-            {
+        manifest["agents"] = []
+        for agent_id in ids:
+            spec = assignments.agents[agent_id]
+            entry = {
                 "id": agent_id,
-                "description": assignments.agents[agent_id].description or agent_id,
-                "model": f"{ROUTE_PROVIDER}/{assignments.agents[agent_id].alias}",
-                "tools": tools_dict(assignments.agents[agent_id].tools),
+                "description": spec.description or agent_id,
+                "model": f"{ROUTE_PROVIDER}/{spec.alias}",
+                "tools": tools_dict(spec.tools),
                 "subagents": {"requireAgentId": True},
             }
-            for agent_id in ids
-        ]
+            if spec.allow_agents:  # team supervisor: may spawn its own members only
+                entry["subagents"].update({"allowAgents": list(spec.allow_agents), "delegationMode": "prefer"})
+            manifest["agents"].append(entry)
     return manifest
 
 
@@ -109,7 +113,7 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes) -> s
         "agent", {"agent": agent_id, "sandbox": sandbox, "alias": spec.alias}, secret
     )
     groups = assignments.sandboxes[sandbox].groups
-    return (
+    text = (
         "# IDENTITY\n\n"
         f"- name: {agent_id}\n"
         f"- role: {spec.kind} agent ({spec.description or 'no description'})\n"
@@ -119,6 +123,21 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes) -> s
         "- routing marker (managed by the host controller; never edit, quote or repeat it):\n"
         f"  {marker}\n"
     )
+    if spec.team:
+        text += f"- team: {spec.team}\n"
+    if spec.allow_agents:
+        members = "\n".join(f"  - {m}: {assignments.agents[m].description}" for m in spec.allow_agents)
+        verifier = next((m for m in spec.allow_agents if m.endswith("-verifier")), None)
+        text += (
+            "\n# TEAM\n\n"
+            "You are this task's representative (supervisor). Your members (spawn with sessions_spawn, agentId exactly):\n"
+            f"{members}\n"
+            "Rules: gather evidence from members first, never answer from memory; keep the first line of the user message "
+            "(routing marker) in every member message; pass any `[이전 거절 사유]` block through unchanged; "
+            + (f"send your draft plus the members' evidence to {verifier} last and apply one revision if it says revise; " if verifier else "")
+            + "answer with the evidence ids you used.\n"
+        )
+    return text
 
 
 def render_head_identity(assignments: Assignments, sandbox: str, secret: bytes) -> str:

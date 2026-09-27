@@ -100,6 +100,7 @@ flowchart LR
 | [`deploy/nemoclaw/routing.yaml`](deploy/nemoclaw/routing.yaml) | 채널 → alias → 백엔드(로컬 Ollama / build.nvidia.com), 프록시·브로커·진입점 listener, route 모드 | egress-proxy, 진입점, 전환 스크립트 |
 | [`deploy/nemoclaw/censors.yaml`](deploy/nemoclaw/censors.yaml) | 검열 프로파일: regex 규칙(redact/block) → LLM 분류(runner, timeout, fail-closed). `external`(프록시), `public`(/ask public: external 규칙 + 미공개 일자), `internal`(company/self) | 프록시(요청·응답), `/ask`·개인 채팅 최종 knowledge, 격하 스캔 |
 | [`deploy/nemoclaw/ask.yaml`](deploy/nemoclaw/ask.yaml) | `/ask`: audience → 검열 프로파일·라우팅 채널(유일한 분기), admission queue(max_inflight/max_queue/180초), 계보 거절 한도, head runner, task 카탈로그, bearer(`RFA_ASK_TOKEN`, .env.dev) | 진입점 `ask()`, 개인 채팅, 목업 desk |
+| [`deploy/nemoclaw/roles.yaml`](deploy/nemoclaw/roles.yaml) · [`teams.yaml`](deploy/nemoclaw/teams.yaml) | 팀 스폰: 승인 역할 카탈로그(capability → groups·alias·skill·tools) / `POST /teams` 가 쓰는 상주 팀 선언(supervisor·멤버·pattern·status). 로드 시 `assignments` 에 병합 | `TeamService`, manifest, `/ask` 카탈로그 |
 | [`deploy/nemoclaw/censor-rules/learned.yaml`](deploy/nemoclaw/censor-rules/learned.yaml) (호스트 파일, 자동 누적) | 되먹임된 거절 사유 `{audience, task, reason, at}` — 검열 LLM 단계 hint + head 프롬프트 "이전 거절 사유" | `ask()` (마운트 대신 요청 본문으로 샌드박스 밖에서 주입) |
 
 `assignments.yaml` 발췌:
@@ -161,8 +162,17 @@ make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 feedback 붙여 재요청, 최대 3회)와 [`tools/mock/approval.py`](tools/mock/approval.py)(A 목업: `--auto reject-if-regex` 또는 `tools/mock/rfa-mock approve|reject <id> --reason`)가
 [`tools/mock/scenarios/`](tools/mock/scenarios/) 4개(① 공개 정상 ② 미공개 일자 → redact ③ 스레드 인젝션 ④ 거절 → feedback → 재요청)를 돌린다.
 
+**팀 스폰 API `POST /teams`.** 과제 이름·설명(자연어)을 주면 승인된 역할 카탈로그([`deploy/nemoclaw/roles.yaml`](deploy/nemoclaw/roles.yaml):
+research·benchmark·summarizer·verifier, 역할별 egress·alias·스킬 고정) 안에서만 패터닝해 **task 대표(supervisor) secondary + 팀 전용 멤버**를
+기본 샌드박스에 선언([`teams.yaml`](deploy/nemoclaw/teams.yaml))·적용(`agents apply`)·시드하고 `/ask` 카탈로그에 올린다(상주, 별도 샌드박스 없음).
+supervisor 만 브로커 위임 대상이고 멤버는 supervisor 의 `subagents.allowAgents` 로만 `sessions_spawn` 된다. 중첩 spawn 은
+브로커 턴이 depth 0 이라 supervisor→멤버가 depth 1 이고, manifest `maxSpawnDepth: 2` 로 assistant 경유 경로도 통과한다(OpenClaw 소스 확인).
+`verify` 는 항상 포함되어 verifier 가 초안을 근거와 대조한다. 요구사항 추출은 로컬 모델(direct) + 키워드 폴백. CLI:
+`python -m rfa_mas.nemoclaw teams list|create --name … --description …|remove <team_id>`. 계약은 같은 OpenAPI 문서에 있다.
+
 데모: 01 외부 curl 차단 · 02 보안 그룹 변경 · **03 개인 채팅 자동 마스킹(self) vs public** · **04 되먹임(거절 사유 → learned.yaml → 다음 /ask)** ·
-**05 인젝션 차단(`<external_input>`)** · **06 admission queue(202 → 폴링 → 200, 멱등)** · 07 `agents apply` 런타임 추가 · 08 격하 이동 스캔 · 09 external 채널 마스킹(프록시).
+**05 인젝션 차단(`<external_input>`)** · **06 admission queue(202 → 폴링 → 200, 멱등)** · 07 `agents apply` 런타임 추가 · 08 격하 이동 스캔 · 09 external 채널 마스킹(프록시) ·
+**10 팀 스폰(요구사항 → supervisor+멤버 → /ask 라우팅 → 제거)**.
 
 **대시보드에서 바로 테스트**: <http://127.0.0.1:8799/audit/> 상단 "테스트 실행" 패널에서 채널(internal/external)·대상(assistant / 각 task 에이전트 / proxy)을 고르고
 [`deploy/nemoclaw/samples.yaml`](deploy/nemoclaw/samples.yaml)의 샘플 질문을 선택해 실행한다. 응답·verdict·마스킹 수·alias/백엔드·소요 시간이 표시되고,
@@ -226,6 +236,7 @@ feedback 붙여 재요청, 최대 3회)와 [`tools/mock/approval.py`](tools/mock
 | `make mock-e2e` (fake agents: 키워드 head·KB 시드 task·regex+hint judge, 샌드박스·모델 없음) | 4/4 PASS — ① allow/1라운드 ② redact(date·amount)/1라운드 ③ canary 없음/injection_flags 기록 ④ 1라운드 거절(사내 주소) → learned.yaml → 2라운드 승인, 같은 사유 재발 없음 |
 | 라이브 `POST /ask` 실호출 (`make serve`, audience public) | 200/58~160초. head(direct: egress-proxy → 로컬 Ollama)가 `triv3`/`research` 를 근거 문장과 함께 선택(≈43초). 브로커의 `nemoclaw rfa-tasks-intranet agent --agent research` 턴은 OpenClaw 게이트웨이 미기동으로 150초 timeout → `refusal no_knowledge "task agent failed"`, 감사 kind=ask/broker 에 error 기록(fail-closed, 빈 knowledge) |
 | `make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"` (라이브 head·브로커·샌드박스, 2026-09-27 20:57) | 0/4 — 네 시나리오 모두 head 는 task 를 골랐으나 샌드박스 턴 실패로 `refusal no_knowledge`(빈 knowledge, 결재 제출 없음; 149~226초). 01 은 앞선 요청이 처리 중이라 `202 queued` → 폴링 446회 후 200 으로 admission queue 경로가 라이브로 확인됨. 원인은 위 메모리 문제 + `rfa-tasks-intranet` 미reconcile |
+| 팀 스폰 `POST /teams` (fake 진입점) | 201 → supervisor `t-<task>-sup` + research/benchmark/summarizer/verifier, manifest `maxSpawnDepth 2`·allowAgents=멤버, `/ask` 가 새 task 로 라우팅, DELETE 202. 라이브 `agents apply`·시드는 샌드박스 턴 조건과 같음 |
 | 데모 03~06 (`ask()` 데모) | `serve --fake-agents` 진입점(RFA_ENTRY_URL, RFA_FAKE_TASK_DELAY=3)에 대해 4/4 PASS(03 self 이메일만 마스킹·public 은 프로젝트명·수치까지 / 04 1라운드 거절 → learned.yaml → 2라운드 승인, 감사 hints=1 / 05 canary 없음, injection_flags=['context[1]'] / 06 202 position 1 → 폴링 3회 → 200, 멱등 캐시). 라이브 샌드박스 기록(`demo/replay`)은 아래 조건 해소 후 |
 | 온보딩 `nemoclaw onboard --agents … --non-interactive` (provider=custom → egress-proxy, tier=restricted) | (구) `rfa-censor` 263초, `rfa-tasks-none` 155초 완료. `rfa-tasks-intranet` 컨테이너 생성 후 세션 in_progress(메모리 부족으로 호스트가 bootstrap 종료). `rfa-assistant`·managed MCP 등록 미실행. 이후 censor 를 `rfa-tasks-none` 의 secondary 로 합쳐 샌드박스는 3개 |
 | reconcile (`policy exclude` ×5, `policy explain --write`, IDENTITY·skill 시드) | (구) rfa-censor, rfa-tasks-none 적용 완료. censor 병합 후 rfa-tasks-none 에 `agents apply`·시드 재적용 필요 |

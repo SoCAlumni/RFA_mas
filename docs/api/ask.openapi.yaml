@@ -137,6 +137,165 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /teams:
+    post:
+      tags:
+      - teams
+      summary: Post Team
+      description: 요구사항(자연어 name/description) → 승인된 역할 카탈로그(roles.yaml) 안에서 패터닝 → 기본 샌드박스에 supervisor(secondary)
+        + 멤버를 선언(teams.yaml)·적용(agents apply)·시드하고 /ask 카탈로그에 등록한다.
+      operationId: createTeam
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '200':
+          description: 같은 task_id 의 기존 팀 (멱등)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Unprocessable Entity
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Unauthorized
+    get:
+      tags:
+      - teams
+      summary: List Teams
+      operationId: listTeams
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamList'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /teams/{team_id}:
+    get:
+      tags:
+      - teams
+      summary: Get Team
+      operationId: getTeam
+      parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Team Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - teams
+      summary: Delete Team
+      operationId: removeTeam
+      parameters:
+      - name: team_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Team Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AskRequest:
@@ -406,6 +565,181 @@ components:
       - id
       - name
       title: TaskRef
+    TeamApplied:
+      properties:
+        manifest:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Manifest
+        agents_apply:
+          type: string
+          enum:
+          - ok
+          - error
+          - skipped
+          title: Agents Apply
+          default: skipped
+        seeded:
+          type: integer
+          title: Seeded
+          default: 0
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      type: object
+      title: TeamApplied
+    TeamCreateRequest:
+      properties:
+        task_id:
+          anyOf:
+          - type: string
+            pattern: ^[a-z][a-z0-9_-]{0,31}$
+          - type: 'null'
+          title: Task Id
+          description: 생략 시 name 에서 slug
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Description
+        sandbox:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sandbox
+          description: 선언된 샌드박스로 격리할 때만. 기본은 기본 샌드박스
+      type: object
+      required:
+      - name
+      - description
+      title: TeamCreateRequest
+      description: '`POST /teams`: requirements in natural language → resident task team (supervisor +
+        members).'
+    TeamList:
+      properties:
+        teams:
+          items:
+            $ref: '#/components/schemas/TeamResponse'
+          type: array
+          title: Teams
+      type: object
+      required:
+      - teams
+      title: TeamList
+    TeamMemberView:
+      properties:
+        agent_id:
+          type: string
+          title: Agent Id
+        role:
+          type: string
+          title: Role
+        groups:
+          items:
+            type: string
+          type: array
+          title: Groups
+          default: []
+        alias:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Alias
+      type: object
+      required:
+      - agent_id
+      - role
+      title: TeamMemberView
+    TeamPatternView:
+      properties:
+        capabilities:
+          items:
+            type: string
+          type: array
+          title: Capabilities
+          default: []
+        roles:
+          items:
+            type: string
+          type: array
+          title: Roles
+          default: []
+        source:
+          type: string
+          enum:
+          - direct
+          - keywords
+          - fallback
+          - manual
+          title: Source
+          default: manual
+        reason:
+          type: string
+          title: Reason
+          default: ''
+      type: object
+      title: TeamPatternView
+    TeamResponse:
+      properties:
+        team_id:
+          type: string
+          title: Team Id
+        task:
+          $ref: '#/components/schemas/TaskRef'
+        pattern:
+          $ref: '#/components/schemas/TeamPatternView'
+        supervisor:
+          type: string
+          title: Supervisor
+        members:
+          items:
+            $ref: '#/components/schemas/TeamMemberView'
+          type: array
+          title: Members
+        sandbox:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sandbox
+        status:
+          type: string
+          enum:
+          - ready
+          - applying
+          - failed
+          - declared
+          title: Status
+        applied:
+          anyOf:
+          - $ref: '#/components/schemas/TeamApplied'
+          - type: 'null'
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        created_at:
+          type: string
+          title: Created At
+          default: ''
+      type: object
+      required:
+      - team_id
+      - task
+      - pattern
+      - supervisor
+      - members
+      - sandbox
+      - status
+      title: TeamResponse
     ValidationError:
       properties:
         loc:

@@ -1,0 +1,50 @@
+# 승인된 팀 역할 카탈로그. `POST /teams` 패터닝은 이 안에서만 역할을 고른다(자유 생성 없음).
+# capability = 요구사항에서 추출되는 필요 능력. groups/alias/skill/tools 는 역할별로 고정이며 요청이 바꿀 수 없다.
+version: 1
+max_members: 4                      # OpenClaw maxChildrenPerAgent(기본 5) 안에서 supervisor 가 한 번에 부릴 수 있는 수
+capabilities:
+  intranet_evidence: 사내 지식 API(knowledge facade)에서 근거를 찾아야 한다
+  benchmark_numbers: 벤치마크·성능 수치를 조회·비교해야 한다
+  summarize: 전달받은 텍스트를 요약·정리해야 한다
+  verify: 답변을 근거와 대조해 검증해야 한다 (항상 포함)
+  no_egress: 사내망 접근 없이 텍스트 처리만 허용된다
+  hosted_model_ok: 외부 hosted 모델 사용이 허용된다 (public 초안 등)
+roles:
+  research:
+    capability: intranet_evidence
+    groups: [intranet-ro]
+    alias: rfa-external
+    skill: task-research
+    tools: { allow: [read, exec] }
+    description: 사내 지식 API 에서 근거를 찾아 출처 id 와 함께 요약한다.
+    keywords: [근거, 조사, 문서, 자료, 지식, 논문, evidence, research, 검색]
+  benchmark:
+    capability: benchmark_numbers
+    groups: [intranet-ro]
+    alias: rfa-internal
+    skill: task-benchmark
+    tools: { allow: [read, exec] }
+    description: 벤치마크·성능 수치를 사내 API 에서 조회해 로컬 모델로만 비교한다.
+    keywords: [벤치마크, 지연, 정확도, 성능, 수치, 측정, latency, benchmark, 비교]
+  summarizer:
+    capability: summarize
+    groups: []
+    alias: rfa-external
+    skill: task-summarizer
+    tools: { allow: [read] }
+    description: 전달받은 텍스트만 요약한다. 네트워크 도구 없음.
+    keywords: [요약, 정리, 공지, 초안, summary, 보고]
+  verifier:
+    capability: verify
+    groups: []
+    alias: rfa-internal
+    skill: task-verifier
+    tools: { allow: [read] }
+    description: supervisor 초안을 멤버 근거와 대조해 pass/revise 와 근거 없는 주장 목록을 JSON 으로 답한다.
+    keywords: [검증, 확인, verify]
+supervisor:
+  skill: team-supervisor
+  tools: { profile: minimal, allow: [read, sessions_spawn, sessions_list, session_status, agents_list] }
+always: [verify]                    # 모든 팀에 포함되는 capability
+excludes:
+  no_egress: [intranet_evidence, benchmark_numbers]   # no_egress 요구 시 제외되는 capability

@@ -70,6 +70,8 @@ class AgentSpec(Strict):
     description: str = ""
     tools: ToolPolicy
     delegatable: bool = True  # False: lives in a sandbox but is not an ask_task_agent/sessions_spawn target (censor)
+    team: str | None = None          # set when the agent was spawned as part of a team (teams.yaml)
+    allow_agents: list[str] = []     # spawn allowlist of a team supervisor (its own members only)
 
     @property
     def group_key(self) -> tuple[str, ...]:
@@ -184,6 +186,122 @@ class Assignments(Strict):
         rest = sorted((n for n in self.sandboxes if n != self.default_sandbox),
                       key=lambda n: (self.sandbox_privilege(n), n))
         return [self.default_sandbox, *rest]
+
+
+# --------------------------------------------------------------------------- teams (roles.yaml / teams.yaml)
+
+
+class RoleSpec(Strict):
+    capability: str
+    groups: list[str] = []
+    alias: str
+    skill: str
+    tools: ToolPolicy
+    description: str = ""
+    keywords: list[str] = []
+
+
+class SupervisorTemplate(Strict):
+    skill: str = "team-supervisor"
+    tools: ToolPolicy
+
+
+class RolesConfig(Strict):
+    version: int = 1
+    max_members: int = Field(default=4, ge=1, le=5)
+    capabilities: dict[str, str]
+    roles: dict[str, RoleSpec]
+    supervisor: SupervisorTemplate
+    always: list[str] = []
+    excludes: dict[str, list[str]] = {}
+
+    @model_validator(mode="after")
+    def _consistent(self) -> RolesConfig:
+        for name, role in self.roles.items():
+            if not AGENT_ID.match(name):
+                raise ValueError(f"roles.{name}: invalid role id")
+            if role.capability not in self.capabilities:
+                raise ValueError(f"roles.{name}: unknown capability {role.capability!r}")
+        for cap in self.always:
+            if cap not in self.capabilities:
+                raise ValueError(f"always: unknown capability {cap!r}")
+        for cap, excluded in self.excludes.items():
+            if cap not in self.capabilities or any(e not in self.capabilities for e in excluded):
+                raise ValueError(f"excludes.{cap}: unknown capability")
+        return self
+
+    def role_for(self, capability: str) -> str | None:
+        return next((n for n, r in self.roles.items() if r.capability == capability), None)
+
+
+class TeamTask(Strict):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,31}$")
+    name: str
+    keywords: list[str] = []
+    kb_domain: str | None = None     # fake-agent mode: KB seed domain to answer from (real teams use the facade)
+
+
+class TeamMember(Strict):
+    agent_id: str
+    role: str
+
+
+class TeamPattern(Strict):
+    capabilities: list[str] = []
+    roles: list[str] = []
+    source: Literal["direct", "keywords", "fallback", "manual"] = "manual"
+    reason: str = ""
+
+
+class TeamDecl(Strict):
+    team_id: str = Field(pattern=r"^t-[a-z][a-z0-9_-]{0,31}$")
+    task: TeamTask
+    description: str = ""
+    sandbox: str | None = None
+    supervisor: str
+    members: list[TeamMember] = Field(min_length=1)
+    pattern: TeamPattern = TeamPattern()
+    status: Literal["ready", "applying", "failed", "declared"] = "declared"
+    created_at: str = ""
+    error: str | None = None
+
+
+class TeamsFile(Strict):
+    version: int = 1
+    teams: list[TeamDecl] = []
+
+    @model_validator(mode="after")
+    def _unique(self) -> TeamsFile:
+        ids = [t.team_id for t in self.teams]
+        tasks = [t.task.id for t in self.teams]
+        if len(ids) != len(set(ids)) or len(tasks) != len(set(tasks)):
+            raise ValueError("teams: team_id and task.id must be unique")
+        return self
+
+
+def team_agents(teams: TeamsFile, roles: RolesConfig, routing_exposure: dict[str, int] | None = None) -> dict[str, dict]:
+    """Agent declarations (AgentSpec dicts) for every team: one delegatable supervisor whose spawn
+    allowlist is its members, and non-delegatable members with the role's fixed egress/alias/skill."""
+    out: dict[str, dict] = {}
+    for team in teams.teams:
+        member_aliases = []
+        for member in team.members:
+            role = roles.roles[member.role]
+            member_aliases.append(role.alias)
+            out[member.agent_id] = {
+                "kind": "task", "sandbox": team.sandbox, "groups": list(role.groups), "alias": role.alias,
+                "skill": role.skill, "description": f"[{team.task.name}] {member.role}: {role.description}",
+                "tools": role.tools.model_dump(exclude_defaults=True), "delegatable": False, "team": team.team_id,
+            }
+        exposure = routing_exposure or {}
+        alias = min(member_aliases, key=lambda a: (exposure.get(a, 0), a)) if member_aliases else "rfa-internal"
+        out[team.supervisor] = {
+            "kind": "task", "sandbox": team.sandbox, "groups": [], "alias": alias, "skill": roles.supervisor.skill,
+            "description": f"[{team.task.name}] task 대표(supervisor): 멤버 {', '.join(m.role for m in team.members)} 를 부려 답하고 verifier 로 검증한다.",
+            "tools": roles.supervisor.tools.model_dump(exclude_defaults=True), "delegatable": True, "team": team.team_id,
+            "allow_agents": [m.agent_id for m in team.members],
+        }
+    return out
 
 
 # --------------------------------------------------------------------------- routing
@@ -438,8 +556,41 @@ def _build(model: type[Strict], path: Path):
         raise ConfigError(f"{path}: {loc or 'root'}: {first.get('msg')}") from None
 
 
-def load_assignments(path: Path | None = None) -> Assignments:
-    return _build(Assignments, path or DEPLOY_DIR / "assignments.yaml")
+def load_roles(path: Path | None = None) -> RolesConfig:
+    return _build(RolesConfig, path or DEPLOY_DIR / "roles.yaml")
+
+
+def load_teams(path: Path | None = None) -> TeamsFile:
+    path = path or DEPLOY_DIR / "teams.yaml"
+    if not path.exists():
+        return TeamsFile()
+    return _build(TeamsFile, path)
+
+
+def load_assignments(path: Path | None = None, teams_path: Path | None = None,
+                     roles_path: Path | None = None) -> Assignments:
+    """assignments.yaml plus the agents of every declared team (teams.yaml), validated together.
+    ``teams_path=Path("/dev/null")`` (or any missing file) loads the static declaration only."""
+    data = _load_yaml(path or DEPLOY_DIR / "assignments.yaml")
+    teams = load_teams(teams_path)
+    if teams.teams:
+        roles = load_roles(roles_path)
+        try:  # supervisor alias = least-exposed member alias; exposure comes from routing.yaml
+            exposure = {n: a.exposure for n, a in load_routing().aliases.items()}
+        except ConfigError:
+            exposure = {}
+        agents = dict(data.get("agents") or {})
+        for agent_id, spec in team_agents(teams, roles, exposure).items():
+            if agent_id in agents:
+                raise ConfigError(f"teams.yaml: agent {agent_id} collides with assignments.yaml")
+            agents[agent_id] = spec
+        data = {**data, "agents": agents}
+    try:
+        return Assignments.model_validate(data)
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        loc = ".".join(str(p) for p in first.get("loc", ()))
+        raise ConfigError(f"assignments(+teams): {loc or 'root'}: {first.get('msg')}") from None
 
 
 def load_routing(path: Path | None = None) -> Routing:
@@ -455,9 +606,22 @@ def load_ask(path: Path | None = None) -> AskConfig:
 
 
 def cross_check(assignments: Assignments, routing: Routing, censors: Censors,
-                ask: AskConfig | None = None) -> list[str]:
+                ask: AskConfig | None = None, roles: RolesConfig | None = None) -> list[str]:
     """Problems that only show across files (alias/profile/sandbox/audience references)."""
     problems: list[str] = []
+    if roles is not None:
+        for name, role in roles.roles.items():
+            if role.alias not in routing.aliases:
+                problems.append(f"roles.{name}.alias {role.alias!r} is not in routing.aliases")
+            for group in role.groups:
+                if group not in assignments.security_groups:
+                    problems.append(f"roles.{name}.groups: unknown security group {group!r}")
+    for agent_id, agent in assignments.agents.items():
+        for target in agent.allow_agents:
+            if target not in assignments.agents:
+                problems.append(f"agents.{agent_id}.allow_agents: unknown agent {target!r}")
+            elif assignments.sandbox_for(target) != assignments.sandbox_for(agent_id):
+                problems.append(f"agents.{agent_id}.allow_agents: {target!r} is in another sandbox (sessions_spawn is same-sandbox)")
     if ask is not None:
         for name, spec in ask.audiences.items():
             if spec.profile not in censors.profiles:

@@ -15,7 +15,7 @@ from pathlib import Path
 
 _DEFAULT = Path(__file__).resolve().parents[3] / ".local" / "sg" / "audit.db"
 _lock = threading.Lock()
-KINDS = ("inference", "broker", "channel", "policy", "request", "approval", "relocation", "censor", "ask")
+KINDS = ("inference", "broker", "channel", "policy", "request", "approval", "relocation", "censor", "ask", "team")
 
 
 def db_path() -> Path:

@@ -156,7 +156,7 @@ def test_routing_alias_resolution_prefers_least_exposure_and_bypass():
 
 def test_manifest_rendering_is_deterministic_and_schema_shaped(tmp_path, assignments):
     main = render_manifest(assignments, "rfa-main")
-    assert main["defaults"] == {"subagents": {"maxSpawnDepth": 1}}
+    assert main["defaults"] == {"subagents": {"maxSpawnDepth": 2}}  # main → team supervisor → members
     assert main["main"]["tools"]["profile"] == "minimal"  # the assistant owns the main slot
     assert main["main"]["subagents"]["allowAgents"] == ["benchmark", "research", "summarizer"]  # censor never
     assert main["main"]["subagents"]["requireAgentId"] is True

@@ -28,6 +28,9 @@ from rfa_mas.nemoclaw.ask_contract import (
     ErrorBody,
     QueuedResponse,
     Refusal,
+    TeamCreateRequest,
+    TeamList,
+    TeamResponse,
 )
 
 
@@ -148,7 +151,7 @@ def _refusal(req: AskRequest, deps: AskDeps, code: str, message: str) -> dict:
                        censor=CensorSummary(profile=profile, verdict="allow", redactions=[])).model_dump(mode="json")
 
 
-def create_ask_app(service: AskService) -> FastAPI:
+def create_ask_app(service: AskService, teams=None) -> FastAPI:
     app = FastAPI(
         title="RFA knowledge server — /ask",
         version=ASK_CONTRACT_VERSION,
@@ -194,6 +197,36 @@ def create_ask_app(service: AskService) -> FastAPI:
                          target=f"self:{body.session_id or 'anon'}")
         status, payload = await service.submit(req)
         return JSONResponse(status_code=status, content=payload)
+
+    if teams is not None:
+        @app.post("/teams", operation_id="createTeam", dependencies=[Depends(authorize)], response_model=TeamResponse,
+                  status_code=201, tags=["teams"],
+                  responses={200: {"model": TeamResponse, "description": "같은 task_id 의 기존 팀 (멱등)"},
+                             409: {"model": ErrorBody}, 422: {"model": ErrorBody}, 401: {"model": ErrorBody}},
+                  description=("요구사항(자연어 name/description) → 승인된 역할 카탈로그(roles.yaml) 안에서 패터닝 → 기본 샌드박스에 "
+                               "supervisor(secondary) + 멤버를 선언(teams.yaml)·적용(agents apply)·시드하고 /ask 카탈로그에 등록한다."))
+        async def post_team(body: TeamCreateRequest):
+            status, payload = await teams.create(name=body.name, description=body.description, task_id=body.task_id,
+                                                 sandbox=body.sandbox)
+            return JSONResponse(status_code=status, content=payload)
+
+        @app.get("/teams", operation_id="listTeams", dependencies=[Depends(authorize)], response_model=TeamList, tags=["teams"])
+        async def list_teams():
+            return JSONResponse(content={"teams": [teams._view(t) for t in teams.list()]})
+
+        @app.get("/teams/{team_id}", operation_id="getTeam", dependencies=[Depends(authorize)], response_model=TeamResponse,
+                 responses={404: {"model": ErrorBody}}, tags=["teams"])
+        async def get_team(team_id: str):
+            decl = teams.get(team_id)
+            if decl is None:
+                return JSONResponse(status_code=404, content=ErrorBody(code="unknown_team").model_dump())
+            return JSONResponse(content=teams._view(decl))
+
+        @app.delete("/teams/{team_id}", operation_id="removeTeam", dependencies=[Depends(authorize)], status_code=202,
+                    responses={404: {"model": ErrorBody}}, tags=["teams"])
+        async def delete_team(team_id: str):
+            status, payload = await teams.remove(team_id)
+            return JSONResponse(status_code=status, content=payload)
 
     return app
 

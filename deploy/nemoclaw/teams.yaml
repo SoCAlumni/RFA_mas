@@ -1,0 +1,4 @@
+# `POST /teams` 가 쓰는 상주 팀 선언. load_assignments() 가 agents 로 병합하고 /ask 카탈로그에 task 로 올린다.
+# 사람이 편집해도 된다. 팀 하나 = supervisor(secondary, 브로커 위임 대상) + 멤버(팀 전용 인스턴스, supervisor 만 spawn).
+version: 1
+teams: []

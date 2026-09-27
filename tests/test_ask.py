@@ -290,7 +290,8 @@ def test_committed_openapi_matches_generated():
     committed = json.loads((ROOT / "docs" / "api" / "ask.openapi.json").read_text(encoding="utf-8"))
     assert generated == committed, "run `make openapi` and commit docs/api/ask.openapi.*"
     paths = committed["paths"]
-    assert set(paths) == {"/ask", "/ask/{request_id}", "/chat"}
+    assert set(paths) == {"/ask", "/ask/{request_id}", "/chat", "/teams", "/teams/{team_id}"}
+    assert set(paths["/teams"]) == {"post", "get"} and set(paths["/teams/{team_id}"]) == {"get", "delete"}
     assert "202" in paths["/ask"]["post"]["responses"] and "202" in paths["/ask/{request_id}"]["get"]["responses"]
     schema = committed["components"]["schemas"]
     assert schema["Refusal"]["properties"]["code"]["enum"] == ["no_task", "blocked_by_policy", "no_knowledge", "queue_full"]
