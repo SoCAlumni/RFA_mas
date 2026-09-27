@@ -2,7 +2,13 @@
 
 > **한 줄 요약**: 에이전트 N개를 "보안팀이 승인할 수 있는 형태"로 운영한다. 샌드박스는 보안 그룹의 조합 단위이고,
 > 채널(internal/external)별 검열 프로파일은 API 진입점 한 곳에서 정해져 세션으로 전파되며, 경계를 넘으면 안 되는
-> 규칙은 전부 OpenShell 정책 층에 있다. 시스템 전체는 설정 파일 3개로 선언된다.
+> 규칙은 전부 OpenShell 정책 층에 있다. 시스템 전체는 설정 파일 4개로 선언된다.
+>
+> **보안 주장**: 기밀 영역을 나가는 것은 자동 검열(규칙+LLM)을 통과한 텍스트뿐이며, 사람 결재는 게시 직전에 한 번 더
+> 검사하고 거절 사유는 검열 규칙으로 되먹임된다.
+>
+> **역할 분담**: 이 저장소는 지식 서버(`POST /ask`)·개인 채팅·기밀 영역 샌드박스·검열·감사 로그·admission queue 를 맡는다.
+> 대응 에이전트(desk, C)·결재 서버(A)·프런트는 상대 팀의 것이며 여기서는 [`tools/mock/`](tools/mock/) 목업으로만 존재한다.
 
 ## 문제 정의 → 기존 대안의 한계 → 해법
 
@@ -34,13 +40,19 @@
    구분하지 않고 위임한다. 세션의 채널이 task 에이전트의 inference에도 그대로 적용된다.
 6. **에이전트 = 이식 가능한 번들.** 정의(agents.yaml 항목 + 스킬) + 상태(workspace, agents/<id>). 격상은 상태 포함 이동,
    격하는 censor 스캔(또는 비우기) 후 이동, 이동 전 브로커 drain.
+7. **지식 서버 계약 `POST /ask` 하나.** desk(대응 에이전트)가 질문·스레드·거절 이력을 보내면 `ask()` 한 함수가
+   head(어느 task·에이전트에 무엇을 물을지) → 브로커(샌드박스 안 task 에이전트) → 검열(audience 프로파일 + 되먹임 사유)을
+   수행한다. `audience`(public/company/self)가 검열 프로파일을 정하는 유일한 분기이고, 개인 채팅 CLI/웹·데모도 같은 함수를 쓴다.
+   외부 입력(스레드·거절된 초안)은 `<external_input>` 태그로 감싸 데이터로만 전달되고, 사람의 거절 사유는
+   `censor-rules/learned.yaml` 에 누적되어 다음 요청의 검열 LLM·head 에 주입된다. 슬롯이 없으면 `202 queued` → 폴링.
 
 ## 아키텍처
 
 ```mermaid
 flowchart LR
   subgraph Host["호스트 (샌드박스 밖)"]
-    ENTRY["채널 API 진입점<br/>/channel/{internal|external}/chat<br/>세션→프로파일 결정·서명 마커"]
+    ENTRY["진입점 :8799<br/>POST /ask (bearer) · GET /ask/{id} · POST /chat(self)<br/>ask(): head → broker → task → censor<br/>audience→프로파일, admission queue, learned.yaml"]
+    DESK["desk (C) · 결재 서버 (A)<br/>tools/mock — 상대 팀 목업"]
     PROXY["egress-proxy :8797<br/>유일한 inference provider<br/>마커 귀속 → alias → 검열(regex→LLM) → 백엔드"]
     BROKER["브로커 :8798<br/>MCP(HTTPS) + REST 폴백<br/>ask_task_agent / drain"]
     CTRL["컨트롤러<br/>assignments/routing/censors.yaml<br/>nemoclaw policy add·exclude / agents apply / mcp add / explain"]
@@ -64,7 +76,10 @@ flowchart LR
     H2["head (main)"] --> S["summarizer"]
   end
   BUILD["build.nvidia.com<br/>(NVIDIA_INFERENCE_API_KEY는 호스트)"]
-  ENTRY -- "nemoclaw rfa-assistant agent" --> A
+  DESK -- "/ask → 초안 → 결재 → feedback[] → /ask" --> ENTRY
+  ENTRY -- "head: 라우팅 JSON (internal 마커, 로컬)" --> PROXY
+  ENTRY -- "broker.ask(task agent)" --> BROKER
+  ENTRY -. "채널 API(레거시 경로)" .-> A
   A -- "MCP ask_task_agent" --> BROKER
   BROKER -- "nemoclaw <sb> agent --agent <id>" --> R & B & S
   A & C & R & B & S -- "inference.local" --> ROUTE --> PROXY
@@ -79,13 +94,15 @@ flowchart LR
 `npm_registry`를 모든 샌드박스에서 `policy exclude`). 프록시 장애 = 전 샌드박스 inference 정지이므로 `make demo`는 시작 시
 프록시 헬스체크를 한다.
 
-## 설정 3개로 선언되는 시스템
+## 설정 4개로 선언되는 시스템
 
 | 파일 | 역할 | 소비자 |
 | --- | --- | --- |
 | [`deploy/nemoclaw/assignments.yaml`](deploy/nemoclaw/assignments.yaml) | 보안 그룹(preset 목록·privilege) → 샌드박스(그룹 조합) → 에이전트(그룹 또는 고정 샌드박스, alias, 스킬, tools) | 컨트롤러(reconcile, manifest 생성), 브로커, 재배치 |
 | [`deploy/nemoclaw/routing.yaml`](deploy/nemoclaw/routing.yaml) | 채널 → alias → 백엔드(로컬 Ollama / build.nvidia.com), 프록시·브로커·진입점 listener, route 모드 | egress-proxy, 진입점, 전환 스크립트 |
-| [`deploy/nemoclaw/censors.yaml`](deploy/nemoclaw/censors.yaml) | 검열 프로파일: regex 규칙(redact/block) → LLM 분류(runner, timeout, fail-closed) | 프록시(요청·응답), 채널 API 최종 응답, 격하 스캔 |
+| [`deploy/nemoclaw/censors.yaml`](deploy/nemoclaw/censors.yaml) | 검열 프로파일: regex 규칙(redact/block) → LLM 분류(runner, timeout, fail-closed). `external`(프록시), `public`(/ask public: external 규칙 + 미공개 일자), `internal`(company/self) | 프록시(요청·응답), `/ask`·개인 채팅 최종 knowledge, 격하 스캔 |
+| [`deploy/nemoclaw/ask.yaml`](deploy/nemoclaw/ask.yaml) | `/ask`: audience → 검열 프로파일·라우팅 채널(유일한 분기), admission queue(max_inflight/max_queue/180초), 계보 거절 한도, head runner, task 카탈로그, bearer(`RFA_ASK_TOKEN`, .env.dev) | 진입점 `ask()`, 개인 채팅, 목업 desk |
+| [`deploy/nemoclaw/censor-rules/learned.yaml`](deploy/nemoclaw/censor-rules/learned.yaml) (호스트 파일, 자동 누적) | 되먹임된 거절 사유 `{audience, task, reason, at}` — 검열 LLM 단계 hint + head 프롬프트 "이전 거절 사유" | `ask()` (마운트 대신 요청 본문으로 샌드박스 밖에서 주입) |
 
 `assignments.yaml` 발췌:
 
@@ -132,9 +149,23 @@ profiles:
 
 ```bash
 make bootstrap   # 검증 → 프록시/브로커/진입점 기동 → 사내 API 기동 → (rfa-demo 폐기) → 샌드박스 4개 순서 온보딩 → reconcile → 워크스페이스 시드
-make demo        # demo/01..05 (기본 --replay; DEMO_MODE=live 로 라이브 실행, 실패·30초 초과 시 자동으로 기록 재생)
+make demo        # demo/01..09 (기본 --replay; DEMO_MODE=live 로 라이브 실행, 실패·예산 초과 시 자동으로 기록 재생)
+make mock-e2e    # desk(C)/결재(A) 목업으로 /ask 시나리오 4개 — 기본 --fake-agents(샌드박스·모델 없이 계약·루프 검증)
+make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"   # 같은 시나리오를 라이브 서버(실제 head·브로커·샌드박스)에
 make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 ```
+
+**`/ask` 계약과 목업.** 계약은 [`docs/api/ask.openapi.yaml`](docs/api/ask.openapi.yaml)(생성물, `make openapi`)이다:
+`POST /ask {request_id, question, channel(github|slack), audience(public|company), target, url, requester, context[], feedback[]}` →
+`200 {request_id, knowledge, task|null, refusal{code: no_task|blocked_by_policy|no_knowledge|queue_full}|null, censor{profile, verdict, redactions[{reason}]}}`
+또는 `202 {status: queued, position}` → `GET /ask/{request_id}`. 같은 `request_id` 는 캐시 응답, 처리 타임아웃 180초(→ `no_knowledge`/"timeout"),
+같은 계보(target 또는 request_id prefix)에서 거절 3회면 `blocked_by_policy`. 개인 채팅은 `POST /chat`(audience self) 또는
+`python -m rfa_mas.nemoclaw chat "질문"`. [`tools/mock/desk.py`](tools/mock/desk.py)(C 목업: 시나리오 → /ask → 템플릿 초안 → 결재 → 거절이면
+feedback 붙여 재요청, 최대 3회)와 [`tools/mock/approval.py`](tools/mock/approval.py)(A 목업: `--auto reject-if-regex` 또는 `tools/mock/rfa-mock approve|reject <id> --reason`)가
+[`tools/mock/scenarios/`](tools/mock/scenarios/) 4개(① 공개 정상 ② 미공개 일자 → redact ③ 스레드 인젝션 ④ 거절 → feedback → 재요청)를 돌린다.
+
+데모: 01 외부 curl 차단 · 02 보안 그룹 변경 · **03 개인 채팅 자동 마스킹(self) vs public** · **04 되먹임(거절 사유 → learned.yaml → 다음 /ask)** ·
+**05 인젝션 차단(`<external_input>`)** · **06 admission queue(202 → 폴링 → 200, 멱등)** · 07 `agents apply` 런타임 추가 · 08 격하 이동 스캔 · 09 external 채널 마스킹(프록시).
 
 **대시보드에서 바로 테스트**: <http://127.0.0.1:8799/audit/> 상단 "테스트 실행" 패널에서 채널(internal/external)·대상(assistant / 각 task 에이전트 / proxy)을 고르고
 [`deploy/nemoclaw/samples.yaml`](deploy/nemoclaw/samples.yaml)의 샘플 질문을 선택해 실행한다. 응답·verdict·마스킹 수·alias/백엔드·소요 시간이 표시되고,
@@ -143,8 +174,8 @@ make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 
 컨트롤러 명령(`python -m rfa_mas.nemoclaw …`, 또는 스킬 [`nemoclaw-security-groups`](deploy/nemoclaw/skills/nemoclaw-security-groups/SKILL.md)):
 `validate` · `render` · `plan` · `apply` · `status` · `verify-baseline` · `explain` · `seed` · `bootstrap` · `teardown` ·
-`switch-route <mode> [--force-openshell]` · `serve [--replay]` · `relocate <agent> --to-groups … [--wipe]` ·
-`requests sync|list|approve|deny` · `audit`. 감사 로그 화면: <http://127.0.0.1:8799/audit/>.
+`switch-route <mode> [--force-openshell]` · `serve [--replay] [--fake-agents]` · `chat "<질문>" [--fake-agents]` · `relocate <agent> --to-groups … [--wipe]` ·
+`requests sync|list|approve|deny` · `audit [--kind ask]`. 감사 로그 화면: <http://127.0.0.1:8799/audit/> (대상 `ask:self` / `ask:public` 으로 같은 `ask()` 를 실행). `/ask` 문서: <http://127.0.0.1:8799/docs>.
 
 ## NVIDIA Agent 기술 사용 기능 체크리스트
 
@@ -195,6 +226,10 @@ make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 | 항목 | 결과 |
 | --- | --- |
 | 단위 테스트 `make test` | 70 passed (컨트롤러 14, 검열 11, 프록시 12, 브로커 7, ops 5, 진입점 3, /ask 및 mock e2e 18) |
+| `make mock-e2e` (fake agents: 키워드 head·KB 시드 task·regex+hint judge, 샌드박스·모델 없음) | 4/4 PASS — ① allow/1라운드 ② redact(date·amount)/1라운드 ③ canary 없음/injection_flags 기록 ④ 1라운드 거절(사내 주소) → learned.yaml → 2라운드 승인, 같은 사유 재발 없음 |
+| 라이브 `POST /ask` 실호출 (`make serve`, audience public) | 200/58~160초. head(direct: egress-proxy → 로컬 Ollama)가 `triv3`/`research` 를 근거 문장과 함께 선택(≈43초). 브로커의 `nemoclaw rfa-tasks-intranet agent --agent research` 턴은 OpenClaw 게이트웨이 미기동으로 150초 timeout → `refusal no_knowledge "task agent failed"`, 감사 kind=ask/broker 에 error 기록(fail-closed, 빈 knowledge) |
+| `make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"` (라이브 head·브로커·샌드박스, 2026-09-27 20:57) | 0/4 — 네 시나리오 모두 head 는 task 를 골랐으나 샌드박스 턴 실패로 `refusal no_knowledge`(빈 knowledge, 결재 제출 없음; 149~226초). 01 은 앞선 요청이 처리 중이라 `202 queued` → 폴링 446회 후 200 으로 admission queue 경로가 라이브로 확인됨. 원인은 위 메모리 문제 + `rfa-tasks-intranet` 미reconcile |
+| 데모 03~06 (`ask()` 데모) | `serve --fake-agents` 진입점(RFA_ENTRY_URL, RFA_FAKE_TASK_DELAY=3)에 대해 4/4 PASS(03 self 이메일만 마스킹·public 은 프로젝트명·수치까지 / 04 1라운드 거절 → learned.yaml → 2라운드 승인, 감사 hints=1 / 05 canary 없음, injection_flags=['context[1]'] / 06 202 position 1 → 폴링 3회 → 200, 멱등 캐시). 라이브 샌드박스 기록(`demo/replay`)은 아래 조건 해소 후 |
 | 온보딩 `nemoclaw onboard --agents … --non-interactive` (provider=custom → egress-proxy, tier=restricted) | `rfa-censor` 263초, `rfa-tasks-none` 155초 완료. `rfa-tasks-intranet` 컨테이너 생성 후 세션 in_progress(메모리 부족으로 호스트가 bootstrap 종료). `rfa-assistant`·managed MCP 등록 미실행 |
 | reconcile (`policy exclude` ×5, `policy explain --write`, IDENTITY·skill 시드) | rfa-censor, rfa-tasks-none 적용 완료 |
 | 샌드박스 → inference.local → egress-proxy | 온보딩 검증 요청과 `curl` probe 가 프록시에 도달(자격증명은 OpenShell 이 주입, 미귀속 → rfa-internal → Ollama 5~6초) |
@@ -205,7 +240,8 @@ make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 | 데모 라이브 기록 (`DEMO_MODE=live make demo`) | 미실행(위 메모리 문제 해소 후) — `--replay` 기록 없음 |
 | managed MCP | 미시도(rfa-assistant 온보딩 전). 로컬 CA·IP SAN 인증서는 생성됨(`.local/sg/tls`) |
 
-다음 실행 조건: Colima VM 여유 메모리 확보(유휴 Langfuse 스택 정지 또는 `colima start --memory 12`) 후 `make bootstrap`(중단 세션 자동 resume) → `DEMO_MODE=live make demo`.
+다음 실행 조건: Colima VM 여유 메모리 확보(유휴 Langfuse 스택 정지 또는 `colima start --memory 12`; 실측 샌드박스 3개 6.0 GiB + Langfuse 0.9 GiB / 7.7 GiB) 후
+`make bootstrap`(중단 세션 자동 resume; `rfa-tasks-intranet` 은 아직 `sg-intranet-ro` preset·baseline exclude 미적용) → `make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"` → `DEMO_MODE=live make demo`.
 
 ---
 
