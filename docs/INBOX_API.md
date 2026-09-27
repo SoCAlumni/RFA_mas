@@ -12,6 +12,7 @@ uv run python -m rfa_mas.inbox --port 8793      # http://127.0.0.1:8793/docs
 
 reference는 mode=reference·simulated=true다. 결재 승인·게시·샌드박스 제어를 실제로 수행하지 않는다.
 UI(다영)는 이 서버로 화면을 만들고, 각 route의 `x-rfa-authority`가 가리키는 실제 원본 어댑터가 뒤에서 교체된다.
+route별 호출 순서와 요청/응답 예시는 [API 사용 시나리오](API_USAGE_SCENARIOS.md)에 있다.
 
 ## 화면 → route / 필드
 

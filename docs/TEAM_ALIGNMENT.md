@@ -35,7 +35,7 @@
 - `sources`는 승희 stub과 같은 "제목: 첫 줄" 형식이며 화면에 이미 통과한 근거만 담는다. `confidence`는 질문 용어가 근거에 나타난 비율(stub의 "겹침 비율"과 같은 의미)이지 정확도가 아니다.
 - public facade는 호출자 인증이 없다(공개·공유 가능한 근거만 나가므로). `company`/`business_unit` audience는 `KNOWLEDGE_FACADE_API_KEY` bearer를 요구하며 키 없이는 시작을 거절한다. `X-RFA-Actor`는 기록용이며 권한이 아니다.
 - 기밀 검토·초안·결재·게시는 승희 파이프라인 몫이다. facade는 승인하거나 게시하지 않는다. 승희 stub이 "기밀이 초안에 흘러가 censor가 거르는 장면"을 위해 일부러 섞는 자료는, 이 facade에서는 정책상 처음부터 나가지 않는다(데모 시나리오는 stub 데이터 또는 company audience + 사내 채널로 구성한다).
-- 생성 OpenAPI: `docs/api/knowledge-facade.openapi.json` (`uv run rfa openapi --app knowledge-facade`). 승희 yaml과의 operation/schema 호환은 `tests/test_knowledge_facade.py`가 고정 사본으로 검사한다.
+- 생성 OpenAPI: `docs/api/knowledge-facade.openapi.json` (`uv run rfa openapi --app knowledge-facade`). 승희 yaml과의 operation/schema 호환은 `tests/test_knowledge_facade.py`가 고정 사본으로 검사한다. 호출 시나리오는 [API 사용 시나리오](API_USAGE_SCENARIOS.md) 1장.
 
 ### 승희 review 계약과 core DRAFT/승인 모델의 대응
 
