@@ -44,13 +44,13 @@ def broker() -> tuple[Broker, TurnRunner]:
 
 def test_route_decides_local_spawn_versus_gateway(broker):
     b, _ = broker
-    assert b.route("research", "rfa-tasks-intranet").kind == "local-spawn"
-    remote = b.route("research", "rfa-assistant")
-    assert (remote.kind, remote.sandbox, remote.openclaw_id, remote.alias) == ("gateway", "rfa-tasks-intranet", "research", "rfa-external")
+    assert b.route("research", "rfa-main").kind == "local-spawn"  # assistant and research share the default sandbox
+    remote = b.route("research", "rfa-tasks-none")
+    assert (remote.kind, remote.sandbox, remote.openclaw_id, remote.alias) == ("gateway", "rfa-main", "research", "rfa-external")
     with pytest.raises(KeyError):
-        b.route("assistant", "rfa-assistant")  # fixed agents are not delegation targets
+        b.route("assistant", "rfa-main")  # fixed agents are not delegation targets
     with pytest.raises(KeyError):
-        b.route("censor", "rfa-assistant")  # the censor shares rfa-tasks-none but is not delegatable
+        b.route("censor", "rfa-main")  # the censor shares the sandbox but is not delegatable
     assert "censor" not in {a["name"] for a in b.list_agents()}
     with pytest.raises(KeyError):
         b.route("nope", None)
@@ -66,15 +66,15 @@ def test_channel_comes_from_the_entry_session_store_and_defaults_to_least_expose
 async def test_ask_plants_a_signed_channel_marker_and_targets_the_agent_sandbox(broker):
     b, runner = broker
     audit.remember_session("s_ext", "external", "external")
-    result = await b.ask("research", "근거 찾아줘", "s_ext", "rfa-assistant")
-    assert result["ok"] and result["route"] == "gateway" and result["reply"] == "task reply"
+    result = await b.ask("research", "근거 찾아줘", "s_ext", "rfa-main")
+    assert result["ok"] and result["route"] == "local-spawn" and result["reply"] == "task reply"
     argv = runner.calls[0]
-    assert argv[:5] == ["nemoclaw", "rfa-tasks-intranet", "agent", "--agent", "research"]
+    assert argv[:5] == ["nemoclaw", "rfa-main", "agent", "--agent", "research"]
     assert argv[argv.index("--session-id") + 1] == "broker-s_ext"
     marker = find_markers(argv[-1], SECRET)[0]
     assert marker.verified and marker.fields == {"ch": "external", "sid": "s_ext"} and argv[-1].endswith("근거 찾아줘")
     event = audit.query(kind="broker")[0]
-    assert (event["channel"], event["agent"], event["sandbox"], event["action"]) == ("external", "research", "rfa-tasks-intranet", "gateway")
+    assert (event["channel"], event["agent"], event["sandbox"], event["action"]) == ("external", "research", "rfa-main", "local-spawn")
 
 
 async def test_ask_refuses_unknown_and_draining_agents(broker):
@@ -125,8 +125,8 @@ async def test_mcp_streamable_http_surface(broker):
                                                          "params": {"name": "ask_task_agent",
                                                                     "arguments": {"name": "summarizer", "query": "요약", "session_id": "s_9"}}})
         payload = json.loads(asked.json()["result"]["content"][0]["text"])
-        assert payload["ok"] and payload["sandbox"] == "rfa-tasks-none" and asked.json()["result"]["isError"] is False
-        assert runner.calls[-1][1] == "rfa-tasks-none"
+        assert payload["ok"] and payload["sandbox"] == "rfa-main" and asked.json()["result"]["isError"] is False
+        assert runner.calls[-1][1] == "rfa-main"
         unknown = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 5, "method": "resources/list"})
         assert unknown.json()["error"]["code"] == -32601
         assert (await c.get("/mcp", headers=auth)).status_code == 405
@@ -140,6 +140,6 @@ async def test_rest_fallback_surface(broker):
         assert (await c.get("/broker/agents")).status_code == 401
         assert len((await c.get("/broker/agents", headers=auth)).json()["agents"]) == 3
         ok = await c.post("/broker/ask", headers=auth, json={"name": "benchmark", "query": "지연"})
-        assert ok.status_code == 200 and ok.json()["route"] == "gateway"
+        assert ok.status_code == 200 and ok.json()["route"] == "local-spawn"
         bad = await c.post("/broker/ask", headers=auth, json={"name": "nope", "query": "x"})
         assert bad.status_code == 409

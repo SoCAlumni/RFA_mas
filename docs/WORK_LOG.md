@@ -1094,3 +1094,10 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 
 - 사용자 지시: `rfa-censor` 별도 샌드박스 제거. 조치: censor 를 `kind: task, groups: [egress-none], delegatable: false` 로 선언해 egress-none 그룹 샌드박스 `rfa-tasks-none` 의 secondary 로 배치(원칙 1 "샌드박스 = 보안 그룹 조합 단위"에 그대로 부합; 원칙 4 의 egress 0 + 로컬 inference 는 그룹으로 유지). `AgentSpec.delegatable` 추가 → 브로커 `route/list_agents` 와 head 의 `subagents.allowAgents` 에서 제외. censors.yaml LLM 단계 `sandbox: rfa-tasks-none, agent: censor`; cross_check 가 단계 agent 의 배치를 검증. bootstrap 의 legacy 목록에 `rfa-censor` 추가(다음 bootstrap 이 snapshot 후 destroy). 샌드박스 3개 → 예상 VM 메모리 약 5 GiB.
 - 검증: `validate` problems 0, 전체 테스트 70 passed. 라이브 반영(`rfa-censor` destroy, `rfa-tasks-none` agents apply·시드)은 사용자 확인 후.
+
+## SG-4c — 기본 샌드박스 1개, 추가 샌드박스는 선택 (2026-09-27)
+
+- 사용자 지시: 기본은 샌드박스 하나에 전부 배치, 추가 샌드박스는 선택적으로 에이전트를 명시 배치. 배치 모델 변경: `sandboxes.<name>.default: true` 하나(`rfa-main`, groups [control-plane, intranet-ro])에 assistant(main)·censor·research·benchmark·summarizer 를 secondary 로 배치. 에이전트 `sandbox:` 는 선택(opt-in)이며 명시한 샌드박스만 `active_sandboxes()` 에 포함되어 온보딩·reconcile 된다(선언만 된 `rfa-tasks-none` 은 건너뜀). 에이전트 `groups` 는 필요 egress 선언으로 바뀌었고 배치 샌드박스가 부분집합으로 제공해야 한다(검증). "같은 그룹 집합 = 샌드박스 하나" 규칙과 group_key 매칭은 제거.
+- manifest: 기본 샌드박스 main=assistant 에 `subagents.allowAgents=[benchmark, research, summarizer]`(같은 샌드박스 sessions_spawn 경로 활성), 브로커는 같은 샌드박스면 `local-spawn` 로 분류. 선택 샌드박스는 head 만. NemoClaw validateExtraAgents 로 rfa-main(secondary 4)·rfa-tasks-none 모두 valid.
+- relocate: `--to-sandbox <name>` 추가, `--to-groups` 는 그 그룹 집합의 선택 샌드박스, 둘 다 없으면 기본 샌드박스 복귀. `rewrite_agent_sandbox` 가 assignments.yaml 의 `sandbox:` 줄을 추가/교체/삭제. bootstrap legacy 목록에 `rfa-tasks-intranet` 추가.
+- 검증: validate problems 0, 전체 테스트 71 passed. 라이브: 기존 샌드박스 3개는 legacy 가 되어 폐기 후 `rfa-main` 하나만 온보딩 예정(예상 VM 메모리 약 2 GiB).

@@ -19,7 +19,7 @@ samples:
     channel: internal
     target: agent:summarizer
     text: "다음 텍스트를 3줄로 요약해줘: 오로라 응답 파이프라인 벤치마크는 워밍업 3회 후 10회 측정하며 p50 지연과 정확도를 기록한다. 합격 기준은 지연 0.7초 이하, 정확도 88퍼센트 이상이다. 검색 캐시를 적용하면 지연이 줄고 정확도는 유지된다."
-    expect: "네트워크 도구 없이 답한다. rfa-tasks-none 샌드박스."
+    expect: "네트워크 도구 없이 답한다. 기본 샌드박스 rfa-main 의 secondary (격리 시 sandbox: rfa-tasks-none)."
   - id: proxy-external-masking
     title: "[external · proxy] 프록시 직접 — 수치·이메일 마스킹 확인 (가장 빠름)"
     channel: external
@@ -49,7 +49,7 @@ samples:
     channel: external
     target: assistant
     text: "오로라 벤치마크 현황을 담당 에이전트에게 물어서 외부 공유용으로 정리해줘."
-    expect: "rfa-assistant 샌드박스 필요. hosted 턴 90초 제한, 최종 응답 검열."
+    expect: "rfa-main 샌드박스 필요. hosted 턴 90초 제한, 최종 응답 검열."
   - id: assistant-internal-e2e
     title: "[internal · assistant] 채널 API 전 구간 — 로컬 전용"
     channel: internal

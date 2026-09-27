@@ -10,25 +10,4 @@ main:
     - read
     - sessions_spawn
   subagents:
-    allowAgents:
-    - summarizer
-    delegationMode: prefer
-    requireAgentId: true
-agents:
-- id: censor
-  description: egress 0 샌드박스에서 텍스트를 JSON 으로 분류만 하는 검열 LLM 단계 (브로커 위임 대상 아님).
-  model: inference/rfa-censor
-  tools:
-    profile: minimal
-    allow:
-    - read
-  subagents:
-    requireAgentId: true
-- id: summarizer
-  description: 전달받은 텍스트만 요약한다. 네트워크 도구 없음.
-  model: inference/rfa-external
-  tools:
-    allow:
-    - read
-  subagents:
     requireAgentId: true

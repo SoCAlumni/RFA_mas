@@ -41,7 +41,7 @@ from rfa_mas.nemoclaw.runner import CommandError, Runner, SubprocessRunner, extr
 
 ROOT = DEPLOY_DIR.parents[1]
 SG_DIR = ROOT / ".local" / "sg"
-LEGACY_SANDBOXES = ("rfa-demo", "rfa-censor")  # rfa-censor: merged into rfa-tasks-none (2026-09-27)
+LEGACY_SANDBOXES = ("rfa-demo", "rfa-censor", "rfa-tasks-intranet")  # superseded by the single default sandbox rfa-main (2026-09-27)
 
 
 def log(message: str) -> None:
@@ -354,10 +354,14 @@ def bootstrap(options: BootstrapOptions, runner: Runner | None = None) -> dict:
                 report["steps"].append(f"retired:{legacy}")
     env = onboard_env(routing, host_secrets, ca_bundle)
     resume_interrupted_onboarding(assignments, env, runner, nb, dry_run=options.dry_run)
+    active = set(assignments.active_sandboxes())
     for sandbox in assignments.ordered_sandboxes():
         if options.only and sandbox not in options.only:
             continue
         live = observer.list_sandboxes()
+        if sandbox not in active and sandbox not in options.only and sandbox not in live:
+            log(f"onboard {sandbox}: opt-in sandbox with no agents placed, skipping (use --sandbox {sandbox} to force)")
+            continue
         if sandbox in live:
             log(f"onboard {sandbox}: exists, skipping")
         elif options.dry_run:

@@ -45,7 +45,7 @@ entry:
   bind: 127.0.0.1:8799                    # 채널 API 진입점 + 감사 로그 화면 + 브로커 admin (loopback)
   default_channel: internal
   hosted_turn_timeout_seconds: 90
-  assistant_sandbox: rfa-assistant
+  assistant_sandbox: rfa-main
   assistant_agent: main
 
 broker:

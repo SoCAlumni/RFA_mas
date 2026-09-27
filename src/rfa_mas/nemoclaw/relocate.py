@@ -3,6 +3,9 @@
 Bundle = definition (assignments entry + skill) + state (``workspace-<id>`` and ``agents/<id>``).
 Policy (assignments privilege of the source vs target sandbox):
 
+Target = ``--to-sandbox <name>`` (opt-in sandbox), ``--to-groups`` (opt-in sandbox with that exact
+group set) or nothing (back to the default sandbox). The target must provide the agent's groups.
+
 - promote (target privilege > source): move with state;
 - demote (target privilege < source): scan the workspace with the ``external`` censor profile and
   carry only redacted copies, or ``--wipe`` to leave state behind; a blocked file aborts (fail-closed);
@@ -56,11 +59,30 @@ def direction_for(assignments: Assignments, from_sandbox: str, to_sandbox: str) 
 
 
 def target_sandbox(assignments: Assignments, groups: list[str]) -> str:
+    """Opt-in sandbox whose security-group set equals ``groups`` (never the default sandbox)."""
     key = tuple(sorted(set(groups)))
     for name, spec in assignments.sandboxes.items():
-        if not spec.fixed and spec.group_key == key:
+        if not spec.default and spec.group_key == key:
             return name
-    raise ConfigError(f"no task sandbox declares groups {list(key)}")
+    raise ConfigError(f"no opt-in sandbox declares groups {list(key)}; add one under sandboxes")
+
+
+def resolve_target(assignments: Assignments, agent: str, *, to_sandbox: str | None, to_groups: list[str] | None) -> str:
+    """Where the agent should move: an explicit sandbox, the sandbox matching a group set, or the
+    default sandbox when neither is given. The target must provide every group the agent needs."""
+    if to_sandbox:
+        if to_sandbox not in assignments.sandboxes:
+            raise ConfigError(f"unknown sandbox {to_sandbox!r}")
+        target = to_sandbox
+    elif to_groups:
+        target = target_sandbox(assignments, to_groups)
+    else:
+        target = assignments.default_sandbox
+    needed = set(assignments.agents[agent].groups)
+    missing = sorted(needed - set(assignments.sandboxes[target].groups))
+    if missing:
+        raise ConfigError(f"sandbox {target} lacks groups {missing} that agent {agent} requires")
+    return target
 
 
 def scan_workspace(root: Path, pipeline: CensorPipeline, profile: str = "external") -> ScanReport:
@@ -88,16 +110,23 @@ def scan_workspace(root: Path, pipeline: CensorPipeline, profile: str = "externa
     return report
 
 
-def rewrite_agent_groups(path: Path, agent: str, groups: list[str]) -> None:
-    """Edit ``agents.<agent>.groups`` in assignments.yaml without disturbing comments."""
+def rewrite_agent_sandbox(path: Path, agent: str, sandbox: str | None) -> None:
+    """Set, replace or remove ``agents.<agent>.sandbox`` in assignments.yaml without disturbing
+    comments. ``None`` means "back to the default sandbox" (line removed)."""
     text = path.read_text(encoding="utf-8")
     block = re.search(rf"(?m)^  {re.escape(agent)}:\n(?P<body>(?:    .*\n)+)", text)
     if block is None:
         raise ConfigError(f"agents.{agent} not found in {path}")
     body = block.group("body")
-    new_body, n = re.subn(r"(?m)^    groups: \[.*\]$", f"    groups: [{', '.join(groups)}]", body, count=1)
-    if n != 1:
-        raise ConfigError(f"agents.{agent}.groups line not found (expected inline list form)")
+    line_re = re.compile(r"(?m)^    sandbox: .*\n")
+    if sandbox is None:
+        new_body = line_re.sub("", body)
+    elif line_re.search(body):
+        new_body = line_re.sub(f"    sandbox: {sandbox}\n", body, count=1)
+    else:
+        new_body = body.replace("    kind: ", f"    sandbox: {sandbox}\n    kind: ", 1)
+        if new_body == body:
+            new_body = f"    sandbox: {sandbox}\n" + body
     path.write_text(text.replace(body, new_body, 1), encoding="utf-8")
 
 
@@ -153,8 +182,8 @@ def _admin(method: str, path: str, routing) -> dict | None:
         return None
 
 
-def relocate(agent: str, to_groups: list[str], *, wipe: bool = False, dry_run: bool = False,
-             runner: Runner | None = None) -> int:
+def relocate(agent: str, to_groups: list[str] | None = None, *, to_sandbox: str | None = None,
+             wipe: bool = False, dry_run: bool = False, runner: Runner | None = None) -> int:
     runner = runner or SubprocessRunner(cwd=bs.ROOT)
     assignments, routing, censors = load_assignments(), load_routing(), load_censors()
     spec = assignments.agents.get(agent)
@@ -162,9 +191,13 @@ def relocate(agent: str, to_groups: list[str], *, wipe: bool = False, dry_run: b
         print(f"error: {agent!r} is not a task agent")
         return 2
     from_sandbox = assignments.sandbox_for(agent)
-    to_sandbox = target_sandbox(assignments, to_groups)
+    try:
+        to_sandbox = resolve_target(assignments, agent, to_sandbox=to_sandbox, to_groups=to_groups)
+    except ConfigError as exc:
+        print(f"error: {exc}")
+        return 2
     if to_sandbox == from_sandbox:
-        print(f"{agent} already lives in {from_sandbox} ({', '.join(spec.groups)})")
+        print(f"{agent} already lives in {from_sandbox} (groups {', '.join(assignments.sandboxes[from_sandbox].groups)})")
         return 0
     direction = direction_for(assignments, from_sandbox, to_sandbox)
     plan = {"agent": agent, "from": from_sandbox, "to": to_sandbox, "direction": direction,
@@ -199,7 +232,8 @@ def relocate(agent: str, to_groups: list[str], *, wipe: bool = False, dry_run: b
                     print("aborted: blocked content in workspace (fail-closed); use --wipe to move without state")
                     return 1
         # definition: assignments.yaml → manifests → agents apply on both sandboxes
-        rewrite_agent_groups(DEPLOY_DIR / "assignments.yaml", agent, to_groups)
+        rewrite_agent_sandbox(DEPLOY_DIR / "assignments.yaml", agent,
+                              None if to_sandbox == assignments.default_sandbox else to_sandbox)
         assignments = load_assignments()
         manifests = write_manifests(assignments, DEPLOY_DIR / "agents")
         for sandbox in (from_sandbox, to_sandbox):

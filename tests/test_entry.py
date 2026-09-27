@@ -50,7 +50,7 @@ async def test_external_channel_plants_marker_and_censors_final_reply():
     assert body["verdict"] == "redact" and "12.5" not in body["reply"] and "[REDACTED:project]" in body["reply"]
     assert body["profile"] == "external" and body["alias"] == "rfa-external"
     argv = runner.calls[0]
-    assert argv[:5] == ["nemoclaw", "rfa-assistant", "agent", "--agent", "main"]
+    assert argv[:5] == ["nemoclaw", "rfa-main", "agent", "--agent", "main"]
     marker = find_markers(argv[-1], SECRET)[0]
     assert marker.verified and marker.fields == {"ch": "external", "sid": "s_ext_1"}
     assert audit.session_channel("s_ext_1") == "external"

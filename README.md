@@ -1,6 +1,7 @@
 # RFA MAS — NemoClaw 보안 그룹 운영층
 
-> **한 줄 요약**: 에이전트 N개를 "보안팀이 승인할 수 있는 형태"로 운영한다. 샌드박스는 보안 그룹의 조합 단위이고,
+> **한 줄 요약**: 에이전트 N개를 "보안팀이 승인할 수 있는 형태"로 운영한다. 기본은 샌드박스 하나에 전부 배치하고, 격리가 필요한
+> 에이전트만 선택적으로 추가 샌드박스에 옮긴다. 샌드박스는 보안 그룹의 조합 단위이고,
 > 채널(internal/external)별 검열 프로파일은 API 진입점 한 곳에서 정해져 세션으로 전파되며, 경계를 넘으면 안 되는
 > 규칙은 전부 OpenShell 정책 층에 있다. 시스템 전체는 설정 파일 4개로 선언된다.
 >
@@ -30,8 +31,10 @@
 
 1. **보안 그룹 = OpenShell preset 파일.** `deploy/nemoclaw/presets/sg-*.yaml`을 `nemoclaw <sb> policy add --from-file`로만
    적용하고, 컨트롤러가 `assignments.yaml`을 읽어 reconcile 한다. static(filesystem/process) 섹션은 baseline, network는 preset.
-2. **샌드박스 = 보안 그룹 조합 단위.** 같은 egress 조합의 task 에이전트는 한 샌드박스에 `agents.yaml`(NemoClaw 선언형 manifest)로
-   묶인다. 고정 에이전트 assistant만 전용 샌드박스이고, censor는 egress-none 샌드박스의 secondary(브로커 위임 대상 아님)로 산다.
+2. **기본 샌드박스 하나, 추가는 선택.** 모든 에이전트는 기본 샌드박스 `rfa-main`(assistant가 `main`, 나머지는 secondary)에
+   `agents.yaml`(NemoClaw 선언형 manifest)로 묶인다. 격리가 필요하면 에이전트에 `sandbox: rfa-tasks-none`처럼 명시해야만 그 샌드박스가
+   온보딩·배치된다. 샌드박스는 보안 그룹 조합 단위이고 에이전트의 `groups`(필요 egress)는 배치되는 샌드박스가 모두 제공해야 한다.
+   censor는 브로커·sessions_spawn 위임 대상이 아니다.
 3. **채널 기반 검열 프로파일.** internal(로컬 Nemotron, 사내 API, 검열 없음) / external(hosted 모델, 요청·응답 검열 필수).
    프로파일은 채널 API 진입점 한 곳에서 결정되어 서명된 세션 마커로 전파된다.
 4. **검열은 egress 경계에서.** 모든 샌드박스의 inference route가 호스트 egress-proxy(유일한 provider) 하나를 가리키고,
@@ -63,15 +66,12 @@ flowchart LR
   subgraph GW["OpenShell 게이트웨이 (NemoClaw 관리)"]
     ROUTE["inference.local → host.openshell.internal:8797<br/>(route model = 전체 모드 rfa-auto / rfa-internal)"]
   end
-  subgraph SB1["rfa-assistant (control-plane)"]
-    A["assistant (main)"]
-  end
-  subgraph SB3["rfa-tasks-intranet (intranet-ro)"]
-    H1["head (main)"] --> R["research"] & B["benchmark"]
-  end
-  subgraph SB4["rfa-tasks-none (egress-none)"]
-    H2["head (main)"] --> S["summarizer"]
+  subgraph SB1["rfa-main — 기본 샌드박스 (control-plane + intranet-ro)"]
+    A["assistant (main)"] -- "sessions_spawn" --> R["research"] & B["benchmark"] & S["summarizer"]
     C["censor (secondary, 위임 대상 아님)"]
+  end
+  subgraph SB4["rfa-tasks-none — 선택 샌드박스 (egress-none), agent 가 sandbox: 로 옮겨올 때만 생성"]
+    H2["head (main)"]
   end
   BUILD["build.nvidia.com<br/>(NVIDIA_INFERENCE_API_KEY는 호스트)"]
   DESK -- "/ask → 초안 → 결재 → feedback[] → /ask" --> ENTRY
@@ -84,7 +84,7 @@ flowchart LR
   PROXY -- "rfa-internal / rfa-censor" --> OLLAMA
   PROXY -- "rfa-external (검열)" --> BUILD
   R & B -- "preset sg-intranet-ro" --> KF
-  CTRL -. "reconcile" .-> SB1 & SB3 & SB4
+  CTRL -. "reconcile" .-> SB1 & SB4
   PROXY & BROKER & ENTRY & CTRL -. "기록" .-> AUDIT
 ```
 
@@ -110,12 +110,12 @@ security_groups:
   intranet-ro:   { privilege: 1, presets: [sg-intranet-ro] }
   control-plane: { privilege: 2, presets: [], mcp_servers: [broker], fallback_presets: [sg-control-plane] }
 sandboxes:
-  rfa-tasks-none:     { groups: [egress-none] }        # censor + summarizer
-  rfa-tasks-intranet: { groups: [intranet-ro] }
-  rfa-assistant:      { groups: [control-plane], fixed: true }
+  rfa-main:        { groups: [control-plane, intranet-ro], default: true }   # 기본: 전부 여기
+  rfa-tasks-none:  { groups: [egress-none] }                                # 선택: 에이전트가 sandbox: 로 지정할 때만
 agents:
+  assistant: { kind: fixed, sandbox: rfa-main, groups: [control-plane], alias: rfa-external, skill: sg-assistant, tools: { profile: minimal, allow: [read, sessions_spawn] } }
   research:  { kind: task, groups: [intranet-ro], alias: rfa-external, skill: task-research, tools: { allow: [read, exec] } }
-  benchmark: { kind: task, groups: [intranet-ro], alias: rfa-internal, skill: task-benchmark, tools: { allow: [read, exec] } }
+  summarizer:{ kind: task, groups: [], alias: rfa-external, skill: task-summarizer, tools: { allow: [read] } }   # 격리하려면 sandbox: rfa-tasks-none
 ```
 
 `routing.yaml` 발췌:
@@ -139,13 +139,13 @@ profiles:
     stages:
       - { id: regex, type: regex, rules: [{ id: money-krw, pattern: '\d{1,3}(?:,\d{3})+\s*(?:원|KRW)', replacement: '[REDACTED:amount]' },
                                           { id: credential, pattern: '(?i)(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}', replacement: '[REDACTED:credential]', action: block }] }
-      - { id: llm, type: llm, runner: direct, sandbox: rfa-tasks-none, agent: censor, alias: rfa-censor, timeout_seconds: 45, on_error: block }
+      - { id: llm, type: llm, runner: direct, sandbox: rfa-main, agent: censor, alias: rfa-censor, timeout_seconds: 45, on_error: block }
 ```
 
 ## 실행
 
 ```bash
-make bootstrap   # 검증 → 프록시/브로커/진입점 기동 → KB 시드 → 사내 API 기동 → (rfa-demo·rfa-censor 폐기) → 샌드박스 3개 순서 온보딩 → reconcile → 워크스페이스 시드
+make bootstrap   # 검증 → 프록시/브로커/진입점 기동 → KB 시드 → 사내 API 기동 → (legacy 샌드박스 폐기) → 기본 샌드박스 rfa-main 온보딩(선택 샌드박스는 사용 중일 때만) → reconcile → 워크스페이스 시드
 make demo        # demo/01..09 (기본 --replay; DEMO_MODE=live 로 라이브 실행, 실패·예산 초과 시 자동으로 기록 재생)
 make mock-e2e    # desk(C)/결재(A) 목업으로 /ask 시나리오 4개 — 기본 --fake-agents(샌드박스·모델 없이 계약·루프 검증)
 make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"   # 같은 시나리오를 라이브 서버(실제 head·브로커·샌드박스)에
@@ -171,7 +171,7 @@ feedback 붙여 재요청, 최대 3회)와 [`tools/mock/approval.py`](tools/mock
 
 컨트롤러 명령(`python -m rfa_mas.nemoclaw …`, 또는 스킬 [`nemoclaw-security-groups`](deploy/nemoclaw/skills/nemoclaw-security-groups/SKILL.md)):
 `validate` · `render` · `plan` · `apply` · `status` · `verify-baseline` · `explain` · `seed` · `bootstrap` · `teardown` ·
-`switch-route <mode> [--force-openshell]` · `serve [--replay] [--fake-agents]` · `chat "<질문>" [--fake-agents]` · `relocate <agent> --to-groups … [--wipe]` ·
+`switch-route <mode> [--force-openshell]` · `serve [--replay] [--fake-agents]` · `chat "<질문>" [--fake-agents]` · `relocate <agent> [--to-sandbox <name> | --to-groups …] [--wipe]`(둘 다 없으면 기본 샌드박스로 복귀) ·
 `requests sync|list|approve|deny` · `audit [--kind ask]`. 감사 로그 화면: <http://127.0.0.1:8799/audit/> (대상 `ask:self` / `ask:public` 으로 같은 `ask()` 를 실행). `/ask` 문서: <http://127.0.0.1:8799/docs>.
 
 ## NVIDIA Agent 기술 사용 기능 체크리스트

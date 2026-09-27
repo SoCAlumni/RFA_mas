@@ -190,8 +190,11 @@ class PlanInputs:
 def plan(inputs: PlanInputs) -> list[Action]:
     a, obs, nb = inputs.assignments, inputs.observed, inputs.nemoclaw_bin
     actions: list[Action] = []
+    active = set(a.active_sandboxes())
     for sandbox in a.ordered_sandboxes():
         if not obs.exists(sandbox):
+            if sandbox not in active:
+                continue  # opt-in sandbox nobody uses yet: nothing to create
             actions.append(
                 Action("onboard", sandbox, [nb, "onboard", "--name", sandbox, "--agents",
                                             str(inputs.manifests[sandbox]), "--non-interactive",

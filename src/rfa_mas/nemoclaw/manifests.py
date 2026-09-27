@@ -45,30 +45,35 @@ def agent_dir(openclaw_id: str) -> str:
 
 
 def render_manifest(assignments: Assignments, sandbox: str) -> dict:
-    """Manifest for one sandbox: fixed sandbox → its agent is ``main``; task sandbox → a thin
-    routing head as ``main`` plus one secondary per task agent (spawn allowlist = those ids)."""
+    """Manifest for one sandbox. ``main`` is the fixed agent placed there (the assistant in the
+    default sandbox) or a thin routing head; every other agent placed there is a secondary.
+    The spawn allowlist contains only delegatable secondaries (never the censor)."""
     main_agent = assignments.main_agent(sandbox)
+    ids = assignments.sandbox_agents(sandbox)
+    spawnable = [a for a in ids if assignments.agents[a].delegatable]
     manifest: dict = {"defaults": {"subagents": {"maxSpawnDepth": 1}}}
     if main_agent is not None:
         spec = assignments.agents[main_agent]
-        manifest["main"] = {"tools": tools_dict(spec.tools), "subagents": {"requireAgentId": True}}
-        return manifest
-    ids = assignments.sandbox_agents(sandbox)
-    spawnable = [a for a in ids if assignments.agents[a].delegatable]
-    manifest["main"] = {
-        "tools": dict(HEAD_TOOLS),
-        "subagents": {"allowAgents": spawnable, "delegationMode": "prefer", "requireAgentId": True},
-    }
-    manifest["agents"] = [
-        {
-            "id": agent_id,
-            "description": assignments.agents[agent_id].description or agent_id,
-            "model": f"{ROUTE_PROVIDER}/{assignments.agents[agent_id].alias}",
-            "tools": tools_dict(assignments.agents[agent_id].tools),
-            "subagents": {"requireAgentId": True},
-        }
-        for agent_id in ids
-    ]
+        subagents: dict = {"requireAgentId": True}
+        if spawnable:
+            subagents.update({"allowAgents": spawnable, "delegationMode": "prefer"})
+        manifest["main"] = {"tools": tools_dict(spec.tools), "subagents": subagents}
+    else:
+        subagents = {"requireAgentId": True}
+        if spawnable:
+            subagents.update({"allowAgents": spawnable, "delegationMode": "prefer"})
+        manifest["main"] = {"tools": dict(HEAD_TOOLS), "subagents": subagents}
+    if ids:
+        manifest["agents"] = [
+            {
+                "id": agent_id,
+                "description": assignments.agents[agent_id].description or agent_id,
+                "model": f"{ROUTE_PROVIDER}/{assignments.agents[agent_id].alias}",
+                "tools": tools_dict(assignments.agents[agent_id].tools),
+                "subagents": {"requireAgentId": True},
+            }
+            for agent_id in ids
+        ]
     return manifest
 
 
@@ -83,7 +88,7 @@ def manifest_yaml(manifest: dict) -> str:
 def write_manifests(assignments: Assignments, out_dir: Path) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     paths: dict[str, Path] = {}
-    for sandbox in assignments.ordered_sandboxes():
+    for sandbox in assignments.ordered_sandboxes():  # every declared sandbox, so opt-in ones are ready to onboard
         path = out_dir / f"{sandbox}.agents.yaml"
         path.write_text(manifest_yaml(render_manifest(assignments, sandbox)), encoding="utf-8")
         paths[sandbox] = path
@@ -103,7 +108,7 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes) -> s
     marker = make_marker(
         "agent", {"agent": agent_id, "sandbox": sandbox, "alias": spec.alias}, secret
     )
-    groups = spec.groups if spec.kind == "task" else assignments.sandboxes[sandbox].groups
+    groups = assignments.sandboxes[sandbox].groups
     return (
         "# IDENTITY\n\n"
         f"- name: {agent_id}\n"

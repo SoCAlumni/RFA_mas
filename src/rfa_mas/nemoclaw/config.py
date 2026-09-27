@@ -42,7 +42,7 @@ class SecurityGroup(Strict):
 
 class SandboxSpec(Strict):
     groups: list[str] = Field(min_length=1)
-    fixed: bool = False
+    default: bool = False   # exactly one: every agent lands here unless it opts into another sandbox
 
     @property
     def group_key(self) -> tuple[str, ...]:
@@ -63,13 +63,13 @@ class ToolPolicy(Strict):
 
 class AgentSpec(Strict):
     kind: Literal["fixed", "task"]
-    sandbox: str | None = None
-    groups: list[str] = []
+    sandbox: str | None = None      # fixed: required (it becomes that sandbox's `main`); task: optional opt-in
+    groups: list[str] = []          # egress the agent needs; the sandbox it lands in must provide all of them
     alias: str
     skill: str
     description: str = ""
     tools: ToolPolicy
-    delegatable: bool = True  # False: lives in a task sandbox but is not an ask_task_agent/sessions_spawn target (censor)
+    delegatable: bool = True  # False: lives in a sandbox but is not an ask_task_agent/sessions_spawn target (censor)
 
     @property
     def group_key(self) -> tuple[str, ...]:
@@ -77,6 +77,10 @@ class AgentSpec(Strict):
 
 
 class Assignments(Strict):
+    """Placement model: one *default* sandbox hosts every agent; additional sandboxes exist only
+    when an agent opts into them with ``sandbox:``. A sandbox is still one security-group
+    combination, and an agent may only land where all of its required groups are provided."""
+
     version: int = 1
     host: HostConfig
     baseline_excludes: list[str] = []
@@ -87,66 +91,53 @@ class Assignments(Strict):
 
     @model_validator(mode="after")
     def _consistent(self) -> Assignments:
+        defaults = [n for n, s in self.sandboxes.items() if s.default]
+        if len(defaults) != 1:
+            raise ValueError("exactly one sandbox must declare default: true")
         for name, sandbox in self.sandboxes.items():
             if not SANDBOX_NAME.match(name):
                 raise ValueError(f"sandboxes.{name}: invalid sandbox name")
             for group in sandbox.groups:
                 if group not in self.security_groups:
                     raise ValueError(f"sandboxes.{name}: unknown security group {group!r}")
-        keys: dict[tuple[str, ...], str] = {}
-        for name, sandbox in self.sandboxes.items():
-            if sandbox.fixed:
-                continue
-            if sandbox.group_key in keys:
-                raise ValueError(
-                    f"sandboxes.{name}: same group set as {keys[sandbox.group_key]!r}; "
-                    "a security-group combination maps to exactly one task sandbox"
-                )
-            keys[sandbox.group_key] = name
         fixed_owner: dict[str, str] = {}
         for agent_id, agent in self.agents.items():
             if not AGENT_ID.match(agent_id) or agent_id == "main":
                 raise ValueError(f"agents.{agent_id}: invalid agent id (lowercase, not 'main')")
+            for group in agent.groups:
+                if group not in self.security_groups:
+                    raise ValueError(f"agents.{agent_id}: unknown security group {group!r}")
+            if agent.sandbox is not None and agent.sandbox not in self.sandboxes:
+                raise ValueError(f"agents.{agent_id}: unknown sandbox {agent.sandbox!r}")
             if agent.kind == "fixed":
-                if agent.sandbox is None or agent.groups:
-                    raise ValueError(f"agents.{agent_id}: fixed agents declare sandbox, not groups")
-                sandbox = self.sandboxes.get(agent.sandbox)
-                if sandbox is None or not sandbox.fixed:
-                    raise ValueError(f"agents.{agent_id}: sandbox must be a fixed sandbox")
+                if agent.sandbox is None:
+                    raise ValueError(f"agents.{agent_id}: fixed agents must name their sandbox")
                 if agent.sandbox in fixed_owner:
                     raise ValueError(
-                        f"agents.{agent_id}: fixed sandbox {agent.sandbox} already owned by "
-                        f"{fixed_owner[agent.sandbox]}"
+                        f"agents.{agent_id}: sandbox {agent.sandbox} already has fixed agent "
+                        f"{fixed_owner[agent.sandbox]} as its main"
                     )
                 fixed_owner[agent.sandbox] = agent_id
-            else:
-                if agent.sandbox is not None or not agent.groups:
-                    raise ValueError(f"agents.{agent_id}: task agents declare groups, not sandbox")
-                for group in agent.groups:
-                    if group not in self.security_groups:
-                        raise ValueError(f"agents.{agent_id}: unknown security group {group!r}")
-                if agent.group_key not in keys:
-                    raise ValueError(
-                        f"agents.{agent_id}: no task sandbox declares groups "
-                        f"{list(agent.group_key)}; add one under sandboxes"
-                    )
-        for name, sandbox in self.sandboxes.items():
-            if sandbox.fixed and name not in fixed_owner:
-                raise ValueError(f"sandboxes.{name}: fixed sandbox has no fixed agent")
-        if self.onboarding_order:
-            if sorted(self.onboarding_order) != sorted(self.sandboxes):
-                raise ValueError("onboarding_order must list every sandbox exactly once")
+            placed = self.sandboxes[agent.sandbox or defaults[0]]
+            missing = sorted(set(agent.groups) - set(placed.groups))
+            if missing:
+                raise ValueError(
+                    f"agents.{agent_id}: sandbox {agent.sandbox or defaults[0]} lacks security groups {missing} "
+                    "the agent requires; add them to the sandbox or opt the agent into another sandbox"
+                )
+        if self.onboarding_order and sorted(self.onboarding_order) != sorted(self.sandboxes):
+            raise ValueError("onboarding_order must list every declared sandbox exactly once")
         return self
 
     # ---- derived views -------------------------------------------------------------------
 
+    @property
+    def default_sandbox(self) -> str:
+        return next(n for n, s in self.sandboxes.items() if s.default)
+
     def placement(self) -> dict[str, str]:
-        """agent id → sandbox name (fixed agents explicit, task agents by group-set match)."""
-        by_key = {s.group_key: n for n, s in self.sandboxes.items() if not s.fixed}
-        out: dict[str, str] = {}
-        for agent_id, agent in self.agents.items():
-            out[agent_id] = agent.sandbox if agent.kind == "fixed" else by_key[agent.group_key]
-        return out
+        """agent id → sandbox name (explicit ``sandbox:`` wins, otherwise the default sandbox)."""
+        return {a: (s.sandbox or self.default_sandbox) for a, s in self.agents.items()}
 
     def sandbox_for(self, agent_id: str) -> str:
         try:
@@ -155,14 +146,17 @@ class Assignments(Strict):
             raise ConfigError(f"unknown agent {agent_id!r}") from None
 
     def sandbox_agents(self, sandbox: str) -> list[str]:
-        return sorted(a for a, s in self.placement().items() if s == sandbox)
+        """Non-fixed agents placed in the sandbox (its secondaries), sorted."""
+        return sorted(a for a, s in self.placement().items() if s == sandbox and self.agents[a].kind != "fixed")
 
     def main_agent(self, sandbox: str) -> str | None:
-        """The fixed agent that owns a fixed sandbox (its OpenClaw ``main``), else None."""
-        spec = self.sandboxes[sandbox]
-        if not spec.fixed:
-            return None
-        return next(a for a, s in self.agents.items() if s.kind == "fixed" and s.sandbox == sandbox)
+        """The fixed agent that owns the sandbox's OpenClaw ``main`` slot, else None (routing head)."""
+        return next((a for a, s in self.agents.items() if s.kind == "fixed" and s.sandbox == sandbox), None)
+
+    def active_sandboxes(self) -> list[str]:
+        """Sandboxes that must exist: the default one plus any sandbox an agent opted into."""
+        used = set(self.placement().values()) | {self.default_sandbox}
+        return [s for s in self.ordered_sandboxes() if s in used]
 
     def sandbox_presets(self, sandbox: str, *, fallback: bool = False) -> list[str]:
         names: list[str] = []
@@ -187,7 +181,9 @@ class Assignments(Strict):
     def ordered_sandboxes(self) -> list[str]:
         if self.onboarding_order:
             return list(self.onboarding_order)
-        return sorted(self.sandboxes, key=lambda n: (self.sandbox_privilege(n), n))
+        rest = sorted((n for n in self.sandboxes if n != self.default_sandbox),
+                      key=lambda n: (self.sandbox_privilege(n), n))
+        return [self.default_sandbox, *rest]
 
 
 # --------------------------------------------------------------------------- routing

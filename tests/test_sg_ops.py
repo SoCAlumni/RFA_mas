@@ -10,7 +10,7 @@ import yaml
 from rfa_mas.nemoclaw import audit
 from rfa_mas.nemoclaw import config as cfg
 from rfa_mas.nemoclaw.censor import CensorPipeline
-from rfa_mas.nemoclaw.relocate import direction_for, rewrite_agent_groups, scan_workspace, target_sandbox
+from rfa_mas.nemoclaw.relocate import direction_for, resolve_target, rewrite_agent_sandbox, scan_workspace, target_sandbox
 from rfa_mas.nemoclaw.requests import approve, deny, list_requests, parse_denied, sync
 from rfa_mas.nemoclaw.runner import CommandResult
 
@@ -73,26 +73,33 @@ def test_sync_dedupes_and_records_then_approve_builds_a_preset(tmp_path, monkeyp
 
 def test_relocation_direction_and_target():
     a = cfg.load_assignments()
-    assert direction_for(a, "rfa-tasks-intranet", "rfa-tasks-none") == "demote"
-    assert direction_for(a, "rfa-tasks-none", "rfa-tasks-intranet") == "promote"
+    assert direction_for(a, "rfa-main", "rfa-tasks-none") == "demote"
+    assert direction_for(a, "rfa-tasks-none", "rfa-main") == "promote"
     assert direction_for(a, "rfa-tasks-none", "rfa-tasks-none") == "lateral"
     assert target_sandbox(a, ["egress-none"]) == "rfa-tasks-none"
     with pytest.raises(cfg.ConfigError):
-        target_sandbox(a, ["control-plane"])  # fixed sandbox, not a task target
+        target_sandbox(a, ["control-plane", "intranet-ro"])  # the default sandbox is never an opt-in target
+    assert resolve_target(a, "summarizer", to_sandbox="rfa-tasks-none", to_groups=None) == "rfa-tasks-none"
+    assert resolve_target(a, "summarizer", to_sandbox=None, to_groups=["egress-none"]) == "rfa-tasks-none"
+    assert resolve_target(a, "summarizer", to_sandbox=None, to_groups=None) == "rfa-main"
+    with pytest.raises(cfg.ConfigError, match="lacks groups"):
+        resolve_target(a, "research", to_sandbox="rfa-tasks-none", to_groups=None)  # needs intranet-ro
 
 
-def test_rewrite_agent_groups_keeps_comments_and_other_agents(tmp_path):
+def test_rewrite_agent_sandbox_keeps_comments_and_other_agents(tmp_path):
     src = cfg.DEPLOY_DIR / "assignments.yaml"
     copy = tmp_path / "assignments.yaml"
     copy.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-    rewrite_agent_groups(copy, "research", ["egress-none"])
+    rewrite_agent_sandbox(copy, "summarizer", "rfa-tasks-none")  # opt in
     text = copy.read_text(encoding="utf-8")
     assert "# 보안 그룹 배치 선언" in text  # header comment preserved
     loaded = cfg.load_assignments(copy)
-    assert loaded.agents["research"].groups == ["egress-none"] and loaded.agents["benchmark"].groups == ["intranet-ro"]
-    assert loaded.sandbox_for("research") == "rfa-tasks-none"
+    assert loaded.sandbox_for("summarizer") == "rfa-tasks-none" and loaded.sandbox_for("benchmark") == "rfa-main"
+    assert loaded.active_sandboxes() == ["rfa-main", "rfa-tasks-none"]
+    rewrite_agent_sandbox(copy, "summarizer", None)  # back to the default sandbox
+    assert cfg.load_assignments(copy).sandbox_for("summarizer") == "rfa-main"
     with pytest.raises(cfg.ConfigError):
-        rewrite_agent_groups(copy, "assistant", ["x"])  # fixed agents have no groups line
+        rewrite_agent_sandbox(copy, "ghost", "rfa-tasks-none")
 
 
 def test_scan_workspace_redacts_text_and_reports_blocked_files(tmp_path):

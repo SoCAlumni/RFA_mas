@@ -2,9 +2,11 @@
 # NemoClaw CLI(onboard --agents / policy add|remove|exclude / agents apply / mcp add / policy explain)로
 # 샌드박스 상태를 reconcile 한다. `openshell policy set` 은 사용하지 않는다.
 #
-# 원칙: 샌드박스 = 보안 그룹 조합 단위. task 에이전트는 자신의 groups 집합과 같은 groups 를 가진
-# (fixed 가 아닌) 샌드박스에 배치된다. assistant 만 고정 샌드박스를 단독 사용한다. censor 는 별도 샌드박스 없이
-# egress-none 그룹 샌드박스의 secondary 로 산다(delegatable: false — 브로커/sessions_spawn 대상이 아님).
+# 배치 원칙:
+#   - 기본 샌드박스는 하나(default: true). 모든 에이전트는 기본적으로 여기에 배치된다.
+#   - 추가 샌드박스는 선택이다. 에이전트에 `sandbox: <이름>` 을 명시해야만 그 샌드박스가 온보딩되고 배치된다.
+#   - 샌드박스는 여전히 보안 그룹의 조합 단위다. 에이전트의 `groups`(필요한 egress)는 배치되는 샌드박스가
+#     모두 제공해야 한다(부분집합 검증). 경계를 넘으면 안 되는 규칙은 OpenShell preset 층에 있다.
 version: 1
 
 host:
@@ -33,30 +35,31 @@ security_groups:
     fallback_presets: [sg-control-plane]   # managed MCP 등록이 불가능할 때만 적용
 
 sandboxes:
-  rfa-tasks-none:     { groups: [egress-none] }        # censor + summarizer
-  rfa-tasks-intranet: { groups: [intranet-ro] }
-  rfa-assistant:      { groups: [control-plane], fixed: true }
+  rfa-main:        { groups: [control-plane, intranet-ro], default: true }   # 기본: assistant(main) + censor + 모든 task 에이전트
+  rfa-tasks-none:  { groups: [egress-none] }                                # 선택: egress 0 격리가 필요한 에이전트가 `sandbox:` 로 옮겨올 때만 온보딩
 
-# 온보딩 순서: 무egress 샌드박스(검열 포함)가 먼저 서야 시나리오 01 을 가장 빨리 확인할 수 있다.
-onboarding_order: [rfa-tasks-none, rfa-tasks-intranet, rfa-assistant]
+# 온보딩 순서(선언된 샌드박스 전부 나열; 배치된 에이전트가 없는 선택 샌드박스는 건너뛴다).
+onboarding_order: [rfa-main, rfa-tasks-none]
 
 # alias 는 routing.yaml 의 논리 모델 alias. 채널이 internal 이면 항상 rfa-internal 로 강등된다.
+# groups 는 "필요한 egress" 선언이다(빈 목록 = 네트워크 불필요). 다른 샌드박스로 격리하려면 `sandbox:` 를 추가한다.
 agents:
+  assistant:
+    kind: fixed
+    sandbox: rfa-main
+    groups: [control-plane]
+    alias: rfa-external
+    skill: sg-assistant
+    description: 비서. 브로커 MCP 의 ask_task_agent 또는 같은 샌드박스 sessions_spawn 으로 task 에이전트에 위임한다.
+    tools: { profile: minimal, allow: [read, sessions_spawn] }
   censor:
     kind: task
-    groups: [egress-none]
+    groups: []
     delegatable: false
     alias: rfa-censor
     skill: censor
-    description: egress 0 샌드박스에서 텍스트를 JSON 으로 분류만 하는 검열 LLM 단계 (브로커 위임 대상 아님).
+    description: 텍스트를 JSON 으로 분류만 하는 검열 LLM 단계 (브로커 위임 대상 아님, 네트워크 도구 없음).
     tools: { profile: minimal, allow: [read] }
-  assistant:
-    kind: fixed
-    sandbox: rfa-assistant
-    alias: rfa-external
-    skill: sg-assistant
-    description: 비서. 브로커 MCP 의 ask_task_agent 로만 task 에이전트에 위임한다.
-    tools: { profile: minimal, allow: [read, sessions_spawn] }
   research:
     kind: task
     groups: [intranet-ro]
@@ -73,8 +76,8 @@ agents:
     tools: { allow: [read, exec] }
   summarizer:
     kind: task
-    groups: [egress-none]
+    groups: []
     alias: rfa-external
     skill: task-summarizer
-    description: 전달받은 텍스트만 요약한다. 네트워크 도구 없음.
+    description: "전달받은 텍스트만 요약한다. 네트워크 도구 없음. (격리 예: sandbox 를 rfa-tasks-none 으로 지정)"
     tools: { allow: [read] }

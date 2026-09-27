@@ -240,7 +240,8 @@ def cmd_chat(args) -> int:
 def cmd_relocate(args) -> int:
     from rfa_mas.nemoclaw.relocate import relocate
 
-    return relocate(args.agent, args.to_groups.split(","), wipe=args.wipe, dry_run=args.dry_run,
+    groups = args.to_groups.split(",") if args.to_groups else None
+    return relocate(args.agent, groups, to_sandbox=args.to_sandbox, wipe=args.wipe, dry_run=args.dry_run,
                     runner=_runner())
 
 
@@ -296,7 +297,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--audience", default="self", choices=["self", "company", "public"], help="fake-agents only; /chat is always self")
     p.add_argument("--fake-agents", action="store_true", help="in-process ask() without the entry server")
     p.set_defaults(func=cmd_chat)
-    p = sub.add_parser("relocate"); p.add_argument("agent"); p.add_argument("--to-groups", required=True)
+    p = sub.add_parser("relocate"); p.add_argument("agent")
+    p.add_argument("--to-groups", help="opt-in sandbox with exactly these groups (comma-separated)")
+    p.add_argument("--to-sandbox", help="opt-in sandbox by name; omit both to return to the default sandbox")
     p.add_argument("--wipe", action="store_true"); p.add_argument("--dry-run", action="store_true")
     p.set_defaults(func=cmd_relocate)
     p = sub.add_parser("requests"); p.add_argument("action", choices=["list", "approve", "deny", "sync"])
