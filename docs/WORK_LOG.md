@@ -983,3 +983,11 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 변경은 chat/PoC/UI/tests/docs에 한정한다. 공통 DTO·core graph·기존 DB migration·settings·lockfile 변경 없음. NVIDIA 호출·실제 게시·OpenShell/NemoClaw 재검증 없음. 최종75개 전체 E2E cascade를 다시 시작하지 않고 이번 UI/채팅과 기존 승인·PoC의 scoped30개로 검증했다. 소스 변경으로 이전 P0-025A/P0-026/P1-008F 증거는 stale로 보존하며 이 신규 task 증거와 구분한다.
 - 다른 세션이 생성 중인 P1-010/P1-011 파일은 수정/삭제/commit하지 않는다. 그 작성 중 참조 검증으로 heartbeat가1회 거절됐으나 이후 성공했다. 분리 worktree에서 구현했고 별도 작업의 범위·코드는 건드리지 않았다. canonical generated view는 taskctl이 갱신하며 수동 편집하지 않는다.
 - main `chat-target-01`에서도30passed/실패·skip0 및 fresh Chrome 동일 흐름 통과. P1-008G를 integrated/done으로 닫았다. 사용자8780 서버는 계속 실행하며 임시18780 서버만 종료했다. 테스트용 데이터는 삭제하지 않았다. generated view에는 다른 세션의 미추적 task가 포함되어 이번 커밋에 임의로 넣지 않고, 이번 task/실제 stale 변경/작업로그/검증 증거만 명시적으로 기록한다.
+
+## PoC KB 사전 채우기 — 사용자 요청 (2026-09-27)
+
+- 제품 코드 개발이 아닌 실행 중8780 PoC의 기존 API를 통한 데이터 입력이다. 별도 task 상태 변경/전체 재검증/DB 직접 쓰기는 하지 않았다.
+- 기존 KB0개를 확인한 뒤 합성 자료18개를 추가했다(TRIV3 기본 공간14, 양자화 연구4). 오로라 가상 프로젝트의 개요·일정·회의·할 일·이슈·결정·시연·개인 메모와 연구 계획이다. 제목 `[샘플]` 및 본문의 합성/가상 표기로 실제 사용자 사실·실측 결과와 구분한다. UI note API가 synthetic 필드를 받지 않으므로 그 메타데이터까지 true라고 주장하지 않는다.
+- 모든 신규 자료의 audience=private와 원문 일치, 기존 source 보존, 같은 idempotency key 재전송 시 동일 source/총18개 유지 확인. 실제 개인정보·.env·키 사용/출력 없음. 외부 전송·게시·NVIDIA 호출 없음.
+- 샘플 확인용 대화에서 `오로라 마감 알려줘`→10월2일, `오로라 회의 결정 알려줘`→첫 화면 결정, `양자화 실험 상태 알려줘`→미실행 근거를 확인했다. 세 질의 모두 실제 로컬 검색+mock 답변이며 실제 프로젝트 일정/연구 결과가 아니다.
+- 입력 fixture와 안전한 결과 기록은 `.agent/evidence/poc-kb-seed-20260927/{notes,result}.json`. 실제 runtime DB/사용자 데이터를 Git에 넣지 않고 이번에 작성한 합성 fixture와 기록만 commit한다. 다른 세션의 task/파생 view 변경은 보존한다.

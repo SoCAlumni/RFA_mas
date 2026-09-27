@@ -1,0 +1,148 @@
+{
+  "started_at": "2026-09-27T04:31:59.873391+00:00",
+  "finished_at": "2026-09-27T04:32:02.066816+00:00",
+  "dataset": "poc-kb-seed-v1",
+  "status": "passed",
+  "notes_requested": 18,
+  "before_count": 0,
+  "after_count": 18,
+  "created_count": 18,
+  "all_private": true,
+  "existing_notes_preserved": true,
+  "duplicate_upsert_verified": true,
+  "records": [
+    {
+      "key": "poc-kb-seed-v1-01",
+      "source_id": "source_b8b3e33e19f642e691bde1ddfc4f01e3",
+      "source_revision": "revision_6803276ca2b54705a7dd1507fe7e5b5d",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-02",
+      "source_id": "source_f1f39fa2b18149769a2a6d4c727b01fd",
+      "source_revision": "revision_b27b00bc4a274da2bc8206fc975a402b",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-03",
+      "source_id": "source_33c4b0843d9b40a5a3e0bcc227fd6ef5",
+      "source_revision": "revision_83c24e474e0840bda201f917c08e66c5",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-04",
+      "source_id": "source_a8a74d03c6a94fef861b3884f8372dfb",
+      "source_revision": "revision_875483d5f8ca40d3859bb34755b24f3b",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-05",
+      "source_id": "source_e81fdeaa2ddc4a01a077aa2701cf1023",
+      "source_revision": "revision_4630bdcb8c32425a87dea23f9380f331",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-06",
+      "source_id": "source_cd29583dab1e44e593268c777d849396",
+      "source_revision": "revision_a7fc5067c08e4172b6b0ca3c5df58375",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-07",
+      "source_id": "source_4dcd67a8d5fa4efdb3ade70ec5edf99e",
+      "source_revision": "revision_a16198c6bb694cd9a333df6163404b99",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-08",
+      "source_id": "source_59204e9c2d3f4ddbbb0244dbf0cb0a4a",
+      "source_revision": "revision_34b59a481d5141e1889237d9f8edbe9f",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-09",
+      "source_id": "source_f0e9fc4b3e07436eb35d797dee96aa44",
+      "source_revision": "revision_62ab55bb3ee845fe89337aff47aa9cc2",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-10",
+      "source_id": "source_4d2b61799cd94915b47a1dee2275777e",
+      "source_revision": "revision_fade8090ad7044eeaec36336fbc84713",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-11",
+      "source_id": "source_6dfabc3433a4485e84a161409081199d",
+      "source_revision": "revision_753a8b07e1374af0a3c09f15f103233c",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-12",
+      "source_id": "source_002ddf929c6441459fb7777aef028643",
+      "source_revision": "revision_d64880a5760e4c4ab5fc6fec917f7446",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-13",
+      "source_id": "source_fc52ca57e6774d2eb8b445bea0833ec7",
+      "source_revision": "revision_479c8eb740724121944aec9e1f85a521",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-14",
+      "source_id": "source_4bee4685b51147c9b00bb5bb1c12e965",
+      "source_revision": "revision_93ee2a697bf644ef8c49a084dd626c78",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-15",
+      "source_id": "source_3b468c26e1b743219be0c4803b826744",
+      "source_revision": "revision_d477316f16664a268d2caf1bf26cdf8f",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-16",
+      "source_id": "source_2a0dfc30176c429494d92c125aec41c8",
+      "source_revision": "revision_61d15de4c24c4f9090e136002649a45f",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-17",
+      "source_id": "source_43e2415b50bf4915825def6cafb684ee",
+      "source_revision": "revision_10409ad64a1745a0beea39e7f10e76c8",
+      "audience": "private"
+    },
+    {
+      "key": "poc-kb-seed-v1-18",
+      "source_id": "source_a8935bb13f8f4f598785a1b345145f55",
+      "source_revision": "revision_84e88d2f25b54b39910ee0f4f13eeba4",
+      "audience": "private"
+    }
+  ],
+  "search_checks": [
+    {
+      "query": "오로라 마감 알려줘",
+      "expected_found": "10월 2일",
+      "status": "passed",
+      "run_id": "run_8cd1455bcb714592b03d8e1be28d3750",
+      "mode": "local/mock"
+    },
+    {
+      "query": "오로라 회의 결정 알려줘",
+      "expected_found": "첫 화면",
+      "status": "passed",
+      "run_id": "run_2dc39be33cbe4afe989a66831ec20208",
+      "mode": "local/mock"
+    },
+    {
+      "query": "양자화 실험 상태 알려줘",
+      "expected_found": "미실행",
+      "status": "passed",
+      "run_id": "run_469ff15acb964d9ba3cf235dab061fa5",
+      "mode": "local/mock"
+    }
+  ],
+  "demo_session_id": "session_a34a5f85a7e0426c80bdd06b5333d0be",
+  "limitations": "Explicit synthetic labels in title/body; UI note API does not expose synthetic metadata. No NVIDIA or real external writes. Runtime DB is not committed."
+}
