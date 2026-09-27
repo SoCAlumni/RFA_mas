@@ -73,13 +73,18 @@ async def test_seed_reuses_owner_task_that_already_covers_the_subject(tmp_path):
         report = await seed(c, fixture)
         aurora = next(t for t in report["tasks"] if t["key"].endswith("aurora"))
         assert aurora["created"] is False
-        assert aurora["reused_via"] == "existing_task_subject_match"
+        assert aurora["reused_via"] == "existing_goal_subject_match" and "run_id" not in aurora
         assert aurora["task_id"] == existing.task.task_id and aurora["linked_sources"] >= 6
+        assert teams_runs(await c.get("/ui/api/teams"), existing.task.task_id) == 0
         nebula = next(t for t in report["tasks"] if t["key"].endswith("nebula"))
         assert nebula["created"] is True and nebula["pattern"] == "research"
         teams = {t["task"]["task_id"]: t for t in (await c.get("/ui/api/teams")).json()}
         assert set(teams) == {existing.task.task_id, nebula["task_id"]}
         assert teams[nebula["task_id"]]["task"]["domain_id"] == "quantization_research"
+
+
+def teams_runs(response, task_id):
+    return next(t for t in response.json() if t["task"]["task_id"] == task_id)["runs"]["count"]
 
 
 async def test_seed_cli_rejects_non_loopback(tmp_path):

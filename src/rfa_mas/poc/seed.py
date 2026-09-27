@@ -19,6 +19,8 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from rfa_mas.poc.routing import subjects
+
 DEFAULT_FIXTURE = Path(__file__).resolve().parents[3] / "fixtures" / "poc" / "demo_seed.json"
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost"})
 
@@ -40,6 +42,18 @@ async def _check(response: httpx.Response) -> dict:
             f"{response.status_code} {response.text[:300]}"
         )
     return response.json()
+
+
+def _existing_assignee(assignees: list[dict], text: str) -> tuple[dict | None, str | None]:
+    """Exact goal first; otherwise the single selectable owner Task sharing a subject word."""
+    exact = next((t for t in assignees if t["goal"] == text[:160]), None)
+    if exact is not None:
+        return exact, "existing_goal"
+    words = subjects(text)
+    shared = [t for t in assignees if t["selectable"] and subjects(t["goal"]) & words]
+    if len(shared) == 1:
+        return shared[0], "existing_goal_subject_match"
+    return None, None
 
 
 async def seed(client: httpx.AsyncClient, fixture: dict) -> dict:
@@ -75,7 +89,7 @@ async def seed(client: httpx.AsyncClient, fixture: dict) -> dict:
     for task in fixture.get("tasks", []):
         entry = {"key": task["key"], "goal": task["text"], "created": False}
         assignees = await _check(await client.get("/ui/api/chat/assignees"))
-        existing = next((t for t in assignees if t["goal"] == task["text"][:160]), None)
+        existing, reused_via = _existing_assignee(assignees, task["text"])
         if existing is None:
             session = await _check(await client.post("/ui/api/sessions", json={}))
             result = await _check(
@@ -106,6 +120,7 @@ async def seed(client: httpx.AsyncClient, fixture: dict) -> dict:
             task_id = route["task_id"]
         else:
             task_id = existing["task_id"]
+            entry["reused_via"] = reused_via
         entry["task_id"] = task_id
         wanted = [sources[k] for k in task.get("linked_note_keys", [])]
         if task.get("link_subject_matches"):
