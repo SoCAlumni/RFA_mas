@@ -23,7 +23,7 @@ SERVE_PID := $(SG_DIR)/serve.pid
 SERVE_LOG := $(SG_DIR)/serve.log
 MCP_FLAGS ?=
 
-.PHONY: help bootstrap demo teardown serve serve-stop status plan apply test validate render \
+.PHONY: help bootstrap demo teardown serve serve-stop status plan apply test validate render kb-seed \
         verify-baseline demo-01 demo-02 demo-03 demo-04 demo-05 knowledge-facade knowledge-facade-stop
 
 help:
@@ -67,7 +67,10 @@ knowledge-facade-stop:
 
 # ---- lifecycle ------------------------------------------------------------------------------
 
-bootstrap: validate render serve knowledge-facade
+kb-seed:
+	$(SG) kb-seed
+
+bootstrap: validate render serve kb-seed knowledge-facade
 	$(SG) bootstrap $(MCP_FLAGS)
 	$(SG) status
 

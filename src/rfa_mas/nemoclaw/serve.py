@@ -91,7 +91,10 @@ def build(replay: bool = False):
                         replay=replay)
     broker = Broker(assignments, routing, secret, host_secrets.values[routing.broker.credential_env], runner,
                     replay=replay)
-    entry = Entry(assignments, routing, pipeline, broker, secret, runner, replay=replay)
+    proxy_port = routing.proxy.bind.rsplit(":", 1)[1]
+    entry = Entry(assignments, routing, pipeline, broker, secret, runner, replay=replay,
+                  proxy_key=host_secrets.values[routing.proxy.credential_env],
+                  proxy_url=f"http://127.0.0.1:{proxy_port}/v1/chat/completions")
     broker_app = Starlette(routes=[
         Route("/healthz", proxy.healthz, methods=["GET"]),
         Route(routing.broker.path, broker.mcp, methods=["GET", "POST", "DELETE"]),

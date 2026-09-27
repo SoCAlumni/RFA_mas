@@ -27,7 +27,17 @@
   .detail { color:var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; }
   .counts div { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dashed var(--line); }
   .small { color:var(--muted); font-size:12px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .runner { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .runner textarea { width:100%; min-height:72px; resize:vertical; font:13px/1.4 inherit; }
+  .runner .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .runner .result { border:1px dashed var(--line); border-radius:6px; padding:8px; min-height:72px; }
+  .runner .reply { white-space:pre-wrap; margin:6px 0; }
+  .runner .expect { color:var(--muted); font-size:12px; }
+  .runner select { max-width:100%; }
+  button.primary { background:#1f6feb; border-color:#1f6feb; color:#fff; cursor:pointer; }
+  button.primary[disabled] { opacity:.5; cursor:wait; }
+  .unavail { color:var(--block); font-size:12px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .runner { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -52,6 +62,27 @@
     </div>
   </aside>
   <main class="panel">
+    <h2>테스트 실행 — 샘플 질문을 채널·대상에 바로 보낸다 (모든 hop 이 아래 감사 로그에 남는다)</h2>
+    <div class="runner">
+      <div>
+        <div class="row">
+          <label>채널 <select id="run-channel"><option value="internal">internal (로컬, 검열 없음)</option><option value="external">external (hosted, 검열)</option></select></label>
+          <label>대상 <select id="run-target"></select></label>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <select id="run-sample" style="flex:1"><option value="">샘플 질문 선택…</option></select>
+        </div>
+        <textarea id="run-text" placeholder="질문을 입력하거나 샘플을 선택"></textarea>
+        <div class="row">
+          <button class="primary" id="run-btn">실행</button>
+          <span class="small" id="run-status"></span>
+        </div>
+        <div class="expect" id="run-expect"></div>
+        <div class="unavail" id="run-unavail"></div>
+      </div>
+      <div class="result" id="run-result"><span class="small">결과가 여기에 표시된다: 응답, verdict, 마스킹 수, alias/백엔드, 소요 시간.</span></div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
     <div class="filters">
       <select id="kind">
         <option value="">모든 종류</option>
@@ -115,6 +146,46 @@ async function load() {
   $("#agents").innerHTML = sum.agents.map(a =>
     `<tr><td>${esc(a.agent)}${a.draining ? ' <span class="tag v-redact">draining</span>' : ""}</td><td>${esc(a.sandbox)}</td><td class="small">${esc((a.groups || []).join(","))}</td><td class="small">${esc(a.alias)}</td></tr>`).join("");
 }
+let SAMPLES = [], TARGETS = [], SANDBOXES = null;
+async function loadRunner() {
+  const [sm, sb] = await Promise.all([fetch("/audit/api/samples").then(r => r.json()), fetch("/audit/api/sandboxes").then(r => r.json()).catch(() => null)]);
+  SAMPLES = sm.samples; TARGETS = sm.targets; SANDBOXES = sb ? sb.sandboxes : null;
+  $("#run-target").innerHTML = TARGETS.map(t => `<option value="${esc(t.id)}">${esc(t.label)}</option>`).join("");
+  $("#run-sample").innerHTML = `<option value="">샘플 질문 선택…</option>` + SAMPLES.map(s => `<option value="${esc(s.id)}">${esc(s.title)}</option>`).join("");
+  updateAvail();
+}
+function updateAvail() {
+  const t = TARGETS.find(x => x.id === $("#run-target").value);
+  if (!t || !SANDBOXES) { $("#run-unavail").textContent = ""; return; }
+  $("#run-unavail").textContent = (t.sandbox && !SANDBOXES.includes(t.sandbox)) ? `샌드박스 ${t.sandbox} 가 아직 없다 (make bootstrap 필요)` : "";
+}
+$("#run-sample").onchange = () => {
+  const s = SAMPLES.find(x => x.id === $("#run-sample").value); if (!s) return;
+  $("#run-text").value = s.text; $("#run-channel").value = s.channel; $("#run-target").value = s.target;
+  $("#run-expect").textContent = s.expect ? "기대: " + s.expect : ""; updateAvail();
+};
+$("#run-target").onchange = updateAvail;
+$("#run-btn").onclick = async () => {
+  const text = $("#run-text").value.trim(); if (!text) return;
+  const btn = $("#run-btn"); btn.disabled = true; const t0 = Date.now();
+  $("#run-status").textContent = "실행 중…"; $("#run-result").innerHTML = `<span class="small">대기 중 (로컬 모델 턴은 수십 초, hosted 턴은 최대 90초)</span>`;
+  const tick = setInterval(() => { $("#run-status").textContent = `실행 중… ${((Date.now() - t0) / 1000).toFixed(0)}s`; }, 1000);
+  try {
+    const r = await fetch("/audit/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, channel: $("#run-channel").value, target: $("#run-target").value, sample_id: $("#run-sample").value || undefined }) });
+    const d = await r.json();
+    const red = d.redactions ? JSON.stringify(d.redactions) : "-";
+    $("#run-result").innerHTML =
+      `<div class="row"><span class="tag v-${esc(d.verdict || (r.ok ? "ok" : "error"))}">${esc(d.verdict || (r.ok ? "ok" : "error"))}</span>` +
+      `<span class="small">HTTP ${r.status} · ${esc(d.channel || "")}/${esc(d.profile || "")} · target=${esc(d.target || "")}` +
+      `${d.alias ? " · alias=" + esc(d.alias) : ""}${d.backend ? " · " + esc(d.backend) : ""}${d.sandbox ? " · " + esc(d.sandbox) : ""}${d.route ? " · " + esc(d.route) : ""} · ${d.ms ?? "?"}ms · 마스킹 ${esc(red)}${d.blocked_by ? " · blocked_by=" + esc(d.blocked_by) : ""}</span></div>` +
+      `<div class="reply">${esc(d.reply || d.error || d.code || JSON.stringify(d).slice(0, 400))}</div>` +
+      (d.censor && d.censor.stages ? `<div class="small">censor stages: ${esc(d.censor.stages.map(s => `${s.id}=${s.verdict}(${s.ms}ms)`).join(", "))}</div>` : "");
+    $("#run-status").textContent = r.ok ? `완료 ${((Date.now() - t0) / 1000).toFixed(1)}s` : `실패 ${((Date.now() - t0) / 1000).toFixed(1)}s`;
+  } catch (e) { $("#run-status").textContent = "오류: " + e; }
+  finally { clearInterval(tick); btn.disabled = false; load(); }
+};
+loadRunner();
 $("#refresh").onclick = load; $("#kind").onchange = load; $("#session").onchange = load;
 setInterval(() => { if ($("#auto").checked) load(); }, 5000);
 load();

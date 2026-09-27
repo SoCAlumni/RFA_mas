@@ -208,6 +208,12 @@ def cmd_requests(args) -> int:
     return requests_main(args)
 
 
+def cmd_kb_seed(args) -> int:
+    from rfa_mas.nemoclaw.kb import main as kb_main
+
+    return kb_main()
+
+
 def cmd_audit(args) -> int:
     from rfa_mas.nemoclaw import audit
 
@@ -248,6 +254,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("requests"); p.add_argument("action", choices=["list", "approve", "deny", "sync"])
     p.add_argument("request_id", nargs="?"); p.add_argument("--sandbox"); p.add_argument("--reason", default="")
     p.set_defaults(func=cmd_requests)
+    sub.add_parser("kb-seed", help="seed synthetic public notes into the local KB the intranet API serves").set_defaults(func=cmd_kb_seed)
     p = sub.add_parser("audit"); p.add_argument("--limit", type=int, default=50); p.add_argument("--kind")
     p.set_defaults(func=cmd_audit)
     return parser

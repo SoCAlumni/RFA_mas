@@ -28,8 +28,12 @@ from rfa_mas.nemoclaw.config import Assignments, Routing
 from rfa_mas.nemoclaw.markers import make_marker, strip_markers
 from rfa_mas.nemoclaw.runner import Runner, extract_json
 
+import httpx
+import yaml
+
 SESSION_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
 AUDIT_HTML = Path(__file__).with_name("audit.html")
+SAMPLES_PATH = Path(__file__).resolve().parents[3] / "deploy" / "nemoclaw" / "samples.yaml"
 
 
 @dataclass
@@ -41,6 +45,9 @@ class Entry:
     secret: bytes
     runner: Runner
     replay: bool = False
+    proxy_key: str | None = None
+    proxy_url: str = "http://127.0.0.1:8797/v1/chat/completions"
+    _sandboxes_cache: tuple[float, list[str]] = (0.0, [])
 
     def app(self) -> Starlette:
         return Starlette(routes=[
@@ -49,6 +56,9 @@ class Entry:
             Route("/audit/", self.audit_page, methods=["GET"]),
             Route("/audit/api/events", self.audit_events, methods=["GET"]),
             Route("/audit/api/summary", self.audit_summary, methods=["GET"]),
+            Route("/audit/api/samples", self.samples, methods=["GET"]),
+            Route("/audit/api/run", self.run_sample, methods=["POST"]),
+            Route("/audit/api/sandboxes", self.sandboxes, methods=["GET"]),
             Route("/broker/admin/drain/{agent}", self.drain, methods=["POST"]),
             Route("/broker/admin/undrain/{agent}", self.undrain, methods=["POST"]),
             Route("/broker/admin/state", self.broker_state, methods=["GET"]),
@@ -63,23 +73,29 @@ class Entry:
 
     async def chat(self, request: Request) -> Response:
         channel = request.path_params["channel"]
-        spec = self.routing.channels.get(channel)
-        if spec is None:
-            return JSONResponse({"code": "unknown_channel", "channels": sorted(self.routing.channels)}, status_code=404)
         try:
             body = await request.json()
         except ValueError:
             return JSONResponse({"code": "invalid_json"}, status_code=400)
-        text = str(body.get("text") or "").strip()
+        status, payload = await self.run_channel(channel, str(body.get("text") or ""), body.get("session_id"))
+        return JSONResponse(payload, status_code=status)
+
+    async def run_channel(self, channel: str, text: str, session_id: str | None) -> tuple[int, dict]:
+        """The channel API: fix the session's channel, plant the signed marker, run the assistant,
+        censor the final reply with the channel profile (same function as the proxy)."""
+        spec = self.routing.channels.get(channel)
+        if spec is None:
+            return 404, {"code": "unknown_channel", "channels": sorted(self.routing.channels)}
+        text = text.strip()
         if not text or len(text) > 10000:
-            return JSONResponse({"code": "text_required"}, status_code=422)
-        sid = body.get("session_id") or f"s_{uuid.uuid4().hex[:12]}"
+            return 422, {"code": "text_required"}
+        sid = session_id or f"s_{uuid.uuid4().hex[:12]}"
         if not SESSION_ID.match(str(sid)):
-            return JSONResponse({"code": "invalid_session_id"}, status_code=422)
+            return 422, {"code": "invalid_session_id"}
         started = time.monotonic()
         stored = audit.session_channel(sid)
         if stored is not None and stored != channel:
-            return JSONResponse({"code": "session_channel_mismatch", "session_channel": stored}, status_code=409)
+            return 409, {"code": "session_channel_mismatch", "session_channel": stored}
         audit.remember_session(sid, channel, spec.profile)
         marker = make_marker("channel", {"ch": channel, "sid": sid}, self.secret)
         message = f"{marker}\n{text}"
@@ -95,11 +111,12 @@ class Entry:
                      agent="assistant", session_id=sid,
                      detail={"ms": ms, "redactions": result.redactions, "stages": [s.id for s in result.stages],
                              "text_chars": len(text)})
-        return JSONResponse({
+        return (201 if status == "ok" else 502), {
             "session_id": sid, "channel": channel, "profile": spec.profile, "alias": spec.alias,
             "reply": reply, "verdict": result.verdict, "redactions": result.redactions,
-            "censor": result.summary(), "status": status, "ms": ms,
-        }, status_code=201 if status == "ok" else 502)
+            "censor": result.summary(), "status": status, "ms": ms, "target": "assistant",
+            "sandbox": self.routing.entry.assistant_sandbox,
+        }
 
     def _assistant_turn(self, sid: str, message: str) -> tuple[str, str]:
         cfg = self.routing.entry
@@ -120,6 +137,109 @@ class Entry:
         if not result.ok and not text:
             return f"assistant turn failed (rc={result.returncode})", "error"
         return strip_markers(text) or "(empty reply)", "ok"
+
+    # ---- dashboard test runner ------------------------------------------------------------------
+
+    def load_samples(self) -> list[dict]:
+        try:
+            data = yaml.safe_load(SAMPLES_PATH.read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError):
+            return []
+        return [s for s in data.get("samples", []) if isinstance(s, dict) and s.get("id") and s.get("text")]
+
+    async def samples(self, request: Request) -> Response:
+        return JSONResponse({"samples": self.load_samples(), "targets": self.targets()})
+
+    def targets(self) -> list[dict]:
+        out = [{"id": "assistant", "label": "assistant (채널 API 전 구간)", "sandbox": self.routing.entry.assistant_sandbox}]
+        for agent_id, spec in self.assignments.agents.items():
+            if spec.kind == "task":
+                out.append({"id": f"agent:{agent_id}", "label": f"{agent_id} (브로커 직접)",
+                            "sandbox": self.assignments.sandbox_for(agent_id)})
+        out.append({"id": "proxy", "label": "proxy (egress-proxy 직접, 가장 빠름)", "sandbox": None})
+        return out
+
+    async def sandboxes(self, request: Request) -> Response:
+        """Registered sandboxes (cached 30 s) so the dashboard can grey out unavailable targets."""
+        now = time.monotonic()
+        stamp, names = self._sandboxes_cache
+        if now - stamp > 30:
+            names = await asyncio.to_thread(self._list_sandboxes)
+            self._sandboxes_cache = (now, names)
+        return JSONResponse({"sandboxes": names, "declared": self.assignments.ordered_sandboxes()})
+
+    def _list_sandboxes(self) -> list[str]:
+        result = self.runner.run([self.assignments.host.nemoclaw_bin, "list", "--json"], timeout=60)
+        if not result.ok:
+            return []
+        try:
+            return sorted(e["name"] for e in extract_json(result.stdout).get("sandboxes", []))
+        except (ValueError, AttributeError, KeyError):
+            return []
+
+    async def run_sample(self, request: Request) -> Response:
+        """Run one sample (or free text) against a target and return the reply plus the censor
+        summary; every hop still records to the audit ledger like a real request."""
+        try:
+            body = await request.json()
+        except ValueError:
+            return JSONResponse({"code": "invalid_json"}, status_code=400)
+        sample = next((s for s in self.load_samples() if s["id"] == body.get("sample_id")), {})
+        channel = str(body.get("channel") or sample.get("channel") or self.routing.entry.default_channel)
+        target = str(body.get("target") or sample.get("target") or "assistant")
+        text = str(body.get("text") or sample.get("text") or "").strip()
+        sid = body.get("session_id") or f"ui_{uuid.uuid4().hex[:10]}"
+        spec = self.routing.channels.get(channel)
+        if spec is None or not text:
+            return JSONResponse({"code": "channel_and_text_required"}, status_code=422)
+        started = time.monotonic()
+        if target == "assistant":
+            status, payload = await self.run_channel(channel, text, sid)
+            return JSONResponse(payload, status_code=200 if status == 201 else status)
+        if target.startswith("agent:"):
+            agent = target.split(":", 1)[1]
+            audit.remember_session(sid, channel, spec.profile)
+            result = await self.broker.ask(agent, text, sid, None)
+            censored = await asyncio.to_thread(self.pipeline.run, str(result.get("reply", "")), spec.profile)
+            reply = censored.text if censored.verdict != "block" else f"[RFA censor blocked the reply: {censored.blocked_by}]"
+            audit.record(kind="channel", verdict=censored.verdict if result.get("ok") else "error", action="dashboard-agent",
+                         channel=channel, profile=spec.profile, sandbox=result.get("sandbox"), agent=agent, session_id=sid,
+                         detail={"ms": int((time.monotonic() - started) * 1000), "redactions": censored.redactions,
+                                 "route": result.get("route")})
+            return JSONResponse({**result, "reply": reply, "verdict": censored.verdict, "redactions": censored.redactions,
+                                 "censor": censored.summary(), "channel": channel, "profile": spec.profile,
+                                 "target": target, "ms": int((time.monotonic() - started) * 1000),
+                                 "status": "ok" if result.get("ok") else "error"},
+                                status_code=200 if result.get("ok") else 502)
+        if target == "proxy":
+            if not self.proxy_key:
+                return JSONResponse({"code": "proxy_key_unavailable"}, status_code=503)
+            audit.remember_session(sid, channel, spec.profile)
+            marker = make_marker("channel", {"ch": channel, "sid": sid}, self.secret)
+            payload = {"model": self.routing.proxy.default_mode, "max_tokens": 300,
+                       "messages": [{"role": "user", "content": f"{marker}\n{text}"}]}
+            try:
+                async with httpx.AsyncClient(timeout=self.routing.entry.hosted_turn_timeout_seconds + 10) as client:
+                    response = await client.post(self.proxy_url, json=payload,
+                                                 headers={"Authorization": f"Bearer {self.proxy_key}"})
+            except httpx.HTTPError as exc:
+                return JSONResponse({"code": "proxy_unreachable", "error": type(exc).__name__}, status_code=502)
+            ms = int((time.monotonic() - started) * 1000)
+            if response.status_code != 200:
+                return JSONResponse({"code": "proxy_error", "status": response.status_code, "body": response.text[:300],
+                                     "ms": ms}, status_code=502)
+            data = response.json()
+            content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+            events = audit.query(kind="inference", session_id=sid, limit=1)
+            event = events[0] if events else {}
+            detail = event.get("detail", {})
+            return JSONResponse({"reply": content, "verdict": event.get("verdict"), "channel": channel,
+                                 "profile": spec.profile, "target": "proxy", "alias": detail.get("alias"),
+                                 "backend": detail.get("backend"), "upstream_model": detail.get("upstream_model"),
+                                 "redactions": {"request": detail.get("request_redactions", 0),
+                                                "response": detail.get("response_redactions", 0)},
+                                 "blocked_by": detail.get("blocked_by"), "session_id": sid, "ms": ms, "status": "ok"})
+        return JSONResponse({"code": "unknown_target", "targets": [t["id"] for t in self.targets()]}, status_code=422)
 
     # ---- audit screen -------------------------------------------------------------------------
 

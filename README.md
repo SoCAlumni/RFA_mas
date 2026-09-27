@@ -136,6 +136,11 @@ make demo        # demo/01..05 (기본 --replay; DEMO_MODE=live 로 라이브 �
 make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 ```
 
+**대시보드에서 바로 테스트**: <http://127.0.0.1:8799/audit/> 상단 "테스트 실행" 패널에서 채널(internal/external)·대상(assistant / 각 task 에이전트 / proxy)을 고르고
+[`deploy/nemoclaw/samples.yaml`](deploy/nemoclaw/samples.yaml)의 샘플 질문을 선택해 실행한다. 응답·verdict·마스킹 수·alias/백엔드·소요 시간이 표시되고,
+같은 화면 아래 감사 로그에 모든 hop(channel → broker → inference)이 남는다. 샘플이 참조하는 사내 지식은
+[`deploy/nemoclaw/kb/sg_kb_seed.jsonl`](deploy/nemoclaw/kb/sg_kb_seed.jsonl)을 `make kb-seed`(bootstrap 에 포함)로 knowledge facade 의 KB 에 넣는다(합성·public).
+
 컨트롤러 명령(`python -m rfa_mas.nemoclaw …`, 또는 스킬 [`nemoclaw-security-groups`](deploy/nemoclaw/skills/nemoclaw-security-groups/SKILL.md)):
 `validate` · `render` · `plan` · `apply` · `status` · `verify-baseline` · `explain` · `seed` · `bootstrap` · `teardown` ·
 `switch-route <mode> [--force-openshell]` · `serve [--replay]` · `relocate <agent> --to-groups … [--wipe]` ·
