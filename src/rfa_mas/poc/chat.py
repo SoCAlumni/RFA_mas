@@ -14,7 +14,7 @@ from pathlib import Path
 import httpx
 
 from rfa_mas.application.chat import ChatMessage, chat_intent
-from rfa_mas.application.graphs.supervisor import PATTERN_OUTPUTS
+from rfa_mas.application.graphs.supervisor import BENCHMARK_TERMS, PATTERN_OUTPUTS
 from rfa_mas.contracts import (
     Audience,
     DirectWorkRequest,
@@ -172,6 +172,9 @@ class LocalChat:
 
     async def send(self, session_id, body: ChatMessage, *, emit=None):
         await self.call("GET", f"/v1/sessions/{session_id}")
+        if body.task_id:
+            # Reject an unknown/foreign/unavailable explicit assignee before any ledger write.
+            await self.router.resolve(body)
         fingerprint = sha256_text(body.model_dump_json())
         intent = chat_intent(body.text)
         # Storage bucket is not a worker assignment. Legacy DB's domain is NOT NULL.
@@ -234,11 +237,25 @@ class LocalChat:
 
         source_id = run_id = None
         try:
-            await stage(
-                "understanding", "입력 이해 중" if intent == "store_note" else "질문 이해 중"
-            )
+            first = {"store_note": "입력 이해 중", "task_run": "요청 이해 중"}
+            await stage("understanding", first.get(intent, "질문 이해 중"))
             route = await self.router.resolve(body)
             domain = route["domain_id"] or domain
+            if intent == "task_run" and route["kind"] != "task":
+                # Explicit research/benchmark request with no suitable existing Task team:
+                # the core Supervisor creates exactly one durable Task + team for it.
+                lowered = body.text.lower()
+                route = {
+                    "kind": "new_task",
+                    "label": "새 Task 팀 구성",
+                    "reason": "explicit_task_request_no_match",
+                    "domain_id": domain,
+                    "task_id": None,
+                    "team_id": None,
+                    "pattern": "benchmark"
+                    if any(t in lowered for t in BENCHMARK_TERMS)
+                    else "research",
+                }
             with self.connect() as db:
                 db.execute(
                     "UPDATE chat_turns SET route_json=?,domain_id=? "
@@ -248,8 +265,15 @@ class LocalChat:
             label = route["label"]
             if route["kind"] == "assistant":
                 label = "적합한 담당자 없음 또는 후보 모호 · " + label
+            elif route["kind"] == "new_task":
+                label = "적합한 기존 Task 팀 없음 · " + label
             await stage("routing", "담당자 확인: " + label)
-            await stage("preparing", "자료 저장 준비" if intent == "store_note" else "답변 준비")
+            await stage(
+                "preparing",
+                {"store_note": "자료 저장 준비", "task_run": "Task 팀 실행 준비"}.get(
+                    intent, "답변 준비"
+                ),
+            )
             if intent == "store_note":
                 key = sha256_text(json.dumps([session_id, body.message_id]))
                 write = KnowledgeWrite(
@@ -273,7 +297,7 @@ class LocalChat:
                         (json.dumps(refs), session_id, body.message_id),
                     )
                 status = "answered"
-            elif intent in {"query", "external_draft"}:
+            elif intent in {"query", "external_draft", "task_run"}:
                 # Conversation != execution thread. An unapproved draft must not
                 # prevent a later question, nor be auto-approved to unlock a thread.
                 execution = await self.call("POST", "/v1/sessions", {})
@@ -296,6 +320,12 @@ class LocalChat:
                         outputs=PATTERN_OUTPUTS[pattern],
                         requested_pattern=pattern,
                     )
+                elif route["kind"] == "new_task":
+                    team = TeamExecutionRequest(
+                        goal=body.text[:2000],
+                        outputs=PATTERN_OUTPUTS[route["pattern"]],
+                        requested_pattern=route["pattern"],
+                    )
                 work = DirectWorkRequest(
                     query=body.text,
                     session_id=execution_id,
@@ -311,6 +341,22 @@ class LocalChat:
                     "POST", f"/v1/sessions/{execution_id}/work", work.model_dump(mode="json")
                 )
                 run_id, status = run["run_id"], "answered"
+                if route["kind"] == "new_task":
+                    # Record the durable Task/team the core actually created for this Run.
+                    with suppress(RfaError):
+                        created = await self.call("GET", f"/v1/runs/{run_id}/team")
+                        route = route | {
+                            "task_id": created["task_id"],
+                            "team_id": created["team_id"],
+                            "pattern": created["pattern"],
+                            "label": body.text[:80],
+                        }
+                        with self.connect() as db:
+                            db.execute(
+                                "UPDATE chat_turns SET route_json=? "
+                                "WHERE session_id=? AND message_id=?",
+                                (json.dumps(route), session_id, body.message_id),
+                            )
             else:
                 status = "clarify"
         except (Exception, asyncio.CancelledError):
@@ -335,7 +381,12 @@ class LocalChat:
             )
         result = await self.present(row)
         result["stages"].append(
-            await stage("completed", "저장 완료" if status == "stored" else "답변")
+            await stage(
+                "completed",
+                "저장 완료"
+                if status == "stored"
+                else ("Task 팀 결과" if row["intent"] == "task_run" else "답변"),
+            )
         )
         return result
 
@@ -373,8 +424,17 @@ class LocalChat:
         elif row["run_id"]:
             run = (await self.call("GET", f"/v1/runs/{row['run_id']}"))["result"]
             result["run"] = run
+            if result["route"].get("kind") in {"task", "new_task"}:
+                with suppress(RfaError):
+                    team = await self.call("GET", f"/v1/runs/{row['run_id']}/team")
+                    result["team"] = {
+                        k: team[k]
+                        for k in ("task_id", "team_id", "pattern", "status", "simulated", "summary")
+                    }
             if run and run.get("draft"):
                 result["reply"] = run["draft"]["content"]
+            elif result.get("team") and result["team"]["summary"]:
+                result["reply"] = result["team"]["summary"]
             else:
                 result["reply"] = (
                     "현재 허용된 자료로 답변을 만들 수 없어요. 자료나 질문을 확인해 주세요."

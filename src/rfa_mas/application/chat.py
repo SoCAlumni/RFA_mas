@@ -18,6 +18,8 @@ class ChatMessage(BaseModel):
     text: str = Field(min_length=1, max_length=10000)
     message_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,160}$")
     domain_id: DomainId | None = None
+    # Explicit Task-team assignee. Ownership is re-checked server-side; never trusted as-is.
+    task_id: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9_.:-]{1,160}$")
 
 
 class ChatPort(Protocol):
@@ -28,6 +30,21 @@ class ChatPort(Protocol):
     async def send(self, session_id: str, body: ChatMessage) -> dict: ...
 
     async def stream(self, session_id: str, body: ChatMessage) -> AsyncIterator[dict]: ...
+
+
+# Action verbs only (same family as the core Supervisor's task rule). A question that merely
+# mentions a benchmark stays a query; only an explicit request starts a Task team.
+TASK_RUN_TERMS = (
+    "검증해",
+    "분석해",
+    "조사해",
+    "비교해",
+    "실험해",
+    "연구해",
+    "벤치마크 돌려",
+    "run benchmark",
+    "investigate",
+)
 
 
 def chat_intent(text: str) -> str:
@@ -47,6 +64,8 @@ def chat_intent(text: str) -> str:
         return "clarify"
     if any(t in text for t in ("공개 초안", "공개 답변", "외부 공유", "고객 답변")):
         return "external_draft"
+    if any(t in text for t in TASK_RUN_TERMS):
+        return "task_run"
     if any(
         t in text
         for t in (

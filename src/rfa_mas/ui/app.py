@@ -468,6 +468,14 @@ def create_local_ui_app(
             except RfaError as exc:
                 raise UiError(409, "upstream_rejected", upstream_code=exc.code) from None
 
+        @app.get("/ui/api/chat/assignees")
+        async def chat_assignees() -> Any:
+            """Owner's Task teams for the assignee picker (read-only; ownership re-checked)."""
+            try:
+                return await chat.router.assignees()
+            except RfaError as exc:
+                raise UiError(409, "upstream_rejected", upstream_code=exc.code) from None
+
         @app.get("/ui/api/sessions/{session_id}/chat")
         async def chat_history(session_id: str) -> Any:
             try:
@@ -499,8 +507,11 @@ def create_local_ui_app(
             try:
                 events = await chat.stream(_path_id(session_id), body)
             except RfaError as exc:
-                raise UiError(404 if exc.code == "not_found" else 409,
-                              "upstream_rejected", upstream_code=exc.code) from None
+                raise UiError(
+                    404 if exc.code == "not_found" else 409,
+                    "upstream_rejected",
+                    upstream_code=exc.code,
+                ) from None
 
             async def encode():
                 try:
@@ -509,8 +520,11 @@ def create_local_ui_app(
                 finally:
                     await events.aclose()
 
-            return StreamingResponse(encode(), media_type="application/x-ndjson",
-                                     headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+            return StreamingResponse(
+                encode(),
+                media_type="application/x-ndjson",
+                headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+            )
 
     @app.get("/ui/api/reviews")
     async def list_reviews(
