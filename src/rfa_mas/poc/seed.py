@@ -89,13 +89,15 @@ async def seed(client: httpx.AsyncClient, fixture: dict) -> dict:
                 )
             )
             route = result["route"]
-            if route.get("kind") != "new_task" or not route.get("task_id"):
+            if route.get("kind") not in {"new_task", "task"} or not route.get("task_id"):
                 raise RuntimeError(
                     f"{task['key']}: expected a new Task team, got route {route.get('kind')}"
                     f"/{route.get('reason')}"
                 )
+            # An owner Task whose goal already covers this subject is reused, never duplicated.
             entry.update(
-                created=True,
+                created=route["kind"] == "new_task",
+                reused_via=None if route["kind"] == "new_task" else route.get("reason"),
                 session_id=session["session_id"],
                 run_id=result["run_id"],
                 team_status=(result.get("team") or {}).get("status"),

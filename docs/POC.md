@@ -133,7 +133,7 @@ uv run python -m rfa_mas.poc.seed --url http://127.0.0.1:8780 --fixture fixtures
 합성 자료 14건(TRIV3 오로라 벤치마크 로그/기준/논문 메모, 양자화 네뷸라 논문/가설/계획)을 비공개로
 저장하고, 명시 요청 2건(`…검증해줘`, `…조사해줘`)을 채팅 경로로 보내 core Supervisor가
 benchmark/research Task 팀을 각각 하나씩 만들게 한 뒤 fixture 링크와 주제 일치 자료를 연결한다.
-같은 key 재실행은 자료·Task를 다시 만들지 않는다. loopback URL만 허용하며 실제 실측·모델·게시가 아니다.
+같은 key 재실행은 자료·Task를 다시 만들지 않고, 같은 주제를 이미 맡은 소유자 Task 팀이 있으면 그 팀을 재사용해 연결한다. loopback URL만 허용하며 실제 실측·모델·게시가 아니다.
 
 기본 UI는 채팅 저장·검색·공개 초안·수동 검토·모의 게시·팀 에이전트 현황 범위다. 예약 화면은 없다.
 팀·예약의 기존 core API와 `uv run rfa demo --full`은 별도 경로로 유지된다.
