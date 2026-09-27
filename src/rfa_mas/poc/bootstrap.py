@@ -84,7 +84,6 @@ def local_settings(
             nvidia_api_key=source.nvidia_api_key,
             nvidia_max_output_tokens=source.nvidia_max_output_tokens,
             http_timeout_seconds=source.http_timeout_seconds,
-            tool_timeout_seconds=max(source.tool_timeout_seconds, 120.0),
             allow_external_egress=True,
         )
     elif model != "mock":
