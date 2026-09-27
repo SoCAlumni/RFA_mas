@@ -209,8 +209,8 @@ def onboard(sandbox: str, manifest: Path, env: dict[str, str], runner: Runner, n
         "--non-interactive (provider=custom → egress-proxy, tier=restricted)")
     started = time.monotonic()
     result = runner.run(
-        [nemoclaw_bin, "onboard", "--name", sandbox, "--agents", str(manifest), "--non-interactive",
-         "--yes-i-accept-third-party-software"],
+        [nemoclaw_bin, "onboard", "--fresh", "--name", sandbox, "--agents", str(manifest), "--non-interactive",
+         "--yes-i-accept-third-party-software"],  # --fresh: ignore a stale session left by another sandbox
         timeout=2400, env=env,
     )
     took = round(time.monotonic() - started)

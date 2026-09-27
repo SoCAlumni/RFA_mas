@@ -159,7 +159,7 @@ class Entry:
     def targets(self) -> list[dict]:
         out = [{"id": "assistant", "label": "assistant (채널 API 전 구간)", "sandbox": self.routing.entry.assistant_sandbox}]
         for agent_id, spec in self.assignments.agents.items():
-            if spec.kind == "task":
+            if spec.kind == "task" and spec.delegatable:  # the censor is not a delegation target
                 out.append({"id": f"agent:{agent_id}", "label": f"{agent_id} (브로커 직접)",
                             "sandbox": self.assignments.sandbox_for(agent_id)})
         out.append({"id": "proxy", "label": "proxy (egress-proxy 직접, 가장 빠름)", "sandbox": None})
