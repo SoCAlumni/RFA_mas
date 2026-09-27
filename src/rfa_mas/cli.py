@@ -810,8 +810,15 @@ async def _scheduler(args: argparse.Namespace, settings: Settings) -> int:
                 raise
             print(json.dumps({"code": exc.code}))
             return 3
-        print(json.dumps({"status": "scheduler_running", "jobs": len(runner.jobs()),
-                          "sync": runner.last_sync}))
+        print(
+            json.dumps(
+                {
+                    "status": "scheduler_running",
+                    "jobs": len(runner.jobs()),
+                    "sync": runner.last_sync,
+                }
+            )
+        )
         stop = asyncio.Event()
         loop = asyncio.get_running_loop()
         signals = (signal.SIGINT, signal.SIGTERM)
@@ -936,9 +943,7 @@ def _evaluate_regression(args: argparse.Namespace) -> None:
         _reject("evaluation_configuration_rejected")
     try:
         run = asyncio.run(
-            run_persona_regression(
-                label=args.label, mode=args.mode, allow_actual=args.allow_actual
-            )
+            run_persona_regression(label=args.label, mode=args.mode, allow_actual=args.allow_actual)
         )
     except ValueError as exc:
         code = str(exc) if str(exc).startswith("evaluation_") else "evaluation_error"

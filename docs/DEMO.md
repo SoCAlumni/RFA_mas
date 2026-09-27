@@ -43,7 +43,7 @@ RFA_E2E_REPORT_DIR=/tmp/rfa-e2e-reports .venv/bin/python -m pytest -q tests/e2e
 
 - 보고서는 `$RFA_E2E_REPORT_DIR/<UTC 시각>-<id>/`에 시도별 JSON과 `summary.json`으로 쌓이고, 마지막 줄에 경로가 출력된다. 경로를 주지 않으면 pytest 임시 경로를 쓴다.
 - 키·GPU·Docker 없이 동작한다. IP 소켓과 DNS는 차단되며, 실제 앱 프로세스를 쓰는 E2E-10 테스트만 127.0.0.1 loopback을 연다.
-- `tests/e2e/test_real_model.py`의 실제 모델 gate는 opt-in이다. `RFA_ENV_FILE=<명시한 env 파일의 절대 경로>`가 없거나 그 파일에 `NVIDIA_MODEL`/`NVIDIA_API_KEY`가 없으면 항목 3개를 not_run(P1-002A)으로 기록하고 이유와 함께 skip한다. 이 경우 전체 명령 결과에 skip 1건이 나온다. 같은 파일의 guard 자체 검사 2건은 항상 실행된다.
+- `tests/e2e/test_real_model.py`의 실제 모델 gate는 opt-in이다. `RFA_ENV_FILE=<명시한 env 파일의 절대 경로>`가 없거나 그 파일에 `NVIDIA_MODEL`/`NVIDIA_API_KEY`가 없으면 항목 3개를 not_run(P1-002A)으로 기록하고 이유와 함께 skip한다. 이 경우 전체 명령 결과에 skip 1건이 나온다. 같은 파일의 guard 자체 검사 3건은 항상 실행된다. skip을 전체 real gate 통과로 집계하지 않는다.
 
 ## 실제 모델 gate (opt-in)
 
@@ -83,4 +83,4 @@ gate는 서로 섞지 않는다.
 
 ## E2E-05
 
-controlled 모드는 적용하지 않는다. 실제 OpenShell 증거는 P1-007C 브랜치 `wip/P1-007C`의 `docs/evidence/openshell.md`(run `0926181417`)이며 이 하네스는 다시 실행하지 않는다. Supervisor 메시지 경계만 controlled로 검사한다.
+controlled 모드는 적용하지 않는다. 실제 standalone OpenShell 증거는 통합된 [OpenShell 기록](evidence/openshell.md)(P1-007C, run `0926181417`)이며 이 하네스는 다시 실행하지 않는다. Supervisor 메시지 경계만 controlled로 검사한다. standalone 역할 정책과 실제 RFA RuntimePort identity의 연결은 다른 gate다. [NemoClaw 운영 기록](evidence/nemoclaw.md)도 별도이며 host RFA backend는 sandbox 밖이다.
