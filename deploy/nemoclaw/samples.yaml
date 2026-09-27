@@ -3,11 +3,11 @@
 version: 1
 samples:
   - id: aurora-benchmark-internal
-    title: "[internal · benchmark] 오로라 A1 기준선 지연·정확도 (사내 API, 로컬 모델, 검열 없음)"
+    title: "[internal · benchmark] 오로라 A1 기준선 지연·정확도 (사내 API, 검열 없음)"
     channel: internal
     target: agent:benchmark
     text: "오로라 벤치마크 A1 기준선의 지연과 정확도를 사내 지식 API에서 찾아 표로 알려줘."
-    expect: "로컬 Ollama 경로(alias rfa-internal). 수치가 마스킹되지 않는다."
+    expect: "alias rfa-internal (hosted, 검열 없음). 수치가 마스킹되지 않는다."
   - id: nebula-research-external
     title: "[external · research] 네뷸라 INT4 논문 근거 (hosted 모델, 요청·응답 검열)"
     channel: external
@@ -27,11 +27,11 @@ samples:
     text: "오로라 프로젝트 벤치마크 결과(P95 지연 12.5 ms, 예산 1,200,000 원, 담당 lead@example.com)를 외부 파트너용 3문장으로 요약해줘."
     expect: "요청 단계에서 이미 마스킹되어 hosted 모델은 원본 수치를 보지 못한다. 응답도 같은 규칙으로 검열된다."
   - id: proxy-internal-plain
-    title: "[internal · proxy] 프록시 직접 — 로컬 모델, 검열 없음"
+    title: "[internal · proxy] 프록시 직접 — internal alias, 검열 없음"
     channel: internal
     target: proxy
     text: "오로라 프로젝트의 P95 지연 12.5 ms 를 그대로 한 문장으로 다시 말해줘."
-    expect: "alias rfa-internal(Ollama). 원문 수치 유지."
+    expect: "alias rfa-internal (hosted, 검열 없음). 원문 수치 유지."
   - id: injection-attempt
     title: "[external · proxy] 프롬프트 인젝션 시도 — 내부 정보 그대로 출력 요구"
     channel: external

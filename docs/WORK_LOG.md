@@ -1139,3 +1139,12 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 현재 `/ask`: `AskService.submit` 이 `ask_with_timeout` 을 동기로 실행, 같은 `request_id` 는 첫 결과를 기다려 그대로 돌려준다(캐시 TTL `server.result_ttl_seconds`). 계약에서 `QueuedResponse`·`queue_full` 제거, `GET /ask/{request_id}` 제거 → `make openapi` 재생성. desk 목업은 폴링 없이 동기 호출(`--ask-timeout`).
 - 검증: `make test` 85 passed, `make mock-e2e`(fake) 4/4 PASS(01 allow/승인 15ms · 02 redact · 03 redact · 04 2라운드 승인).
 - 병행 세션 주의: 같은 체크아웃에서 routing/proxy/bootstrap/config(Backend hosted-only)·검열 테스트가 수정 중(로컬 Ollama 제거, 전부 hosted build.nvidia.com). config.py 는 내 hunk(ServerConfig)만 스테이징해 커밋.
+
+## SG-7 — 로컬 LLM 제거, 전부 hosted `nemotron-3.5-lightning-30b-a3b` (2026-09-27 22:40)
+
+- 사용자 지시: 로컬 Nemotron(Ollama) 사용을 전부 삭제하고 hosted build.nvidia.com 의 `nvidia/nemotron-3.5-lightning-30b-a3b` 를 기본으로, 로컬 LLM 은 절대 쓰지 않는다.
+- `routing.yaml`: `ollama` 백엔드 삭제, `rfa-internal`/`rfa-external`/`rfa-censor` 세 alias 모두 `build` + lightning(external 은 super-120b 에서 교체). 채널·alias·검열 프로파일 구조와 exposure 순서는 그대로라 internal 은 여전히 검열 없음 — 단 이제 호스트 밖(NVIDIA)으로 나간다. `rfa-internal` route 모드는 더 이상 egress-0 kill switch 가 아니다.
+- 코드: `config.Backend` 에서 `kind: ollama`·`think`·`num_ctx` 제거, https + 비로컬 호스트만 허용하는 검증 추가(loopback·사설 IP·localhost·`.local`/`.internal` 거부). `proxy._upstream`/`_from_ollama`, `serve.DirectJudge` 의 Ollama 경로(검열 분류 호출에 `chat_template_kwargs` 추가), `bootstrap.check_ollama` 삭제.
+- 라이브: hosted lightning 단건 200/0.6초, tool call 200/6초(첫 시도 60초 timeout 1회). Ollama 모델 unload 후 Ollama 앱 종료(11434 closed). `make serve` 재기동 후 프록시 미귀속 → rfa-internal → build 3.9초, external 채널(검열 LLM direct 포함) 8.0초, 감사 `backend=build upstream_model=lightning`.
+- 검증: NemoClaw 관련 테스트 226 passed(`test_egress_proxy` 에 로컬 백엔드 거부·전 alias lightning 테스트 추가), `python -m rfa_mas.nemoclaw validate` problems 없음.
+- 남은 것: `src/rfa_mas/inbox`(PoC 계약의 `ollama_local` provider 라벨·fixture)는 실제 호출이 없는 참조 데이터라 유지. 위 README 라이브 결과 표의 Ollama 수치는 당시 기록으로 유지.

@@ -4,7 +4,7 @@ The OpenShell gateway forwards ``inference.local`` here with the route model nam
 and no sandbox identity, so the proxy attributes each request from signed in-band markers
 (channel marker in user messages, agent marker in the system prompt), resolves a model alias
 (``routing.yaml``), censors the request and the response for that alias's profile
-(``censors.yaml``) and forwards to the alias backend (local Ollama or build.nvidia.com).
+(``censors.yaml``) and forwards to the alias backend (hosted build.nvidia.com; no local LLM).
 The ``rfa-censor`` alias is hard-wired to bypass censoring so the censor LLM stage never recurses.
 """
 
@@ -194,29 +194,13 @@ class EgressProxy:
         headers = {"content-type": "application/json"}
         if backend.auth == "bearer":
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
-        if backend.kind == "ollama":
-            url = f"{backend.url.rstrip('/')}/api/chat"
-            payload: dict = {"model": alias.model, "messages": messages, "stream": False, "think": backend.think}
-            if body.get("tools"):
-                payload["tools"] = body["tools"]
-            options = {}
-            if backend.num_ctx:
-                options["num_ctx"] = backend.num_ctx
-            for key in ("temperature", "top_p"):
-                if key in body:
-                    options[key] = body[key]
-            if body.get("max_tokens"):
-                options["num_predict"] = body["max_tokens"]
-            if options:
-                payload["options"] = options
-        else:
-            url = f"{backend.url.rstrip('/')}/chat/completions"
-            payload = {k: v for k, v in body.items() if k not in ("stream", "stream_options")}
-            payload["model"] = alias.model
-            payload["messages"] = messages
-            payload["stream"] = False
-            if backend.chat_template_kwargs:
-                payload["chat_template_kwargs"] = dict(backend.chat_template_kwargs)  # top-level field (NVIDIA)
+        url = f"{backend.url.rstrip('/')}/chat/completions"
+        payload = {k: v for k, v in body.items() if k not in ("stream", "stream_options")}
+        payload["model"] = alias.model
+        payload["messages"] = messages
+        payload["stream"] = False
+        if backend.chat_template_kwargs:
+            payload["chat_template_kwargs"] = dict(backend.chat_template_kwargs)  # top-level field (NVIDIA)
         try:
             response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
         except httpx.HTTPError as exc:
@@ -227,8 +211,6 @@ class EgressProxy:
             data = response.json()
         except ValueError:
             return 502, {"error": {"message": "upstream returned non-JSON", "type": "upstream_error"}}
-        if backend.kind == "ollama":
-            data = _from_ollama(data, alias.model)
         return 200, data
 
     # ---- main route ------------------------------------------------------------------------
@@ -317,29 +299,6 @@ class EgressProxy:
             return JSONResponse(data)
         return StreamingResponse(_sse(data, mode), media_type="text/event-stream",
                                  headers={"cache-control": "no-cache"})
-
-
-def _from_ollama(data: dict, model: str) -> dict:
-    """Ollama /api/chat → OpenAI chat.completion (tool-call arguments become JSON strings)."""
-    message = data.get("message") or {}
-    calls = []
-    for i, call in enumerate(message.get("tool_calls") or []):
-        function = call.get("function") or {}
-        arguments = function.get("arguments")
-        calls.append({"id": call.get("id") or f"call_{uuid.uuid4().hex[:8]}", "type": "function",
-                      "function": {"name": function.get("name"),
-                                   "arguments": arguments if isinstance(arguments, str) else json.dumps(arguments or {}, ensure_ascii=False)}})
-    out_message: dict = {"role": "assistant", "content": message.get("content") or ""}
-    if calls:
-        out_message["tool_calls"] = calls
-    finish = "tool_calls" if calls else ("length" if data.get("done_reason") == "length" else "stop")
-    return {
-        "id": f"chatcmpl-{uuid.uuid4().hex[:12]}", "object": "chat.completion", "created": int(time.time()),
-        "model": model,
-        "choices": [{"index": 0, "message": out_message, "finish_reason": finish}],
-        "usage": {"prompt_tokens": data.get("prompt_eval_count", 0), "completion_tokens": data.get("eval_count", 0),
-                  "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0)},
-    }
 
 
 def _completion(model: str, text: str) -> dict:

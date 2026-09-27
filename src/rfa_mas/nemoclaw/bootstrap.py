@@ -153,14 +153,6 @@ def ensure_tls(tls_dir: Path, lan_ip: str, runner: Runner) -> Path:
 # --------------------------------------------------------------------------- preflight
 
 
-def check_ollama(model: str, runner: Runner) -> None:
-    result = runner.run(["ollama", "list"], timeout=30)
-    if not result.ok:
-        raise ConfigError("ollama is not running (start it, then re-run)")
-    if model.split(":")[0] not in result.stdout:
-        raise ConfigError(f"ollama model {model} not pulled (`ollama pull {model}`)")
-
-
 def check_health(url: str, name: str, attempts: int = 30, pause: float = 1.0) -> dict:
     last = ""
     for _ in range(attempts):
@@ -350,7 +342,6 @@ def bootstrap(options: BootstrapOptions, runner: Runner | None = None) -> dict:
     build = routing.backends["build"]
     if build.env_file:
         check_env_file(ROOT / build.env_file, build.credential_env or "NVIDIA_API_KEY")
-    check_ollama(routing.aliases[routing.proxy.unattributed_alias].model, runner)
     ca_bundle = None if options.skip_mcp else ensure_tls(ROOT / routing.broker.tls_dir, assignments.host.lan_ip, runner)
     proxy_port = routing.proxy.bind.rsplit(":", 1)[1]
     health = check_health(f"http://127.0.0.1:{proxy_port}/healthz", "egress-proxy", attempts=5)

@@ -48,9 +48,9 @@ profiles:
       - &external_llm
         id: llm
         type: llm
-        # runner: direct = 프록시가 rfa-censor alias(로컬 Ollama, egress 0)로 분류 프롬프트만 전송(실측 5초).
-        #         sandbox-agent = censor 에이전트(기본 샌드박스)의 OpenClaw 턴. 긴 시스템 프롬프트를 4B 로컬 모델이 매번
-        #         처리해 실측 60초 이상 → timeout 초과. 기본은 direct (WORK_LOG 참고).
+        # runner: direct = 프록시가 rfa-censor alias(hosted build.nvidia.com)로 분류 프롬프트만 전송.
+        #         sandbox-agent = censor 에이전트(기본 샌드박스)의 OpenClaw 턴. 긴 시스템 프롬프트를 매 턴 처리해
+        #         느리다 → timeout 초과 위험. 기본은 direct (WORK_LOG 참고).
         runner: direct
         sandbox: rfa-main            # censor 에이전트가 배치된 샌드박스 (기본 샌드박스; 별도 샌드박스 없음)
         agent: censor

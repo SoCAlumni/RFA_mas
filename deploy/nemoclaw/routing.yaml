@@ -13,29 +13,24 @@ proxy:
   marker_key_file: .local/sg/marker.key   # in-band 마커 HMAC 키 (0600)
   # 게이트웨이 route 모델명 = 전체 모드. 전환은 scripts: `python -m rfa_mas.nemoclaw switch-route <mode>`
   #   rfa-auto     : 마커(채널·에이전트)로 alias 결정 (정상 운영)
-  #   rfa-internal : 마커와 무관하게 전부 로컬 (kill switch, 외부 egress 0)
+  #   rfa-internal : 마커와 무관하게 전부 internal alias (검열 profile none)
   #   rfa-external : 마커 없는 요청도 external 로 (검열 필수) — 데모/검증용
+  # 로컬 LLM 은 쓰지 않는다: 모든 alias 가 hosted build.nvidia.com 으로 간다 (config.Backend 가 로컬 백엔드를 거부).
   default_mode: rfa-auto
-  unattributed_alias: rfa-internal        # 검증된 마커가 없는 요청의 안전 기본값(로컬)
+  unattributed_alias: rfa-internal        # 검증된 마커가 없는 요청의 기본값
 
 backends:
-  ollama:
-    kind: ollama                          # 네이티브 /api/chat: think 비활성 + num_ctx 지정 (OpenClaw 프롬프트가 김)
-    url: http://127.0.0.1:11434
-    auth: none
-    think: false
-    num_ctx: 32768
   build:
-    kind: openai
     url: https://integrate.api.nvidia.com/v1
     credential_env: NVIDIA_API_KEY        # 값은 env_file 에서만 읽는다 (0600, git-ignore 검증)
     env_file: .env.dev
     chat_template_kwargs: { enable_thinking: false }   # Nemotron hosted: 추론 텍스트를 응답에 섞지 않는다 (adapters/nvidia.py 와 동일)
 
+# exposure 는 alias 간 순서(작을수록 느슨한 검열)만 뜻한다. 세 alias 모두 같은 hosted 모델로 나간다.
 aliases:
-  rfa-internal: { backend: ollama, model: nemotron-3-nano:4b, censor: none,     exposure: 0 }
-  rfa-external: { backend: build,  model: nvidia/nemotron-3-super-120b-a12b, censor: external, exposure: 1 }
-  rfa-censor:   { backend: ollama, model: nemotron-3-nano:4b, censor: bypass,   exposure: 0 }   # 검열 LLM 자체. 재귀 방지 하드코딩 우회
+  rfa-internal: { backend: build, model: nvidia/nemotron-3.5-lightning-30b-a3b, censor: none,     exposure: 0 }
+  rfa-external: { backend: build, model: nvidia/nemotron-3.5-lightning-30b-a3b, censor: external, exposure: 1 }
+  rfa-censor:   { backend: build, model: nvidia/nemotron-3.5-lightning-30b-a3b, censor: bypass,   exposure: 0 }   # 검열 LLM 자체. 재귀 방지 하드코딩 우회
 
 channels:
   internal: { alias: rfa-internal, profile: none }

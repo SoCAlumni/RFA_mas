@@ -1,4 +1,4 @@
-"""Egress-proxy: auth, marker attribution, alias routing, request/response censoring, SSE, ollama."""
+"""Egress-proxy: auth, marker attribution, alias routing, censoring both ways, SSE, hosted-only."""
 
 from __future__ import annotations
 
@@ -15,10 +15,12 @@ from rfa_mas.nemoclaw.proxy import EgressProxy, attribute
 
 SECRET = b"k" * 48
 KEY = "proxy-test-key-0123456789"
+HOSTED_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b"
 
 
 class Upstream:
-    """Fake OpenAI/Ollama backends behind an httpx MockTransport."""
+    """Fake hosted OpenAI-compatible backend behind an httpx MockTransport."""
 
     def __init__(self, reply: str = "upstream reply", status: int = 200, tool_call: dict | None = None):
         self.reply, self.status, self.tool_call = reply, status, tool_call
@@ -29,12 +31,6 @@ class Upstream:
         self.requests.append((str(request.url), body | {"_auth": request.headers.get("authorization")}))
         if self.status != 200:
             return httpx.Response(self.status, json={"error": "nope"})
-        if request.url.path.endswith("/api/chat"):
-            message = {"role": "assistant", "content": self.reply}
-            if self.tool_call:
-                message["tool_calls"] = [{"function": self.tool_call}]
-            return httpx.Response(200, json={"message": message, "done_reason": "stop",
-                                             "prompt_eval_count": 5, "eval_count": 3})
         message = {"role": "assistant", "content": self.reply}
         if self.tool_call:
             message["tool_calls"] = [{"id": "call_1", "type": "function",
@@ -112,15 +108,16 @@ async def test_requires_bearer_and_lists_modes(routing):
         assert ids == ["rfa-auto", "rfa-censor", "rfa-external", "rfa-internal"]
 
 
-async def test_unattributed_requests_stay_local_and_unfiltered(routing):
+async def test_unattributed_requests_use_the_internal_alias_unfiltered(routing):
     upstream = Upstream("오로라 12.5 ms")
     proxy = make_proxy(routing, upstream)
     async with client_for(proxy) as c:
         r = await c.post("/v1/chat/completions", json={"model": "rfa-auto", "messages": [{"role": "user", "content": "오로라 지연은?"}]})
     assert r.status_code == 200 and r.json()["choices"][0]["message"]["content"] == "오로라 12.5 ms"
     url, body = upstream.requests[0]
-    assert url.endswith("/api/chat") and body["model"] == "nemotron-3-nano:4b" and body["think"] is False
-    assert body["options"]["num_ctx"] == 32768 and body["_auth"] is None
+    assert url == HOSTED_URL and body["model"] == LIGHTNING
+    assert body["_auth"] == "Bearer nvapi-fake"
+    assert body["messages"][0]["content"] == "오로라 지연은?"
     event = audit.query(kind="inference")[0]
     assert event["detail"]["alias"] == "rfa-internal" and event["detail"]["reason"] == "unattributed"
 
@@ -137,7 +134,7 @@ async def test_external_channel_routes_to_hosted_model_with_censoring_both_ways(
     assert r.status_code == 200
     url, sent = upstream.requests[0]
     assert url == "https://integrate.api.nvidia.com/v1/chat/completions"
-    assert sent["model"] == "nvidia/nemotron-3-super-120b-a12b" and sent["_auth"] == "Bearer nvapi-fake"
+    assert sent["model"] == LIGHTNING and sent["_auth"] == "Bearer nvapi-fake"
     assert "1,200,000" not in sent["messages"][1]["content"] and "[REDACTED:project]" in sent["messages"][1]["content"]
     assert channel_marker("external") in sent["messages"][1]["content"]  # marker survives redaction
     content = r.json()["choices"][0]["message"]["content"]
@@ -148,15 +145,15 @@ async def test_external_channel_routes_to_hosted_model_with_censoring_both_ways(
     assert event["detail"]["request_redactions"] >= 2 and event["detail"]["response_redactions"] >= 2
 
 
-async def test_internal_channel_forces_local_even_for_external_agents(routing):
-    upstream = Upstream("local answer")
+async def test_internal_channel_wins_over_external_agents(routing):
+    upstream = Upstream("internal answer")
     proxy = make_proxy(routing, upstream)
     body = {"model": "rfa-auto", "messages": [
         {"role": "system", "content": agent_marker("research", "rfa-external")},
         {"role": "user", "content": channel_marker("internal") + "\n내부 질문"}]}
     async with client_for(proxy) as c:
         r = await c.post("/v1/chat/completions", json=body)
-    assert r.status_code == 200 and upstream.requests[0][0].endswith("/api/chat")
+    assert r.status_code == 200 and upstream.requests[0][0] == HOSTED_URL
     assert audit.query(kind="inference")[0]["detail"]["alias"] == "rfa-internal"
 
 
@@ -169,7 +166,7 @@ async def test_kill_switch_mode_overrides_markers_but_not_censor_bypass(routing)
         await c.post("/v1/chat/completions", json={"model": "rfa-internal", "messages": [
             {"role": "system", "content": agent_marker("censor", "rfa-censor", "rfa-main")},
             {"role": "user", "content": "classify"}]})
-    assert [u.endswith("/api/chat") for u, _ in upstream.requests] == [True, True]
+    assert [u for u, _ in upstream.requests] == [HOSTED_URL] * 2
     events = audit.query(kind="inference")
     assert events[1]["detail"]["reason"] == "mode:rfa-internal" and events[0]["detail"]["reason"] == "censor-bypass"
 
@@ -202,7 +199,7 @@ async def test_llm_stage_failure_blocks_external_response_fail_closed(routing):
     assert audit.query(kind="inference")[0]["verdict"] == "block"
 
 
-async def test_tool_call_arguments_are_regex_censored_and_ollama_shape_converted(routing):
+async def test_tool_call_arguments_are_regex_censored_and_tools_forwarded(routing):
     upstream = Upstream("", tool_call={"name": "ask_task_agent", "arguments": {"name": "research", "query": "오로라 예산 1,200,000 원"}})
     proxy = make_proxy(routing, upstream)
     body = {"model": "rfa-auto", "messages": [
@@ -214,7 +211,7 @@ async def test_tool_call_arguments_are_regex_censored_and_ollama_shape_converted
     assert call["type"] == "function" and r.json()["choices"][0]["finish_reason"] == "tool_calls"
     args = json.loads(call["function"]["arguments"])
     assert args["name"] == "research" and "[REDACTED:project]" in args["query"] and "1,200,000" not in args["query"]
-    # the internal route is ollama-native: the tools list was forwarded there as well
+    # the internal route forwards the tools list as well
     upstream2 = Upstream("", tool_call={"name": "read", "arguments": {"path": "/tmp/x"}})
     proxy2 = make_proxy(routing, upstream2)
     async with client_for(proxy2) as c:
@@ -250,3 +247,20 @@ async def test_hosted_backend_gets_chat_template_kwargs_and_unauthorized_is_audi
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=proxy.app), base_url="http://proxy") as c:
         assert (await c.post("/v1/chat/completions", json={})).status_code == 401
     assert audit.query(kind="inference")[0]["verdict"] == "unauthorized"
+
+
+@pytest.mark.parametrize("url", [
+    "http://127.0.0.1:11434", "https://127.0.0.1:11434/v1", "https://localhost:8000/v1",
+    "https://192.168.123.191:8000/v1", "https://host.openshell.internal:8000/v1",
+    "http://integrate.api.nvidia.com/v1",
+])
+def test_local_llm_backends_are_rejected(url):
+    with pytest.raises(ValueError, match="local LLMs are not allowed"):
+        cfg.Backend(url=url, auth="none")
+    with pytest.raises(ValueError):
+        cfg.Backend.model_validate({"kind": "ollama", "url": "https://x.example.com/v1", "auth": "none"})
+
+
+def test_every_alias_uses_the_hosted_lightning_model(routing):
+    assert {a.model for a in routing.aliases.values()} == {LIGHTNING}
+    assert {b.url for b in routing.backends.values()} == {"https://integrate.api.nvidia.com/v1"}

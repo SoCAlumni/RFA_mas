@@ -26,7 +26,7 @@ main:
     delegationMode: prefer
 agents:
 - id: benchmark
-  description: 벤치마크 수치를 사내 API 에서 조회해 로컬 모델로만 답하는 담당.
+  description: 벤치마크 수치를 사내 API 에서 조회해 답하는 담당.
   model: inference/rfa-internal
   tools:
     profile: coding

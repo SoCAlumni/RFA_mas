@@ -24,7 +24,7 @@ roles:
     alias: rfa-internal
     skill: task-benchmark
     tools: { allow: [read, exec] }
-    description: 벤치마크·성능 수치를 사내 API 에서 조회해 로컬 모델로만 비교한다.
+    description: 벤치마크·성능 수치를 사내 API 에서 조회해 비교한다.
     keywords: [벤치마크, 지연, 정확도, 성능, 수치, 측정, latency, benchmark, 비교]
   summarizer:
     capability: summarize

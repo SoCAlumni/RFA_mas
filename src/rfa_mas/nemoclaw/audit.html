@@ -168,7 +168,7 @@ $("#run-target").onchange = updateAvail;
 $("#run-btn").onclick = async () => {
   const text = $("#run-text").value.trim(); if (!text) return;
   const btn = $("#run-btn"); btn.disabled = true; const t0 = Date.now();
-  $("#run-status").textContent = "실행 중…"; $("#run-result").innerHTML = `<span class="small">대기 중 (로컬 모델 턴은 수십 초, hosted 턴은 최대 90초)</span>`;
+  $("#run-status").textContent = "실행 중…"; $("#run-result").innerHTML = `<span class="small">대기 중 (hosted 모델 턴은 최대 90초)</span>`;
   const tick = setInterval(() => { $("#run-status").textContent = `실행 중… ${((Date.now() - t0) / 1000).toFixed(0)}s`; }, 1000);
   try {
     const r = await fetch("/audit/api/run", { method: "POST", headers: { "Content-Type": "application/json" },

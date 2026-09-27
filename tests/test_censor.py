@@ -116,7 +116,7 @@ def test_sandbox_agent_judge_calls_nemoclaw_agent_and_parses_payload(censors):
     assert "some text" in argv[-1] and "JSON" in argv[-1]
 
 
-def test_direct_judge_uses_ollama_native_chat_for_ollama_backends(monkeypatch, censors):
+def test_direct_judge_posts_chat_completions_to_the_hosted_censor_backend(monkeypatch, censors):
     from rfa_mas.nemoclaw.serve import DirectJudge
 
     routing = cfg.load_routing()
@@ -127,15 +127,17 @@ def test_direct_judge_uses_ollama_native_chat_for_ollama_backends(monkeypatch, c
         status_code = 200
 
         def json(self):
-            return {"message": {"role": "assistant", "content": '{"verdict":"redact","spans":["Zephyr"],"categories":["internal_project"]}'}}
+            return {"choices": [{"message": {"role": "assistant", "content": '{"verdict":"redact","spans":["Zephyr"],"categories":["internal_project"]}'}}]}
 
     def fake_post(url, json=None, headers=None, timeout=None):
-        seen.update({"url": url, "json": json, "timeout": timeout})
+        seen.update({"url": url, "json": json, "headers": headers, "timeout": timeout})
         return Resp()
 
     monkeypatch.setattr("rfa_mas.nemoclaw.serve.httpx.post", fake_post)
-    verdict = DirectJudge(routing, {}).classify("코드네임 Zephyr", stage)
+    verdict = DirectJudge(routing, {"build": "k"}).classify("코드네임 Zephyr", stage)
     assert verdict.verdict == "redact" and verdict.spans == ["Zephyr"]
-    assert seen["url"] == "http://127.0.0.1:11434/api/chat" and seen["json"]["think"] is False
-    assert seen["json"]["model"] == "nemotron-3-nano:4b" and seen["json"]["options"]["num_ctx"] == 32768
+    assert seen["url"] == "https://integrate.api.nvidia.com/v1/chat/completions"
+    assert seen["json"]["model"] == "nvidia/nemotron-3.5-lightning-30b-a3b"
+    assert seen["json"]["chat_template_kwargs"] == {"enable_thinking": False}
+    assert seen["headers"]["authorization"] == "Bearer k"
     assert seen["timeout"] == stage.timeout_seconds

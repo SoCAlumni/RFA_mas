@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -317,20 +319,38 @@ class ProxyConfig(Strict):
     unattributed_alias: str
 
 
+LOCAL_SUFFIXES = (".local", ".localhost", ".internal")
+
+
 class Backend(Strict):
-    kind: Literal["openai", "ollama"] = "openai"
+    """A hosted OpenAI-compatible endpoint. Local LLM backends (Ollama, loopback/LAN servers) are
+    rejected: every alias must go to a remote HTTPS endpoint such as build.nvidia.com."""
+
     url: str
     auth: Literal["none", "bearer"] = "bearer"
     credential_env: str | None = None
     env_file: str | None = None
-    think: bool = False          # ollama: disable the model's reasoning channel (JSON/tool answers)
-    num_ctx: int | None = None   # ollama: context window override (OpenClaw prompts are long)
-    chat_template_kwargs: dict[str, object] | None = None  # openai-kind extras (e.g. NVIDIA enable_thinking=false)
+    chat_template_kwargs: dict[str, object] | None = None  # e.g. NVIDIA enable_thinking=false
 
     @model_validator(mode="after")
     def _auth(self) -> Backend:
         if self.auth == "bearer" and not self.credential_env:
             raise ValueError("bearer backends need credential_env")
+        return self
+
+    @model_validator(mode="after")
+    def _hosted_only(self) -> Backend:
+        parsed = urlsplit(self.url)
+        host = (parsed.hostname or "").lower()
+        if parsed.scheme != "https" or not host:
+            raise ValueError(f"backend url must be https (local LLMs are not allowed): {self.url}")
+        try:
+            addr = ipaddress.ip_address(host)
+            local = addr.is_private or addr.is_loopback
+        except ValueError:
+            local = host == "localhost" or host.endswith(LOCAL_SUFFIXES)
+        if local:
+            raise ValueError(f"backend url is local (local LLMs are not allowed): {self.url}")
         return self
 
 
