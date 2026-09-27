@@ -26,8 +26,8 @@ from rfa_mas.contracts import (
     WorkRequest,
     sha256_text,
 )
-from rfa_mas.ports import ModelPort, PolicyPort, RetrievalPort
 from rfa_mas.errors import RfaError
+from rfa_mas.ports import ModelPort, PolicyPort, RetrievalPort
 
 PRIVATE_CANARY_PATTERN = re.compile(r"SYNTHETIC_PRIVATE_CANARY_[A-Z0-9_]+")
 # P1-005: deterministic private-content markers screened BEFORE any model call for a
@@ -66,26 +66,37 @@ def share_egress_filter(
     target: Audience,
     endpoint: str,
     markers: tuple[str, ...] = (),
+    private_egress: bool = False,
 ) -> tuple[EvidenceBundle, dict[str, int]]:
     """Shareable-with-target first, then content screen, then endpoint egress.
 
     Readable is not shareable: an item survives only if its audience may be shared with
     the draft target, it carries no private marker (non-owner targets), and a cloud model
-    endpoint receives public material only. Items are withheld whole, never redacted.
+    endpoint receives public material only, unless the owner consented (P1-008K,
+    ALLOW_EXTERNAL_EGRESS) and the target is the owner. Items are withheld whole, never
+    redacted.
     """
+    owner_bound = target in {Audience.OWNER, Audience.PRIVATE}
     kept, withheld = [], {"share": 0, "sensitive": 0, "egress": 0}
     for item in evidence.items:
         if target in SHAREABLE and item.audience not in SHAREABLE[target]:
             withheld["share"] += 1
-        elif target not in {Audience.OWNER, Audience.PRIVATE} and _sensitive(item.excerpt, markers):
+        elif not owner_bound and _sensitive(item.excerpt, markers):
             withheld["sensitive"] += 1
-        elif endpoint != "local" and item.audience != Audience.PUBLIC:
+        elif (
+            endpoint != "local"
+            and item.audience != Audience.PUBLIC
+            and not (private_egress and owner_bound)
+        ):
             withheld["egress"] += 1
         else:
             kept.append(item)
-    filtered = evidence.model_copy(update={
-        "items": tuple(kept), "insufficient": evidence.insufficient or not kept,
-    })
+    filtered = evidence.model_copy(
+        update={
+            "items": tuple(kept),
+            "insufficient": evidence.insufficient or not kept,
+        }
+    )
     return filtered, withheld
 
 
@@ -111,6 +122,8 @@ class DomainGraphDependencies:
     context: Any = None
     # "local" for in-process/mock models; anything else is treated as a cloud endpoint.
     model_endpoint: str = "local"
+    # P1-008K: owner consent (ALLOW_EXTERNAL_EGRESS) for the owner's context to that endpoint.
+    private_egress: bool = False
     # Owner personal disclosure markers (P1-005B feedback); never relaxes policy.
     disclosure_markers: Any = None
     # Owner style preferences (P1-005B feedback): advisory model input only; the
@@ -234,8 +247,7 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
                 loaded = await deps.context(runtime.context.principal, work, request)
             if loaded is not None:
                 evidence, stats = loaded
-                return {"evidence": evidence, "context_stats": stats,
-                        "steps": state["steps"] + 1}
+                return {"evidence": evidence, "context_stats": stats, "steps": state["steps"] + 1}
             evidence = await deps.retrieval.search(request)
             return {"evidence": evidence, "steps": state["steps"] + 1}
         except TimeoutError:
@@ -249,10 +261,15 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
                 "steps": state["steps"] + 1,
             }
         except RfaError as exc:
-            code = exc.code if exc.code in {"policy_denied", "resume_review_required"} \
+            code = (
+                exc.code
+                if exc.code in {"policy_denied", "resume_review_required"}
                 else "context_unavailable"
-            return {"error": _error(task, code, "현재 근거를 불러올 수 없습니다."),
-                    "steps": state["steps"] + 1}
+            )
+            return {
+                "error": _error(task, code, "현재 근거를 불러올 수 없습니다."),
+                "steps": state["steps"] + 1,
+            }
 
     def after_retrieve(state: DomainState) -> str:
         return "finish" if "error" in state else "generate"
@@ -271,27 +288,41 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
             }
         markers: tuple[str, ...] = ()
         if deps.disclosure_markers is not None:
-            markers = tuple(await deps.disclosure_markers(
-                runtime.context.principal, task.domain_id,
-                target=work.target, run_id=task.run_id,
-            ))
+            markers = tuple(
+                await deps.disclosure_markers(
+                    runtime.context.principal,
+                    task.domain_id,
+                    target=work.target,
+                    run_id=task.run_id,
+                )
+            )
         target = work.target.audience
         # A public-bound request text itself must not carry private markers to the model.
         if target not in {Audience.OWNER, Audience.PRIVATE} and _sensitive(work.query, markers):
-            return {"error": _error(task, "policy_denied", "공개 대상 요청에 비공개 정보가 있습니다."),
-                    "steps": state["steps"] + 1}
+            return {
+                "error": _error(task, "policy_denied", "공개 대상 요청에 비공개 정보가 있습니다."),
+                "steps": state["steps"] + 1,
+            }
         evidence, withheld = share_egress_filter(
-            state["evidence"], target=target, endpoint=deps.model_endpoint, markers=markers
+            state["evidence"],
+            target=target,
+            endpoint=deps.model_endpoint,
+            markers=markers,
+            private_egress=deps.private_egress,
         )
         query = work.query
         if deps.style_guidance is not None:
             owner_bound = target in {Audience.OWNER, Audience.PRIVATE}
-            guidance = tuple(await deps.style_guidance(
-                runtime.context.principal, task.domain_id,
-                target=work.target, run_id=task.run_id,
-                # Same content screen as the request text for a non-owner target.
-                keep=lambda text: owner_bound or not _sensitive(text, markers),
-            ))
+            guidance = tuple(
+                await deps.style_guidance(
+                    runtime.context.principal,
+                    task.domain_id,
+                    target=work.target,
+                    run_id=task.run_id,
+                    # Same content screen as the request text for a non-owner target.
+                    keep=lambda text: owner_bound or not _sensitive(text, markers),
+                )
+            )
             query = with_style_guidance(work.query, guidance)
         model_result = await deps.model.generate(
             ModelRequest(
@@ -325,8 +356,12 @@ def build_domain_graph(deps: DomainGraphDependencies) -> Any:
             simulated=model_result.simulated or evidence.simulated,
             adapter=f"domain-taskgraph:{model_result.adapter}+{evidence.adapter}",
         )
-        return {"draft": draft, "evidence": evidence, "withheld": withheld,
-                "steps": state["steps"] + 1}
+        return {
+            "draft": draft,
+            "evidence": evidence,
+            "withheld": withheld,
+            "steps": state["steps"] + 1,
+        }
 
     builder = StateGraph(DomainState, context_schema=InvocationContext)
     builder.add_node("authorize", authorize)

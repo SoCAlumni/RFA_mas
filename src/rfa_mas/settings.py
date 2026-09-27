@@ -67,7 +67,6 @@ PLANNED_SETTINGS = (
             reuses=("ALLOW_EXTERNAL_EGRESS",),
         )
         for consumer, owners in (
-            ("model", ("P1-005", "P1-002")),
             ("judge", ("P1-005", "P1-006A")),
             ("embedding", ("P1-005", "P1-003")),
             ("reranker", ("P1-005", "P1-003")),
@@ -329,7 +328,9 @@ class Settings(BaseSettings):
             reserved.append("feature:debate")
         if self.enable_auto_domain_creation:
             reserved.append("feature:auto_domain_creation")
-        if self.allow_external_egress:
+        if self.allow_external_egress and self.model_provider != "nvidia":
+            # P1-008K implemented only the model_egress consumer; with a mock/local model
+            # there is no endpoint to consent to, so the selection stays reserved.
             reserved.append("feature:external_egress_policy")
         return tuple(reserved)
 
@@ -340,8 +341,16 @@ class Settings(BaseSettings):
 
     @property
     def external_egress_effective(self) -> bool:
-        """A request flag/key cannot supply the missing source/endpoint policy authority."""
-        return False
+        """P1-008K model_egress consumer: the owner's explicit consent lets the configured
+        NVIDIA model endpoint receive the owner's own non-public context for owner-target
+        answers only. Public targets still get public evidence only; judge/embedding/
+        reranker/trace consumers remain unimplemented (they never egress private data).
+        A key alone is not consent; the flag alone (mock model) selects nothing."""
+        return self.allow_external_egress and self.model_provider == "nvidia"
+
+    @property
+    def external_egress_scope(self) -> str:
+        return "model_endpoint_owner_context" if self.external_egress_effective else "none"
 
     def secret_values(self) -> tuple[str, ...]:
         values: list[str] = []

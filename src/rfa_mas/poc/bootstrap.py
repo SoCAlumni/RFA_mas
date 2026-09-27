@@ -40,7 +40,13 @@ REVIEW_URL = "http://127.0.0.1:18781"
 CORE_URL = "http://127.0.0.1:18782"
 
 
-def local_settings(root: Path, token: SecretStr) -> Settings:
+class PocModelNotConfigured(ValueError):
+    """Explicit configuration error: never a silent mock fallback."""
+
+
+def local_settings(
+    root: Path, token: SecretStr, *, model: str = "mock", env_file: Path | None = None
+) -> Settings:
     # Every field is explicitly initialized, so neither .env nor ambient provider
     # variables can change this keyless PoC into a real/cloud configuration.
     values = {
@@ -56,6 +62,33 @@ def local_settings(root: Path, token: SecretStr) -> Settings:
         response_api_token=token,
         log_level="WARNING",
     )
+    if model == "nvidia":
+        # P1-008K: explicit opt-in. Only the model variables are copied from the named env
+        # file; publication/runtime/policy stay local. ALLOW_EXTERNAL_EGRESS is the owner's
+        # consent to send their own KB context to that one endpoint (owner-target only).
+        source = Settings(_env_file=env_file) if env_file else Settings(_env_file=None)
+        missing = [
+            name
+            for name, value in (
+                ("NVIDIA_MODEL", source.nvidia_model),
+                ("NVIDIA_API_KEY", source.nvidia_api_key),
+            )
+            if not value
+        ]
+        if missing:
+            raise PocModelNotConfigured("poc_model_not_configured: " + ", ".join(missing))
+        values.update(
+            model_provider="nvidia",
+            nvidia_base_url=source.nvidia_base_url,
+            nvidia_model=source.nvidia_model,
+            nvidia_api_key=source.nvidia_api_key,
+            nvidia_max_output_tokens=source.nvidia_max_output_tokens,
+            http_timeout_seconds=source.http_timeout_seconds,
+            tool_timeout_seconds=max(source.tool_timeout_seconds, 120.0),
+            allow_external_egress=True,
+        )
+    elif model != "mock":
+        raise PocModelNotConfigured(f"poc_model_unsupported: {model}")
     return Settings(_env_file=None, **values)
 
 
@@ -196,12 +229,20 @@ class UiReviewTransport(httpx.AsyncBaseTransport):
         return await self.review.get(f"/v1/local/publications/{ref.split(':', 1)[1]}")
 
 
-def create_poc_app(data_dir: Path, *, port: int = 8780):
+def create_poc_app(
+    data_dir: Path,
+    *,
+    port: int = 8780,
+    model: str = "mock",
+    env_file: Path | None = None,
+    model_transport=None,
+):
     if not 1 <= port <= 65535:
         raise ValueError("invalid_port")
     root = data_dir.expanduser().resolve()
     if root == Path(root.anchor) or root == Path.home() or root == Path.cwd().resolve():
         raise ValueError("dedicated_data_dir_required")
+    settings_probe = local_settings(root, SecretStr("probe"), model=model, env_file=env_file)
     holder = {}
 
     async def delegate(scope, receive, send):
@@ -216,7 +257,11 @@ def create_poc_app(data_dir: Path, *, port: int = 8780):
         with data_lock(root):
             token = SecretStr(secrets.token_urlsafe(32))
             transport = ReviewTransport()
-            container = build_container(local_settings(root, token), http_transport=transport)
+            container = build_container(
+                local_settings(root, token, model=model, env_file=env_file),
+                http_transport=transport,
+                model_transport=model_transport,
+            )
             try:
                 await container.startup()
                 owner = await container.service_owner_id()
@@ -266,11 +311,20 @@ def create_poc_app(data_dir: Path, *, port: int = 8780):
                             container.repository,
                             SqliteTeamCatalog(container.repository),
                             policy_version=container.policy.policy_version,
+                            model=container.model,
                         ),
+                        model=container.model,
+                        model_name=settings_probe.nvidia_model if model == "nvidia" else None,
                     )
                     ui = create_local_ui_app(
                         chat=chat,
                         teams=TeamOverview(chat),
+                        model_info={
+                            "adapter": container.model.adapter_name,
+                            "simulated": bool(container.model.simulated),
+                            "model_id": settings_probe.nvidia_model if model == "nvidia" else None,
+                            "egress": settings_probe.external_egress_scope,
+                        },
                         allowed_hosts=[f"127.0.0.1:{port}", f"localhost:{port}"],
                         core=UpstreamTarget.in_process("core", core_app, base_url=CORE_URL),
                         review=UpstreamTarget(

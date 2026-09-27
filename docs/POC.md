@@ -149,3 +149,27 @@ uv run python -m pytest -q tests/test_chat_routing.py tests/test_chat_poc.py tes
 멱등성/다른 key 거절, 영속 receipt, Host/Origin/CSRF, 포트 충돌, 중복 데이터 경로,
 ambient provider 격리, 채팅 자동 분류·현재 권한·동시 메시지 중복·대화 복구를 검증한다.
 제품 전체 real/UI E2E의 통과를 뜻하지 않는다.
+## 실제 LLM 모드 (`--model nvidia`)
+
+```sh
+uv run python -m rfa_mas.poc --data-dir .local/poc --port 8780 --model nvidia --env-file .env.dev
+```
+
+env 파일에서 `NVIDIA_BASE_URL`/`NVIDIA_MODEL`/`NVIDIA_API_KEY`만 읽고(값은 출력·저장하지 않음) 나머지
+(게시 mock, 로컬 runtime/policy)는 그대로다. 둘 중 하나라도 없으면 `poc_model_not_configured: <변수명>`으로
+종료하며 mock으로 조용히 바꾸지 않는다. 이 모드는 **소유자 동의 egress**(`ALLOW_EXTERNAL_EGRESS`의 model_egress
+소비자)를 켠다: 소유자 대상(private/owner) 요청에 한해 소유자의 비공개 KB 발췌를 설정된 그 endpoint/모델
+하나로 보낸다. 공개 대상 초안은 여전히 public 근거만 사용하고, judge/embedding/reranker/trace에는 적용되지 않는다.
+
+실제 모델이 관여하는 지점과 상태 카드 표기:
+
+- `reasoning` — 의도(store_note/query/task_run/external_draft/clarify)와 담당 Task를 LLM이 제안한다. 담당은
+  서버가 넘긴 **소유자 Task 팀 후보 안에서만** 채택되고, 목록 밖 ID는 무시("후보 밖 ID 제안은 무시")된다.
+  삭제/배포/송금 표현은 모델 판단과 무관하게 실행하지 않는다. 호출 실패 시 규칙 기반으로 진행한다고 표시한다.
+- `synthesis` — 담당 없는 질의는 비서가 현재 ACL로 읽은 발췌를 근거로 LLM 답변을 만든다. 답변은 사용한
+  source/revision과 함께 보존되며, 재조회 시 그 자료가 바뀌거나 접근 불가면 답변을 다시 표시하지 않는다.
+- 도메인 worker/Task 팀 — core 그래프의 ModelPort가 실제 어댑터(`nvidia-chat-completions`, simulated=false)를
+  쓰고, Task 팀 Supervisor는 역할별 기록·발췌로 결론 요약과 미확인 질문을 생성한다(`team_result`의
+  "Supervisor 요약 LLM"). 실험 수치는 여전히 합성 로그 파싱이며 실측이 아니다.
+
+mock 모드에서는 위 세 단계가 없고 규칙 기반·결정적 mock 답변이 그대로 동작한다.

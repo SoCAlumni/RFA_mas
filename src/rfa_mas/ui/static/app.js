@@ -17,6 +17,17 @@
     // Every value is rendered as text. Details never include note bodies, keys or answers.
     const d=s.detail||{}, lines=[];
     if(s.stage==="understanding") lines.push(["의도",(d.intent_label||d.intent||"")+" · "+(d.rule||"")]);
+    if(s.stage==="reasoning") {
+      if(d.status && d.status!=="succeeded") lines.push(["상태",d.status+" (규칙 기반으로 진행)"]);
+      else {
+        lines.push(["모델",d.model||""]);
+        lines.push(["LLM 의도",d.intent||"판단 없음"]);
+        lines.push(["LLM 담당",(d.assignee_task_id||"확신 없음 → 규칙/비서")+" · 후보 "+(d.candidates_offered||0)+"개"]);
+        if(d.reason) lines.push(["이유",d.reason]);
+        if(d.destructive_guard) lines.push(["보호","삭제/배포 요청은 모델 판단과 무관하게 실행하지 않음"]);
+      }
+    }
+    if(s.stage==="synthesis") lines.push(["답변 생성",(d.model||"")+(d.model_id?" · "+d.model_id:"")+" · "+(d.status||"")+(typeof d.evidence_used==="number"?" · 근거 "+d.evidence_used+"건":"")+(d.citations&&d.citations.length?" · 인용 "+d.citations.join(", "):"")]);
     if(s.stage==="routing" && d.route) {
       const r=d.route;
       lines.push(["담당",(routeKinds[r.kind]||r.kind)+(r.label?" · "+r.label:"")]);
@@ -32,6 +43,7 @@
     }
     if(s.stage==="team_result") {
       lines.push(["실행",d.status+(d.stop_reason?" · "+d.stop_reason:"")+(d.simulated?" · 실험값 simulated(mock)":"")]);
+      if(d.supervisor_llm) lines.push(["Supervisor 요약",(d.supervisor_llm.adapter||"")+" · "+(d.supervisor_llm.status||"")+(typeof d.supervisor_llm.open_questions==="number"?" · 미확인 질문 "+d.supervisor_llm.open_questions+"개":"")]);
       (d.roles||[]).forEach((r)=>lines.push([r.role,r.status+" · steps "+(r.steps||0)+" · tool calls "+(r.tool_calls||0)]));
     }
     if(s.stage==="completed") lines.push(["결과",d.status+(d.run_id?" · run "+d.run_id:"")+(d.source_id?" · source "+d.source_id:"")]);
@@ -142,7 +154,11 @@
   async function loadStatus() {
     try {
       const s = await api("GET","/ui/api/status");
-      byId("status").textContent = s.core.reachable ? "로컬 연결됨 · mock" : "코어 연결 안 됨";
+      const model = s.model || {};
+      const real = model.simulated===false;
+      byId("status").textContent = s.core.reachable ? (real ? "로컬 연결됨 · 실제 모델 "+(model.model_id||model.adapter) : "로컬 연결됨 · mock") : "코어 연결 안 됨";
+      const caption=document.querySelector(".composer-caption span");
+      if(caption && real) caption.textContent="LLM 라우팅·답변: "+(model.model_id||model.adapter)+" (소유자 동의 egress, 게시는 mock) · “…조사해/검증해”는 새 Task 팀을 만듭니다";
       byId("reload-reviews").disabled = s.features.manual_review !== "enabled";
     } catch(e) { byId("status").textContent = "연결 확인 필요"; showError(byId("global-error"),e); }
   }
@@ -197,6 +213,10 @@
     if(turn.team) {
       const t=turn.team;
       answer.append(el("p","Task "+t.task_id+" · 팀 "+t.team_id+" · "+t.pattern+" · "+t.status+(t.simulated?" · 실험값 simulated(mock)":""),"assignee"));
+    }
+    if(turn.answer_model) {
+      const m=turn.answer_model;
+      answer.append(el("p",m.stale?"이전 LLM 답변("+m.adapter+")은 자료 변경으로 재표시하지 않음":"답변 모델 · "+m.adapter+(m.model_id?" · "+m.model_id:"")+(m.citations&&m.citations.length?" · 인용 "+m.citations.join(", "):""),"assignee"));
     }
     if(turn.stages && turn.stages.length) {
       const timeline=el("ol",null,"stage-timeline");

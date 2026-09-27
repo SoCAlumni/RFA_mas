@@ -200,6 +200,45 @@ class _Answer(BaseModel):
     citations: list[str]
 
 
+class OwnerConsentEgressGate(PublicOnlyEgressGate):
+    """P1-008K: ALLOW_EXTERNAL_EGRESS consent for the owner's own context.
+
+    Owner/private-target requests may carry the owner's non-public evidence to the ONE
+    configured endpoint/model. Any other target keeps the public-only rule (audience and
+    private-marker screen) of the parent gate. Consent is a trusted composition input,
+    never a request field.
+    """
+
+    private_context_consented = True
+
+    async def authorize(
+        self, request: ModelRequest, *, endpoint: str, model: str
+    ) -> ModelEgressGrant | None:
+        if request.target.audience not in {Audience.OWNER, Audience.PRIVATE}:
+            return await super().authorize(request, endpoint=endpoint, model=model)
+        if (endpoint, model) != (self._endpoint, self._model):
+            return None
+        return ModelEgressGrant(
+            endpoint=endpoint,
+            model=model,
+            max_output_tokens=self._max_output_tokens,
+            deadline=self._clock() + self._budget,
+            max_attempts=self._attempts,
+        )
+
+    def text_grant(self, *, endpoint: str, model: str) -> ModelEgressGrant | None:
+        """Grant for an owner-only free-form reasoning call (no evidence bundle)."""
+        if (endpoint, model) != (self._endpoint, self._model):
+            return None
+        return ModelEgressGrant(
+            endpoint=endpoint,
+            model=model,
+            max_output_tokens=self._max_output_tokens,
+            deadline=self._clock() + self._budget,
+            max_attempts=self._attempts,
+        )
+
+
 class _TooLarge(Exception):
     pass
 
@@ -272,6 +311,74 @@ class NvidiaChatModel:
             delay = _retry_after(headers) or float(attempt)
             if self._clock() + delay >= grant.deadline:
                 break  # Waiting would exceed the Run deadline.
+            await self._sleep(delay)
+        raise _error(last)
+
+    async def reason(self, system: str, user: str, *, max_output_tokens: int = 600) -> dict:
+        """Owner-consented JSON reasoning call (intent/assignee/summary), not a tool loop.
+
+        Only available behind an OwnerConsentEgressGate: the prompt carries the owner's own
+        text. Returns the parsed JSON object; provider text never becomes an error message.
+        """
+        grant = getattr(self.gate, "text_grant", None)
+        grant = grant(endpoint=self.config.endpoint, model=self.config.model) if grant else None
+        if grant is None or not getattr(self.gate, "private_context_consented", False):
+            raise _error("egress_not_permitted")
+        body = {
+            "model": grant.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "stream": False,
+            "temperature": 0,
+            "max_tokens": min(max_output_tokens, grant.max_output_tokens),
+            "response_format": {"type": "json_object"},
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+        payload = await self._call(json.dumps(body, ensure_ascii=False).encode(), grant)
+        try:
+            message = json.loads(payload)["choices"][0]["message"]
+            parsed = json.loads(message["content"])
+        except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError):
+            raise _error("model_invalid_response") from None
+        if not isinstance(parsed, dict):
+            raise _error("model_invalid_response")
+        return parsed
+
+    async def _call(self, raw: bytes, grant: ModelEgressGrant) -> bytes:
+        attempts = min(self.config.max_attempts, grant.max_attempts)
+        last = "model_timeout"
+        for attempt in range(1, attempts + 1):
+            remaining = grant.deadline - self._clock()
+            if remaining <= 0:
+                raise _error("model_timeout")
+            try:
+                status, headers, payload = await self._post(
+                    raw, min(self.config.timeout_seconds, remaining)
+                )
+            except httpx.TimeoutException:
+                last = "model_timeout"
+                continue
+            except httpx.TransportError:
+                last = "model_unavailable"
+                continue
+            except _TooLarge:
+                raise _error("model_response_too_large") from None
+            if status == 200:
+                return payload
+            if status == 202:
+                raise _error("model_pending")
+            if status in (401, 403):
+                raise _error("model_auth_failed")
+            if not is_transient_status(status, payload):
+                raise _error("model_request_rejected")
+            last = "model_rate_limited" if status == 429 else "model_unavailable"
+            if attempt == attempts:
+                break
+            delay = _retry_after(headers) or float(attempt)
+            if self._clock() + delay >= grant.deadline:
+                break
             await self._sleep(delay)
         raise _error(last)
 

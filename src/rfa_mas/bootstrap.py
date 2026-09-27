@@ -192,10 +192,12 @@ def readiness_report(checks: list[ReadinessCheck]) -> ReadinessReport:
 
 def unavailable_readiness(settings: Settings) -> ReadinessReport:
     """Readiness of a process whose container could not be built for the selected modes."""
-    return readiness_report([
-        ReadinessCheck(component="service", selected="local", ready=False, code="not_started"),
-        inspect_configuration(settings).check(),
-    ])
+    return readiness_report(
+        [
+            ReadinessCheck(component="service", selected="local", ready=False, code="not_started"),
+            inspect_configuration(settings).check(),
+        ]
+    )
 
 
 def inspect_configuration(settings: Settings) -> ConfigurationInspection:
@@ -256,10 +258,15 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
         if selected != default and selected != "nvidia":
             reserved.append(f"{port}:{selected}")
     # P1-006A: an enabled nvidia Judge exists; a configured selection must also be valid.
-    if settings.enable_judge and settings.judge_provider == "nvidia" and not {
-        "JUDGE_MODEL",
-        "NVIDIA_API_KEY",
-    } & set(missing):
+    if (
+        settings.enable_judge
+        and settings.judge_provider == "nvidia"
+        and not {
+            "JUDGE_MODEL",
+            "NVIDIA_API_KEY",
+        }
+        & set(missing)
+    ):
         try:
             _judge_config(settings)
         except ValueError as exc:
@@ -276,7 +283,8 @@ def inspect_configuration(settings: Settings) -> ConfigurationInspection:
         reserved.append(f"retriever:{settings.retriever_backend}")
     # P1-003: report an invalid nemo_cli selection by name instead of only failing at build.
     if settings.retriever_backend == "nemo_cli" and not {
-        "RETRIEVER_CLI_PATH", "NVIDIA_API_KEY"
+        "RETRIEVER_CLI_PATH",
+        "NVIDIA_API_KEY",
     } & set(missing):
         try:
             _nemo_cli(settings)
@@ -332,8 +340,12 @@ class Container:
 
     def context_reader(self, bound: BoundAccess) -> BoundContextReader:
         """Internal trusted composition, not a request-body factory or role grant."""
-        return BoundContextReader(self.repository,self.policy,bound,
-                                  issuer_supported=self.settings.policy_backend == "local")
+        return BoundContextReader(
+            self.repository,
+            self.policy,
+            bound,
+            issuer_supported=self.settings.policy_backend == "local",
+        )
 
     async def service_owner_id(self) -> str:
         """Installation owner injected into local stand-ins (P1-008C/D boundaries).
@@ -373,8 +385,12 @@ class Container:
         """Liveness is /healthz. Ready needs a started service, a complete configuration
         for every selected mode and a reachable /healthz on each selected HTTP backend."""
         checks = [
-            ReadinessCheck(component="service", selected="local", ready=self.ready,
-                           code="ok" if self.ready else "not_started"),
+            ReadinessCheck(
+                component="service",
+                selected="local",
+                ready=self.ready,
+                code="ok" if self.ready else "not_started",
+            ),
             inspect_configuration(self.settings).check(),
         ]
         timeout = min(self.settings.http_timeout_seconds, 2.0)
@@ -386,10 +402,14 @@ class Container:
                 reachable = response.status_code == 200
             except (httpx.HTTPError, OSError):
                 reachable = False
-            checks.append(ReadinessCheck(
-                component=name.removesuffix("_BASE_URL").lower(), selected="http",
-                ready=reachable, code="ok" if reachable else "unavailable",
-            ))
+            checks.append(
+                ReadinessCheck(
+                    component=name.removesuffix("_BASE_URL").lower(),
+                    selected="http",
+                    ready=reachable,
+                    code="ok" if reachable else "unavailable",
+                )
+            )
         return readiness_report(checks)
 
 
@@ -532,8 +552,9 @@ async def run_langfuse_retention(
         return await sweeper.sweep(dry_run=dry_run)
 
 
-def _staged_context(repository, policy, settings: Settings, observer: Observations,
-                    on_context=None):
+def _staged_context(
+    repository, policy, settings: Settings, observer: Observations, on_context=None
+):
     """Trusted factory (P1-005): staged L0/L1/L2 context for owner/public local targets.
 
     Returns None when the target/endpoint is outside the bound reader's supported scope,
@@ -542,47 +563,87 @@ def _staged_context(repository, policy, settings: Settings, observer: Observatio
     from time import perf_counter
 
     from rfa_mas.application.context import ContextLoader
-    from rfa_mas.contracts import Audience, ContextRequest, DraftTarget, EvidenceBundle, EvidenceItem
+    from rfa_mas.contracts import (
+        Audience,
+        ContextRequest,
+        DraftTarget,
+        EvidenceBundle,
+        EvidenceItem,
+    )
 
     async def load(principal, work, request):
         target = work.target.audience
         if target not in {Audience.OWNER, Audience.PUBLIC} or settings.policy_backend != "local":
             return None
         bound_target = DraftTarget(audience=target)
-        bound = BoundAccess(lambda: principal, request.agent_id, "supervisor",
-                            request.domain_id, bound_target, "mock-model")
-        loader = ContextLoader(repository, BoundContextReader(
-            repository, policy, bound, issuer_supported=True))
+        bound = BoundAccess(
+            lambda: principal,
+            request.agent_id,
+            "supervisor",
+            request.domain_id,
+            bound_target,
+            "mock-model",
+        )
+        loader = ContextLoader(
+            repository, BoundContextReader(repository, policy, bound, issuer_supported=True)
+        )
         context_request = ContextRequest.model_validate(
             request.model_dump(exclude={"schema_version"})
-            | {"goal": work.query, "role": "supervisor", "target": bound_target,
-               "endpoint_id": "mock-model"})
+            | {
+                "goal": work.query,
+                "role": "supervisor",
+                "target": bound_target,
+                "endpoint_id": "mock-model",
+            }
+        )
         await observer.record("retrieval", "started", mode="local")
         start = perf_counter()
         try:
             loaded = await loader.load(context_request)
         except BaseException:
-            await observer.record("retrieval", "failed", mode="local", reason="provider_error",
-                                  duration_ms=(perf_counter() - start) * 1000, transport="raised")
+            await observer.record(
+                "retrieval",
+                "failed",
+                mode="local",
+                reason="provider_error",
+                duration_ms=(perf_counter() - start) * 1000,
+                transport="raised",
+            )
             raise
         items = tuple(
-            EvidenceItem(source_id=i.source_id, source_revision=i.source_revision,
-                         location=i.location, audience=i.audience, excerpt=i.excerpt,
-                         content_hash=i.content_hash, policy_version=i.policy_version)
+            EvidenceItem(
+                source_id=i.source_id,
+                source_revision=i.source_revision,
+                location=i.location,
+                audience=i.audience,
+                excerpt=i.excerpt,
+                content_hash=i.content_hash,
+                policy_version=i.policy_version,
+            )
             for i in loaded.bundle.items
         )
-        await observer.record("retrieval", "succeeded", mode="local",
-                              duration_ms=(perf_counter() - start) * 1000,
-                              sources=tuple((i.source_id, i.source_revision) for i in items),
-                              transport="returned")
+        await observer.record(
+            "retrieval",
+            "succeeded",
+            mode="local",
+            duration_ms=(perf_counter() - start) * 1000,
+            sources=tuple((i.source_id, i.source_revision) for i in items),
+            transport="returned",
+        )
         if on_context is not None:
             # P0-025: durable Run-linked stage outcomes/source refs (no text) for polling.
             await on_context(principal, request.run_id, loaded)
         evidence = EvidenceBundle(
-            request_id=request.request_id, trace_id=request.trace_id, run_id=request.run_id,
-            agent_id=request.agent_id, domain_id=request.domain_id, items=items,
-            insufficient=loaded.insufficient, policy_version=policy.policy_version,
-            simulated=False, adapter="staged-context-v1",
+            request_id=request.request_id,
+            trace_id=request.trace_id,
+            run_id=request.run_id,
+            agent_id=request.agent_id,
+            domain_id=request.domain_id,
+            items=items,
+            insufficient=loaded.insufficient,
+            policy_version=policy.policy_version,
+            simulated=False,
+            adapter="staged-context-v1",
         )
         stats = {
             "loader": "staged-context-v1",
@@ -641,12 +702,20 @@ def build_container(
     else:
         # P1-002: explicit selection only (inspect_configuration already required key and
         # model). No mock fallback. Egress needs the trusted public-only gate per call.
-        from rfa_mas.adapters.nvidia import NvidiaChatModel, PublicOnlyEgressGate
+        from rfa_mas.adapters.nvidia import (
+            NvidiaChatModel,
+            OwnerConsentEgressGate,
+            PublicOnlyEgressGate,
+        )
 
         nvidia = _nvidia_config(settings)
+        # P1-008K: ALLOW_EXTERNAL_EGRESS is the owner's consent for owner-target context.
+        gate_class = (
+            OwnerConsentEgressGate if settings.external_egress_effective else PublicOnlyEgressGate
+        )
         model = NvidiaChatModel(
             nvidia,
-            PublicOnlyEgressGate(
+            gate_class(
                 endpoint=nvidia.endpoint,
                 model=nvidia.model,
                 max_output_tokens=settings.nvidia_max_output_tokens,
@@ -770,10 +839,12 @@ def build_container(
         resolve_team_selector,
         lambda: runtime_support,
     )
-    observed_model = ObservedPort(model, observer, "model",
-                                  mode="mock" if model.simulated else "real")
-    observed_retrieval = ObservedPort(retrieval, observer, "retrieval",
-                                     mode="mock" if retrieval.simulated else "local")
+    observed_model = ObservedPort(
+        model, observer, "model", mode="mock" if model.simulated else "real"
+    )
+    observed_retrieval = ObservedPort(
+        retrieval, observer, "retrieval", mode="mock" if retrieval.simulated else "local"
+    )
     observed_policy = ObservedPort(
         policy,
         observer,
@@ -819,6 +890,8 @@ def build_container(
         tools=team_tools,
         policy_version=lambda: policy.policy_version,
         external_search=external_search,
+        # P1-008K: owner-consented LLM synthesis of the supervisor summary (real model only).
+        model=model if settings.external_egress_effective else None,
     )
 
     # P0-025: owner event feed; present/validate are read at call time from the service.
@@ -831,8 +904,9 @@ def build_container(
     if isinstance(runtime, LocalRuntime):
         staged_context = StagedContextBoundary(
             # P0-025: the same boundary also records Run-linked stage outcomes/source refs.
-            _staged_context(repository, policy, settings, observer,
-                            on_context=events.record_context)
+            _staged_context(
+                repository, policy, settings, observer, on_context=events.record_context
+            )
         )
         # P1-005B: owner feedback memory. Markers only narrow; style is advisory model input.
         feedback = FeedbackService(repository)
@@ -847,6 +921,7 @@ def build_container(
                         principal, work, request
                     ),
                     model_endpoint="local" if settings.model_provider == "mock" else "cloud",
+                    private_egress=settings.external_egress_effective,
                     disclosure_markers=feedback.disclosure_markers,
                     style_guidance=feedback.style_guidance,
                 )
@@ -893,6 +968,7 @@ def build_container(
         guard_thread=checkpoints.guard,
         observations=observer,
     )
+
     # P1-005A/P1-008: mock backend -> in-process MockPublisher; http backend -> the
     # Response service's publication endpoint (P1-008C local stand-in contract, mode=mock
     # receipts). Never a silent mock fallback for a selected http backend.
@@ -927,8 +1003,9 @@ def build_container(
         team_runner=team_runner,
         drafts=drafts,
         context=staged_context,
-        schedules=ScheduleService(repository, ApschedulerTriggers(),
-                                  default_timezone=settings.default_timezone),
+        schedules=ScheduleService(
+            repository, ApschedulerTriggers(), default_timezone=settings.default_timezone
+        ),
         http_clients=clients,
         readiness_probes=probes,
         events=events,

@@ -245,6 +245,7 @@ def create_local_ui_app(
     review: UpstreamTarget | None = None,
     chat: ChatPort | None = None,
     teams: Any | None = None,
+    model_info: dict[str, Any] | None = None,
 ) -> FastAPI:
     """Build the UI with fixed, server-injected upstreams only.
 
@@ -380,6 +381,8 @@ def create_local_ui_app(
             "ui": {"mode": "local", "framework": "none", "teammate_ui": False},
             "core": core_state,
             "review": review_state,
+            # P1-008K: adapter name / simulated flag / model id only (never endpoint or key).
+            "model": model_info or {"adapter": "unknown", "simulated": True, "model_id": None},
             "features": {
                 "sessions": "enabled",
                 "notes": "enabled",
