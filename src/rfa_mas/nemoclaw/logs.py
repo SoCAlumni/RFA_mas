@@ -21,7 +21,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTEXT_FIELDS = ("request_id", "run_id", "role", "audience", "profile")
-_context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar("rfa_log_context", default={})
+_context: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar("rfa_log_context", default=None)
 
 # credentials in any string value: bearer headers, NVIDIA / OpenAI / Google style keys, KEY=value pairs
 _SECRET = re.compile(
@@ -52,7 +52,7 @@ def _is_secret_key(key: Any) -> bool:
 
 def bind(**fields: Any) -> None:
     """Bind context fields (request_id, run_id, role, audience, profile) for the current task/thread."""
-    current = dict(_context.get())
+    current = dict(_context.get() or {})
     for key, value in fields.items():
         if value is None:
             current.pop(key, None)
@@ -62,7 +62,7 @@ def bind(**fields: Any) -> None:
 
 
 def context() -> dict[str, Any]:
-    return dict(_context.get())
+    return dict(_context.get() or {})
 
 
 def reset() -> None:
@@ -74,7 +74,7 @@ class _Bound:
         self.fields, self.token = fields, None
 
     def __enter__(self):
-        self.token = _context.set({**_context.get(), **{k: v for k, v in self.fields.items() if v is not None}})
+        self.token = _context.set({**(_context.get() or {}), **{k: v for k, v in self.fields.items() if v is not None}})
         return self
 
     def __exit__(self, *exc):
