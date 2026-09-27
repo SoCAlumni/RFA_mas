@@ -52,7 +52,9 @@ def test_llm_stage_redacts_spans_and_blocks(censors):
     redacting = CensorPipeline(censors, StaticJudge("redact", spans=["Zephyr", "다음 분기"]))
     result = redacting.run(text, "external")
     assert result.verdict == "redact" and "Zephyr" not in result.text and "[REDACTED:llm]" in result.text
-    assert result.redactions == {"internal-project": 1, "llm": 2}
+    # Zephyr is a declared codename keyword, so regex masks it first and the LLM only masks the schedule
+    assert result.redactions == {"internal-project": 2, "llm": 1}
+    assert result.stages[-1].detail["hints"] == 0
     blocking = CensorPipeline(censors, StaticJudge("block")).run(text, "external")
     assert blocking.verdict == "block" and blocking.text == ""
 

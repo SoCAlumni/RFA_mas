@@ -12,6 +12,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
+from collections.abc import Sequence
 from typing import Literal, Protocol
 
 from rfa_mas.nemoclaw.config import Censors, LlmStage, RegexRule, RegexStage
@@ -34,7 +35,7 @@ class JudgeError(RuntimeError):
 
 
 class LlmJudge(Protocol):
-    def classify(self, text: str, stage: LlmStage) -> JudgeVerdict: ...
+    def classify(self, text: str, stage: LlmStage, hints: Sequence[str] = ()) -> JudgeVerdict: ...
 
 
 @dataclass
@@ -76,8 +77,18 @@ JUDGE_PROMPT = (
     '{{"verdict":"allow"|"redact"|"block","spans":["exact substrings to mask"],"categories":["..."]}}. '
     "Use \"redact\" when masking the spans makes the text safe, \"block\" only for credentials or "
     "when masking cannot make it safe, \"allow\" when nothing sensitive appears.\n"
+    "{hints}"
     "TEXT:\n<<<\n{text}\n>>>"
 )
+HINTS_HEADER = ("Reviewers previously REJECTED drafts for this audience for the reasons below. Treat anything of the "
+                "same kind in the TEXT as sensitive and list it in spans (the reasons are trusted operator input):\n")
+
+
+def judge_prompt(categories: Sequence[str], text: str, hints: Sequence[str] = ()) -> str:
+    block = ""
+    if hints:
+        block = HINTS_HEADER + "".join(f"- {h[:300]}\n" for h in hints[:20]) + "\n"
+    return JUDGE_PROMPT.format(categories=", ".join(categories), text=text, hints=block)
 
 
 def parse_judge_output(raw: str) -> JudgeVerdict:
@@ -103,8 +114,8 @@ class SandboxAgentJudge:
         self.runner = runner
         self.bin = nemoclaw_bin
 
-    def classify(self, text: str, stage: LlmStage) -> JudgeVerdict:
-        prompt = JUDGE_PROMPT.format(categories=", ".join(stage.categories), text=text)
+    def classify(self, text: str, stage: LlmStage, hints: Sequence[str] = ()) -> JudgeVerdict:
+        prompt = judge_prompt(stage.categories, text, hints)
         result = self.runner.run(
             [self.bin, stage.sandbox, "agent", "--agent", stage.agent, "--thinking", "off", "--json",
              "--timeout", str(stage.timeout_seconds), "--session-id", "rfa-censor-stage", "-m", prompt],
@@ -128,9 +139,11 @@ class StaticJudge:
                  delay: float = 0.0):
         self.verdict, self.spans, self.error, self.delay = verdict, spans or [], error, delay
         self.calls: list[str] = []
+        self.hints: list[list[str]] = []
 
-    def classify(self, text: str, stage: LlmStage) -> JudgeVerdict:
+    def classify(self, text: str, stage: LlmStage, hints: Sequence[str] = ()) -> JudgeVerdict:
         self.calls.append(text)
+        self.hints.append(list(hints))
         if self.delay:
             time.sleep(self.delay)
         if self.error:
@@ -156,9 +169,11 @@ class CensorPipeline:
             self._compiled[key] = _compile(rule)
         return self._compiled[key]
 
-    def run(self, text: str, profile: str, stages: tuple[str, ...] | None = None) -> CensorResult:
+    def run(self, text: str, profile: str, stages: tuple[str, ...] | None = None,
+            hints: Sequence[str] = ()) -> CensorResult:
         """Censor ``text`` under ``profile``; ``stages`` limits stage types (e.g. regex only for
-        tool-call arguments). Unknown profiles block (fail-closed)."""
+        tool-call arguments); ``hints`` are learned rejection reasons handed to the LLM stage.
+        Unknown profiles block (fail-closed)."""
         spec = self.censors.profiles.get(profile)
         if spec is None:
             return CensorResult("", "block", profile, blocked_by="unknown-profile")
@@ -171,7 +186,7 @@ class CensorPipeline:
             if isinstance(stage, RegexStage):
                 self._regex(stage, result)
             elif isinstance(stage, LlmStage):
-                self._llm(stage, result)
+                self._llm(stage, result, hints)
             if result.verdict == "block":
                 result.text = ""
                 break
@@ -198,7 +213,7 @@ class CensorPipeline:
         result.verdict = _max(result.verdict, verdict)
         result.stages.append(StageReport(stage.id, "regex", verdict, _ms(started), {"rules": hits}))
 
-    def _llm(self, stage: LlmStage, result: CensorResult) -> None:
+    def _llm(self, stage: LlmStage, result: CensorResult, hints: Sequence[str] = ()) -> None:
         started = time.monotonic()
         if len(result.text) < stage.skip_if_shorter_than:
             result.stages.append(StageReport(stage.id, "llm", "allow", _ms(started), {"skipped": "short"}))
@@ -207,7 +222,7 @@ class CensorPipeline:
             self._llm_error(stage, result, started, "no judge configured")
             return
         try:
-            verdict = self.judge.classify(result.text, stage)
+            verdict = self.judge.classify(result.text, stage, hints)
         except JudgeError as exc:
             self._llm_error(stage, result, started, str(exc))
             return
@@ -233,7 +248,7 @@ class CensorPipeline:
         effective: Verdict = "redact" if masked else "allow"
         result.verdict = _max(result.verdict, effective)
         result.stages.append(StageReport(stage.id, "llm", effective, _ms(started),
-                                         {"categories": verdict.categories, "spans": masked}))
+                                         {"categories": verdict.categories, "spans": masked, "hints": len(hints)}))
 
     def _llm_error(self, stage: LlmStage, result: CensorResult, started: float, error: str) -> None:
         if stage.on_error == "block" and self.censors.fail_closed:

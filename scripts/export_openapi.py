@@ -1,6 +1,6 @@
 """Export generated OpenAPI documents (JSON + YAML) for teammate-facing contracts.
 
-Usage: .venv/bin/python scripts/export_openapi.py [inbox|knowledge-facade|all] [--out docs/api]
+Usage: .venv/bin/python scripts/export_openapi.py [inbox|knowledge-facade|ask|all] [--out docs/api]
 
 Pydantic/FastAPI are the source of truth; the files under docs/api are derived and must
 not be edited by hand. YAML is written for RFA_module-style Redoc pages
@@ -42,9 +42,21 @@ def _knowledge_facade():
     return create_knowledge_facade_app(build_container(settings)).openapi()
 
 
+def _ask():
+    import tempfile
+
+    from rfa_mas.nemoclaw.ask import build_fake_deps
+    from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
+    from rfa_mas.nemoclaw.config import load_ask, load_censors
+
+    learned = Path(tempfile.mkdtemp(prefix="rfa-openapi-")) / "learned.yaml"
+    return create_ask_app(AskService(build_fake_deps(load_ask(), load_censors(), learned), None)).openapi()
+
+
 EXPORTS: dict[str, Callable[[], dict]] = {
     "inbox": _inbox,
     "knowledge-facade": _knowledge_facade,
+    "ask": _ask,
 }
 
 

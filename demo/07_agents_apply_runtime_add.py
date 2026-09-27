@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo 04 — task 에이전트 런타임 추가: assignments.yaml 에 task 에이전트 `notes` 를 선언하면 manifest 가
+"""Demo 07 — task 에이전트 런타임 추가: assignments.yaml 에 task 에이전트 `notes` 를 선언하면 manifest 가
 다시 생성되고 `nemoclaw rfa-tasks-none agents apply -f` 가 재빌드 없이 roster 를 맞춘다(추가 → 목록 확인 → 제거)."""
 
 from _lib import ROOT, main, nemoclaw_bin
@@ -13,7 +13,7 @@ NEW_AGENT = """  notes:
     groups: [egress-none]
     alias: rfa-internal
     skill: task-summarizer
-    description: 데모 04 에서 런타임에 추가한 메모 정리 담당.
+    description: 데모 07 에서 런타임에 추가한 메모 정리 담당.
     tools: { allow: [read] }
 """
 
@@ -52,4 +52,4 @@ def body(demo):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main("04", "task 에이전트 런타임 추가 (nemoclaw agents apply)", body))
+    raise SystemExit(main("07", "task 에이전트 런타임 추가 (nemoclaw agents apply)", body))

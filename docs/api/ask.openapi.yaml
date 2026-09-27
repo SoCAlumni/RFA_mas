@@ -1,0 +1,434 @@
+openapi: 3.1.0
+info:
+  title: RFA knowledge server — /ask
+  summary: desk(대응 에이전트) ↔ 지식 서버 계약
+  description: 'head → broker → task agent → censor 를 수행하는 `ask()` 하나를 노출한다. `audience` 가 검열 프로파일을 정한다(public→public,
+    company/self→internal). 슬롯이 없으면 202 로 큐에 넣고 `GET /ask/{request_id}` 로 폴링한다. `feedback[].reason` 은
+    사람 입력으로 신뢰되어 검열 규칙(learned.yaml)으로 되먹임된다. 인증: `Authorization: Bearer <RFA_ASK_TOKEN>` (.env.dev).'
+  version: 1.0.0
+paths:
+  /ask:
+    post:
+      tags:
+      - ask
+      summary: Post Ask
+      operationId: ask
+      parameters:
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AskRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AskResponse'
+        '202':
+          description: admission queue 대기
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuedResponse'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Unauthorized
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Service Unavailable
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /ask/{request_id}:
+    get:
+      tags:
+      - ask
+      summary: Get Ask
+      operationId: getAsk
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      - name: authorization
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Authorization
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AskResponse'
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueuedResponse'
+          description: Accepted
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Not Found
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: Unauthorized
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /chat:
+    post:
+      tags:
+      - personal
+      summary: Post Chat
+      description: 개인 채팅(audience self). 진입점은 loopback 전용이라 bearer 없이 같은 ask() 를 호출한다.
+      operationId: chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AskResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AskRequest:
+      properties:
+        request_id:
+          type: string
+          pattern: ^[A-Za-z0-9_.:-]{1,64}$
+          title: Request Id
+          description: 멱등키. 같은 id 재요청 시 캐시 응답
+        question:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Question
+        channel:
+          type: string
+          enum:
+          - github
+          - slack
+          - cli
+          - web
+          title: Channel
+          description: github|slack (desk). cli|web 은 개인 채팅
+        audience:
+          type: string
+          enum:
+          - public
+          - company
+          - self
+          title: Audience
+          description: public→censor profile public, company/self→internal
+        target:
+          type: string
+          maxLength: 500
+          title: Target
+          description: 스레드·이슈 식별자(계보 추적)
+          default: ''
+        url:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Url
+        requester:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Requester
+        context:
+          items:
+            $ref: '#/components/schemas/ContextItem'
+          type: array
+          maxItems: 50
+          title: Context
+        feedback:
+          items:
+            $ref: '#/components/schemas/FeedbackItem'
+          type: array
+          maxItems: 20
+          title: Feedback
+      type: object
+      required:
+      - request_id
+      - question
+      - channel
+      - audience
+      title: AskRequest
+    AskResponse:
+      properties:
+        request_id:
+          type: string
+          title: Request Id
+        knowledge:
+          type: string
+          title: Knowledge
+          description: 검열을 통과한 텍스트. refusal 이 있으면 빈 문자열
+        task:
+          anyOf:
+          - $ref: '#/components/schemas/TaskRef'
+          - type: 'null'
+        refusal:
+          anyOf:
+          - $ref: '#/components/schemas/Refusal'
+          - type: 'null'
+        censor:
+          $ref: '#/components/schemas/CensorSummary'
+      type: object
+      required:
+      - request_id
+      - knowledge
+      - task
+      - refusal
+      - censor
+      title: AskResponse
+    CensorSummary:
+      properties:
+        profile:
+          type: string
+          title: Profile
+        verdict:
+          type: string
+          enum:
+          - allow
+          - redact
+          title: Verdict
+        redactions:
+          items:
+            $ref: '#/components/schemas/Redaction'
+          type: array
+          title: Redactions
+      type: object
+      required:
+      - profile
+      - verdict
+      title: CensorSummary
+    ChatRequest:
+      properties:
+        question:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Question
+        session_id:
+          anyOf:
+          - type: string
+            pattern: ^[A-Za-z0-9_.:-]{1,64}$
+          - type: 'null'
+          title: Session Id
+        channel:
+          type: string
+          enum:
+          - cli
+          - web
+          title: Channel
+          default: web
+      type: object
+      required:
+      - question
+      title: ChatRequest
+      description: Personal chat (audience self) — same ``ask()`` function, request_id issued by the server.
+    ContextItem:
+      properties:
+        author:
+          type: string
+          maxLength: 200
+          title: Author
+          default: ''
+        text:
+          type: string
+          maxLength: 8000
+          title: Text
+        at:
+          type: string
+          maxLength: 64
+          title: At
+          default: ''
+      type: object
+      required:
+      - text
+      title: ContextItem
+      description: 'One message of the external thread (untrusted input: shown to the head as data only).'
+    ErrorBody:
+      properties:
+        code:
+          type: string
+          title: Code
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Detail
+      type: object
+      required:
+      - code
+      title: ErrorBody
+    FeedbackItem:
+      properties:
+        draft:
+          type: string
+          maxLength: 20000
+          title: Draft
+          default: ''
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 1
+          title: Reason
+        at:
+          type: string
+          maxLength: 64
+          title: At
+          default: ''
+      type: object
+      required:
+      - reason
+      title: FeedbackItem
+      description: 'One rejected draft. ``reason`` is human input (trusted, fed back into the censor rules);
+
+        ``draft`` is external text (data only).'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    QueuedResponse:
+      properties:
+        request_id:
+          type: string
+          title: Request Id
+        status:
+          type: string
+          const: queued
+          title: Status
+          default: queued
+        position:
+          type: integer
+          minimum: 1.0
+          title: Position
+      type: object
+      required:
+      - request_id
+      - position
+      title: QueuedResponse
+    Redaction:
+      properties:
+        reason:
+          type: string
+          title: Reason
+          description: rule id or 'llm'; spans/원문은 포함하지 않는다
+      type: object
+      required:
+      - reason
+      title: Redaction
+    Refusal:
+      properties:
+        code:
+          type: string
+          enum:
+          - no_task
+          - blocked_by_policy
+          - no_knowledge
+          - queue_full
+          title: Code
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - code
+      - message
+      title: Refusal
+    TaskRef:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+      type: object
+      required:
+      - id
+      - name
+      title: TaskRef
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

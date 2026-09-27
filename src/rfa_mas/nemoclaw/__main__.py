@@ -12,7 +12,8 @@ Commands (all read deploy/nemoclaw/{assignments,routing,censors}.yaml):
   bootstrap       preflight → retire legacy → onboard in order → reconcile → seed (resumable)
   teardown        destroy declared sandboxes (reverse order)
   switch-route    change the gateway route mode without restarting sandboxes
-  serve           run egress-proxy + broker + channel entry/audit (see serve.py)
+  serve           run egress-proxy + broker + channel entry/audit + /ask (see serve.py; --fake-agents for no sandbox)
+  chat            personal chat: one question through ask() (audience self → internal censor)
   relocate        move an agent between security groups (promote/demote policy)
   requests        list/approve/deny blocked network requests (OCSF DENIED → preset)
   audit           print audit events
@@ -33,6 +34,7 @@ from rfa_mas.nemoclaw.config import (
     DEPLOY_DIR,
     ConfigError,
     cross_check,
+    load_ask,
     load_assignments,
     load_censors,
     load_routing,
@@ -46,12 +48,14 @@ def _runner() -> SubprocessRunner:
 
 
 def cmd_validate(args) -> int:
-    a, r, c = load_assignments(), load_routing(), load_censors()
-    problems = cross_check(a, r, c)
+    a, r, c, k = load_assignments(), load_routing(), load_censors(), load_ask()
+    problems = cross_check(a, r, c, k)
     print(json.dumps({"assignments": {"sandboxes": a.ordered_sandboxes(), "placement": a.placement()},
                       "routing": {"aliases": sorted(r.aliases), "channels": sorted(r.channels),
                                   "default_mode": r.proxy.default_mode},
                       "censors": {"profiles": sorted(c.profiles)},
+                      "ask": {"audiences": {n: s.profile for n, s in k.audiences.items()}, "tasks": [t.id for t in k.tasks],
+                              "max_inflight": k.admission.max_inflight},
                       "problems": problems}, ensure_ascii=False, indent=2))
     return 1 if problems else 0
 
@@ -192,7 +196,45 @@ def cmd_switch_route(args) -> int:
 def cmd_serve(args) -> int:
     from rfa_mas.nemoclaw.serve import serve
 
-    return serve(replay=args.replay)
+    return serve(replay=args.replay, fake_agents=args.fake_agents)
+
+
+def cmd_chat(args) -> int:
+    """Personal chat through the running entry (`/chat`, loopback), or in-process with --fake-agents."""
+    import asyncio
+
+    import httpx
+
+    if args.fake_agents:
+        from rfa_mas.nemoclaw.ask import ask, build_fake_deps
+        from rfa_mas.nemoclaw.ask_contract import AskRequest
+
+        ask_cfg = load_ask()
+        deps = build_fake_deps(ask_cfg, load_censors(), bs.ROOT / ask_cfg.learned_rules_file)
+        req = AskRequest(request_id=f"cli-{args.session}", question=args.question, channel="cli", audience=args.audience,
+                         target=f"cli:{args.session}")
+        payload = asyncio.run(ask(req, deps)).response.model_dump(mode="json")
+    else:
+        routing = load_routing()
+        url = f"http://{routing.entry.bind}/chat"
+        try:
+            response = httpx.post(url, json={"question": args.question, "session_id": args.session, "channel": "cli"},
+                                  timeout=load_ask().admission.timeout_seconds + 10)
+        except httpx.HTTPError as exc:
+            print(f"error: entry not reachable at {url} ({type(exc).__name__}); run `make serve`", file=sys.stderr)
+            return 1
+        payload = response.json()
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    censor = payload.get("censor") or {}
+    if payload.get("refusal"):
+        print(f"[{payload['refusal']['code']}] {payload['refusal']['message']}")
+    else:
+        print(payload.get("knowledge", ""))
+    print(f"-- task={(payload.get('task') or {}).get('id')} censor={censor.get('profile')}/{censor.get('verdict')} "
+          f"redactions={[r['reason'] for r in censor.get('redactions', [])]} request_id={payload.get('request_id')}")
+    return 0
 
 
 def cmd_relocate(args) -> int:
@@ -247,7 +289,13 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("switch-route"); p.add_argument("mode"); p.add_argument("--force-openshell", action="store_true")
     p.set_defaults(func=cmd_switch_route)
     p = sub.add_parser("serve"); p.add_argument("--replay", action="store_true", help="no upstream calls; canned answers")
+    p.add_argument("--fake-agents", action="store_true", help="/ask with keyword head, KB-seed task agents, hint judge (no sandbox)")
     p.set_defaults(func=cmd_serve)
+    p = sub.add_parser("chat", help="personal chat through ask() (audience self)")
+    p.add_argument("question"); p.add_argument("--session", default="owner"); p.add_argument("--json", action="store_true")
+    p.add_argument("--audience", default="self", choices=["self", "company", "public"], help="fake-agents only; /chat is always self")
+    p.add_argument("--fake-agents", action="store_true", help="in-process ask() without the entry server")
+    p.set_defaults(func=cmd_chat)
     p = sub.add_parser("relocate"); p.add_argument("agent"); p.add_argument("--to-groups", required=True)
     p.add_argument("--wipe", action="store_true"); p.add_argument("--dry-run", action="store_true")
     p.set_defaults(func=cmd_relocate)

@@ -19,9 +19,11 @@ from pathlib import Path
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
-from starlette.routing import Route
+from starlette.routing import Mount, Route
 
 from rfa_mas.nemoclaw import audit
+from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
+from rfa_mas.nemoclaw.ask_contract import AskRequest
 from rfa_mas.nemoclaw.broker import Broker
 from rfa_mas.nemoclaw.censor import CensorPipeline
 from rfa_mas.nemoclaw.config import Assignments, Routing
@@ -47,10 +49,11 @@ class Entry:
     replay: bool = False
     proxy_key: str | None = None
     proxy_url: str = "http://127.0.0.1:8797/v1/chat/completions"
+    ask_service: AskService | None = None
     _sandboxes_cache: tuple[float, list[str]] = (0.0, [])
 
     def app(self) -> Starlette:
-        return Starlette(routes=[
+        routes = [
             Route("/healthz", self.healthz, methods=["GET"]),
             Route("/channel/{channel}/chat", self.chat, methods=["POST"]),
             Route("/audit/", self.audit_page, methods=["GET"]),
@@ -63,7 +66,10 @@ class Entry:
             Route("/broker/admin/undrain/{agent}", self.undrain, methods=["POST"]),
             Route("/broker/admin/state", self.broker_state, methods=["GET"]),
             Route("/broker/admin/ask", self.broker_ask, methods=["POST"]),
-        ])
+        ]
+        if self.ask_service is not None:  # /ask, /ask/{id}, /chat (+ /docs, /openapi.json) — matched after the routes above
+            routes.append(Mount("/", app=create_ask_app(self.ask_service)))
+        return Starlette(routes=routes)
 
     async def healthz(self, request: Request) -> Response:
         return JSONResponse({"status": "ok", "service": "rfa-sg-entry", "channels": sorted(self.routing.channels),
@@ -157,6 +163,9 @@ class Entry:
                 out.append({"id": f"agent:{agent_id}", "label": f"{agent_id} (브로커 직접)",
                             "sandbox": self.assignments.sandbox_for(agent_id)})
         out.append({"id": "proxy", "label": "proxy (egress-proxy 직접, 가장 빠름)", "sandbox": None})
+        if self.ask_service is not None:
+            out.append({"id": "ask:self", "label": "ask() 개인 채팅 (audience self → internal 검열)", "sandbox": None})
+            out.append({"id": "ask:public", "label": "ask() 공개 (audience public → public 검열, /ask 와 동일)", "sandbox": None})
         return out
 
     async def sandboxes(self, request: Request) -> Response:
@@ -211,6 +220,21 @@ class Entry:
                                  "target": target, "ms": int((time.monotonic() - started) * 1000),
                                  "status": "ok" if result.get("ok") else "error"},
                                 status_code=200 if result.get("ok") else 502)
+        if target.startswith("ask:") and self.ask_service is not None:
+            audience = target.split(":", 1)[1]
+            if audience not in self.ask_service.deps.config.audiences:
+                return JSONResponse({"code": "unknown_audience"}, status_code=422)
+            req = AskRequest(request_id=f"ui-{uuid.uuid4().hex[:12]}", question=text, channel="web", audience=audience,
+                             target=f"dashboard:{sid}")
+            status, payload = await self.ask_service.submit(req)
+            censor = payload.get("censor") or {}
+            refusal = payload.get("refusal")
+            reply = payload.get("knowledge") or (f"[refusal {refusal['code']}: {refusal['message']}]" if refusal else "")
+            return JSONResponse({**payload, "reply": reply, "verdict": censor.get("verdict"), "channel": channel,
+                                 "profile": censor.get("profile"), "target": target, "session_id": sid,
+                                 "redactions": {r["reason"]: 1 for r in censor.get("redactions", [])},
+                                 "ms": int((time.monotonic() - started) * 1000), "status": "ok" if status == 200 else "queued"},
+                                status_code=200)
         if target == "proxy":
             if not self.proxy_key:
                 return JSONResponse({"code": "proxy_key_unavailable"}, status_code=503)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo 05 — 에이전트 격하 이동 시 워크스페이스 스캔: research(intranet-ro, privilege 1) 의 워크스페이스에 내부 수치가
+"""Demo 08 — 에이전트 격하 이동 시 워크스페이스 스캔: research(intranet-ro, privilege 1) 의 워크스페이스에 내부 수치가
 든 메모를 만든 뒤 egress-none(privilege 0) 으로 격하 이동하면 브로커 drain → 번들 export → censor 스캔(redact)
 → agents apply(양쪽) → 마스킹된 상태만 import 된다. 마지막에 원래 그룹으로 격상 이동(상태 포함)해 복구한다."""
 
@@ -40,4 +40,4 @@ def body(demo):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main("05", "에이전트 격하 이동 시 워크스페이스 스캔 (drain → scan → agents apply)", body))
+    raise SystemExit(main("08", "에이전트 격하 이동 시 워크스페이스 스캔 (drain → scan → agents apply)", body))

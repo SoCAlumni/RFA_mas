@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import signal
+from collections.abc import Sequence
 from pathlib import Path
 
 import httpx
@@ -13,10 +14,15 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 
 from rfa_mas.nemoclaw import bootstrap as bs
+from rfa_mas.nemoclaw.ask import AskDeps, BrokerTasks, DirectHead, HintJudge, KeywordHead, FakeTasks
+from rfa_mas.nemoclaw.ask_api import AskService
 from rfa_mas.nemoclaw.broker import Broker
 from rfa_mas.nemoclaw.censor import CensorPipeline, JudgeError, JudgeVerdict, SandboxAgentJudge, parse_judge_output
-from rfa_mas.nemoclaw.config import LlmStage, Routing, cross_check, load_assignments, load_censors, load_routing
+from rfa_mas.nemoclaw.config import (
+    AskConfig, LlmStage, Routing, cross_check, load_ask, load_assignments, load_censors, load_routing,
+)
 from rfa_mas.nemoclaw.entry import Entry
+from rfa_mas.nemoclaw.learned import LearnedRules
 from rfa_mas.nemoclaw.markers import load_or_create_secret
 from rfa_mas.nemoclaw.proxy import EgressProxy
 from rfa_mas.nemoclaw.runner import SubprocessRunner
@@ -30,15 +36,15 @@ class DirectJudge:
         self.routing = routing
         self.backend_keys = backend_keys
 
-    def classify(self, text: str, stage: LlmStage) -> JudgeVerdict:
-        from rfa_mas.nemoclaw.censor import JUDGE_PROMPT
+    def classify(self, text: str, stage: LlmStage, hints: Sequence[str] = ()) -> JudgeVerdict:
+        from rfa_mas.nemoclaw.censor import judge_prompt
 
         alias = self.routing.aliases[stage.alias]
         backend = self.routing.backends[alias.backend]
         headers = {}
         if backend.auth == "bearer":
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
-        prompt = JUDGE_PROMPT.format(categories=", ".join(stage.categories), text=text)
+        prompt = judge_prompt(stage.categories, text, hints)
         if backend.kind == "ollama":
             url = f"{backend.url.rstrip('/')}/api/chat"
             payload = {"model": alias.model, "stream": False, "think": backend.think,
@@ -66,9 +72,9 @@ class CompositeJudge:
     def __init__(self, sandbox_judge, direct_judge):
         self.sandbox_judge, self.direct_judge = sandbox_judge, direct_judge
 
-    def classify(self, text: str, stage: LlmStage) -> JudgeVerdict:
+    def classify(self, text: str, stage: LlmStage, hints: Sequence[str] = ()) -> JudgeVerdict:
         judge = self.direct_judge if stage.runner == "direct" else self.sandbox_judge
-        return judge.classify(text, stage)
+        return judge.classify(text, stage, hints)
 
 
 def _split(bind: str) -> tuple[str, int]:
@@ -76,9 +82,33 @@ def _split(bind: str) -> tuple[str, int]:
     return host, int(port)
 
 
-def build(replay: bool = False):
-    assignments, routing, censors = load_assignments(), load_routing(), load_censors()
-    problems = cross_check(assignments, routing, censors)
+def ask_token(ask_cfg: AskConfig) -> str | None:
+    """Bearer for /ask from .env.dev (0600, git-ignored). Missing → /ask answers 503 until fixed."""
+    path = bs.ROOT / ask_cfg.auth.env_file
+    try:
+        bs.check_env_file(path, ask_cfg.auth.credential_env)
+        return bs.read_env_value(path, ask_cfg.auth.credential_env)
+    except Exception as exc:
+        bs.log(f"/ask: {ask_cfg.auth.credential_env} unavailable ({exc}); /ask will answer 503")
+        return None
+
+
+def build_ask_service(ask_cfg: AskConfig, pipeline: CensorPipeline, broker: Broker, secret: bytes, proxy_key: str,
+                      proxy_url: str, *, fake_agents: bool = False, token: str | None = None) -> AskService:
+    learned = LearnedRules(bs.ROOT / ask_cfg.learned_rules_file)
+    if fake_agents:
+        deps = AskDeps(ask_cfg, CensorPipeline(pipeline.censors, HintJudge()), KeywordHead(), FakeTasks(), learned)
+    else:
+        head = (DirectHead(proxy_url, proxy_key, secret, timeout_seconds=ask_cfg.head.timeout_seconds,
+                           fallback=KeywordHead() if ask_cfg.head.fallback == "keywords" else None)
+                if ask_cfg.head.runner == "direct" else KeywordHead())
+        deps = AskDeps(ask_cfg, pipeline, head, BrokerTasks(broker), learned)
+    return AskService(deps, token)
+
+
+def build(replay: bool = False, fake_agents: bool = False):
+    assignments, routing, censors, ask_cfg = load_assignments(), load_routing(), load_censors(), load_ask()
+    problems = cross_check(assignments, routing, censors, ask_cfg)
     if problems:
         raise SystemExit("configuration problems: " + "; ".join(problems))
     secret = load_or_create_secret(bs.ROOT / routing.proxy.marker_key_file)
@@ -100,9 +130,12 @@ def build(replay: bool = False):
     broker = Broker(assignments, routing, secret, host_secrets.values[routing.broker.credential_env], runner,
                     replay=replay)
     proxy_port = routing.proxy.bind.rsplit(":", 1)[1]
+    proxy_url = f"http://127.0.0.1:{proxy_port}/v1/chat/completions"
+    ask_service = build_ask_service(ask_cfg, pipeline, broker, secret, host_secrets.values[routing.proxy.credential_env],
+                                    proxy_url, fake_agents=fake_agents, token=ask_token(ask_cfg))
     entry = Entry(assignments, routing, pipeline, broker, secret, runner, replay=replay,
                   proxy_key=host_secrets.values[routing.proxy.credential_env],
-                  proxy_url=f"http://127.0.0.1:{proxy_port}/v1/chat/completions")
+                  proxy_url=proxy_url, ask_service=ask_service)
     broker_app = Starlette(routes=[
         Route("/healthz", proxy.healthz, methods=["GET"]),
         Route(routing.broker.path, broker.mcp, methods=["GET", "POST", "DELETE"]),
@@ -124,8 +157,8 @@ async def _run_all(servers: list[uvicorn.Server]) -> None:
     await asyncio.gather(*tasks, return_exceptions=True)
 
 
-def serve(replay: bool = False) -> int:
-    assignments, routing, proxy, broker_app, entry_app = build(replay=replay)
+def serve(replay: bool = False, fake_agents: bool = False) -> int:
+    assignments, routing, proxy, broker_app, entry_app = build(replay=replay, fake_agents=fake_agents)
     proxy_host, proxy_port = _split(routing.proxy.bind)
     broker_host, broker_port = _split(routing.broker.bind)
     entry_host, entry_port = _split(routing.entry.bind)
@@ -147,8 +180,9 @@ def serve(replay: bool = False) -> int:
     bs.log(f"egress-proxy http://{routing.proxy.bind}/v1 (route {routing.proxy.route_url}, mode {routing.proxy.default_mode})")
     bs.log(f"broker {'https' if tls else 'http'}://{routing.broker.bind}{routing.broker.path} (+ REST /broker/*)")
     bs.log(f"entry/audit http://{routing.entry.bind}/audit/  replay={replay}")
+    bs.log(f"/ask http://{routing.entry.bind}/ask (bearer RFA_ASK_TOKEN) fake_agents={fake_agents}; /chat (self, loopback)")
     asyncio.run(_run_all(servers))
     return 0
 
 
-__all__ = ["serve", "build", "DirectJudge", "Path"]
+__all__ = ["serve", "build", "build_ask_service", "ask_token", "DirectJudge", "Path"]

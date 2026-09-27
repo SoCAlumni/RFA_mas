@@ -1,0 +1,4 @@
+# 되먹임된 거절 사유. `/ask` 가 feedback[].reason 을 {audience, task, reason, at} 로 누적한다(사람 입력이므로 신뢰).
+# censor LLM 단계 프롬프트와 head 프롬프트에 같은 audience·task 의 사유가 주입된다. 손으로 편집해도 된다.
+version: 1
+learned: []
