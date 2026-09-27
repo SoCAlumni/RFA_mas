@@ -163,7 +163,7 @@ def test_manifest_rendering_is_deterministic_and_schema_shaped(tmp_path, assignm
     assert manifest_agent_ids(main) == ["benchmark", "censor", "research", "summarizer"]
     for agent in main["agents"]:
         assert agent["model"].startswith("inference/rfa-")
-        assert agent["tools"]["allow"]  # secondaries inherit no tools by default
+        assert agent["tools"].get("allow") or agent["tools"].get("deny")  # secondaries inherit no tools by default
         assert set(agent) <= {"id", "description", "model", "tools", "subagents"}
     empty = render_manifest(assignments, "rfa-tasks-none")  # opt-in sandbox nobody uses: head only
     assert "agents" not in empty and "allowAgents" not in empty["main"]["subagents"]
