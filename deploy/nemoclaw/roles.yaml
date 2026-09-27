@@ -2,7 +2,7 @@
 # capability = 요구사항에서 추출되는 필요 능력. groups/alias/skill/tools 는 역할별로 고정이며 요청이 바꿀 수 없다.
 # tools: assignments.yaml 과 같은 형태(coding 프로파일 + deny). OpenClaw 2026.7.1 관리 이미지는 profile 을 allow 뒤에 적용해
 #        `profile: minimal` + allow 가 sessions_spawn 까지 지운다(sg-4g 관측). 조사형=research/benchmark 와 같게(exec 로 curl),
-#        텍스트형=summarizer/censor 와 같게(runtime 없음), supervisor=assistant 와 같게(sessions 유지, bundle-mcp 도 제거).
+#        텍스트형=summarizer/censor 와 같게(runtime 없음), supervisor=assistant 와 같게(sessions 유지, bundle-mcp 도 제거, exec 는 남김).
 version: 1
 max_members: 4                      # OpenClaw maxChildrenPerAgent(기본 5) 안에서 supervisor 가 한 번에 부릴 수 있는 수
 capabilities:
@@ -47,7 +47,10 @@ roles:
     keywords: [검증, 확인, verify]
 supervisor:
   skill: team-supervisor
-  tools: { profile: coding, deny: [group:runtime, write, edit, apply_patch, group:web, cron, group:memory, group:media, skill_workshop, browser, bundle-mcp] }
+  # OpenClaw copies the requester's tool denylist into every sessions_spawn child (resolveStoredSubagentInheritedToolDenylist):
+  # a supervisor that denies group:runtime leaves research/benchmark without exec (observed 2026-09-28). Deny only
+  # process/code_execution here; text-only roles deny group:runtime themselves.
+  tools: { profile: coding, deny: [process, code_execution, write, edit, apply_patch, group:web, cron, group:memory, group:media, skill_workshop, browser, bundle-mcp] }
 always: [verify]                    # 모든 팀에 포함되는 capability
 excludes:
   no_egress: [intranet_evidence, benchmark_numbers]   # no_egress 요구 시 제외되는 capability

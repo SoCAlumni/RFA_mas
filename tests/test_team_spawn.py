@@ -115,7 +115,8 @@ async def test_team_declaration_merges_into_assignments_and_manifest_allows_only
     # the supervisor keeps the sessions tools, members lose them
     sup_tools = entries["t-aurora_dash-sup"]["tools"]
     assert sup_tools["profile"] == "coding" and "group:sessions" not in sup_tools["deny"]
-    assert {"group:runtime", "write", "bundle-mcp"} <= set(sup_tools["deny"])
+    assert {"process", "code_execution", "write", "bundle-mcp"} <= set(sup_tools["deny"])
+    assert "group:runtime" not in sup_tools["deny"]  # children inherit the requester's denylist; research needs exec
     assert all("allowAgents" not in entries[m["agent_id"]]["subagents"]
                and "group:sessions" in entries[m["agent_id"]]["tools"]["deny"] for m in members)
     assert "t-aurora_dash-sup" in manifest["main"]["subagents"]["allowAgents"]

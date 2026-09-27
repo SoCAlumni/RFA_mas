@@ -29,6 +29,7 @@ from rfa_mas.nemoclaw import audit, logs
 from rfa_mas.nemoclaw.config import Assignments, Routing
 from rfa_mas.nemoclaw.markers import make_marker, strip_markers
 from rfa_mas.nemoclaw.runner import Runner, extract_json
+from rfa_mas.nemoclaw.session_wait import NO_RESPONSE, SessionWaiter, session_key
 
 ROOT = Path(__file__).resolve().parents[3]
 OnDelta = Callable[[str], Awaitable[None] | None]
@@ -90,7 +91,7 @@ class GatewayTransport:
                     raise TransportError(f"gateway HTTP {response.status_code}")
                 data = response.json()
                 text = str(((data.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
-                if on_delta and text:
+                if on_delta and text and text.strip() != NO_RESPONSE:
                     await _emit(on_delta, text)
             else:
                 parts: list[str] = []
@@ -112,7 +113,7 @@ class GatewayTransport:
                             if first_ms is None:
                                 first_ms = timer.ms
                             parts.append(delta)
-                            if on_delta:
+                            if on_delta and delta.strip() != NO_RESPONSE:  # a yielded run's placeholder
                                 await _emit(on_delta, delta)
                 text = "".join(parts)
         except httpx.HTTPError as exc:
@@ -131,6 +132,12 @@ async def _emit(on_delta: OnDelta, text: str) -> None:
     result = on_delta(text)
     if asyncio.iscoroutine(result):
         await result
+
+
+def _normalize_reply(text: str) -> str:
+    """The gateway answers ``No response from OpenClaw.`` when a run ends without payloads (a yield)."""
+    stripped = (text or "").strip()
+    return "(empty reply)" if stripped in ("", "(empty reply)", NO_RESPONSE) else stripped
 
 PROTOCOL_VERSION = "2025-06-18"
 SERVER_INFO = {"name": "rfa-broker", "version": "1.0"}
@@ -182,10 +189,14 @@ class Broker:
     inflight: dict[str, int] = field(default_factory=dict)
     session_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     transport: GatewayTransport | None = None   # built from routing.broker when transport == "gateway"
+    waiter: SessionWaiter | None = None         # supervisors: their turn ends at sessions_yield; wait for the final
+    wait_for_subagents: bool = True
 
     def __post_init__(self):
         if self.transport is None and self.routing.broker.transport == "gateway":
             self.transport = GatewayTransport(self.routing)
+        if self.waiter is None and self.wait_for_subagents:
+            self.waiter = SessionWaiter(self.runner)
 
     # ---- routing --------------------------------------------------------------------------
 
@@ -224,6 +235,7 @@ class Broker:
         """``on_delta`` (sync or async callable) receives reply text as it arrives on the gateway HTTP
         transport; on the CLI path it is called once with the whole reply."""
         started = time.monotonic()
+        since_ms = int(time.time() * 1000)  # this turn's transcript entries come after this
         if agent in self.draining:
             audit.record(kind="broker", verdict="refused", action="ask", agent=agent, session_id=session_id,
                          detail={"reason": "draining"})
@@ -268,22 +280,55 @@ class Broker:
                         reply, status = f"task agent turn failed (gateway http): {exc}", "error"
                     else:
                         reply, status = await asyncio.to_thread(self._turn, decision, sid, message)
-                        if status == "ok" and on_delta:
+                        if status == "ok" and on_delta and _normalize_reply(reply) != "(empty reply)":
                             await _emit(on_delta, reply)
             else:
                 reply, status = await asyncio.to_thread(self._turn, decision, sid, message)
-                if status == "ok" and on_delta:
+                if status == "ok" and on_delta and _normalize_reply(reply) != "(empty reply)":
                     await _emit(on_delta, reply)
+            wait_detail: dict = {}
+            if status == "ok":
+                reply, status, wait_detail = await self._settle(decision, sid, since_ms, reply, on_delta, started)
         finally:
             self.inflight[agent] -= 1
         ms = int((time.monotonic() - started) * 1000)
         audit.record(kind="broker", verdict=status, action=decision.kind, channel=channel,
                      profile=self.routing.channels[channel].profile, sandbox=decision.sandbox, agent=agent,
                      session_id=sid, detail={"caller_sandbox": caller_sandbox, "ms": ms, "alias": decision.alias,
-                                             "transport": transport_used})
+                                             "transport": transport_used, **wait_detail})
         return {"ok": status == "ok", "agent": agent, "sandbox": decision.sandbox, "route": decision.kind,
                 "transport": transport_used, "channel": channel, "session_id": sid, "reply": reply, "ms": ms,
-                **({"error": reply} if status != "ok" else {})}
+                **({"wait": wait_detail} if wait_detail else {}), **({"error": reply} if status != "ok" else {})}
+
+    def _is_supervisor(self, agent: str) -> bool:
+        spec = self.assignments.agents.get(agent)
+        return bool(spec is not None and spec.allow_agents)
+
+    async def _settle(self, decision: RouteDecision, sid: str, since_ms: int, reply: str, on_delta: OnDelta | None,
+                      started: float) -> tuple[str, str, dict]:
+        """A team supervisor's turn ends at its first ``sessions_yield`` (members complete push-based), so the
+        gateway/CLI reply is empty or provisional: wait for the final assistant message in its transcript.
+        Plain task agents answer within their turn."""
+        turn_reply = _normalize_reply(reply)
+        if self.replay or self.waiter is None or not self._is_supervisor(decision.agent):
+            return turn_reply, "ok", {}
+        budget = self.routing.broker.task_turn_timeout_seconds
+        remaining = max(10.0, budget - (time.monotonic() - started))
+        outcome = await asyncio.to_thread(self.waiter.wait_final, decision.sandbox, decision.openclaw_id,
+                                          session_key(decision.openclaw_id, sid), since_ms, remaining)
+        state = str(outcome.get("state") or "error")
+        detail = {"wait_state": state, "wait_ms": outcome.get("waited_ms"), "wait_turns": outcome.get("turns")}
+        if state == "final":
+            final = strip_markers(str(outcome.get("text") or ""))
+            if final and final != turn_reply:
+                if on_delta:  # the turn streamed nothing (or only a provisional note) before yielding
+                    await _emit(on_delta, final if turn_reply == "(empty reply)" else f"\n\n{final}")
+                return final, "ok", detail
+            return turn_reply, "ok", detail
+        if turn_reply != "(empty reply)":  # the turn already carried an answer; the wait only failed to confirm it
+            return turn_reply, "ok", {**detail, "wait_error": str(outcome.get("error") or "")[:200]}
+        reason = outcome.get("error") or outcome.get("text") or outcome.get("last") or state
+        return f"task agent did not finish its team turn ({state}): {str(reason)[:160]}", "error", detail
 
     def _turn(self, decision: RouteDecision, sid: str, message: str) -> tuple[str, str]:
         timeout = self.routing.broker.task_turn_timeout_seconds

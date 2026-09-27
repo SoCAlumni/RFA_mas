@@ -13,7 +13,7 @@ from starlette.routing import Route
 from rfa_mas.nemoclaw import audit
 from rfa_mas.nemoclaw import config as cfg
 from rfa_mas.nemoclaw.broker import Broker
-from rfa_mas.nemoclaw.markers import find_markers
+from rfa_mas.nemoclaw.markers import find_markers, make_marker
 from rfa_mas.nemoclaw.runner import CommandResult
 
 NO_TEAMS = Path("/nonexistent/teams.yaml")  # static declaration only: teams.yaml is runtime state (POST /teams, task teams)
@@ -162,3 +162,62 @@ async def test_rest_fallback_surface(broker):
         assert ok.status_code == 200 and ok.json()["route"] == "local-spawn"  # REST fallback is also called from the assistant sandbox
         bad = await c.post("/broker/ask", headers=auth, json={"name": "nope", "query": "x"})
         assert bad.status_code == 409
+
+
+# ----------------------------------------------------------------------------- team supervisors: wait for the final
+
+
+class FakeWaiter:
+    """Stands in for session_wait.SessionWaiter (the in-sandbox transcript poll)."""
+
+    def __init__(self, outcome: dict):
+        self.outcome, self.calls = outcome, []
+
+    def wait_final(self, sandbox, agent_id, key, since_ms, timeout_s):
+        self.calls.append((sandbox, agent_id, key, since_ms, timeout_s))
+        return self.outcome
+
+
+def team_broker(reply: str, waiter: FakeWaiter) -> tuple[Broker, TurnRunner]:
+    runner = TurnRunner(reply=reply)
+    return Broker(cfg.load_assignments(), routing_with("cli"), SECRET, TOKEN, runner, waiter=waiter), runner
+
+
+async def test_supervisor_turn_waits_for_the_final_answer_after_its_yield():
+    # the gateway/CLI turn ends at sessions_yield with no payload; the answer lands in the transcript later
+    leaked = make_marker("agent", {"agent": "npu-sdk", "alias": "rfa-internal", "sandbox": "rfa-main"}, SECRET)
+    waiter = FakeWaiter({"state": "final", "text": f"Conv3D 는 미지원 {leaked}\n근거: 없음\n검증: pass",
+                         "turns": 4, "last": "text", "waited_ms": 21_000})
+    b, runner = team_broker("No response from OpenClaw.", waiter)
+    deltas: list[str] = []
+    result = await b.ask("npu-sdk", "Conv3D 지원 여부?", "s_team", None, on_delta=deltas.append)
+    assert result["ok"] and result["reply"].startswith("Conv3D 는 미지원") and "⟦" not in result["reply"]
+    assert deltas == [result["reply"]]  # the turn streamed nothing; the final is emitted once
+    sandbox, agent_id, key, since_ms, timeout_s = waiter.calls[0]
+    assert (sandbox, agent_id, key) == ("rfa-main", "npu-sdk", "agent:npu-sdk:broker-s_team")
+    assert since_ms > 1_700_000_000_000 and 10 <= timeout_s <= b.routing.broker.task_turn_timeout_seconds
+    assert result["wait"]["wait_state"] == "final" and result["wait"]["wait_ms"] == 21_000
+    assert audit.query(kind="broker")[0]["detail"]["wait_state"] == "final"
+
+
+async def test_supervisor_wait_timeout_is_an_error_and_plain_agents_never_wait():
+    waiter = FakeWaiter({"state": "timeout", "text": "", "last": "sessions_yield", "turns": 1, "waited_ms": 100})
+    b, _ = team_broker("No response from OpenClaw.", waiter)
+    result = await b.ask("npu-sdk", "q", "s_t2", None)
+    assert result["ok"] is False and "timeout" in result["error"] and "sessions_yield" in result["error"]
+    plain = await b.ask("research", "q", "s_t3", None)   # not a supervisor: answers within its turn
+    assert plain["ok"] and plain["reply"] == "(empty reply)" and "wait" not in plain and len(waiter.calls) == 1
+
+
+async def test_supervisor_reply_within_the_turn_is_kept_when_the_wait_confirms_it():
+    waiter = FakeWaiter({"state": "final", "text": "이미 최종", "turns": 1, "last": "text", "waited_ms": 60})
+    b, _ = team_broker("이미 최종", waiter)
+    deltas: list[str] = []
+    result = await b.ask("infer-opt", "q", "s_t4", None, on_delta=deltas.append)
+    assert result["ok"] and result["reply"] == "이미 최종" and deltas == ["이미 최종"]
+    # a provisional note before the yield is followed by the final, not replaced silently
+    waiter2 = FakeWaiter({"state": "final", "text": "최종", "turns": 2, "last": "text", "waited_ms": 9_000})
+    b2, _ = team_broker("확인 중입니다", waiter2)
+    deltas2: list[str] = []
+    result2 = await b2.ask("infer-opt", "q", "s_t5", None, on_delta=deltas2.append)
+    assert result2["reply"] == "최종" and deltas2 == ["확인 중입니다", "\n\n최종"]

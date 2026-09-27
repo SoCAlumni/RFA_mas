@@ -160,7 +160,10 @@ def test_routing_alias_resolution_prefers_least_exposure_and_bypass():
 def test_manifest_rendering_is_deterministic_and_schema_shaped(tmp_path, assignments):
     main = render_manifest(assignments, "rfa-main")
     assert main["defaults"] == {"subagents": {"maxSpawnDepth": 2}}  # main → team supervisor → members
-    assert main["main"]["tools"]["profile"] == "coding" and "group:runtime" in main["main"]["tools"]["deny"]  # assistant owns main
+    # coding profile narrowed by deny; process/code_execution rather than group:runtime because sessions_spawn children
+    # inherit the requester's denylist and research/benchmark need exec
+    assert main["main"]["tools"]["profile"] == "coding" and {"process", "code_execution", "write"} <= set(main["main"]["tools"]["deny"])
+    assert "group:runtime" not in main["main"]["tools"]["deny"] and "exec" not in main["main"]["tools"]["deny"]
     assert main["main"]["subagents"]["allowAgents"] == ["benchmark", "research", "summarizer"]  # censor never
     assert main["main"]["subagents"]["requireAgentId"] is True
     assert manifest_agent_ids(main) == ["benchmark", "censor", "research", "summarizer"]

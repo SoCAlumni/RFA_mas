@@ -7,7 +7,8 @@ main:
   tools:
     profile: coding
     deny:
-    - group:runtime
+    - process
+    - code_execution
     - write
     - edit
     - apply_patch
@@ -36,7 +37,8 @@ agents:
   tools:
     profile: coding
     deny:
-    - group:runtime
+    - process
+    - code_execution
     - write
     - edit
     - apply_patch
@@ -101,7 +103,8 @@ agents:
   tools:
     profile: coding
     deny:
-    - group:runtime
+    - process
+    - code_execution
     - write
     - edit
     - apply_patch
@@ -126,7 +129,8 @@ agents:
   tools:
     profile: coding
     deny:
-    - group:runtime
+    - process
+    - code_execution
     - write
     - edit
     - apply_patch
@@ -151,7 +155,8 @@ agents:
   tools:
     profile: coding
     deny:
-    - group:runtime
+    - process
+    - code_execution
     - write
     - edit
     - apply_patch

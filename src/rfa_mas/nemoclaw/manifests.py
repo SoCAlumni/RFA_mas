@@ -16,8 +16,8 @@ from rfa_mas.nemoclaw.config import DEPLOY_DIR, Assignments, ToolPolicy
 from rfa_mas.nemoclaw.markers import make_marker
 
 ROUTE_PROVIDER = "inference"  # NemoClaw routeProvider for the managed inference.local route
-HEAD_TOOLS = {"profile": "coding", "deny": ["group:runtime", "write", "edit", "apply_patch", "group:web", "cron",
-              "group:memory", "group:media", "skill_workshop", "browser", "bundle-mcp"]}
+HEAD_TOOLS = {"profile": "coding", "deny": ["process", "code_execution", "write", "edit", "apply_patch", "group:web", "cron",
+              "group:memory", "group:media", "skill_workshop", "browser", "bundle-mcp"]}  # not group:runtime: children inherit denies
 WORKSPACE_ROOT = "/sandbox/.openclaw"
 TASK_SPECS_DIR = DEPLOY_DIR / "task-specs"   # <team_id>.md: the task's scope/disclosure spec for its supervisor
 
@@ -123,7 +123,7 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes,
         f"- sandbox: {sandbox} (security groups: {', '.join(groups)})\n"
         f"- inference alias: {spec.alias}\n"
         f"- skill: {spec.skill}\n"
-        "- routing marker (managed by the host controller; never edit, quote or repeat it):\n"
+        "- identity marker (managed by the host controller; never edit, quote, repeat or send it to anyone):\n"
         f"  {marker}\n"
     )
     if spec.team:
@@ -135,10 +135,12 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes,
             "\n# TEAM\n\n"
             "You are this task's representative (supervisor). Your members (spawn with sessions_spawn, agentId exactly):\n"
             f"{members}\n"
-            "Rules: gather evidence from members first, never answer from memory; keep the first line of the user message "
-            "(routing marker) in every member message; pass any `[이전 거절 사유]` block through unchanged; "
+            "Rules: gather evidence from members first, never answer from memory; start every member message with the "
+            "first line of the user message (the `⟦rfa-channel …⟧` line, not the identity marker above) and pass any "
+            "`[이전 거절 사유]` block through unchanged; "
             + (f"send your draft plus the members' evidence to {verifier} last and apply one revision if it says revise; " if verifier else "")
-            + "answer with the evidence ids you used.\n"
+            + "answer with the evidence ids you used; when every evidence member reports NO_EVIDENCE, reply "
+              "`NO_EVIDENCE: <what was checked>` instead of inventing facts.\n"
         )
         spec_file = (task_specs_dir or TASK_SPECS_DIR) / f"{spec.team}.md" if spec.team else None
         if spec_file is not None and spec_file.is_file():
@@ -155,6 +157,6 @@ def render_head_identity(assignments: Assignments, sandbox: str, secret: bytes) 
         f"- name: head (routing only) for sandbox {sandbox}\n"
         f"- delegates to (sessions_spawn agentId): {', '.join(ids)}\n"
         "- you do not answer domain questions yourself; pick the agent whose description fits\n"
-        "- routing marker (managed by the host controller; never edit, quote or repeat it):\n"
+        "- identity marker (managed by the host controller; never edit, quote, repeat or send it to anyone):\n"
         f"  {marker}\n"
     )

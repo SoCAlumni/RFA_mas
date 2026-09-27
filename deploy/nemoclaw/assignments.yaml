@@ -55,7 +55,9 @@ agents:
     skill: sg-assistant
     description: 비서. 브로커 MCP 의 ask_task_agent 또는 같은 샌드박스 sessions_spawn 으로 task 에이전트에 위임한다.
     # coding 프로파일(fs·runtime·sessions·web 등 + 구성된 MCP 서버 도구 bundle-mcp)에서 위험 도구를 deny 로 제거한다.
-    tools: { profile: coding, deny: [group:runtime, write, edit, apply_patch, group:web, cron, group:memory, group:media, skill_workshop, browser] }
+    # deny process/code_execution, not group:runtime: sessions_spawn children inherit the requester's denylist, and
+    # research/benchmark need exec (curl) — see roles.yaml supervisor.
+    tools: { profile: coding, deny: [process, code_execution, write, edit, apply_patch, group:web, cron, group:memory, group:media, skill_workshop, browser] }
   censor:
     kind: task
     groups: []
