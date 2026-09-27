@@ -51,9 +51,38 @@ async def test_existing_task_reused_for_query_and_note_not_spawned(tmp_path):
         assert [e["stage"] for e in answer["stages"]] == [
             "understanding",
             "routing",
+            "team",
+            "preparing",
+            "team_result",
+            "completed",
+        ]
+        by_stage = {e["stage"]: e["detail"] for e in answer["stages"]}
+        assert by_stage["understanding"]["intent"] == "query"
+        assert by_stage["routing"]["route"]["reason"] == "existing_task_subject_match"
+        assert by_stage["routing"]["route"]["considered"] == 1
+        assert by_stage["routing"]["route"]["candidates"][0]["shared_subjects"] == ["아틀라스"]
+        team = by_stage["team"]
+        assert team["spawned"] is False and team["team_id"] == original.task.team_id
+        assert [m["role"] for m in team["members"]] == [
+            "supervisor",
+            "source_scout",
+            "evidence_reviewer",
+        ]
+        assert all(set(m) == {"role", "agent_id", "capabilities", "tools"} for m in team["members"])
+        roles = by_stage["team_result"]["roles"]
+        assert {r["role"] for r in roles} == {"supervisor", "source_scout", "evidence_reviewer"}
+        assert by_stage["completed"]["run_id"] == answer["run_id"]
+        # History replays the same persisted stage details (not recomputed).
+        history = (await c.get(f"/ui/api/sessions/{sid}/chat")).json()
+        assert history[-1]["stages"] == answer["stages"]
+        # Notes never execute the team: no team/team_result stages, no private text in detail.
+        assert [e["stage"] for e in note["stages"]] == [
+            "understanding",
+            "routing",
             "preparing",
             "completed",
         ]
+        assert "10월 3일" not in json.dumps(note["stages"], ensure_ascii=False)
 
 
 async def test_no_match_ambiguity_domain_and_other_owner(tmp_path):
@@ -278,9 +307,27 @@ async def test_explicit_request_creates_one_task_team_then_reuses_it(tmp_path):
         assert [e["stage"] for e in created["stages"]] == [
             "understanding",
             "routing",
+            "team_spawn",
             "preparing",
+            "team",
+            "team_result",
             "completed",
         ]
+        by_stage = {e["stage"]: e["detail"] for e in created["stages"]}
+        assert by_stage["team_spawn"]["pattern"] == "benchmark"
+        assert by_stage["team_spawn"]["planned_roles"] == [
+            "supervisor",
+            "paper_scout",
+            "experiment_runner",
+            "result_analyst",
+        ]
+        assert by_stage["team"]["spawned"] is True
+        assert by_stage["team"]["task_id"] == teams[0].task.task_id
+        assert [m["role"] for m in by_stage["team"]["members"]] == by_stage["team_spawn"][
+            "planned_roles"
+        ]
+        assert by_stage["team_result"]["simulated"] is True
+        assert len(by_stage["team_result"]["roles"]) == 4
         # Same message again: idempotent replay, no second Task/team.
         replay = await send(c, sid, "헬리오스 지연 벤치마크 결과를 검증해줘", "create")
         assert replay["run_id"] == created["run_id"] and len(await catalog.list_for(owner)) == 1
