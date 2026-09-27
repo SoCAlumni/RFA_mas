@@ -143,7 +143,8 @@
     const draft=turn.run && turn.run.draft;
     // Only shorten the known deterministic mock presentation for personal reading.
     // Original content stays in details. Public drafts and approved payloads are untouched.
-    if(!draft || draft.adapter!=="mock-model" || turn.intent!=="query") return turn.reply;
+    const mock=turn.run && (turn.run.adapters||[]).some(a=>a.port==="model" && a.adapter==="mock-model" && a.simulated);
+    if(!draft || !mock || turn.intent!=="query") return turn.reply;
     const split=turn.reply.indexOf("\n\n허용된 근거:\n");
     if(split<0) return turn.reply;
     let text=turn.reply.slice(split+"\n\n허용된 근거:\n".length);
