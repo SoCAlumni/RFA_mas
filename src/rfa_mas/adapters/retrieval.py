@@ -79,13 +79,18 @@ def lexical_terms(query: str) -> tuple[tuple[str, bool], ...]:
 #      right after it ("경쟁사 SDK", "방식의 GPU"): the query narrows a known named subject to
 #      something the KB never mentions. Only a bare word or a genitive "의" modifies the next
 #      token; any other particle ("일정과 benchmark", "일정을 SDK") ends the phrase. Uncovered
-#      Latin words are exempt (English synonyms such as "latency" for "지연"), and a following
+#      Lowercase Latin words are exempt (English synonyms such as "latency" for "지연"), and a following
 #      Korean word may be a verb-like noun ("공개").
+#   R3 unknown explicit identifier: a 3+ character ALL-CAPS token (including hyphenated
+#      identifiers) is absent from authorized documents. Generic overlap cannot stand in
+#      for evidence about that named subject. This is a conservative lexical heuristic,
+#      not general named-entity recognition; lowercase synonyms still use R1/R2.
 # Distinctive: Latin/digit tokens of 3+ characters; particle-stripped Hangul words of 2+
 # characters that are not request, relational or deictic words and do not end in a
 # predicate/connective ending. Covered: the word, or for a 3+ character Hangul word any of
 # its bigrams (the P1-001D matching rule), occurs in an authorized document.
-RELEVANCE_RULES_VERSION = "relevance-gate-v1"
+RELEVANCE_RULES_VERSION = "relevance-gate-v2"
+_EXPLICIT_IDENTIFIER = re.compile(r"(?<![A-Za-z0-9])[A-Z][A-Z0-9]*(?:[-_.][A-Z0-9]+)*(?![A-Za-z0-9])")
 _GENERIC = frozenset({
     # request/task words and relational modifiers: never the subject of a question
     "요약", "답변", "초안", "작성", "정리", "설명", "조사", "비교", "검토", "관련", "대한", "관한",
@@ -114,7 +119,7 @@ def query_words(query: str) -> tuple[tuple[str, bool, bool, bool], ...]:
 
 
 def relevance_insufficient(query: str, document_frequency: dict[str, int]) -> bool:
-    """True when R1 or R2 holds. document_frequency: authorized-document counts per term.
+    """True when R1, R2 or R3 holds; counts come only from authorized documents.
 
     A term missing from the map (e.g. beyond MAX_QUERY_TERMS) counts as covered, so the gate
     only ever withholds on positive evidence of absence.
@@ -127,6 +132,9 @@ def relevance_insufficient(query: str, document_frequency: dict[str, int]) -> bo
         return hangul and len(word) >= 3 and any(
             document_frequency.get(word[i:i + 2], 1) > 0 for i in range(len(word) - 1))
 
+    if any(len(token) >= 3 and not covered(token.lower(), False)
+           for token in _EXPLICIT_IDENTIFIER.findall(query)):
+        return True  # R3: explicit subject absent, even if generic query words match
     words = query_words(query)
     marks = [(word, hangul, distinctive and covered(word, hangul), distinctive, modifies)
              for word, hangul, distinctive, modifies in words]
