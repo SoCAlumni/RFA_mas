@@ -35,7 +35,7 @@
    `agents.yaml`(NemoClaw 선언형 manifest)로 묶인다. 격리가 필요하면 에이전트에 `sandbox: rfa-tasks-none`처럼 명시해야만 그 샌드박스가
    온보딩·배치된다. 샌드박스는 보안 그룹 조합 단위이고 에이전트의 `groups`(필요 egress)는 배치되는 샌드박스가 모두 제공해야 한다.
    censor는 브로커·sessions_spawn 위임 대상이 아니다.
-3. **채널 기반 검열 프로파일.** internal(로컬 Nemotron, 사내 API, 검열 없음) / external(hosted 모델, 요청·응답 검열 필수).
+3. **채널 기반 검열 프로파일.** internal(hosted Nemotron lightning, 사내 API, 검열 없음) / external(hosted 모델, 요청·응답 검열 필수).
    프로파일은 채널 API 진입점 한 곳에서 결정되어 서명된 세션 마커로 전파된다.
 4. **검열은 egress 경계에서.** 모든 샌드박스의 inference route가 호스트 egress-proxy(유일한 provider) 하나를 가리키고,
    프록시가 regex → LLM 2단계로 redact(기본)·block·fail-closed 한다. censor LLM은 egress 0 + 로컬 inference.
@@ -47,20 +47,19 @@
    head(어느 task·에이전트에 무엇을 물을지) → 브로커(샌드박스 안 task 에이전트) → 검열(audience 프로파일 + 되먹임 사유)을
    수행한다. `audience`(public/company/self)가 검열 프로파일을 정하는 유일한 분기이고, 개인 채팅 CLI/웹·데모도 같은 함수를 쓴다.
    외부 입력(스레드·거절된 초안)은 `<external_input>` 태그로 감싸 데이터로만 전달되고, 사람의 거절 사유는
-   `censor-rules/learned.yaml` 에 누적되어 다음 요청의 검열 LLM·head 에 주입된다. 슬롯이 없으면 `202 queued` → 폴링.
+   `censor-rules/learned.yaml` 에 누적되어 다음 요청의 검열 LLM·head 에 주입된다. `/ask` 는 동기(서버 타임아웃 180초)다.
 
 ## 아키텍처
 
 ```mermaid
 flowchart LR
   subgraph Host["호스트 (샌드박스 밖)"]
-    ENTRY["진입점 :8799<br/>POST /ask (bearer) · GET /ask/{id} · POST /chat(self)<br/>ask(): head → broker → task → censor<br/>audience→프로파일, admission queue, learned.yaml"]
+    ENTRY["진입점 :8799<br/>POST /ask (bearer, 동기) · POST /chat(self)<br/>ask(): head → broker → task → censor<br/>audience→프로파일, request_id 캐시, learned.yaml"]
     DESK["desk (C) · 결재 서버 (A)<br/>tools/mock — 상대 팀 목업"]
     PROXY["egress-proxy :8797<br/>유일한 inference provider<br/>마커 귀속 → alias → 검열(regex→LLM) → 백엔드"]
     BROKER["브로커 :8798<br/>MCP(HTTPS) + REST 폴백<br/>ask_task_agent / drain"]
     CTRL["컨트롤러<br/>assignments/routing/censors.yaml<br/>nemoclaw policy add·exclude / agents apply / mcp add / explain"]
     AUDIT["감사 로그 :8799/audit/<br/>channel·profile·agent·verdict·정책 차단·승인"]
-    OLLAMA["로컬 Nemotron<br/>(Ollama)"]
     KF["사내 API<br/>knowledge facade :8791"]
   end
   subgraph GW["OpenShell 게이트웨이 (NemoClaw 관리)"]
@@ -73,16 +72,15 @@ flowchart LR
   subgraph SB4["rfa-tasks-none — 선택 샌드박스 (egress-none), agent 가 sandbox: 로 옮겨올 때만 생성"]
     H2["head (main)"]
   end
-  BUILD["build.nvidia.com<br/>(NVIDIA_INFERENCE_API_KEY는 호스트)"]
+  BUILD["build.nvidia.com<br/>hosted nvidia/nemotron-3.5-lightning-30b-a3b<br/>(로컬 LLM 없음 · NVIDIA_API_KEY는 호스트)"]
   DESK -- "/ask → 초안 → 결재 → feedback[] → /ask" --> ENTRY
-  ENTRY -- "head: 라우팅 JSON (internal 마커, 로컬)" --> PROXY
+  ENTRY -- "head: 라우팅 JSON (internal 마커)" --> PROXY
   ENTRY -- "broker.ask(task agent)" --> BROKER
   ENTRY -. "채널 API(레거시 경로)" .-> A
   A -- "MCP ask_task_agent" --> BROKER
   BROKER -- "nemoclaw <sb> agent --agent <id>" --> R & B & S
   A & C & R & B & S -- "inference.local" --> ROUTE --> PROXY
-  PROXY -- "rfa-internal / rfa-censor" --> OLLAMA
-  PROXY -- "rfa-external (검열)" --> BUILD
+  PROXY -- "rfa-internal / rfa-censor / rfa-external (검열)" --> BUILD
   R & B -- "preset sg-intranet-ro" --> KF
   CTRL -. "reconcile" .-> SB1 & SB4
   PROXY & BROKER & ENTRY & CTRL -. "기록" .-> AUDIT
@@ -97,9 +95,9 @@ flowchart LR
 | 파일 | 역할 | 소비자 |
 | --- | --- | --- |
 | [`deploy/nemoclaw/assignments.yaml`](deploy/nemoclaw/assignments.yaml) | 보안 그룹(preset 목록·privilege) → 샌드박스(그룹 조합) → 에이전트(그룹 또는 고정 샌드박스, alias, 스킬, tools) | 컨트롤러(reconcile, manifest 생성), 브로커, 재배치 |
-| [`deploy/nemoclaw/routing.yaml`](deploy/nemoclaw/routing.yaml) | 채널 → alias → 백엔드(로컬 Ollama / build.nvidia.com), 프록시·브로커·진입점 listener, route 모드 | egress-proxy, 진입점, 전환 스크립트 |
+| [`deploy/nemoclaw/routing.yaml`](deploy/nemoclaw/routing.yaml) | 채널 → alias → 백엔드(hosted build.nvidia.com 전용, 로컬 LLM 거부), 프록시·브로커·진입점 listener, route 모드 | egress-proxy, 진입점, 전환 스크립트 |
 | [`deploy/nemoclaw/censors.yaml`](deploy/nemoclaw/censors.yaml) | 검열 프로파일: regex 규칙(redact/block) → LLM 분류(runner, timeout, fail-closed). `external`(프록시), `public`(/ask public: external 규칙 + 미공개 일자), `internal`(company/self) | 프록시(요청·응답), `/ask`·개인 채팅 최종 knowledge, 격하 스캔 |
-| [`deploy/nemoclaw/ask.yaml`](deploy/nemoclaw/ask.yaml) | `/ask`: audience → 검열 프로파일·라우팅 채널(유일한 분기), admission queue(max_inflight/max_queue/180초), 계보 거절 한도, head runner, task 카탈로그, bearer(`RFA_ASK_TOKEN`, .env.dev) | 진입점 `ask()`, 개인 채팅, 목업 desk |
+| [`deploy/nemoclaw/ask.yaml`](deploy/nemoclaw/ask.yaml) | `/ask`: audience → 검열 프로파일·라우팅 채널(유일한 분기), 서버 타임아웃(180초)·request_id 캐시, 계보 거절 한도, head runner, task 카탈로그, bearer(`RFA_ASK_TOKEN`, .env.dev) | 진입점 `ask()`, 개인 채팅, 목업 desk |
 | [`deploy/nemoclaw/roles.yaml`](deploy/nemoclaw/roles.yaml) · [`teams.yaml`](deploy/nemoclaw/teams.yaml) | 팀 스폰: 승인 역할 카탈로그(capability → groups·alias·skill·tools) / `POST /teams` 가 쓰는 상주 팀 선언(supervisor·멤버·pattern·status). 로드 시 `assignments` 에 병합 | `TeamService`, manifest, `/ask` 카탈로그 |
 | [`deploy/nemoclaw/censor-rules/learned.yaml`](deploy/nemoclaw/censor-rules/learned.yaml) (호스트 파일, 자동 누적) | 되먹임된 거절 사유 `{audience, task, reason, at}` — 검열 LLM 단계 hint + head 프롬프트 "이전 거절 사유" | `ask()` (마운트 대신 요청 본문으로 샌드박스 밖에서 주입) |
 
@@ -124,9 +122,9 @@ agents:
 ```yaml
 proxy:   { bind: 0.0.0.0:8797, route_url: http://host.openshell.internal:8797/v1, default_mode: rfa-auto, unattributed_alias: rfa-internal }
 aliases:
-  rfa-internal: { backend: ollama, model: nemotron-3-nano:4b,               censor: none,     exposure: 0 }
-  rfa-external: { backend: build,  model: nvidia/nemotron-3-super-120b-a12b, censor: external, exposure: 1 }
-  rfa-censor:   { backend: ollama, model: nemotron-3-nano:4b,               censor: bypass,   exposure: 0 }
+  rfa-internal: { backend: build, model: nvidia/nemotron-3.5-lightning-30b-a3b, censor: none,     exposure: 0 }
+  rfa-external: { backend: build, model: nvidia/nemotron-3.5-lightning-30b-a3b, censor: external, exposure: 1 }
+  rfa-censor:   { backend: build, model: nvidia/nemotron-3.5-lightning-30b-a3b, censor: bypass,   exposure: 0 }
 channels:
   internal: { alias: rfa-internal, profile: none }
   external: { alias: rfa-external, profile: external }
@@ -155,8 +153,8 @@ make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 
 **`/ask` 계약과 목업.** 계약은 [`docs/api/ask.openapi.yaml`](docs/api/ask.openapi.yaml)(생성물, `make openapi`)이다:
 `POST /ask {request_id, question, channel(github|slack), audience(public|company), target, url, requester, context[], feedback[]}` →
-`200 {request_id, knowledge, task|null, refusal{code: no_task|blocked_by_policy|no_knowledge|queue_full}|null, censor{profile, verdict, redactions[{reason}]}}`
-또는 `202 {status: queued, position}` → `GET /ask/{request_id}`. 같은 `request_id` 는 캐시 응답, 처리 타임아웃 180초(→ `no_knowledge`/"timeout"),
+`200 {request_id, knowledge, task|null, refusal{code: no_task|blocked_by_policy|no_knowledge}|null, censor{profile, verdict, redactions[{reason}]}}`.
+동기 응답이며(admission queue·`202 queued` 경로는 `legacy/` 로 이동) 같은 `request_id` 는 캐시 응답, 처리 타임아웃 180초(→ `no_knowledge`/"timeout"),
 같은 계보(target 또는 request_id prefix)에서 거절 3회면 `blocked_by_policy`. 개인 채팅은 `POST /chat`(audience self) 또는
 `python -m rfa_mas.nemoclaw chat "질문"`. [`tools/mock/desk.py`](tools/mock/desk.py)(C 목업: 시나리오 → /ask → 템플릿 초안 → 결재 → 거절이면
 feedback 붙여 재요청, 최대 3회)와 [`tools/mock/approval.py`](tools/mock/approval.py)(A 목업: `--auto reject-if-regex` 또는 `tools/mock/rfa-mock approve|reject <id> --reason`)가
@@ -167,11 +165,11 @@ research·benchmark·summarizer·verifier, 역할별 egress·alias·스킬 고�
 기본 샌드박스에 선언([`teams.yaml`](deploy/nemoclaw/teams.yaml))·적용(`agents apply`)·시드하고 `/ask` 카탈로그에 올린다(상주, 별도 샌드박스 없음).
 supervisor 만 브로커 위임 대상이고 멤버는 supervisor 의 `subagents.allowAgents` 로만 `sessions_spawn` 된다. 중첩 spawn 은
 브로커 턴이 depth 0 이라 supervisor→멤버가 depth 1 이고, manifest `maxSpawnDepth: 2` 로 assistant 경유 경로도 통과한다(OpenClaw 소스 확인).
-`verify` 는 항상 포함되어 verifier 가 초안을 근거와 대조한다. 요구사항 추출은 로컬 모델(direct) + 키워드 폴백. CLI:
+`verify` 는 항상 포함되어 verifier 가 초안을 근거와 대조한다. 요구사항 추출은 hosted 모델(direct) + 키워드 폴백. CLI:
 `python -m rfa_mas.nemoclaw teams list|create --name … --description …|remove <team_id>`. 계약은 같은 OpenAPI 문서에 있다.
 
 데모: 01 외부 curl 차단 · 02 보안 그룹 변경 · **03 개인 채팅 자동 마스킹(self) vs public** · **04 되먹임(거절 사유 → learned.yaml → 다음 /ask)** ·
-**05 인젝션 차단(`<external_input>`)** · **06 admission queue(202 → 폴링 → 200, 멱등)** · 07 `agents apply` 런타임 추가 · 08 격하 이동 스캔 · 09 external 채널 마스킹(프록시) ·
+**05 인젝션 차단(`<external_input>`)** · (06 admission queue 는 `legacy/demo/` 로 이동) · 07 `agents apply` 런타임 추가 · 08 격하 이동 스캔 · 09 external 채널 마스킹(프록시) ·
 **10 팀 스폰(요구사항 → supervisor+멤버 → /ask 라우팅 → 제거)**.
 
 **대시보드에서 바로 테스트**: <http://127.0.0.1:8799/audit/> 상단 "테스트 실행" 패널에서 채널(internal/external)·대상(assistant / 각 task 에이전트 / proxy)을 고르고
@@ -220,7 +218,7 @@ supervisor 만 브로커 위임 대상이고 멤버는 supervisor 의 `subagents
 | `inference set --endpoint-url`은 사설 IP를 거부 | 문서화된 `http://host.openshell.internal:<port>` 경로 사용 (Colima에서 192.168.5.2 = 호스트) |
 | managed MCP는 HTTPS + 사설 IP SAN 인증서 + 온보딩 시 CA 번들 요구 | bootstrap이 로컬 CA를 만들고 `NEMOCLAW_CORPORATE_CA_BUNDLE`로 온보딩; 실패 시 REST preset 폴백 |
 | `~/.nemoclaw/credentials.json`은 legacy이며 현재 릴리스는 만들지 않음 | 키는 host env → OpenShell provider store; 프록시 상류 키는 0600·git-ignore 파일 |
-| 4B 로컬 모델이 OpenClaw 시스템 프롬프트(수천~2만 토큰)를 매 턴 처리하면 60초 이상 | 검열 LLM 단계는 `runner: direct`(5초 실측), `NEMOCLAW_MINIMAL_BOOTSTRAP=1`, internal 데모는 단순 조회 1개 |
+| (해소) 4B 로컬 모델이 OpenClaw 시스템 프롬프트(수천~2만 토큰)를 매 턴 처리하면 60초 이상 | 로컬 LLM 제거, 모든 alias 가 hosted lightning. 검열 LLM 단계는 계속 `runner: direct`(분류 프롬프트만 전송) |
 
 ## 검증 상태 (보안 그룹 층)
 

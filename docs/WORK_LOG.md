@@ -1131,3 +1131,11 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 
 - 새 샌드박스에서 assistant 가 `ask_task_agent` → `delegate` 를 받았으나 `sessions_spawn` 을 실행하지 못하고 120초 timeout. 게이트웨이 로그: `tool policy removed 25 tool(s) via tools.profile (minimal): agents_list, …, read, sessions_spawn, …` — 관리 이미지의 OpenClaw 2026.7.1 은 `profile: minimal` 을 allow 뒤에 적용해 allow 에 적은 도구까지 제거한다(NemoClaw 문서 예시 `profile: minimal, allow: [read]` 와 다름). 조치: 모든 에이전트를 `profile: coding` + deny(group:runtime/web/sessions/memory/media, write/edit/apply_patch, cron, browser, skill_workshop; task 에이전트는 bundle-mcp 도 deny) 로 선언. 다음 fresh 온보딩에서 반영.
 - 샌드박스 안 openclaw.json 을 직접 고쳐 실험하려 했으나(`gateway restart`) 그 사이 Colima VM 메모리가 다시 소진(호스트 free 16 %, `colima ssh free` timeout, docker ps 7.5 s, exec 3분 hang): 다른 프로젝트의 Langfuse 스택 2세트(컨테이너 12개)가 다시 떠 있음. 정지는 자동 승인 정책에 막혀 사용자에게 요청.
+
+## FE-0 — 프런트 연동 API 준비: admission queue 보류, `/ask` 동기화 (2026-09-27 22:20)
+
+- 사용자 지시: RAM 프로파일·admission queue·Redis 관련은 전부 보류(`legacy/`), `/ask` 는 동기(서버 타임아웃 180초)로 단순화하고 202 경로 제거. 핵심 결정(D-1~D-9)은 조사 → 선택지 → 사용자 결정 → 구현 순으로 `docs/decisions.md` 에 기록.
+- 이동: `ask_api.py` 원본(FIFO 워커·202·`GET /ask/{id}`·`queue_full`) → `legacy/nemoclaw/ask_api_admission.py`, `AdmissionConfig` → `legacy/config/admission_config.py`, `ask.yaml admission:` → `legacy/config/ask.admission.yaml`, 데모 06 → `legacy/demo/`, 큐 테스트 2개 → `legacy/tests/test_ask_admission.py`. 목록은 `legacy/README.md`. RAM 프로파일·Redis 는 코드에 없었다(Colima 의 `*-redis-1` 은 타 프로젝트 Langfuse).
+- 현재 `/ask`: `AskService.submit` 이 `ask_with_timeout` 을 동기로 실행, 같은 `request_id` 는 첫 결과를 기다려 그대로 돌려준다(캐시 TTL `server.result_ttl_seconds`). 계약에서 `QueuedResponse`·`queue_full` 제거, `GET /ask/{request_id}` 제거 → `make openapi` 재생성. desk 목업은 폴링 없이 동기 호출(`--ask-timeout`).
+- 검증: `make test` 85 passed, `make mock-e2e`(fake) 4/4 PASS(01 allow/승인 15ms · 02 redact · 03 redact · 04 2라운드 승인).
+- 병행 세션 주의: 같은 체크아웃에서 routing/proxy/bootstrap/config(Backend hosted-only)·검열 테스트가 수정 중(로컬 Ollama 제거, 전부 hosted build.nvidia.com). config.py 는 내 hunk(ServerConfig)만 스테이징해 커밋.

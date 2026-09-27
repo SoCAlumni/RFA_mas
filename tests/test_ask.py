@@ -1,4 +1,4 @@
-"""`POST /ask` contract + `ask()` pipeline with fake agents: shape, idempotency, admission queue,
+"""`POST /ask` contract + `ask()` pipeline with fake agents: shape, idempotency, server timeout,
 timeout, auth, refusals, external-input tagging, feedback → learned rules → censor hints, OpenAPI."""
 
 from __future__ import annotations
@@ -87,7 +87,7 @@ async def test_auth_validation_and_unknown_request(deps):
         assert (await c.post("/ask", json=body(), headers={"Authorization": "Bearer nope"})).status_code == 401
         assert (await c.post("/ask", json=body(audience="everyone"), headers=H)).status_code == 422
         assert (await c.post("/ask", json=body(request_id="bad id!"), headers=H)).status_code == 422
-        assert (await c.get("/ask/never", headers=H)).status_code == 404
+        assert (await c.get("/ask/never", headers=H)).status_code == 404  # polling route retired with the queue
     async with client(AskService(deps, None)) as c:
         assert (await c.post("/ask", json=body(), headers=H)).status_code == 503
 
@@ -97,8 +97,7 @@ async def test_same_request_id_is_idempotent(deps):
     async with client(service) as c:
         first = (await c.post("/ask", json=body(), headers=H)).json()
         again = (await c.post("/ask", json=body(question="완전히 다른 질문"), headers=H)).json()
-        got = (await c.get("/ask/r1", headers=H)).json()
-    assert first == again == got
+    assert first == again
     assert len(deps.tasks.calls) == 1
 
 
@@ -109,51 +108,20 @@ async def test_no_task_refusal_when_nothing_matches(deps):
     assert r.status_code == 200 and data["refusal"]["code"] == "no_task" and data["task"] is None and data["knowledge"] == ""
 
 
-# ---- admission queue -----------------------------------------------------------------------------
-
-
-async def test_second_request_is_queued_202_then_polls_to_200(tmp_path):
-    deps = build_fake_deps(cfg.load_ask(), cfg.load_censors(), tmp_path / "learned.yaml", task_delay=0.4)
-    service = AskService(deps, "tok")
-    async with client(service) as c:
-        first = asyncio.create_task(c.post("/ask", json=body(request_id="q1"), headers=H))
-        await asyncio.sleep(0.05)
-        second = await c.post("/ask", json=body(request_id="q2"), headers=H)
-        assert second.status_code == 202 and second.json() == {"request_id": "q2", "status": "queued", "position": 1}
-        polled = await c.get("/ask/q2", headers=H)
-        assert polled.status_code == 202
-        assert (await first).status_code == 200
-        for _ in range(40):
-            polled = await c.get("/ask/q2", headers=H)
-            if polled.status_code == 200:
-                break
-            await asyncio.sleep(0.05)
-    assert polled.status_code == 200 and polled.json()["request_id"] == "q2" and polled.json()["refusal"] is None
-
-
-async def test_queue_full_is_a_refusal(tmp_path):
-    config = cfg.load_ask()
-    config = config.model_copy(update={"admission": config.admission.model_copy(update={"max_queue": 0})})
-    deps = build_fake_deps(config, cfg.load_censors(), tmp_path / "learned.yaml", task_delay=0.3)
-    async with client(AskService(deps, "tok")) as c:
-        first = asyncio.create_task(c.post("/ask", json=body(request_id="f1"), headers=H))
-        await asyncio.sleep(0.05)
-        second = await c.post("/ask", json=body(request_id="f2"), headers=H)
-        await first
-    assert second.status_code == 200 and second.json()["refusal"]["code"] == "queue_full"
+# ---- server-side timeout ------------------------------------------------------------------------
 
 
 async def test_server_side_timeout_refuses_no_knowledge_timeout(tmp_path):
     config = cfg.load_ask()
-    config = config.model_copy(update={"admission": config.admission.model_copy(update={"timeout_seconds": 1})})
+    config = config.model_copy(update={"server": config.server.model_copy(update={"timeout_seconds": 1})})
     deps = build_fake_deps(config, cfg.load_censors(), tmp_path / "learned.yaml", task_delay=3.0)
     service = AskService(deps, "tok")
     async with client(service) as c:
         r = await c.post("/ask", json=body(request_id="t1"), headers=H)
-    assert r.json()["refusal"] == {"code": "no_knowledge", "message": "timeout"}
-    assert service.inflight == 1  # slot stays taken until the slow turn ends
-    await asyncio.sleep(2.5)
-    assert service.inflight == 0
+        assert r.status_code == 200 and r.json()["refusal"] == {"code": "no_knowledge", "message": "timeout"}
+        again = await c.post("/ask", json=body(request_id="t1"), headers=H)  # cached: no second pipeline run
+        assert again.json() == r.json()
+    await asyncio.sleep(2.5)  # the abandoned fake turn ends without errors
 
 
 # ---- external input / injection ------------------------------------------------------------------
@@ -290,10 +258,10 @@ def test_committed_openapi_matches_generated():
     committed = json.loads((ROOT / "docs" / "api" / "ask.openapi.json").read_text(encoding="utf-8"))
     assert generated == committed, "run `make openapi` and commit docs/api/ask.openapi.*"
     paths = committed["paths"]
-    assert set(paths) == {"/ask", "/ask/{request_id}", "/chat", "/teams", "/teams/{team_id}"}
+    assert set(paths) == {"/ask", "/chat", "/teams", "/teams/{team_id}"}
     assert set(paths["/teams"]) == {"post", "get"} and set(paths["/teams/{team_id}"]) == {"get", "delete"}
-    assert "202" in paths["/ask"]["post"]["responses"] and "202" in paths["/ask/{request_id}"]["get"]["responses"]
+    assert "202" not in paths["/ask"]["post"]["responses"]  # synchronous: the queued path is retired (legacy/)
     schema = committed["components"]["schemas"]
-    assert schema["Refusal"]["properties"]["code"]["enum"] == ["no_task", "blocked_by_policy", "no_knowledge", "queue_full"]
+    assert schema["Refusal"]["properties"]["code"]["enum"] == ["no_task", "blocked_by_policy", "no_knowledge"]
     assert set(schema["AskResponse"]["required"]) == {"request_id", "knowledge", "task", "refusal", "censor"}
     assert "feedback" in schema["AskRequest"]["properties"] and "request_id" in schema["AskRequest"]["required"]

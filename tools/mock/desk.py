@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mock of the counterpart's desk / response agent (C).
 
-Reads a scenario (question + thread) → ``POST /ask`` (202 → poll ``GET /ask/{id}``) → turns the
+Reads a scenario (question + thread) → ``POST /ask`` (synchronous) → turns the
 knowledge into a draft string with a template (no LLM) → submits to the approval mock → on
 rejection re-asks with ``feedback[]`` (max 3 rounds). No knowledge of the server internals: the
 contract is the only interface.
@@ -31,7 +31,6 @@ DRAFT_TEMPLATE = "[{channel} 답변 초안 · {target}]\n{knowledge}\n\n— 근�
 class Round:
     request_id: str
     http_status: int
-    queued_polls: int
     response: dict
     approval: dict | None
     ms: int
@@ -105,33 +104,23 @@ class Outcome:
 
 
 class Desk:
-    def __init__(self, ask_url: str, token: str, approval_url: str, *, poll_interval: float = 0.5,
-                 poll_timeout: float = 300.0, decision_timeout: float = 600.0, log=print):
+    def __init__(self, ask_url: str, token: str, approval_url: str, *, ask_timeout: float = 300.0,
+                 decision_timeout: float = 600.0, log=print):
         self.ask_url, self.token, self.approval_url = ask_url.rstrip("/"), token, approval_url.rstrip("/")
-        self.poll_interval, self.poll_timeout, self.decision_timeout = poll_interval, poll_timeout, decision_timeout
+        self.ask_timeout, self.decision_timeout = ask_timeout, decision_timeout
         self.log = log
-        self.client = httpx.Client(timeout=max(poll_timeout, 30.0) + 30)
+        self.client = httpx.Client(timeout=max(ask_timeout, 30.0) + 30)
 
     # ---- /ask -----------------------------------------------------------------------------------
 
-    def ask(self, body: dict) -> tuple[int, int, dict]:
+    def ask(self, body: dict) -> tuple[int, dict]:
         headers = {"Authorization": f"Bearer {self.token}"}
         r = self.client.post(f"{self.ask_url}/ask", json=body, headers=headers)
-        polls = 0
-        if r.status_code == 202:
-            deadline = time.monotonic() + self.poll_timeout
-            self.log(f"    202 queued position={r.json().get('position')} → polling")
-            while time.monotonic() < deadline:
-                time.sleep(self.poll_interval)
-                polls += 1
-                r = self.client.get(f"{self.ask_url}/ask/{body['request_id']}", headers=headers)
-                if r.status_code != 202:
-                    break
         try:
             data = r.json()
         except ValueError:
             data = {"code": "non_json", "text": r.text[:200]}
-        return r.status_code, polls, data
+        return r.status_code, data
 
     # ---- approval --------------------------------------------------------------------------------
 
@@ -172,27 +161,27 @@ class Desk:
                     "requester": scenario.get("requester"), "context": scenario.get("context", []), "feedback": feedback}
             started = time.monotonic()
             try:
-                status, polls, data = self.ask(body)
+                status, data = self.ask(body)
             except httpx.HTTPError as exc:
                 outcome.error = f"{type(exc).__name__}: {exc}"
                 return outcome
             ms = int((time.monotonic() - started) * 1000)
             if status != 200:
-                outcome.rounds.append(Round(request_id, status, polls, data, None, ms))
+                outcome.rounds.append(Round(request_id, status, data, None, ms))
                 outcome.error = f"HTTP {status}: {json.dumps(data, ensure_ascii=False)[:200]}"
                 return outcome
             refusal = data.get("refusal")
             censor = data.get("censor") or {}
             self.log(f"  r{n} {request_id}: verdict={censor.get('verdict')} refusal={refusal['code'] if refusal else None} "
-                     f"task={(data.get('task') or {}).get('id')} polls={polls} {ms}ms")
+                     f"task={(data.get('task') or {}).get('id')} {ms}ms")
             if refusal:
-                outcome.rounds.append(Round(request_id, status, polls, data, None, ms))
+                outcome.rounds.append(Round(request_id, status, data, None, ms))
                 self.log(f"    refusal: {refusal['code']} — {refusal['message']}")
                 return outcome
             draft = self.draft_for(scenario, data)
             approval = self.submit(scenario, request_id, draft)
             ms = int((time.monotonic() - started) * 1000)
-            outcome.rounds.append(Round(request_id, status, polls, data, approval, ms))
+            outcome.rounds.append(Round(request_id, status, data, approval, ms))
             self.log(f"    approval {approval.get('id')}: {approval.get('status')} {approval.get('reason') or ''}")
             if approval.get("status") == "approved":
                 return outcome
@@ -232,13 +221,13 @@ def main(argv=None) -> int:
     parser.add_argument("--token-env", default="RFA_ASK_TOKEN")
     parser.add_argument("--token", default=None, help="explicit token (prefer --token-env)")
     parser.add_argument("--approval-url", default="http://127.0.0.1:8811")
-    parser.add_argument("--poll-timeout", type=float, default=300.0)
+    parser.add_argument("--ask-timeout", type=float, default=300.0, help="client-side wait for the synchronous /ask")
     args = parser.parse_args(argv)
     token = args.token or os.environ.get(args.token_env) or ""
     if not token:
         print(f"error: token missing (set {args.token_env} or --token)", file=sys.stderr)
         return 2
-    desk = Desk(args.ask_url, token, args.approval_url, poll_timeout=args.poll_timeout)
+    desk = Desk(args.ask_url, token, args.approval_url, ask_timeout=args.ask_timeout)
     outcomes = [desk.run(s) for s in load_scenarios(args.scenarios)]
     print()
     print(table(outcomes))

@@ -1,0 +1,5 @@
+admission:
+  max_inflight: 1            # 동시에 처리하는 /ask 수(샌드박스 턴은 직렬이 안전). 초과분은 202 큐
+  max_queue: 8               # 큐 길이 초과 → refusal queue_full
+  timeout_seconds: 180       # 서버 측 처리 타임아웃. 초과 시 refusal no_knowledge + "timeout"
+  result_ttl_seconds: 3600   # request_id 멱등 캐시 보존 시간

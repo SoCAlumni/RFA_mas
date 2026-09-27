@@ -28,17 +28,16 @@ flowchart LR
     DESK <--> APPR
   end
   subgraph Host["호스트 (샌드박스 밖, 이 저장소)"]
-    ENTRY["진입점 :8799 (loopback)<br/>POST /ask · GET /ask/{id} · POST /chat(self)<br/>ask(): head → broker → task → censor<br/>admission queue · request_id 캐시 · learned.yaml"]
+    ENTRY["진입점 :8799 (loopback)<br/>POST /ask (동기) · POST /chat(self)<br/>ask(): head → broker → task → censor<br/>request_id 캐시 · learned.yaml"]
     PROXY["egress-proxy :8797<br/>유일한 inference provider<br/>서명 마커 귀속 → alias → 검열(regex→LLM) → 백엔드"]
     BROKER["브로커 :8798<br/>MCP(HTTPS)+REST · ask_task_agent · drain"]
     CTRL["컨트롤러 python -m rfa_mas.nemoclaw<br/>assignments/routing/censors/ask.yaml → reconcile"]
     AUDIT[("감사 원장 .local/sg/audit.db<br/>/audit/ 화면 · kind=ask/broker/inference/policy…")]
     LEARN[("censor-rules/learned.yaml<br/>{audience, task, reason, at}")]
-    OLLAMA["로컬 Nemotron 3 nano 4B (Ollama)"]
     KF["사내 API = 코어층 knowledge facade :8791"]
   end
   subgraph GW["OpenShell 게이트웨이 (NemoClaw 관리)"]
-    ROUTE["inference.local → host.openshell.internal:8797<br/>route model = 전체 모드 (rfa-auto | rfa-internal kill switch)"]
+    ROUTE["inference.local → host.openshell.internal:8797<br/>route model = 전체 모드 (rfa-auto | rfa-internal | rfa-external)"]
   end
   subgraph SB1["rfa-main — 기본 샌드박스 (control-plane + intranet-ro)"]
     A["assistant (main)"] -- "sessions_spawn" --> R["research"] & B["benchmark"] & S["summarizer"]
@@ -47,16 +46,15 @@ flowchart LR
   subgraph SB2["rfa-tasks-none — 선택 (egress-none)<br/>agent 가 sandbox: 로 지정할 때만 온보딩"]
     H2["head (main)"]
   end
-  BUILD["build.nvidia.com (hosted Nemotron)"]
+  BUILD["build.nvidia.com (hosted nvidia/nemotron-3.5-lightning-30b-a3b, 로컬 LLM 없음)"]
   DESK -- "Bearer RFA_ASK_TOKEN" --> ENTRY
-  ENTRY -- "head: 라우팅 JSON (internal 마커 → 로컬)" --> PROXY
+  ENTRY -- "head: 라우팅 JSON (internal 마커)" --> PROXY
   ENTRY -- "broker.ask(agent, query, sid)" --> BROKER
   ENTRY -- "censor 최종 knowledge (audience 프로파일 + hints)" --> PROXY
   ENTRY <--> LEARN
   BROKER -- "nemoclaw rfa-main agent --agent <id>" --> R & B & S
   A & C & R & B & S -- "inference.local" --> ROUTE --> PROXY
-  PROXY -- "rfa-internal / rfa-censor" --> OLLAMA
-  PROXY -- "rfa-external (요청·응답 검열)" --> BUILD
+  PROXY -- "rfa-internal / rfa-censor / rfa-external (external 만 요청·응답 검열)" --> BUILD
   R & B -- "preset sg-intranet-ro" --> KF
   CTRL -. "policy add/exclude · agents apply · mcp add" .-> SB1 & SB2
   PROXY & BROKER & ENTRY & CTRL -. "기록" .-> AUDIT
@@ -66,9 +64,9 @@ flowchart LR
 |---|---|---|---|
 | 진입점 `/ask`·`/chat`·`/audit/` | `nemoclaw/entry.py`, `ask_api.py` | desk 계약, 개인 채팅, 대시보드 테스트 실행(`ask:self`/`ask:public`), 채널 API(레거시 `/channel/{ch}/chat`) | loopback. `/ask`만 bearer(`RFA_ASK_TOKEN`, `.env.dev` 0600) |
 | `ask()` | `nemoclaw/ask.py` | head → broker → task → censor 한 함수. `/ask`, `/chat`, CLI `chat`, 데모, 목업이 전부 호출 | audience → 프로파일·라우팅 채널 분기는 `ask.yaml` 한 곳 |
-| egress-proxy | `nemoclaw/proxy.py` | 모든 샌드박스의 유일한 inference provider. HMAC in-band 마커로 채널/에이전트 귀속 → alias(`rfa-internal`/`rfa-external`/`rfa-censor`) → 프로파일 검열 → Ollama 또는 build.nvidia.com | 게이트웨이가 `model`을 덮어쓰므로 마커가 유일한 귀속 수단. 미귀속은 최소 노출 alias |
+| egress-proxy | `nemoclaw/proxy.py` | 모든 샌드박스의 유일한 inference provider. HMAC in-band 마커로 채널/에이전트 귀속 → alias(`rfa-internal`/`rfa-external`/`rfa-censor`) → 프로파일 검열 → hosted build.nvidia.com (로컬 LLM 백엔드는 설정 검증에서 거부) | 게이트웨이가 `model`을 덮어쓰므로 마커가 유일한 귀속 수단. 미귀속은 최소 노출 alias |
 | 브로커 | `nemoclaw/broker.py` | `ask_task_agent(name, query, session_id)` — 같은/다른 샌드박스를 숨기고 세션 채널 마커를 재삽입. `delegatable: false`(censor)는 목록·라우팅에서 제외. drain 으로 재배치 게이트 | MCP(HTTPS, managed `mcp add`) 또는 REST preset 폴백, bearer |
-| 검열 파이프라인 | `nemoclaw/censor.py` | regex → LLM(direct: `rfa-censor` alias → 로컬, 실측 5~13초) → redact 기본·block·fail-closed. `hints`(learned 사유)를 LLM 프롬프트에 주입 | 프록시(요청·응답·tool 인자), `ask()` 최종 knowledge, 격하 스캔이 같은 함수 |
+| 검열 파이프라인 | `nemoclaw/censor.py` | regex → LLM(direct: `rfa-censor` alias → hosted, 분류 프롬프트만 전송) → redact 기본·block·fail-closed. `hints`(learned 사유)를 LLM 프롬프트에 주입 | 프록시(요청·응답·tool 인자), `ask()` 최종 knowledge, 격하 스캔이 같은 함수 |
 | 컨트롤러 | `nemoclaw/controller.py`, `bootstrap.py`, `relocate.py`, `requests.py`, `routes.py` | 선언 → NemoClaw CLI(onboard/policy add·exclude/agents apply/mcp add/explain) reconcile, 재배치, 차단 요청 승인, route 전환 | `openshell policy set` 미사용. 기본 샌드박스 1개, 격리는 agent 별 opt-in |
 | 감사 원장 | `nemoclaw/audit.py` | kind=`ask`·`broker`·`inference`·`channel`·`policy`·`request`·`approval`·`relocation`·`censor`. 본문은 저장하지 않고 수·규칙 id·verdict·ms·head 출처·injection_flags 만 | SQLite, 호스트 전용 |
 | 목업 | `tools/mock/{desk,approval,run_e2e}.py`, `scenarios/*.yaml` | 상대 팀의 desk(C)·결재(A). `make mock-e2e`(기본 `--fake-agents`) | 계약 검증용. 라이브는 `--ask-url` |
@@ -79,7 +77,7 @@ flowchart LR
 sequenceDiagram
     participant D as desk (C) / 개인 채팅
     participant E as 진입점 /ask (AskService)
-    participant H as head (DirectHead: egress-proxy → 로컬 모델)
+    participant H as head (DirectHead: egress-proxy → hosted 모델)
     participant B as 브로커
     participant T as task 에이전트 (rfa-main, OpenClaw)
     participant K as knowledge facade :8791
@@ -87,7 +85,7 @@ sequenceDiagram
     participant L as learned.yaml
     participant A as 감사 원장
     D->>E: POST /ask {request_id, question, channel, audience, target, context[], feedback[]}
-    E->>E: 인증 · request_id 캐시 · 슬롯 확인 (없으면 202 queued/position)
+    E->>E: 인증 · request_id 캐시 (동기 처리, 서버 타임아웃 180초)
     E->>E: audience → (profile, routing channel) · 계보 거절 수 ≥3 → blocked_by_policy
     E->>L: feedback[].reason 누적 (audience, task)
     E->>H: 시스템 규칙 + task 카탈로그 + 이전 거절 사유<br/>question · context/draft 는 <external_input> 로 감싸 데이터로만
@@ -105,10 +103,10 @@ sequenceDiagram
 
 | 단계 | 결정 | 실패 시 |
 |---|---|---|
-| admission | `max_inflight`(1) 초과 → `202 {status: queued, position}` + FIFO 워커 → `GET /ask/{request_id}`; `max_queue`(8) 초과 → `refusal queue_full`; 같은 `request_id` → 캐시(TTL 1시간, 메모리) | 처리 180초 초과 → `refusal no_knowledge` "timeout" (슬롯은 샌드박스 턴이 끝날 때 해제) |
+| server (동기) | `POST /ask` 는 동기 처리; 같은 `request_id` → 캐시(TTL 1시간, 메모리). admission queue·`202 queued` 는 `legacy/` 로 이동(2026-09-27) | 처리 180초 초과 → `refusal no_knowledge` "timeout" (샌드박스 턴은 백그라운드로 끝난다) |
 | audience | `public → profile public / channel external`, `company·self → internal / internal` (`ask.yaml`) | 미선언 audience 는 422 |
 | 계보 | `target` 또는 `request_id` prefix 별 고유 거절 수. `≥ max_rejections(3)` → `blocked_by_policy` (상대 쪽 `closed`와 정합) | — |
-| head | `runner: direct` — 프록시에 internal 마커로 라우팅 JSON 만 요청(로컬 모델, 60초). `fallback: keywords` | 파싱 실패·카탈로그 밖 → 키워드 라우팅, 감사에 `head=fallback`. 매칭 없음 → `no_task` |
+| head | `runner: direct` — 프록시에 internal 마커로 라우팅 JSON 만 요청(hosted 모델, 60초). `fallback: keywords` | 파싱 실패·카탈로그 밖 → 키워드 라우팅, 감사에 `head=fallback`. 매칭 없음 → `no_task` |
 | task | 브로커 → `research`(intranet-ro) 등 delegatable task 에이전트, 턴 120초 | rc≠0/timeout → `no_knowledge` "task agent failed: …"; 빈 답·근거 없음 → `no_knowledge` |
 | censor | 프로파일 stage + `hints` | `block`(자격증명·LLM block·LLM 오류 fail-closed) → `blocked_by_policy`, knowledge 빈 문자열 |
 
@@ -144,7 +142,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    IN["name + description (자연어)"] --> P["패터닝<br/>DirectPatterner(프록시→로컬 모델 JSON) | KeywordPatterner 폴백"]
+    IN["name + description (자연어)"] --> P["패터닝<br/>DirectPatterner(프록시→hosted 모델 JSON) | KeywordPatterner 폴백"]
     P --> CAP["capabilities ⊆ roles.yaml<br/>+ always[verify] − excludes[no_egress]"]
     CAP --> C["compose: 역할 ≤ max_members, 팀 전용 멤버 id,<br/>supervisor alias = 멤버 최소 exposure, 배치(기본 | no_egress→rfa-tasks-none)"]
     C --> V{"병합 검증<br/>groups ⊆ 샌드박스, id 충돌"} -->|422| X["refused (감사 team/refused)"]
@@ -255,7 +253,7 @@ flowchart TB
 
 2026-09-27 재조정으로 역할이 갈렸다. **이 저장소** = `POST /ask` 지식 서버 + 개인 채팅 + 기밀 영역 샌드박스 + 검열 +
 감사 로그 + admission queue. **상대 팀** = desk(대응 에이전트 C: 채널 읽기·초안·결재 제출·재요청), 결재 서버(A), 프런트.
-상대 것은 `tools/mock/`에 목업으로만 있고, 계약은 상대 이슈 #14 + 합의 추가분(`request_id` 멱등키, `feedback[]`, `202 queued`)이다.
+상대 것은 `tools/mock/`에 목업으로만 있고, 계약은 상대 이슈 #14 + 합의 추가분(`request_id` 멱등키, `feedback[]`)이다. `202 queued` 경로는 제거(legacy/).
 
 ```mermaid
 sequenceDiagram
@@ -265,7 +263,7 @@ sequenceDiagram
     participant APR as 결재 서버 (A, 목업 tools/mock/approval.py)
     CH->>DESK: 질문 + 스레드
     DESK->>ASK: POST /ask (request_id=<계보>-r1, context[])
-    ASK-->>DESK: 200 knowledge (검열 통과분) | 202 queued → GET 폴링 | refusal
+    ASK-->>DESK: 200 knowledge (검열 통과분) | refusal (동기, 타임아웃 180초)
     DESK->>DESK: 템플릿 초안 (LLM 없음)
     DESK->>APR: POST /approvals {draft}
     APR-->>DESK: approved → 게시(로그) | rejected(reason) | pending(수동: rfa-mock approve/reject)
@@ -426,7 +424,7 @@ P0 기본값은 전부 local/mock이며 key·GPU·Docker 없이 완주한다.
 운영층(1.1)은 port 스위치가 아니라 선언 4개로 동작한다: `assignments.yaml`(보안 그룹 → 샌드박스 → 에이전트), `routing.yaml`(채널 →
 alias → 백엔드, 프록시/브로커/진입점 listener), `censors.yaml`(프로파일), `ask.yaml`(audience 분기·admission·계보·head·task 카탈로그·bearer).
 실행 대체는 `serve --replay`(상류 호출 없음), `serve --fake-agents`(/ask 의 head/task/censor 를 고정 응답으로), `chat --fake-agents`.
-NemoClaw 0.0.124 / OpenShell 0.0.116 / Ollama `nemotron-3-nano:4b` / hosted `nvidia/nemotron-3-super-120b-a12b`.
+NemoClaw 0.0.124 / OpenShell 0.0.116 / 모든 alias hosted `nvidia/nemotron-3.5-lightning-30b-a3b` (로컬 LLM 미사용).
 
 공통 프레임워크: FastAPI(HTTP 계약), LangGraph(StateGraph + interrupt + SQLite checkpointer),
 Pydantic(공유 DTO/contracts, 공개 계약은 생성 OpenAPI), SQLite(KB·상태·승인·chat·관측 원장), Ruff/pytest.
@@ -462,7 +460,7 @@ Domain Graph의 `generate` 노드(ModelPort)와 knowledge facade의 생성 단�
 | assistant (main) | `rfa-main`, skill `sg-assistant` | control-plane / `rfa-external` | 레거시 채널 API 경로. 브로커 MCP `ask_task_agent` 또는 같은 샌드박스 `sessions_spawn` |
 | censor (secondary) | `rfa-main`, skill `censor` | groups 없음, `delegatable: false` / `rfa-censor`(bypass) | 검열 LLM 단계의 sandbox-agent 옵션. 기본 `runner: direct`는 프록시가 같은 alias 로 직접 분류 |
 | research | `rfa-main`, skill `task-research` | intranet-ro / `rfa-external` | `/ask` 기본 담당. facade 2 route 로 근거 조회, `[이전 거절 사유]` 블록 준수 |
-| benchmark | `rfa-main`, skill `task-benchmark` | intranet-ro / `rfa-internal` | 수치 조회, 로컬 모델만 |
+| benchmark | `rfa-main`, skill `task-benchmark` | intranet-ro / `rfa-internal` | 수치 조회, 검열 없는 internal alias |
 | summarizer | `rfa-main`(격리 시 `rfa-tasks-none`), skill `task-summarizer` | groups 없음 / `rfa-external` | 전달 텍스트만 요약, 네트워크 도구 없음 |
 | `t-<task>-sup` (스폰된 팀의 supervisor) | `rfa-main` secondary, skill `team-supervisor`, IDENTITY `# TEAM` | groups 없음 / 멤버 최소 exposure, `allowAgents`=멤버 | `/ask` 가 그 task 를 고르면 브로커가 호출. 멤버 spawn → 초안 → verifier → 답 |
 | `t-<task>-<role>` (멤버: research/benchmark/summarizer/verifier) | `rfa-main`, 역할 스킬 | 역할 고정 groups/alias, `delegatable: false` | supervisor 만 spawn. verifier 는 `{"verdict": pass\|revise, unsupported[]}` JSON |

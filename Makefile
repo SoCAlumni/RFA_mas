@@ -1,8 +1,9 @@
 # NemoClaw security-group operating layer. Targets work from a clean macOS host with
-# NemoClaw 0.0.124 + OpenShell 0.0.116 (Colima/Docker), Ollama, uv and openssl installed.
+# NemoClaw 0.0.124 + OpenShell 0.0.116 (Colima/Docker), uv and openssl installed. Inference is hosted-only
+# (build.nvidia.com, NVIDIA_API_KEY in .env.dev); no local LLM.
 #
 #   make bootstrap   preflight → egress-proxy/broker up → retire rfa-demo → onboard 4 sandboxes → reconcile → seed
-#   make demo        run demo/01..10 (replay by default; DEMO_MODE=live for live runs)
+#   make demo        run demo/01..10 except 06 (replay by default; DEMO_MODE=live for live runs)
 #   make mock-e2e    desk(C)/approval(A) mocks against /ask: fake agents by default, MOCK_FLAGS="--ask-url http://127.0.0.1:8799" for live
 #   make teardown    destroy the declared sandboxes and stop the host services
 #
@@ -26,7 +27,7 @@ MCP_FLAGS ?=
 MOCK_FLAGS ?= --fake-agents
 
 .PHONY: help bootstrap demo teardown serve serve-stop status plan apply test validate render kb-seed \
-        verify-baseline demo-01 demo-02 demo-03 demo-04 demo-05 demo-06 demo-07 demo-08 demo-09 demo-10 knowledge-facade knowledge-facade-stop \
+        verify-baseline demo-01 demo-02 demo-03 demo-04 demo-05 demo-07 demo-08 demo-09 demo-10 knowledge-facade knowledge-facade-stop \
         mock-e2e mock-approval openapi
 
 help:
@@ -109,7 +110,7 @@ teardown:
 
 # ---- demos ----------------------------------------------------------------------------------
 
-demo: demo-01 demo-02 demo-03 demo-04 demo-05 demo-06 demo-07 demo-08 demo-09 demo-10
+demo: demo-01 demo-02 demo-03 demo-04 demo-05 demo-07 demo-08 demo-09 demo-10   # 06 (admission queue) → legacy/demo
 
 demo-01:
 	$(UV) python demo/01_external_curl_blocked.py --$(DEMO_MODE)
@@ -121,8 +122,6 @@ demo-04:
 	$(UV) python demo/04_feedback_loop.py --$(DEMO_MODE)
 demo-05:
 	$(UV) python demo/05_injection_blocked.py --$(DEMO_MODE)
-demo-06:
-	$(UV) python demo/06_admission_queue.py --$(DEMO_MODE)
 demo-07:
 	$(UV) python demo/07_agents_apply_runtime_add.py --$(DEMO_MODE)
 demo-08:

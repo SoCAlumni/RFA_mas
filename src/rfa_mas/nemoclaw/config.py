@@ -484,9 +484,9 @@ class AudienceSpec(Strict):
     channel: str
 
 
-class AdmissionConfig(Strict):
-    max_inflight: int = Field(default=1, ge=1, le=16)
-    max_queue: int = Field(default=8, ge=0, le=256)
+class ServerConfig(Strict):
+    """Synchronous ``/ask``: one server-side timeout and the ``request_id`` result cache TTL."""
+
     timeout_seconds: int = Field(default=180, ge=1)
     result_ttl_seconds: int = Field(default=3600, ge=1)
 
@@ -512,7 +512,7 @@ class AskConfig(Strict):
     version: int = 1
     auth: AskAuth = AskAuth()
     audiences: dict[str, AudienceSpec]
-    admission: AdmissionConfig = AdmissionConfig()
+    server: ServerConfig = ServerConfig()
     lineage: LineageConfig = LineageConfig()
     head: HeadConfig = HeadConfig()
     tasks: list[TaskSpec] = Field(min_length=1)

@@ -3,8 +3,9 @@ info:
   title: RFA knowledge server — /ask
   summary: desk(대응 에이전트) ↔ 지식 서버 계약
   description: 'head → broker → task agent → censor 를 수행하는 `ask()` 하나를 노출한다. `audience` 가 검열 프로파일을 정한다(public→public,
-    company/self→internal). 슬롯이 없으면 202 로 큐에 넣고 `GET /ask/{request_id}` 로 폴링한다. `feedback[].reason` 은
-    사람 입력으로 신뢰되어 검열 규칙(learned.yaml)으로 되먹임된다. 인증: `Authorization: Bearer <RFA_ASK_TOKEN>` (.env.dev).'
+    company/self→internal). 동기 응답(서버 타임아웃 180초 → refusal no_knowledge/timeout). 같은 request_id 는 캐시 응답.
+    `feedback[].reason` 은 사람 입력으로 신뢰되어 검열 규칙(learned.yaml)으로 되먹임된다. 인증: `Authorization: Bearer <RFA_ASK_TOKEN>`
+    (.env.dev).'
   version: 1.0.0
 paths:
   /ask:
@@ -35,12 +36,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AskResponse'
-        '202':
-          description: admission queue 대기
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QueuedResponse'
         '401':
           content:
             application/json:
@@ -53,58 +48,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorBody'
           description: Service Unavailable
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /ask/{request_id}:
-    get:
-      tags:
-      - ask
-      summary: Get Ask
-      operationId: getAsk
-      parameters:
-      - name: request_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Request Id
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AskResponse'
-        '202':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QueuedResponse'
-          description: Accepted
-        '404':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-          description: Not Found
-        '401':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-          description: Unauthorized
         '422':
           description: Validation Error
           content:
@@ -505,25 +448,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    QueuedResponse:
-      properties:
-        request_id:
-          type: string
-          title: Request Id
-        status:
-          type: string
-          const: queued
-          title: Status
-          default: queued
-        position:
-          type: integer
-          minimum: 1.0
-          title: Position
-      type: object
-      required:
-      - request_id
-      - position
-      title: QueuedResponse
     Redaction:
       properties:
         reason:
@@ -542,7 +466,6 @@ components:
           - no_task
           - blocked_by_policy
           - no_knowledge
-          - queue_full
           title: Code
         message:
           type: string

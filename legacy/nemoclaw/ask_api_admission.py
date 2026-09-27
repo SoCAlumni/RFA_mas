@@ -1,9 +1,8 @@
-"""HTTP for ``ask()``: ``POST /ask`` (bearer, synchronous) and ``POST /chat`` (personal, loopback).
+"""HTTP for ``ask()``: ``POST /ask`` (bearer), ``GET /ask/{request_id}``, ``POST /chat`` (personal, loopback).
 
-Synchronous: a request runs ``ask()`` under the server-side timeout (``server.timeout_seconds``,
-180 s) and answers 200 with the outcome or a ``no_knowledge``/"timeout" refusal. Every outcome is
-cached by ``request_id`` for ``server.result_ttl_seconds`` (idempotent re-requests: same answer,
-no second pipeline run). The admission queue / ``202 queued`` path was retired to ``legacy/``.
+Admission: ``max_inflight`` requests run at once; the next ``max_queue`` wait in a FIFO and get
+``202 {status: queued, position}``; beyond that the answer is a ``queue_full`` refusal. Every
+outcome is cached by ``request_id`` for ``result_ttl_seconds`` (idempotent re-requests).
 """
 
 from __future__ import annotations
@@ -12,10 +11,11 @@ import asyncio
 import hmac
 import time
 import uuid
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header
+from fastapi import Depends, FastAPI, Header, Response
 from fastapi.responses import JSONResponse
 
 from rfa_mas.nemoclaw.ask import AskDeps, ask_with_timeout
@@ -23,8 +23,11 @@ from rfa_mas.nemoclaw.ask_contract import (
     ASK_CONTRACT_VERSION,
     AskRequest,
     AskResponse,
+    CensorSummary,
     ChatRequest,
     ErrorBody,
+    QueuedResponse,
+    Refusal,
     TeamCreateRequest,
     TeamList,
     TeamResponse,
@@ -33,53 +36,119 @@ from rfa_mas.nemoclaw.ask_contract import (
 
 @dataclass
 class _Entry:
-    payload: dict | None = None            # None while the request is still running
+    status: str            # queued | done
+    payload: dict | None = None
     created: float = field(default_factory=time.time)
-    done: asyncio.Event = field(default_factory=asyncio.Event)
 
 
 class AskService:
     def __init__(self, deps: AskDeps, token: str | None):
         self.deps = deps
         self.token = token
-        self.cfg = deps.config.server
+        self.cfg = deps.config.admission
+        self.inflight = 0
+        self.queue: deque[str] = deque()
+        self.requests: dict[str, AskRequest] = {}
         self.entries: dict[str, _Entry] = {}
+        self._wake: asyncio.Event | None = None
+        self._worker: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+
+    # ---- bookkeeping ----------------------------------------------------------------------
 
     def _evict(self) -> None:
         cutoff = time.time() - self.cfg.result_ttl_seconds
-        for rid in [r for r, e in self.entries.items() if e.payload is not None and e.created < cutoff]:
+        for rid in [r for r, e in self.entries.items() if e.status == "done" and e.created < cutoff]:
             self.entries.pop(rid, None)
+            self.requests.pop(rid, None)
+
+    def position(self, request_id: str) -> int:
+        try:
+            return list(self.queue).index(request_id) + 1
+        except ValueError:
+            return 0
+
+    def _ensure_worker(self) -> None:
+        if self._wake is None:
+            self._wake = asyncio.Event()
+        if self._worker is None or self._worker.done():
+            self._worker = asyncio.create_task(self._worker_loop())
+
+    async def _worker_loop(self) -> None:
+        assert self._wake is not None
+        while True:
+            await self._wake.wait()
+            self._wake.clear()
+            while self.queue and self.inflight < self.cfg.max_inflight:
+                rid = self.queue.popleft()
+                asyncio.create_task(self._process(rid))
+
+    def _release(self, *_):
+        self.inflight -= 1
+        if self._wake is not None:
+            self._wake.set()
+
+    async def _process(self, request_id: str) -> dict:
+        req = self.requests[request_id]
+        self.inflight += 1
+        outcome, pending = await ask_with_timeout(req, self.deps, self.cfg.timeout_seconds)
+        if pending is not None:
+            pending.add_done_callback(self._release)   # slot stays taken until the sandbox turn ends
+        else:
+            self._release()
+        payload = outcome.response.model_dump(mode="json")
+        self.entries[request_id] = _Entry("done", payload)
+        return payload
+
+    # ---- API ------------------------------------------------------------------------------
 
     async def submit(self, req: AskRequest) -> tuple[int, dict]:
-        """Run ``ask()`` synchronously; a repeated ``request_id`` waits for / returns the first outcome."""
+        self._ensure_worker()
         async with self._lock:
             self._evict()
             entry = self.entries.get(req.request_id)
-            if entry is None:
-                entry = self.entries[req.request_id] = _Entry()
-                owner = True
+            if entry is not None:
+                return self._view(req.request_id, entry)
+            if self.inflight < self.cfg.max_inflight and not self.queue:
+                self.requests[req.request_id] = req
+                self.entries[req.request_id] = _Entry("running")
+                inline = True
+            elif len(self.queue) >= self.cfg.max_queue:
+                payload = _refusal(req, self.deps, "queue_full", f"admission queue full ({self.cfg.max_queue})")
+                self.entries[req.request_id] = _Entry("done", payload)
+                return 200, payload
             else:
-                owner = False
-        if not owner:
-            await entry.done.wait()
-            return 200, entry.payload or {}
-        try:
-            outcome, pending = await ask_with_timeout(req, self.deps, self.cfg.timeout_seconds)
-            if pending is not None:  # the timed-out sandbox turn keeps running; retrieve its result silently
-                pending.add_done_callback(lambda t: t.cancelled() or t.exception())
-            entry.payload = outcome.response.model_dump(mode="json")
-        except Exception:
-            self.entries.pop(req.request_id, None)
-            raise
-        finally:
-            entry.done.set()
-        return 200, entry.payload
+                self.requests[req.request_id] = req
+                self.entries[req.request_id] = _Entry("queued")
+                self.queue.append(req.request_id)
+                inline = False
+        if inline:
+            return 200, await self._process(req.request_id)
+        assert self._wake is not None
+        self._wake.set()
+        return 202, QueuedResponse(request_id=req.request_id, position=self.position(req.request_id)).model_dump()
+
+    async def get(self, request_id: str) -> tuple[int, dict]:
+        entry = self.entries.get(request_id)
+        if entry is None:
+            return 404, ErrorBody(code="unknown_request_id").model_dump()
+        return self._view(request_id, entry)
+
+    def _view(self, request_id: str, entry: _Entry) -> tuple[int, dict]:
+        if entry.status == "done" and entry.payload is not None:
+            return 200, entry.payload
+        return 202, QueuedResponse(request_id=request_id, position=max(1, self.position(request_id))).model_dump()
 
     def authorized(self, header: str | None) -> bool:
         if not self.token or not header:
             return False
         return header.lower().startswith("bearer ") and hmac.compare_digest(header[7:].strip(), self.token)
+
+
+def _refusal(req: AskRequest, deps: AskDeps, code: str, message: str) -> dict:
+    profile = deps.config.audiences[req.audience].profile
+    return AskResponse(request_id=req.request_id, knowledge="", task=None, refusal=Refusal(code=code, message=message),
+                       censor=CensorSummary(profile=profile, verdict="allow", redactions=[])).model_dump(mode="json")
 
 
 def create_ask_app(service: AskService, teams=None) -> FastAPI:
@@ -89,7 +158,7 @@ def create_ask_app(service: AskService, teams=None) -> FastAPI:
         summary="desk(대응 에이전트) ↔ 지식 서버 계약",
         description=("head → broker → task agent → censor 를 수행하는 `ask()` 하나를 노출한다. "
                      "`audience` 가 검열 프로파일을 정한다(public→public, company/self→internal). "
-                     "동기 응답(서버 타임아웃 180초 → refusal no_knowledge/timeout). 같은 request_id 는 캐시 응답. "
+                     "슬롯이 없으면 202 로 큐에 넣고 `GET /ask/{request_id}` 로 폴링한다. "
                      "`feedback[].reason` 은 사람 입력으로 신뢰되어 검열 규칙(learned.yaml)으로 되먹임된다. "
                      "인증: `Authorization: Bearer <RFA_ASK_TOKEN>` (.env.dev)."),
     )
@@ -106,9 +175,18 @@ def create_ask_app(service: AskService, teams=None) -> FastAPI:
         return JSONResponse(status_code=exc.status, content=ErrorBody(code=exc.code, detail=exc.detail).model_dump())
 
     @app.post("/ask", operation_id="ask", dependencies=[Depends(authorize)], response_model=AskResponse,
-              responses={401: {"model": ErrorBody}, 503: {"model": ErrorBody}}, tags=["ask"])
-    async def post_ask(body: AskRequest):
+              responses={202: {"model": QueuedResponse, "description": "admission queue 대기"},
+                         401: {"model": ErrorBody}, 503: {"model": ErrorBody}},
+              tags=["ask"])
+    async def post_ask(body: AskRequest, response: Response):
         status, payload = await service.submit(body)
+        return JSONResponse(status_code=status, content=payload)
+
+    @app.get("/ask/{request_id}", operation_id="getAsk", dependencies=[Depends(authorize)], response_model=AskResponse,
+             responses={202: {"model": QueuedResponse}, 404: {"model": ErrorBody}, 401: {"model": ErrorBody}},
+             tags=["ask"])
+    async def get_ask(request_id: str):
+        status, payload = await service.get(request_id)
         return JSONResponse(status_code=status, content=payload)
 
     @app.post("/chat", operation_id="chat", response_model=AskResponse, tags=["personal"],

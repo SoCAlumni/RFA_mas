@@ -64,14 +64,12 @@ class Background:
         self.thread.join(timeout=5)
 
 
-def fake_ask_app(learned_path: Path, max_inflight: int, task_delay: float):
+def fake_ask_app(learned_path: Path, task_delay: float):
     from rfa_mas.nemoclaw.ask import build_fake_deps
     from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
     from rfa_mas.nemoclaw.config import load_ask, load_censors
 
-    config = load_ask()
-    config = config.model_copy(update={"admission": config.admission.model_copy(update={"max_inflight": max_inflight})})
-    deps = build_fake_deps(config, load_censors(), learned_path, task_delay=task_delay)
+    deps = build_fake_deps(load_ask(), load_censors(), learned_path, task_delay=task_delay)
     token = "mock-" + os.urandom(12).hex()
     return create_ask_app(AskService(deps, token)), token, deps
 
@@ -95,9 +93,8 @@ def main(argv=None) -> int:
     parser.add_argument("--approval-url", default=None, help="use a running approval mock instead of starting one")
     parser.add_argument("--auto-regex", default=DEFAULT_REGEX, help="auto reject-if-regex for the started approval mock")
     parser.add_argument("--learned-file", default=None, help="learned.yaml for the fake server (default: fresh temp file)")
-    parser.add_argument("--max-inflight", type=int, default=1)
-    parser.add_argument("--task-delay", type=float, default=0.0, help="fake task agent latency (s), for the queue demo")
-    parser.add_argument("--poll-timeout", type=float, default=300.0)
+    parser.add_argument("--task-delay", type=float, default=0.0, help="fake task agent latency (s)")
+    parser.add_argument("--ask-timeout", type=float, default=300.0, help="client-side wait for the synchronous /ask")
     parser.add_argument("scenarios", nargs="*", default=SCENARIOS)
     args = parser.parse_args(argv)
     fake = args.fake_agents or not args.ask_url
@@ -111,7 +108,7 @@ def main(argv=None) -> int:
     try:
         if fake:
             learned = Path(args.learned_file) if args.learned_file else Path(tempfile.mkdtemp(prefix="rfa-mock-")) / "learned.yaml"
-            app, token, deps = fake_ask_app(learned, args.max_inflight, args.task_delay)
+            app, token, deps = fake_ask_app(learned, args.task_delay)
             ask_server = Background(app, free_port()).__enter__()
             stack.append(ask_server)
             ask_url = ask_server.url
@@ -130,7 +127,7 @@ def main(argv=None) -> int:
             stack.append(approval)
             approval_url = approval.url
             print(f"[mock-e2e] approval mock {approval_url} auto=reject-if-regex {args.auto_regex!r}")
-        desk = Desk(ask_url, token, approval_url, poll_timeout=args.poll_timeout)
+        desk = Desk(ask_url, token, approval_url, ask_timeout=args.ask_timeout)
         tag = time.strftime("%H%M%S")
         outcomes = [desk.run(s, run_tag=tag) for s in scenarios]
     finally:

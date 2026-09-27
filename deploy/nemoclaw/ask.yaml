@@ -9,12 +9,10 @@ auth:
 # audience 가 검열 프로파일(censors.yaml)과 샌드박스 inference 라우팅 채널(routing.yaml channels)을 정하는 유일한 분기점.
 audiences:
   public:  { profile: public,   channel: external }   # 외부 게시 초안용. hosted 모델 허용(프록시 검열) + 최종 knowledge public 검열
-  company: { profile: internal, channel: internal }   # 사내 독자. 로컬 모델만
-  self:    { profile: internal, channel: internal }   # 개인 채팅(CLI/웹). 로컬 모델만
+  company: { profile: internal, channel: internal }   # 사내 독자. internal 채널(검열 없음)
+  self:    { profile: internal, channel: internal }   # 개인 채팅(CLI/웹). internal 채널(검열 없음)
 
-admission:
-  max_inflight: 1            # 동시에 처리하는 /ask 수(샌드박스 턴은 직렬이 안전). 초과분은 202 큐
-  max_queue: 8               # 큐 길이 초과 → refusal queue_full
+server:                      # /ask 는 동기. admission queue(202 경로) 는 legacy/ 로 이동(2026-09-27)
   timeout_seconds: 180       # 서버 측 처리 타임아웃. 초과 시 refusal no_knowledge + "timeout"
   result_ttl_seconds: 3600   # request_id 멱등 캐시 보존 시간
 
@@ -22,7 +20,7 @@ lineage:
   max_rejections: 3          # 같은 계보(request_id prefix 또는 target)에서 거절 3회 → refusal blocked_by_policy
 
 head:
-  runner: direct             # direct: egress-proxy(internal 채널, 로컬 모델)로 라우팅 JSON 만 요청 | fake: 키워드 규칙
+  runner: direct             # direct: egress-proxy(internal 채널, hosted 모델)로 라우팅 JSON 만 요청 | fake: 키워드 규칙
   timeout_seconds: 60
   fallback: keywords         # LLM 출력이 JSON 이 아니거나 카탈로그 밖이면 키워드 규칙으로 폴백(감사 기록 head=fallback)
 

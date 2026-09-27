@@ -68,7 +68,7 @@ class Entry:
             Route("/broker/admin/state", self.broker_state, methods=["GET"]),
             Route("/broker/admin/ask", self.broker_ask, methods=["POST"]),
         ]
-        if self.ask_service is not None:  # /ask, /ask/{id}, /chat (+ /docs, /openapi.json) — matched after the routes above
+        if self.ask_service is not None:  # /ask, /chat, /teams (+ /docs, /openapi.json) — matched after the routes above
             routes.append(Mount("/", app=create_ask_app(self.ask_service, self.team_service)))
         return Starlette(routes=routes)
 
@@ -234,7 +234,7 @@ class Entry:
             return JSONResponse({**payload, "reply": reply, "verdict": censor.get("verdict"), "channel": channel,
                                  "profile": censor.get("profile"), "target": target, "session_id": sid,
                                  "redactions": {r["reason"]: 1 for r in censor.get("redactions", [])},
-                                 "ms": int((time.monotonic() - started) * 1000), "status": "ok" if status == 200 else "queued"},
+                                 "ms": int((time.monotonic() - started) * 1000), "status": "ok" if status == 200 else "error"},
                                 status_code=200)
         if target == "proxy":
             if not self.proxy_key:

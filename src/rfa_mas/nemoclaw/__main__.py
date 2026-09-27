@@ -58,7 +58,7 @@ def cmd_validate(args) -> int:
                                   "default_mode": r.proxy.default_mode},
                       "censors": {"profiles": sorted(c.profiles)},
                       "ask": {"audiences": {n: s.profile for n, s in k.audiences.items()}, "tasks": [t.id for t in k.tasks],
-                              "max_inflight": k.admission.max_inflight},
+                              "timeout_seconds": k.server.timeout_seconds},
                       "teams": {"roles": sorted(roles.roles), "declared": [{"team_id": t.team_id, "task": t.task.id, "status": t.status,
                                                                              "supervisor": t.supervisor, "members": [m.agent_id for m in t.members]}
                                                                             for t in load_teams().teams]},
@@ -257,7 +257,7 @@ def cmd_chat(args) -> int:
         url = f"http://{routing.entry.bind}/chat"
         try:
             response = httpx.post(url, json={"question": args.question, "session_id": args.session, "channel": "cli"},
-                                  timeout=load_ask().admission.timeout_seconds + 10)
+                                  timeout=load_ask().server.timeout_seconds + 10)
         except httpx.HTTPError as exc:
             print(f"error: entry not reachable at {url} ({type(exc).__name__}); run `make serve`", file=sys.stderr)
             return 1

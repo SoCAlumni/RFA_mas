@@ -46,8 +46,8 @@ from rfa_mas.nemoclaw.teams import DirectPatterner, KeywordPatterner, TeamServic
 
 
 class DirectJudge:
-    """LLM stage straight against the censor alias backend (local Ollama). Used when the stage
-    declares ``runner: direct``: same local model, same egress-0 property, no OpenClaw prompt."""
+    """LLM stage straight against the censor alias backend (hosted). Used when the stage
+    declares ``runner: direct``: only the classification prompt is sent, no OpenClaw prompt."""
 
     def __init__(self, routing: Routing, backend_keys: dict[str, str]):
         self.routing = routing
@@ -62,15 +62,11 @@ class DirectJudge:
         if backend.auth == "bearer":
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
         prompt = judge_prompt(stage.categories, text, hints)
-        if backend.kind == "ollama":
-            url = f"{backend.url.rstrip('/')}/api/chat"
-            payload = {"model": alias.model, "stream": False, "think": backend.think,
-                       "messages": [{"role": "user", "content": prompt}],
-                       "options": {"temperature": 0, "num_predict": 300, **({"num_ctx": backend.num_ctx} if backend.num_ctx else {})}}
-        else:
-            url = f"{backend.url.rstrip('/')}/chat/completions"
-            payload = {"model": alias.model, "temperature": 0, "max_tokens": 300,
-                       "messages": [{"role": "user", "content": prompt}]}
+        url = f"{backend.url.rstrip('/')}/chat/completions"
+        payload: dict = {"model": alias.model, "temperature": 0, "max_tokens": 300,
+                         "messages": [{"role": "user", "content": prompt}]}
+        if backend.chat_template_kwargs:
+            payload["chat_template_kwargs"] = dict(backend.chat_template_kwargs)
         try:
             response = httpx.post(url, json=payload, headers=headers, timeout=stage.timeout_seconds)
         except httpx.HTTPError as exc:
@@ -78,10 +74,7 @@ class DirectJudge:
         if response.status_code != 200:
             raise JudgeError(f"direct judge HTTP {response.status_code}")
         data = response.json()
-        if backend.kind == "ollama":
-            content = (data.get("message") or {}).get("content") or ""
-        else:
-            content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
         return parse_judge_output(content)
 
 
@@ -114,7 +107,7 @@ def build_ask_service(ask_cfg: AskConfig, pipeline: CensorPipeline, broker: Brok
                       proxy_url: str, *, fake_agents: bool = False, token: str | None = None) -> AskService:
     learned = LearnedRules(bs.ROOT / ask_cfg.learned_rules_file)
     if fake_agents:
-        delay = float(os.environ.get("RFA_FAKE_TASK_DELAY", "0") or 0)  # e.g. 3 → the admission-queue demo can queue
+        delay = float(os.environ.get("RFA_FAKE_TASK_DELAY", "0") or 0)  # fake task latency (s) for timeout demos
         deps = AskDeps(ask_cfg, CensorPipeline(pipeline.censors, HintJudge()), KeywordHead(), FakeTasks(delay=delay), learned)
     else:
         head = (DirectHead(proxy_url, proxy_key, secret, timeout_seconds=ask_cfg.head.timeout_seconds,
