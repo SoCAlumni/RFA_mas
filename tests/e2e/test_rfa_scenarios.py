@@ -1090,8 +1090,8 @@ async def test_e2e03_unavailable_capability_worker_failure_and_budget_stop(
                     and record["result"]["stop_reason"] == "role_failed",
                 )
         # The current local workload needs two calls. A ceiling of three is not
-        # exhaustion: check that success boundary too, then actually exhaust a
-        # one-call budget. Do not make product code fail an in-budget workload.
+        # exhaustion. Below-template budgets are rejected by selection, so use
+        # an explicit search-heavy role fixture to reach the runtime budget guard.
         async with h.open_stack(
             tmp_path / "budget-allowed", **(PINNED | {"max_tool_calls": 3})
         ) as stack:
@@ -1106,11 +1106,40 @@ async def test_e2e03_unavailable_capability_worker_failure_and_budget_stop(
                 and allowed_team.status == "completed"
                 and 1 < allowed_team.usage.tool_calls <= 3,
             )
-        async with h.open_stack(tmp_path / "budget", **(PINNED | {"max_tool_calls": 1})) as stack:
+        async with h.open_stack(
+            tmp_path / "budget-too-small", **(PINNED | {"max_tool_calls": 1})
+        ) as stack:
             stack.people["owner"]
             await h.ingest(stack, inputs)
             async with stack.http() as client:
-                capped = (await session_work(client, h.team_body(goal, goal, BENCH_OUT)))[0].json()
+                denied = (await session_work(client, h.team_body(goal, goal, BENCH_OUT)))[0].json()
+            a.check(
+                "below_template_budget_rejected_before_team_creation",
+                denied["status"] == "failed"
+                and denied["stop_reason"] == "team_selection_denied"
+                and denied["draft"] is None
+                and stack.rows("SELECT count(*) FROM product_tasks") == [(0,)],
+            )
+        async with h.open_stack(tmp_path / "budget", **(PINNED | {"max_tool_calls": 3})) as stack:
+            stack.people["owner"]
+            await h.ingest(stack, inputs)
+            attempted_searches, completed_searches = [], []
+
+            async def search_heavy_runner(runner, context):
+                # paper_scout already spent one call. The third search here is
+                # the fourth total and must stop BEFORE reaching RetrievalPort.
+                for index in range(3):
+                    attempted_searches.append(index)
+                    await runner.search(context, goal)
+                    completed_searches.append(index)
+                return {"runs": [], "insufficient": True}
+
+            async with stack.http() as client:
+                with monkeypatch.context() as patch:
+                    patch.setitem(workers.ROLE_HANDLERS, "experiment_runner", search_heavy_runner)
+                    capped = (await session_work(client, h.team_body(goal, goal, BENCH_OUT)))[
+                        0
+                    ].json()
             cteam = await team_of(stack, capped["run_id"])
             a.check(
                 "tool_budget_exhaustion_stops_team_safely",
@@ -1118,8 +1147,13 @@ async def test_e2e03_unavailable_capability_worker_failure_and_budget_stop(
                 and capped["draft"] is None
                 and cteam.stop_reason == "budget_exceeded"
                 and cteam.status == "partial"
-                and cteam.usage.tool_calls <= 1,
+                and cteam.usage.tool_calls == 3
+                and len(attempted_searches) == 3
+                and len(completed_searches) == 2,
             )
+            a.observe("runtime_budget_search_attempts", len(attempted_searches))
+            a.observe("runtime_budget_search_returns", len(completed_searches))
+            a.observe("runtime_budget_total_calls", cteam.usage.tool_calls)
         a.pending("auto_task_creation", "no automatic Task creation", "P2-001")
 
 
