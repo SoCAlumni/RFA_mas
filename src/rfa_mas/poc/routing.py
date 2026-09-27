@@ -180,9 +180,20 @@ class LocalChatRouter:
                     }
         words = subjects(body.text)
         matches = []
+        # When the consented LLM saw the same candidates and abstained on a plain question,
+        # do not force a Task team by keyword overlap; the assistant answers from the KB.
+        # Notes (stored into the Task's space) and explicit task requests (team reuse) still
+        # use the deterministic subject match to avoid duplicate teams.
+        abstained = bool(
+            llm
+            and llm.get("status") == "succeeded"
+            and llm.get("assignee_task_id") is None
+            and llm.get("intent") == "query"
+        )
         for record in teams:
             if (
-                record.task.status != "active"
+                abstained
+                or record.task.status != "active"
                 or record.reason != "ready"
                 or (body.domain_id and record.task.domain_id != body.domain_id)
             ):
@@ -202,6 +213,8 @@ class LocalChatRouter:
             for _, r in matches
         ]
         extra = {"considered": considered, "candidates": candidates}
+        if abstained:
+            extra["llm_abstained"] = True
         if matches and (len(matches) == 1 or matches[0][0] > matches[1][0]):
             return self.task_route(matches[0][1], "existing_task_subject_match") | extra
         if matches:

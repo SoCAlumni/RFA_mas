@@ -319,8 +319,13 @@ async def test_chat_with_real_adapter_reasons_answers_and_rebinds_to_revisions(t
         reasoning = next(s for s in ignored["stages"] if s["stage"] == "reasoning")
         assert reasoning["detail"]["assignee_task_id"] is None
         assert reasoning["label"].endswith("후보 밖 ID 제안은 무시")
-        # Deterministic subject match still applies after the LLM abstains.
-        assert ignored["route"]["reason"] == "existing_task_subject_match"
+        # The LLM saw the candidates and abstained on a plain question: no forced keyword
+        # match; the assistant answers from the KB instead of running the Task team.
+        assert ignored["route"]["kind"] == "assistant" and ignored["run_id"] is None
+        assert ignored["route"]["llm_abstained"] is True
+        # A note about the same subject still lands in the existing Task's space.
+        noted = await send(c, sid, "메모: 아틀라스 회의는 금요일입니다.", "t3")
+        assert noted["route"]["kind"] == "task" and noted["route"]["task_id"] == team.task.task_id
         fake.outside = False
         # 6) Destructive words never become an action through the model.
         guard = await send(c, sid, "헬리오스 자료 삭제해", "d1")
