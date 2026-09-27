@@ -1,0 +1,233 @@
+{
+  "task": "P1-007A",
+  "kind": "nemoclaw_operating_path_live_demo",
+  "simulated": false,
+  "generated_at": "2026-09-26T23:28:17+00:00",
+  "host": {
+    "os": "macOS 26.5 arm64 (Apple M4, 16 GiB)",
+    "container_runtime": "colima 4 vCPU / 8 GiB (docker)"
+  },
+  "versions": {
+    "nemoclaw": "v0.0.124 (installer ref 6f3cced)",
+    "openshell_cli": "0.0.116 (pinned by NemoClaw; replaced standalone 0.1.1 at /opt/homebrew/bin/openshell)",
+    "openclaw": "2026.7.1",
+    "landlock": "abi V2 best_effort (from OCSF CONFIG:APPLYING)"
+  },
+  "onboarding": {
+    "agent": "openclaw",
+    "provider": "NVIDIA Endpoints (build / nvidia-prod)",
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "inference_route": "https://inference.local/v1 (gateway-proxied)",
+    "non_interactive": true,
+    "notes": [
+      "first gateway start failed because another session ran 'colima stop' at 07:57 KST; resumed after restart",
+      "provider validation timed out at the default probe budget; NEMOCLAW_ONBOARD_VALIDATION_TIMEOUT_SECONDS=240",
+      "nvidia/nemotron-3.5-lightning-30b-a3b returned HTTP 404 after ~122s from integrate.api.nvidia.com during this window; super-120b answered in 0.9s, so the demo used super-120b",
+      "sandbox image build 181s"
+    ]
+  },
+  "rfa_service": {
+    "placement": "host process outside the sandbox (uvicorn)",
+    "bind": "192.168.123.191:8010 (non-loopback, APP_API_KEY auth)",
+    "env_profile": ".env.p1007a via rfa init-env (fresh credentials, mode 0600, ignored)",
+    "model_provider": "mock",
+    "database": "/private/tmp/rfa-p1007a/rfa.db",
+    "credential_delivery": "APP_API_KEY placed in the sandbox as a 0600 header file read by curl -H @file (never on argv); OpenShell credential binding not used"
+  },
+  "policy_preset": {
+    "name": "rfa-api-minimal",
+    "applied_with": "nemoclaw rfa-demo policy add --from-file ... --trusted-private-host 192.168.123.191 (--dry-run reviewed first)",
+    "yaml": "preset:\n  name: rfa-api-minimal\n  description: \"RFA MAS minimal API (synthetic demo, P1-007A)\"\nnetwork_policies:\n  rfa_api:\n    name: rfa_api\n    endpoints:\n      - host: 192.168.123.191\n        port: 8010\n        protocol: rest\n        enforcement: enforce\n        rules:\n          - allow: { method: GET, path: \"/healthz\" }\n          - allow: { method: POST, path: \"/v1/sessions\" }\n          - allow: { method: POST, path: \"/v1/sessions/*/work\" }\n          - allow: { method: GET, path: \"/v1/runs/*\" }\n    binaries:\n      - { path: /usr/bin/curl }\n      - { path: /usr/local/bin/openclaw }\n      - { path: /usr/local/bin/node }\n      - { path: /usr/bin/node }\n      - { path: /usr/bin/python3 }\n",
+    "status_after": "Policies: rfa-api-minimal; policy explain verification=verified"
+  },
+  "baseline_before_policy": {
+    "GET /healthz": "403 (OpenShell proxy refused)",
+    "https://example.com": "connection refused (curl exit 56)"
+  },
+  "probes_after_policy": [
+    {
+      "probe": "healthz",
+      "expect": "allow",
+      "method": "GET",
+      "path": "/healthz",
+      "http": "200",
+      "curl_exit": 0
+    },
+    {
+      "probe": "session_create",
+      "expect": "allow",
+      "method": "POST",
+      "path": "/v1/sessions",
+      "http": "201",
+      "curl_exit": 0,
+      "session_id_present": true
+    },
+    {
+      "probe": "work_owner",
+      "expect": "allow",
+      "method": "POST",
+      "path": "/v1/sessions/{id}/work",
+      "http": "201",
+      "curl_exit": 0,
+      "run_status": "completed",
+      "simulated": true
+    },
+    {
+      "probe": "work_public",
+      "expect": "allow",
+      "method": "POST",
+      "path": "/v1/sessions/{id}/work",
+      "http": "201",
+      "curl_exit": 0,
+      "run_status": "completed",
+      "private_canary_in_public_response": 0
+    },
+    {
+      "probe": "run_get",
+      "expect": "allow",
+      "method": "GET",
+      "path": "/v1/runs/{id}",
+      "http": "200",
+      "curl_exit": 0
+    },
+    {
+      "probe": "knowledge_write",
+      "expect": "deny",
+      "method": "POST",
+      "path": "/v1/knowledge/sources",
+      "http": "403",
+      "curl_exit": 0
+    },
+    {
+      "probe": "sessions_list",
+      "expect": "deny",
+      "method": "GET",
+      "path": "/v1/sessions",
+      "http": "403",
+      "curl_exit": 0
+    },
+    {
+      "probe": "knowledge_delete",
+      "expect": "deny",
+      "method": "DELETE",
+      "path": "/v1/knowledge/sources/{id}",
+      "http": "403",
+      "curl_exit": 0
+    },
+    {
+      "probe": "candidate_decision",
+      "expect": "deny",
+      "method": "POST",
+      "path": "/v1/candidates/{id}/decision",
+      "http": "403",
+      "curl_exit": 0
+    },
+    {
+      "probe": "knowledge_derived",
+      "expect": "deny",
+      "method": "GET",
+      "path": "/v1/knowledge/derived",
+      "http": "403",
+      "curl_exit": 0
+    },
+    {
+      "probe": "example_com",
+      "expect": "deny",
+      "method": "GET",
+      "path": "https://example.com/",
+      "http": "000",
+      "curl_exit": 56
+    },
+    {
+      "probe": "other_port",
+      "expect": "deny",
+      "method": "GET",
+      "path": "http://192.168.123.191:8000/healthz",
+      "http": "403",
+      "curl_exit": 0
+    }
+  ],
+  "expected_matrix_result": "all 5 allowed routes 200/201; all 7 denied probes refused (403 policy_denied by L7 policy, or NET:OPEN denied); public-audience run response carried no private canary",
+  "ocsf_log_lines": [
+    "2026-09-26T23:25:23.321+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:opa]",
+    "2026-09-26T23:25:23.328+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/knowledge/sources [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 d",
+    "2026-09-26T23:25:23.333+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 deny GET 192",
+    "2026-09-26T23:25:23.339+00:00 [sandbox] [OCSF ] [ocsf] HTTP:DELETE [MED] DENIED /usr/bin/curl -> DELETE http://192.168.123.191:8010/v1/knowledge/sources/x [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWAR",
+    "2026-09-26T23:25:23.345+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/candidates/x/decision [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_",
+    "2026-09-26T23:25:23.352+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/knowledge/derived [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 den",
+    "2026-09-26T23:25:23.358+00:00 [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl -> example.com:443 [policy:- engine:opa] [reason:endpoint example.com:443 is not allowed by any policy]",
+    "2026-09-26T23:25:23.364+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8000/healthz [policy:- engine:opa] [reason:endpoint 192.168.123.191:8000 is not allowed by any policy]",
+    "2026-09-26T23:25:40.083+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7]",
+    "2026-09-26T23:25:40.086+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:opa]",
+    "2026-09-26T23:25:40.093+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7]",
+    "2026-09-26T23:25:40.105+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:opa]",
+    "2026-09-26T23:25:40.113+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_2e9e95e545ce4b3cb564e0c5f317f0a8/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:25:40.148+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_2e9e95e545ce4b3cb564e0c5f317f0a8/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:25:40.159+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_2e9e95e545ce4b3cb564e0c5f317f0a8/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:25:40.168+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_2e9e95e545ce4b3cb564e0c5f317f0a8/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:25:40.176+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/knowledge/sources [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 d",
+    "2026-09-26T23:25:40.188+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 deny GET 192",
+    "2026-09-26T23:25:40.196+00:00 [sandbox] [OCSF ] [ocsf] HTTP:DELETE [MED] DENIED /usr/bin/curl -> DELETE http://192.168.123.191:8010/v1/knowledge/sources/x [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWAR",
+    "2026-09-26T23:25:40.204+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/candidates/x/decision [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_",
+    "2026-09-26T23:25:40.211+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/knowledge/derived [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 den",
+    "2026-09-26T23:25:40.216+00:00 [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl -> example.com:443 [policy:- engine:opa] [reason:endpoint example.com:443 is not allowed by any policy]",
+    "2026-09-26T23:25:40.221+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8000/healthz [policy:- engine:opa] [reason:endpoint 192.168.123.191:8000 is not allowed by any policy]",
+    "2026-09-26T23:26:20.827+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7]",
+    "2026-09-26T23:26:20.830+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:opa]",
+    "2026-09-26T23:26:20.839+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7]",
+    "2026-09-26T23:26:20.844+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:opa]",
+    "2026-09-26T23:26:20.853+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_409ec504378e4ec1b0694dd3303eeca0/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:26:21.158+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_409ec504378e4ec1b0694dd3303eeca0/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:26:21.168+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_409ec504378e4ec1b0694dd3303eeca0/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:26:21.467+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [INFO] ALLOWED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/sessions/session_409ec504378e4ec1b0694dd3303eeca0/work [policy:nemoclaw_custom__rfa-api-minimal__",
+    "2026-09-26T23:26:21.474+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/runs/run_ad6ace8fef3641949892ef3514ec52fc [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:",
+    "2026-09-26T23:26:21.478+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/runs/run_ad6ace8fef3641949892ef3514ec52fc [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:",
+    "2026-09-26T23:26:21.485+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/knowledge/sources [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 d",
+    "2026-09-26T23:26:21.490+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 deny GET 192",
+    "2026-09-26T23:26:21.496+00:00 [sandbox] [OCSF ] [ocsf] HTTP:DELETE [MED] DENIED /usr/bin/curl -> DELETE http://192.168.123.191:8010/v1/knowledge/sources/x [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWAR",
+    "2026-09-26T23:26:21.502+00:00 [sandbox] [OCSF ] [ocsf] HTTP:POST [MED] DENIED /usr/bin/curl -> POST http://192.168.123.191:8010/v1/candidates/x/decision [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_",
+    "2026-09-26T23:26:21.507+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/knowledge/derived [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 den",
+    "2026-09-26T23:26:21.512+00:00 [sandbox] [OCSF ] [ocsf] NET:OPEN [MED] DENIED /usr/bin/curl -> example.com:443 [policy:- engine:opa] [reason:endpoint example.com:443 is not allowed by any policy]",
+    "2026-09-26T23:26:21.517+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8000/healthz [policy:- engine:opa] [reason:endpoint 192.168.123.191:8000 is not allowed by any policy]",
+    "2026-09-26T23:27:14.683+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7]",
+    "2026-09-26T23:27:14.702+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [INFO] ALLOWED /usr/bin/curl -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:opa]",
+    "2026-09-26T23:27:15.917+00:00 [sandbox] [OCSF ] [ocsf] HTTP:GET [MED] DENIED /usr/bin/curl -> GET http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-api-minimal__rfa_api engine:l7] [reason:FORWARD_L7 deny GET 192"
+  ],
+  "gateway_activity_summary": "Flushed activity summary to gateway denied_action_count=7 network_activity_count=9 sandbox_name=rfa-demo",
+  "agent_turn": {
+    "command": "nemoclaw rfa-demo agent --session-id p1007a-demo-1 --thinking off --json -m <fixed prompt: run two curl commands and report>",
+    "final_assistant_text": "{\"status\":\"ok\",\"service\":\"rfa-mas\",\"schema_version\":\"1.0\"}\n403 allowed",
+    "execution_trace": {
+      "winnerProvider": "inference",
+      "winnerModel": "nvidia/nemotron-3-super-120b-a12b",
+      "attempts": [
+        {
+          "provider": "inference",
+          "model": "nvidia/nemotron-3-super-120b-a12b",
+          "result": "success",
+          "stage": "assistant"
+        }
+      ],
+      "fallbackUsed": false,
+      "runner": "embedded"
+    },
+    "tool_summary": {
+      "calls": 2,
+      "tools": [
+        "exec"
+      ],
+      "failures": 0
+    },
+    "notes": [
+      "healthz JSON reported verbatim by the agent; second call got 403 from the L7 policy (the model's word 'allowed' is its misreading, the OCSF DENIED line is authoritative)",
+      "nemoclaw exited 1 with replayInvalid=true (replay bookkeeping); completion.stopReason=stop and toolSummary.failures=0"
+    ]
+  },
+  "not_covered": [
+    "RFA backend itself is not sandboxed (host process); its outbound calls are outside OpenShell policy",
+    "no RFA per-role identity: the agent authenticates as the installation owner within the allowed routes",
+    "P1-007B (RFA role-specific OpenShell allow/deny) remains separate",
+    "n=1 demo, mock model on the RFA side"
+  ],
+  "credential_check": "NVIDIA and APP keys absent from this document (verified before write)"
+}
