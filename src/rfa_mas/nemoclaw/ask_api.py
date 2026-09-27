@@ -82,7 +82,7 @@ class AskService:
         return header.lower().startswith("bearer ") and hmac.compare_digest(header[7:].strip(), self.token)
 
 
-def create_ask_app(service: AskService, teams=None) -> FastAPI:
+def create_ask_app(service: AskService, teams=None, frontend=None) -> FastAPI:
     app = FastAPI(
         title="RFA knowledge server — /ask",
         version=ASK_CONTRACT_VERSION,
@@ -150,6 +150,10 @@ def create_ask_app(service: AskService, teams=None) -> FastAPI:
             status, payload = await teams.remove(team_id)
             return JSONResponse(status_code=status, content=payload)
 
+    if frontend is not None:  # front-end contract: routes/ (HTTP) → services/ → store/
+        from rfa_mas.nemoclaw.routes import mount_frontend
+
+        mount_frontend(app, frontend)
     return app
 
 

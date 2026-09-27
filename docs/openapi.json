@@ -86,6 +86,48 @@
         }
       }
     },
+    "/chat": {
+      "post": {
+        "tags": [
+          "personal"
+        ],
+        "summary": "Post Chat",
+        "description": "개인 채팅(audience self). 진입점은 loopback 전용이라 bearer 없이 같은 ask() 를 호출한다.",
+        "operationId": "chat",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/teams": {
       "post": {
         "tags": [
@@ -348,6 +390,108 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents": {
+      "get": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "List Agents",
+        "description": "대화 가능한 에이전트(assistant + task 에이전트 + 팀 supervisor). censor 는 제외.",
+        "operationId": "listAgents",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentRef"
+                  },
+                  "type": "array",
+                  "title": "Response Listagents"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "Me",
+        "description": "Bearer RFA_ASK_TOKEN 이 맞으면 owner/admin, 아니면 guest (401 없이 항상 200).",
+        "operationId": "me",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "tags": [
+          "frontend"
+        ],
+        "summary": "List Tasks",
+        "description": "head 가 라우팅할 수 있는 task 목록: ask.yaml 카탈로그 + 스폰된 팀. gradeLabel 은 배치 샌드박스의 보안 등급.",
+        "operationId": "listTasks",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TaskView"
+                  },
+                  "type": "array",
+                  "title": "Response Listtasks"
                 }
               }
             }

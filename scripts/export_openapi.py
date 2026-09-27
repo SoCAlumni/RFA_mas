@@ -42,27 +42,44 @@ def _knowledge_facade():
     return create_knowledge_facade_app(build_container(settings)).openapi()
 
 
-def _ask():
+def _entry_app():
     import tempfile
 
     from rfa_mas.nemoclaw.ask import build_fake_deps
     from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
-    from rfa_mas.nemoclaw.config import load_ask, load_censors
-
-    from rfa_mas.nemoclaw.config import load_roles, load_routing
+    from rfa_mas.nemoclaw.config import load_ask, load_assignments, load_censors, load_roles, load_routing
+    from rfa_mas.nemoclaw.services import build_frontend_services
+    from rfa_mas.nemoclaw.store import Store
     from rfa_mas.nemoclaw.teams import KeywordPatterner, TeamService
 
     tmp = Path(tempfile.mkdtemp(prefix="rfa-openapi-"))
     ask_cfg = load_ask()
+    deps = build_fake_deps(ask_cfg, load_censors(), tmp / "learned.yaml")
     teams = TeamService(roles=load_roles(), routing=load_routing(), ask_cfg=ask_cfg, patterner=KeywordPatterner(),
                         teams_path=tmp / "teams.yaml", fake=True)
-    return create_ask_app(AskService(build_fake_deps(ask_cfg, load_censors(), tmp / "learned.yaml"), None), teams).openapi()
+    assignments = load_assignments(teams_path=tmp / "no-teams.yaml")  # static declaration only
+    frontend = build_frontend_services(assignments=lambda: assignments, ask_deps=deps, token=None,
+                                       store=Store(tmp / "frontend.db"))
+    return create_ask_app(AskService(deps, None), teams, frontend)
+
+
+def _ask():
+    """desk ↔ knowledge server contract: /ask and /teams only (docs/api/ask.openapi.*)."""
+    doc = _entry_app().openapi()
+    doc["paths"] = {p: v for p, v in doc["paths"].items() if p == "/ask" or p.startswith("/teams")}
+    return doc
+
+
+def _frontend():
+    """The whole entry app for the front-end (docs/openapi.yaml)."""
+    return _entry_app().openapi()
 
 
 EXPORTS: dict[str, Callable[[], dict]] = {
     "inbox": _inbox,
     "knowledge-facade": _knowledge_facade,
     "ask": _ask,
+    "frontend": _frontend,
 }
 
 
@@ -88,6 +105,13 @@ def main() -> int:
             document = EXPORTS[name]()
         except ImportError as exc:
             print(f"{name}: skipped ({exc.name} not available in this checkout)")
+            continue
+        if name == "frontend":  # front-end contract lives at docs/openapi.{yaml,json}
+            out = args.out.parent if args.out.name == "api" else args.out
+            out.mkdir(parents=True, exist_ok=True)
+            (out / "openapi.json").write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", "utf-8")
+            (out / "openapi.yaml").write_text(yaml.safe_dump(document, allow_unicode=True, sort_keys=False, width=100), "utf-8")
+            print(f"{(out / 'openapi.json').relative_to(ROOT)}\n{(out / 'openapi.yaml').relative_to(ROOT)}")
             continue
         for path in write(name, document, args.out):
             print(path.relative_to(ROOT))

@@ -258,7 +258,7 @@ def test_committed_openapi_matches_generated():
     committed = json.loads((ROOT / "docs" / "api" / "ask.openapi.json").read_text(encoding="utf-8"))
     assert generated == committed, "run `make openapi` and commit docs/api/ask.openapi.*"
     paths = committed["paths"]
-    assert set(paths) == {"/ask", "/chat", "/teams", "/teams/{team_id}"}
+    assert set(paths) == {"/ask", "/teams", "/teams/{team_id}"}  # desk contract only; the front-end doc is docs/openapi.yaml
     assert set(paths["/teams"]) == {"post", "get"} and set(paths["/teams/{team_id}"]) == {"get", "delete"}
     assert "202" not in paths["/ask"]["post"]["responses"]  # synchronous: the queued path is retired (legacy/)
     schema = committed["components"]["schemas"]

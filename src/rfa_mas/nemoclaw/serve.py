@@ -15,6 +15,7 @@ from starlette.applications import Starlette
 from starlette.routing import Route
 
 from rfa_mas.nemoclaw import bootstrap as bs
+from rfa_mas.nemoclaw import logs
 from rfa_mas.nemoclaw.ask import AskDeps, BrokerTasks, DirectHead, FakeTasks, HintJudge, KeywordHead
 from rfa_mas.nemoclaw.ask_api import AskService
 from rfa_mas.nemoclaw.broker import Broker
@@ -42,6 +43,7 @@ from rfa_mas.nemoclaw.learned import LearnedRules
 from rfa_mas.nemoclaw.markers import load_or_create_secret
 from rfa_mas.nemoclaw.proxy import EgressProxy
 from rfa_mas.nemoclaw.runner import SubprocessRunner
+from rfa_mas.nemoclaw.services import build_frontend_services
 from rfa_mas.nemoclaw.teams import DirectPatterner, KeywordPatterner, TeamService
 
 
@@ -71,13 +73,18 @@ class DirectJudge:
             payload.update(backend.extras)
         response = None
         for attempt in (1, 2):  # the hosted endpoint hangs about one call in four: one short retry, then give up
+            timer = logs.Timer()
             try:
                 response = httpx.post(url, json=payload, headers=headers, timeout=stage.timeout_seconds)
+                logs.external("llm-judge", response.status_code, timer.ms, backend=alias.backend, model=alias.model,
+                              attempt=attempt, chars=len(text))
                 break
             except httpx.TimeoutException as exc:
+                logs.external("llm-judge", "timeout", timer.ms, backend=alias.backend, attempt=attempt)
                 if attempt == 2:
                     raise JudgeError(f"direct judge transport: {type(exc).__name__} x2") from exc
             except httpx.HTTPError as exc:
+                logs.external("llm-judge", type(exc).__name__, timer.ms, backend=alias.backend, attempt=attempt)
                 raise JudgeError(f"direct judge transport: {type(exc).__name__}") from exc
         assert response is not None
         if response.status_code != 200:
@@ -169,6 +176,8 @@ def build(replay: bool = False, fake_agents: bool = False):
                         on_reload=reload_assignments, fake=fake_agents)
     ask_service.deps.catalog = teams.catalog_tasks
     entry.team_service = teams
+    entry.frontend_services = build_frontend_services(assignments=lambda: entry.assignments, ask_deps=ask_service.deps,
+                                                      token=ask_service.token)
     broker_app = Starlette(routes=[
         Route("/healthz", proxy.healthz, methods=["GET"]),
         Route(routing.broker.path, broker.mcp, methods=["GET", "POST", "DELETE"]),

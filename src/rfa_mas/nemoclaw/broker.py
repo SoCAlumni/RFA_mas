@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from rfa_mas.nemoclaw import audit
+from rfa_mas.nemoclaw import audit, logs
 from rfa_mas.nemoclaw.config import Assignments, Routing
 from rfa_mas.nemoclaw.markers import make_marker, strip_markers
 from rfa_mas.nemoclaw.runner import Runner, extract_json
@@ -155,12 +155,15 @@ class Broker:
 
     def _turn(self, decision: RouteDecision, sid: str, message: str) -> tuple[str, str]:
         timeout = self.routing.broker.task_turn_timeout_seconds
+        timer = logs.Timer()
         result = self.runner.run(
             [self.assignments.host.nemoclaw_bin, decision.sandbox, "agent", "--agent", decision.openclaw_id,
              "--session-id", f"broker-{sid}", "--thinking", "off", "--json", "--timeout", str(timeout),
              "-m", message],
             timeout=timeout + 30,
         )
+        logs.external("openclaw-gateway:agent", result.returncode, timer.ms, sandbox=decision.sandbox,
+                      agent=decision.openclaw_id, session_id=sid)
         try:
             data = extract_json(result.stdout)
             payloads = data.get("result", {}).get("payloads", [])

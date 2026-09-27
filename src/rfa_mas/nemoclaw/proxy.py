@@ -24,7 +24,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
 
-from rfa_mas.nemoclaw import audit
+from rfa_mas.nemoclaw import audit, logs
 from rfa_mas.nemoclaw.censor import CensorPipeline, CensorResult
 from rfa_mas.nemoclaw.config import AUTO_MODE, Routing
 from rfa_mas.nemoclaw.markers import find_markers
@@ -201,9 +201,13 @@ class EgressProxy:
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
         url = f"{backend.url.rstrip('/')}/chat/completions"
         payload = upstream_payload(body, alias.model, messages, backend.chat_template_kwargs, backend.extras)
+        timer = logs.Timer()
         try:
             response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
+            logs.external(f"upstream:{alias.backend}", response.status_code, timer.ms, model=alias.model,
+                          messages=len(messages))
         except httpx.HTTPError as exc:
+            logs.external(f"upstream:{alias.backend}", type(exc).__name__, timer.ms, model=alias.model)
             return 502, {"error": {"message": f"upstream {alias.backend} unreachable: {type(exc).__name__}", "type": "upstream_error"}}
         if response.status_code != 200:
             return 502, {"error": {"message": f"upstream {alias.backend} returned HTTP {response.status_code}", "type": "upstream_error"}}

@@ -25,7 +25,7 @@ from typing import Protocol
 
 import httpx
 
-from rfa_mas.nemoclaw import audit
+from rfa_mas.nemoclaw import audit, logs
 from rfa_mas.nemoclaw.ask_contract import (
     AskRequest,
     AskResponse,
@@ -166,10 +166,12 @@ class DirectHead:
         marker = make_marker("channel", {"ch": "internal", "sid": f"head-{req.request_id}"}, self.secret)
         messages[-1]["content"] = f"{marker}\n{messages[-1]['content']}"
         payload = {"model": self.model, "max_tokens": 300, "temperature": 0, "messages": messages}
+        timer = logs.Timer()
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds + 5) as client:
                 response = await client.post(self.proxy_url, json=payload,
                                              headers={"Authorization": f"Bearer {self.proxy_key}"})
+            logs.external("egress-proxy:head", response.status_code, timer.ms, model=self.model)
             if response.status_code != 200:
                 raise ValueError(f"proxy HTTP {response.status_code}")
             content = ((response.json().get("choices") or [{}])[0].get("message") or {}).get("content", "")
@@ -373,6 +375,7 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     spec = cfg.audiences[req.audience]
     profile, channel = spec.profile, spec.channel
     sid = f"ask-{req.request_id}"
+    logs.bind(request_id=logs.context().get("request_id") or req.request_id, audience=req.audience, profile=profile)
     audit.remember_session(sid, channel, profile)
     flags = injection_flags(req)
     detail: dict = {"request_id": req.request_id, "audience": req.audience, "channel": req.channel, "target": req.target,
@@ -395,7 +398,10 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
 
     # the head sees every reason learned for this audience (task unknown yet) plus this request's own feedback
     head_reasons = list(dict.fromkeys(reasons + deps.learned.reasons(req.audience, any_task=True)))
+    timer = logs.Timer()
     decision = await deps.head.route(req, deps.tasks_catalog(), head_reasons)
+    logs.stage("head", timer.ms, "task" if decision.task else "no_task", source=decision.source,
+               task=decision.task.id if decision.task else None, agent=decision.agent)
     detail["head"] = decision.source
     detail["head_reason"] = decision.reason[:200]
     task = decision.task
@@ -406,7 +412,11 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
 
     hints = deps.learned.reasons(req.audience, task.id)
     detail["hints"] = len(hints)
+    timer = logs.Timer()
     reply = await deps.tasks.ask(decision.agent, decision.query, sid, channel, task.id)
+    logs.stage(f"task:{task.id}", timer.ms, "ok" if reply.ok else "error", agent=decision.agent,
+               route=reply.detail.get("route"), chars=len(reply.text or ""))
+    logs.raw("task_reply", reply.text, task=task.id)
     detail["task_agent"] = {k: (str(v)[:240] if k == "error" else v) for k, v in reply.detail.items()} | {"ok": reply.ok}
     if not reply.ok:
         return finish(_refuse(req, profile, "no_knowledge", f"task agent failed: {reply.detail.get('error') or 'error'}", task),
@@ -415,7 +425,10 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     if not text or text == "(empty reply)" or (len(text) < 200 and NO_EVIDENCE.search(text)):
         return finish(_refuse(req, profile, "no_knowledge", "no evidence for this question", task), "refused", decision.agent)
 
+    timer = logs.Timer()
     result = await asyncio.to_thread(deps.pipeline.run, text, profile, None, hints)
+    logs.stage("censor", timer.ms, result.verdict, redactions=list(result.redactions), blocked_by=result.blocked_by,
+               hints=len(hints))
     detail["censor"] = result.summary()["stages"]
     if result.verdict == "block":
         return finish(_refuse(req, profile, "blocked_by_policy", f"censor blocked the knowledge: {result.blocked_by}", task),

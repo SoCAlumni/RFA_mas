@@ -17,11 +17,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
 from starlette.routing import Mount, Route
 
-from rfa_mas.nemoclaw import audit
+from rfa_mas.nemoclaw import audit, logs
 from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
 from rfa_mas.nemoclaw.ask_contract import AskRequest
 from rfa_mas.nemoclaw.broker import Broker
@@ -51,6 +52,7 @@ class Entry:
     proxy_url: str = "http://127.0.0.1:8797/v1/chat/completions"
     ask_service: AskService | None = None
     team_service: object | None = None
+    frontend_services: object | None = None
     _sandboxes_cache: tuple[float, list[str]] = (0.0, [])
 
     def app(self) -> Starlette:
@@ -68,9 +70,9 @@ class Entry:
             Route("/broker/admin/state", self.broker_state, methods=["GET"]),
             Route("/broker/admin/ask", self.broker_ask, methods=["POST"]),
         ]
-        if self.ask_service is not None:  # /ask, /chat, /teams (+ /docs, /openapi.json) — matched after the routes above
-            routes.append(Mount("/", app=create_ask_app(self.ask_service, self.team_service)))
-        return Starlette(routes=routes)
+        if self.ask_service is not None:  # /ask, /chat, /teams, front-end routes (+ /docs, /openapi.json) — after the routes above
+            routes.append(Mount("/", app=create_ask_app(self.ask_service, self.team_service, self.frontend_services)))
+        return Starlette(routes=routes, middleware=[Middleware(logs.RequestLogMiddleware)])
 
     async def healthz(self, request: Request) -> Response:
         return JSONResponse({"status": "ok", "service": "rfa-sg-entry", "channels": sorted(self.routing.channels),

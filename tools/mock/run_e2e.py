@@ -69,9 +69,16 @@ def fake_ask_app(learned_path: Path, task_delay: float):
     from rfa_mas.nemoclaw.ask_api import AskService, create_ask_app
     from rfa_mas.nemoclaw.config import load_ask, load_censors
 
+    from rfa_mas.nemoclaw.config import load_assignments
+    from rfa_mas.nemoclaw.services import build_frontend_services
+    from rfa_mas.nemoclaw.store import Store
+
     deps = build_fake_deps(load_ask(), load_censors(), learned_path, task_delay=task_delay)
     token = "mock-" + os.urandom(12).hex()
-    return create_ask_app(AskService(deps, token)), token, deps
+    assignments = load_assignments()
+    frontend = build_frontend_services(assignments=lambda: assignments, ask_deps=deps, token=token,
+                                       store=Store(learned_path.parent / "frontend.db"))
+    return create_ask_app(AskService(deps, token), frontend=frontend), token, deps
 
 
 def read_env_token(env_file: Path, key: str) -> str | None:

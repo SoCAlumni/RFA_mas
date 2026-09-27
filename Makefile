@@ -26,7 +26,7 @@ SERVE_LOG := $(SG_DIR)/serve.log
 MCP_FLAGS ?=
 MOCK_FLAGS ?= --fake-agents
 
-.PHONY: help bootstrap demo teardown serve serve-stop status plan apply test validate render kb-seed \
+.PHONY: help bootstrap demo teardown serve serve-stop status plan apply test validate render kb-seed logs-tail logs-trace \
         verify-baseline demo-01 demo-02 demo-03 demo-04 demo-05 demo-07 demo-08 demo-09 demo-10 knowledge-facade knowledge-facade-stop \
         mock-e2e mock-approval openapi
 
@@ -45,6 +45,17 @@ test:
 # /ask contract: Pydantic/FastAPI → docs/api/ask.openapi.{json,yaml} (committed; tests/test_ask.py checks it is current)
 openapi:
 	$(UV) python scripts/export_openapi.py ask
+	$(UV) python scripts/export_openapi.py frontend
+
+# ---- logs (JSON lines: logs/app.jsonl, logs/audit.jsonl; raw text only in logs/debug.jsonl with LOG_RAW=1) ----
+LOG_DIR ?= logs
+logs-tail:
+	@tail -n 50 -F $(LOG_DIR)/app.jsonl $(LOG_DIR)/audit.jsonl
+
+# one request end to end (app + audit lines, time order):  make logs-trace REQUEST_ID=req-…
+logs-trace:
+	@test -n "$(REQUEST_ID)" || (echo "usage: make logs-trace REQUEST_ID=<id>"; exit 2)
+	@$(UV) python -c "import json,sys; from rfa_mas.nemoclaw import logs; [print(json.dumps(r, ensure_ascii=False)) for r in logs.trace(sys.argv[1])]" $(REQUEST_ID)
 
 # ---- mocks (desk C / approval A) -----------------------------------------------------------
 # Default: in-process fake head/tasks/censor (no sandbox, no model) — contract + feedback-loop check only.
