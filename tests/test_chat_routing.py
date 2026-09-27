@@ -296,3 +296,10 @@ async def test_explicit_request_creates_one_task_team_then_reuses_it(tmp_path):
         # An explicit request that matches the existing Task reuses it (no new team).
         again = await send(c, sid, "헬리오스 지연 벤치마크를 다시 분석해줘", "again")
         assert again["route"]["kind"] == "task" and len(await catalog.list_for(owner)) == 1
+        # A shared demo tag alone is not a subject: an unrelated request gets its own team.
+        second = await send(
+            c, sid, "[샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)", "second"
+        )
+        assert second["route"]["kind"] == "new_task" and second["team"]["pattern"] == "research"
+        assert second["route"]["domain_id"] == "quantization_research"
+        assert len(await catalog.list_for(owner)) == 2

@@ -30,6 +30,13 @@ GENERIC = {
     "회의",
     "일정",
     "자료",
+    # Sample/demo tags are shared across unrelated Tasks and must not count as a subject.
+    "샘플",
+    "합성",
+    "시연",
+    "시연용",
+    "데모",
+    "테스트",
 }
 
 
