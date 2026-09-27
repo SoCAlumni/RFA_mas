@@ -183,6 +183,9 @@ def compose(task_id: str, name: str, description: str, pattern: PatternResult, r
 # --------------------------------------------------------------------------- service
 
 
+Progress = Callable[[str, dict], None]   # (kind: stage|log, data) — team creation steps for streaming callers
+
+
 @dataclass
 class ApplyReport:
     manifest: str | None = None
@@ -237,7 +240,14 @@ class TeamService:
 
     # ---- API ----------------------------------------------------------------------------------
 
-    async def create(self, *, name: str, description: str, task_id: str | None, sandbox: str | None) -> tuple[int, dict]:
+    async def create(self, *, name: str, description: str, task_id: str | None, sandbox: str | None,
+                     keywords: list[str] | None = None, fallback_capabilities: list[str] | None = None,
+                     progress: Progress | None = None) -> tuple[int, dict]:
+        """``progress(kind, data)`` (optional) sees each step: ``("stage", {stage, status, detail?})`` with stage
+        analyze (requirements → capabilities) → design (capabilities → roles) → spawn (declare → apply → seed),
+        and ``("log", {stage, text})``. ``keywords`` join the team's routing keywords (the chat's tags);
+        ``fallback_capabilities`` stand in when the requirement names no substantive capability."""
+        note = progress or (lambda kind, data: None)
         started = time.monotonic()
         tid = slug_for(name, task_id)
         if self.ask_cfg.task(tid) is not None:
@@ -246,15 +256,30 @@ class TeamService:
             existing = next((t for t in self._load().teams if t.task.id == tid), None)
         if existing is not None:
             return 200, self._view(existing)
+        note("stage", {"stage": "analyze", "status": "running"})
         pattern = await self.patterner.pattern(name, description, self.roles)
+        substantive = [c for c in pattern.capabilities if c not in self.roles.always and c in self.roles.capabilities
+                       and any(r.capability == c for r in self.roles.roles.values())]
+        if not substantive and fallback_capabilities:
+            pattern.capabilities = list(dict.fromkeys([*pattern.capabilities, *fallback_capabilities]))
+            pattern.reason = f"no capability in the requirement → default {fallback_capabilities}; {pattern.reason}"[:200]
+            note("log", {"stage": "analyze", "text": "요구사항에서 역량을 특정하지 못해 기본 역량으로 설계합니다"})
+        caps = [{"id": c, "label": self.roles.capabilities.get(c, c)} for c in pattern.capabilities]
+        note("log", {"stage": "analyze", "text": "필요 역량: " + (", ".join(c["id"] for c in caps) or "없음")})
+        note("stage", {"stage": "analyze", "status": "done", "detail": {"capabilities": caps, "source": pattern.source}})
+        note("stage", {"stage": "design", "status": "running"})
         decl, reasons = compose(tid, name, description, pattern, self.roles, sandbox)
         if decl is None:
             audit.record(kind="team", verdict="refused", action="create", detail={"task": tid, "pattern": pattern.__dict__, "reasons": reasons})
+            note("stage", {"stage": "design", "status": "error"})
             return 422, {"code": "no_role_for_requirement", "detail": "; ".join(reasons), "pattern": pattern.__dict__}
+        if keywords:
+            decl.task.keywords = list(dict.fromkeys([*keywords, *decl.task.keywords]))
         if decl.sandbox is None and "no_egress" in decl.pattern.capabilities:
             probe = load_assignments(self.assignments_path, teams_path=Path("/nonexistent"))
             if "rfa-tasks-none" in probe.sandboxes:
                 decl.sandbox = "rfa-tasks-none"
+        note("log", {"stage": "design", "text": "패턴: supervisor + " + ", ".join(decl.pattern.roles)})
         # validate the merged declaration before persisting anything
         with self._lock:
             teams = self._load()
@@ -263,11 +288,20 @@ class TeamService:
                 merged = self._validate(candidate)
             except ConfigError as exc:
                 audit.record(kind="team", verdict="refused", action="create", detail={"task": tid, "error": str(exc)[:300]})
+                note("stage", {"stage": "design", "status": "error"})
                 return 422, {"code": "invalid_team", "detail": str(exc)[:300], "pattern": decl.pattern.model_dump()}
             decl.status = "applying"
+            note("stage", {"stage": "design", "status": "done", "detail": {
+                "roles": list(decl.pattern.roles), "supervisor": decl.supervisor,
+                "members": [{"agentId": m.agent_id, "role": m.role} for m in decl.members],
+                "sandbox": decl.sandbox or merged.default_sandbox}})
+            note("stage", {"stage": "spawn", "status": "running"})
             self._save(candidate)
+        note("log", {"stage": "spawn", "text": f"teams.yaml 에 {decl.team_id} 선언"})
         if self.on_reload:
             self.on_reload(merged)
+        note("log", {"stage": "spawn", "text": f"{decl.sandbox or merged.default_sandbox} 에 agents apply · 에이전트 "
+                                               f"{len(decl.members) + 1}개"})
         report = await asyncio.to_thread(self._apply, merged, decl)
         with self._lock:
             teams = self._load()
@@ -277,6 +311,10 @@ class TeamService:
                     t.error = report.error
             self._save(teams)
             final = next(t for t in teams.teams if t.team_id == decl.team_id)
+        note("log", {"stage": "spawn", "text": f"agents apply {report.agents_apply} · 시드 {report.seeded}건"
+                                               + (f" · 오류 {report.error[:120]}" if report.error else "")})
+        note("stage", {"stage": "spawn", "status": "error" if report.error else "done",
+                       "detail": {"agentsApply": report.agents_apply, "seeded": report.seeded}})
         audit.record(kind="team", verdict=final.status, action="create", sandbox=merged.sandbox_for(decl.supervisor),
                      agent=decl.supervisor,
                      detail={"team_id": decl.team_id, "task": tid, "pattern": decl.pattern.model_dump(), "members": decl.pattern.roles,

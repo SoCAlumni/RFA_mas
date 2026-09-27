@@ -531,6 +531,8 @@ class HeadConfig(Strict):
     runner: Literal["direct", "fake"] = "direct"
     timeout_seconds: int = Field(default=60, ge=1)
     fallback: Literal["keywords", "none"] = "keywords"
+    select_threshold: float = Field(default=0.6, ge=0, le=1)  # chat (D-12): delegate to every candidate scoring ≥ this
+    max_parallel: int = Field(default=4, ge=1, le=8)          # chat (D-12): at most this many agents per question
 
 
 class TaskSpec(Strict):

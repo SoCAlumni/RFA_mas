@@ -23,6 +23,8 @@ head:
   runner: direct             # direct: egress-proxy(internal 채널, hosted 모델)로 라우팅 JSON 만 요청 | fake: 키워드 규칙
   timeout_seconds: 60
   fallback: keywords         # LLM 출력이 JSON 이 아니거나 카탈로그 밖이면 키워드 규칙으로 폴백(감사 기록 head=fallback)
+  select_threshold: 0.6      # 채팅(D-12): 담당자 탐색 점수(0..1)가 이 값 이상인 후보 전부에 병렬 위임, 없으면 비서가 직접 답(D-13)
+  max_parallel: 4            # 채팅(D-12): 질문 하나에 동시에 부르는 담당자 최대 수
 
 # 지식 카탈로그: head 가 고를 수 있는 task 와 담당 task 에이전트(assignments.yaml agents). id 는 knowledge facade 의 task id.
 tasks:

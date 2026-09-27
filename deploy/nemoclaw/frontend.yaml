@@ -1,0 +1,48 @@
+# 프런트(채팅 대화 상대·좌측 태스크 목록) 표시 메타. 라우팅·배치와 무관한 이름·아이콘·색·추천 질문만 둔다.
+# 대화 상대 = task 1개(D-10). 카탈로그(ask.yaml) task 는 여기서, `POST /tasks` 로 만든 task 는 SQLite(tasks) 에서 읽는다.
+# 등급(사내/사외)은 요청 단위라 여기에 없다(D-0.4).
+version: 1
+
+owner:
+  name: 소유자
+
+assistant:
+  name: 비서 에이전트
+  icon: star
+  color: { bg: "#ffffff", fg: "#1a1d23" }
+  description: 질문에 맞는 담당자를 찾아 확인한 뒤 답합니다.
+  suggestions:                        # 비서 빈 화면의 전역 추천 질문
+    - 오로라 TRIV3 벤치마크 최신 결과 요약해줘
+    - 네뷸라 양자화 연구에서 INT4 결과가 어땠어?
+    - INT8 양자화가 뭐야? 짧게 설명해줘
+    - 지난 분기 NPU 팀 회식비 정산 내역 찾아줘
+
+tasks:
+  triv3:
+    agent_name: TRIV3 벤치마크 에이전트
+    desk: triv3-desk
+    icon: research
+    color: { bg: "#d5eede", fg: "#14532d" }
+    description: 오로라 프로젝트의 TRIV3 벤치마크 결과와 측정 절차를 사내 지식에서 찾아 답합니다.
+    suggestions:
+      - TRIV3 최신 지연·정확도 결과 알려줘
+      - TRIV3 합격 기준이 뭐야?
+      - 오로라 벤치마크 마감 일정은 언제야?
+  quantization_research:
+    agent_name: 양자화 리서치 에이전트
+    desk: nebula-desk
+    icon: research
+    color: { bg: "#d6e2fb", fg: "#1c3a8a" }
+    description: 네뷸라 양자화 연구(INT4·INT8, Zephyr) 노트와 논문 메모를 근거로 답합니다.
+    suggestions:
+      - INT4 양자화 perplexity 결과 정리해줘
+      - Zephyr 모델 양자화 진행 상황 알려줘
+      - INT8과 INT4 비교 결과 있어?
+
+# `POST /tasks` 로 만든 task 의 색(만든 순서대로 순환)
+palette:
+  - { bg: "#e4dcf7", fg: "#4c2a8a" }
+  - { bg: "#d4eef0", fg: "#0f5e5e" }
+  - { bg: "#fbe0d4", fg: "#7a2e10" }
+  - { bg: "#e6ecd2", fg: "#3f5212" }
+  - { bg: "#dfe3ea", fg: "#2b3140" }
