@@ -1,0 +1,114 @@
+{
+  "attempt_id": "completion-reference-review",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9",
+        "before": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P0-027/freeze-reval3-target-0927002457/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P0-027/freeze-reval3-target-0927002457/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "verification_summary": {
+          "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+          "evidence": ".agent/evidence/P0-027/freeze-reval3-target-0927002457/result.json",
+          "source_fingerprint": "7458463f99df7b33b104b1aceefbeed20887359ad2a8d7182ca624f2093a27c0",
+          "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+          "spec_revision": 2,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "branch": "task/P0-027",
+        "changed_files": {
+          "docs/NAT_COMPATIBILITY.md": "136b0d7c96d59520cd7bc81de6438bc276dcff33d1adf39fa60f9a2290813897",
+          "pyproject.toml": "3bb22977a8111ba62715a71ac77d00942f23ac292224e1af40ee728c5b390ee8",
+          "tests/spikes/test_nat_compatibility.py": "baee7649f3aa5ef6021824719f42af1a4e0487db93249d2cf347c93e4f4ca41a",
+          "uv.lock": "961647b38902b81e373ba64dd568bb6dd286d1841031b2b09fc9e567005d477f"
+        },
+        "evidence": ".agent/evidence/P0-027/freeze-reval3-worker-0927002445/result.json",
+        "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-027"
+      },
+      "submission_generation": 12,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed reference deltas: additive Langfuse retention CLI note and recorded NemoClaw/OpenShell evidence links/limitations. No DTO/contract/AC change; original execution retained. Product source changes are explicitly excluded from this review.",
+    "reviewed_at": "2026-09-27T01:09:27+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "core pin 유지·actual installed versions·선택 근거가 있다",
+          "관측/재개 미지원 범위 및 실패 blocker가 명시되고 KB/eval에 NAT 선행을 추가하지 않았다"
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:25:02.442326+00:00",
+        "id": "V1",
+        "observed": "Re-checked on current integrated HEAD: canonical and P0-027 worktree venvs report LangGraph 1.2.12, langgraph-checkpoint 4.2.0 and nvidia-nat-core/langchain/eval 1.8.0 via importlib.metadata; pyproject.toml and uv.lock are unchanged since 76b2186 (git diff empty). P1-001A changed retrieval/source-access code only, not the NAT adapter or wrapper use, so the prior version-selection basis and documented wrapper limits (no RFA thread config, HITL, streaming, provider token or live-model claim) still hold. No new install was performed.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:25:02.442324+00:00"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "assertions": [
+          "실제 설치된 wrapper가 synthetic CompiledStateGraph를 한 번 실행하고 input/output shape를 확인",
+          "NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.25,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:25:04.688080+00:00",
+        "id": "V2",
+        "log_excerpt": "8 passed in 1.12s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:25:02.442718+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:25:04.688208+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:25:02.442274+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "d7860379189d5badd4e6b55c82b2a5b2c12d8e287c922bf971a6ae1ad10c357c",
+  "source_manifest": ".agent/evidence/P0-027/completion-reference-review/source.json",
+  "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+  "spec_revision": 2,
+  "task_id": "P0-027"
+}

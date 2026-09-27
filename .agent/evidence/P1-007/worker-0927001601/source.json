@@ -1,0 +1,97 @@
+{
+  "branch": "task/P1-007-int-0927001544",
+  "captured_at": "2026-09-27T00:16:04+00:00",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    "AGENTS.md": {
+      "index_blob": null,
+      "sha256": "cf27246f1382f1db8b62e468535c8c342e0812ce11038522863c576b78b32b0f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/EDUCATION_MAPPING.md": {
+      "index_blob": null,
+      "sha256": "da20c0ef61ed0f76e5be7e2a65358fc89062b89a70066caa927ac16b0bbf68bf",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/INTEGRATION.md": {
+      "index_blob": null,
+      "sha256": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "docs/evidence/nemoclaw.md": {
+      "index_blob": null,
+      "sha256": "ee8b0ac49b693ead6d3f1f191cbc8edce58495d146254e554f5a0f59ad71ee95",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "3bb22977a8111ba62715a71ac77d00942f23ac292224e1af40ee728c5b390ee8",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "b61591f5e2a0b3be8413b8c9ef577e7047ec69fb281881b6762d9341114aaf8a",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "961647b38902b81e373ba64dd568bb6dd286d1841031b2b09fc9e567005d477f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "3c7dbaf828bd357862c0607862d72375901370df34525052e4080e0141f32174",
+  "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007-int-0927001544",
+  "spec_digest": "c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c",
+  "spec_revision": 2
+}

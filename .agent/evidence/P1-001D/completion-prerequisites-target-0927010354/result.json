@@ -1,0 +1,58 @@
+{
+  "attempt_id": "completion-prerequisites-target-0927010354",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock 제품 보수; real 모델/서비스 주장 없음",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_retrieval.py",
+          "tests/test_context_loading.py"
+        ],
+        "assertions": [
+          "조사 정규화·2자 bigram으로 일치하고 동률은 provider/namespace/external_id로 결정적으로 정렬된다.",
+          "BM25 통계와 순위는 권한 필터를 통과한 source에서만 계산되고 비공개 본문은 반환·노출되지 않는다.",
+          "질의 term 수 상한으로 SQLite 오류 없이 처리된다."
+        ],
+        "counts": {
+          "collected": 52,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 52,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.4,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:04:04.472296+00:00",
+        "id": "V1",
+        "log_excerpt": "52 passed, 1 warning in 1.41s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:04:02.076425+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "d7d5bbb9e2fd40fd5a585072465cf9d5131978d3",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:04:04.472382+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:04:02.075581+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "fdd2f0b81af3603389c78054aa48479b8a12ab33da5a52c310155f96fc6828e2",
+  "source_manifest": ".agent/evidence/P1-001D/completion-prerequisites-target-0927010354/source.json",
+  "spec_digest": "d7549b7a3b582c00bf3a1a6341e2cacd46c21fcdf2b4aac182a0980c4bbe937a",
+  "spec_revision": 10,
+  "task_id": "P1-001D"
+}

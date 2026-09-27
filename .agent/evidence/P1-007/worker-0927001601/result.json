@@ -1,0 +1,39 @@
+{
+  "attempt_id": "worker-0927001601",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "경계 문서 일부 implemented, 이번 경로 설계 missing/not_run. 설계 local, simulated N/A. 외부 환경 없이 설계 가능; 실제 운영 증거는 P1-007A.",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "공식 지원 runtime/platform 확인, 임의 LangGraph 앱 자동 수용 가정 금지",
+          "서비스가 sandbox 밖이면 그 backend/process와 보호되지 않는 범위를 명시",
+          "교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:16:07.720536+00:00",
+        "id": "V1",
+        "observed": "Coordinator compared docs/evidence/nemoclaw.md, docs/EDUCATION_MAPPING.md and docs/INTEGRATION.md with the official sources cited there (checked 2026-09-27): NemoClaw alpha v0.0.129 lists OpenClaw, Hermes and LangChain Deep Agents Code as supported agents and other harnesses as unsupported, so the RFA LangGraph app is documented as an API outside the sandbox, not an auto-supported agent; the unprotected backend scope (.env, SQLite, checkpoints, traces, backend egress, in-process work) is stated; the minimal routes /healthz, /v1/sessions, /v1/sessions/{session_id}/work and /v1/runs/{run_id} exist in src/rfa_mas/api/app.py; education rows map the five official objectives to task/file/evidence with real/local/not_run status and add no unverified mission requirements.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:16:07.720535+00:00"
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007-int-0927001544",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T00:16:07.720543+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:16:07.720470+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "3c7dbaf828bd357862c0607862d72375901370df34525052e4080e0141f32174",
+  "source_manifest": ".agent/evidence/P1-007/worker-0927001601/source.json",
+  "spec_digest": "c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c",
+  "spec_revision": 2,
+  "task_id": "P1-007"
+}

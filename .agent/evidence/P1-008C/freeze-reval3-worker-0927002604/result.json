@@ -1,0 +1,58 @@
+{
+  "attempt_id": "freeze-reval3-worker-0927002604",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; simulated=true. 실제 MCP/게시/OpenShell/UI gate는 별도 not_run.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_local_response.py"
+        ],
+        "assertions": [
+          "1.0 호환 submit은 pending; 1.1 원본 DB 수동 승인/거절/수정 요청. 위조 identity/token/Host/Origin/Forwarded 및 body echo 거절. HTTP READ allowlist 외 실제 tool 호출 0회.",
+          "승인자 서버 identity, 최신 binding/expiry 확인; 수정 후 이전 승인 거절. 승인 없는 모의 게시도 거절; receipt는 mode=mock/reference 표시, 외부 호출 0회.",
+          "검토/결정/영수증 보존과 멱등 동시 1회; 동일 key 다른 payload conflict, outcome_unknown 영속 조회 및 자동 재게시 0회.",
+          "기존 consumer의 pending/get/READ/WRITE 차단이 같은 DTO로 작동. capabilities/health는 local/mock이고 real 권한/게시/OpenShell을 주장하지 않는다."
+        ],
+        "counts": {
+          "collected": 24,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 24,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 3.17,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:26:10.639294+00:00",
+        "id": "V1",
+        "log_excerpt": "24 passed in 0.85s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:26:07.471453+00:00",
+        "timeout_seconds": 180
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008C-int-0926161008",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T00:26:10.639351+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:26:07.470831+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "622566301fd20ca228ed1d40d59cb89eace964cb74fe09f897f48c52ffaa91ae",
+  "source_manifest": ".agent/evidence/P1-008C/freeze-reval3-worker-0927002604/source.json",
+  "spec_digest": "4df0c326957d9489dd548e3988a57cb10c0fa7c7512e581482084f0ce8f158f2",
+  "spec_revision": 16,
+  "task_id": "P1-008C"
+}

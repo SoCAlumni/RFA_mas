@@ -1,0 +1,64 @@
+{
+  "attempt_id": "freeze-reval3-target-0927002955",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "opt-in direct hosted API live smoke. build.nvidia.com hosted endpoint(integrate.api.nvidia.com)에 고정된 합성 한국어 요청만 보내 실제 NVIDIA 모델 호출·structured/tool 제안 지원·근거 충실도를 입증한다. 제품 ModelPort/bootstrap/graph 경로의 live 증거가 아니며 그 연결은 P1-002 이후 별도 검증이다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          "env",
+          "RFA_NVIDIA_LIVE=1",
+          "RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev",
+          "RFA_NVIDIA_EVIDENCE_OUT=/tmp/rfa-nvidia-live-evidence.json",
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_nvidia_live.py"
+        ],
+        "assertions": [
+          "hosted 합성 요청 실제 성공과 model echo·usage·finish_reason=stop",
+          "json_object Pydantic 검증 통과와 named tool_choice 제안(실행 0회)",
+          "근거 질문 정확 사실+[E1] 인용 한국어 답변, 근거 밖 질문 '근거 부족'",
+          "출력·evidence에 key/Authorization/reasoning_content 없음"
+        ],
+        "counts": {
+          "collected": 4,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 12.77,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:30:15.296118+00:00",
+        "id": "V1",
+        "log_excerpt": "4 passed in 11.82s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:30:02.522212+00:00",
+        "timeout_seconds": 420
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:30:15.296252+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:30:02.521175+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "35c47d68666dd53985c4fd3a8b54ab0c484037b81d0dbb9d1026e8c519d29e8d",
+  "source_manifest": ".agent/evidence/P1-002A/freeze-reval3-target-0927002955/source.json",
+  "spec_digest": "125288637284a4d22c0ace7aa7e834013881b5d2d9e8195c619cd630cf3a7747",
+  "spec_revision": 2,
+  "task_id": "P1-002A"
+}

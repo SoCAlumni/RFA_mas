@@ -1,0 +1,58 @@
+{
+  "attempt_id": "pre-P1-007-target-0927001226",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "공식 3.x API 확인, dependency 설치/호환 실행은 not_run, 코드 missing. scheduling local(false), test clock만 simulated. 자원은 로컬 SQLite; 외부 서비스 불필요.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_schedules.py"
+        ],
+        "assertions": [
+          "job ID는 owner/schedule에 안정적이고 의도한 upsert만 replace_existing 적용, 소유 lock으로 두 번째 runner 시작 거절",
+          "FastAPI lifecycle/worker에는 scheduler를 시작하지 않고 재기동 시 persisted next_run을 초기화하지 않음",
+          "3.x add_job/CronTrigger API만 사용, max_instances=1·coalesce·misfire 설정과 ledger 실행 key 연계",
+          "jobstore에는 고정 top-level dispatcher와 안전한 schedule ID만 직렬화, credential/본문/callable 입력 없음."
+        ],
+        "counts": {
+          "collected": 56,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 56,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.86,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:12:33.693823+00:00",
+        "id": "V1",
+        "log_excerpt": "56 passed in 1.98s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:12:30.834369+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:12:33.693875+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:12:30.833851+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "9926c8889ae7730ed69bed4698528539b3f158fc0b0639cffe5cb11e4051ea28",
+  "source_manifest": ".agent/evidence/P0-023/pre-P1-007-target-0927001226/source.json",
+  "spec_digest": "369c65140b6fac5a385ecb3d26a0d62fa16e94965db05cd50fa6888d74b21f79",
+  "spec_revision": 25,
+  "task_id": "P0-023"
+}

@@ -1,0 +1,65 @@
+{
+  "attempt_id": "freeze-reval3-worker-0927003032",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "opt-in direct official Skill smoke. build.nvidia.com Skills 카탈로그에 등재된 NVIDIA nemo-retriever Skill(SKILL.md 26.8.1)의 local LanceDB workflow를 pinned nemo-retriever==26.8.1 CLI로 실제 실행한다. CPU 호스트이므로 embedding은 hosted integrate.api.nvidia.com(nvidia/llama-nemotron-embed-vl-1b-v2)을 사용한다. 합성 한국어 PDF만 ingest/query하고, 인용된 source/page 근거만으로 hosted Nemotron 답변을 만든다. 제품 Research worker→ToolPort→EvidenceBundle 경로와 audience/policy 매핑은 P1-003 범위이며 not_run이다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          "env",
+          "RFA_RETRIEVER_LIVE=1",
+          "RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev",
+          "RFA_RETRIEVER_BIN=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/.tools/nemo-retriever-26.8.1/.venv/bin/retriever",
+          "RFA_RETRIEVER_EVIDENCE_OUT=/tmp/rfa-retriever-live-evidence.json",
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_retriever_live.py"
+        ],
+        "assertions": [
+          "retriever 26.8.1 ingest 5행·query evidence 실제 수행, 키 없는 query는 hosted embedding 필요로 실패",
+          "골든 질문 3개 top-1 source/page·verbatim 사실 일치",
+          "근거 기반 Research 답변의 사실과 인용이 검색 결과 citation 안에 있음",
+          "출력·evidence에 key/Authorization 없음, Skill 출처·카탈로그 등재 기록"
+        ],
+        "counts": {
+          "collected": 7,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 7,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 25.73,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:31:01.467594+00:00",
+        "id": "V1",
+        "log_excerpt": "7 passed in 24.55s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:30:35.737172+00:00",
+        "timeout_seconds": 480
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A-r2",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T00:31:01.467703+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:30:35.736504+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "12b805e156563c9c8c3af81541a398cf96180f25d11ae9c77266e49984c39db2",
+  "source_manifest": ".agent/evidence/P1-003A/freeze-reval3-worker-0927003032/source.json",
+  "spec_digest": "3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664",
+  "spec_revision": 2,
+  "task_id": "P1-003A"
+}

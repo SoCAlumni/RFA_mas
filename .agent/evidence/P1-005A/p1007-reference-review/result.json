@@ -1,0 +1,114 @@
+{
+  "attempt_id": "p1007-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406",
+        "before": "714769830fd959c17fa674d1bd1b5dd32230187a1060cf1b28c90f16783805dd"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-005A/pre-P1-007-target-0927000736/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-005A/pre-P1-007-target-0927000736/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P1-005A/pre-P1-007-target-0927000736/result.json",
+          "source_fingerprint": "4cd2bba50f70a343d34b169c83193288c66cc6e9d602f53f6b0c72332b954b61",
+          "spec_digest": "5e34bc774f61faf6413f6279b5d23ef19ee995fcc03d665a53569b12f6d1e475",
+          "spec_revision": 11,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "branch": "task/P1-005A-int-0926171947",
+        "changed_files": {
+          "docs/CONTRACT_CHANGELOG.md": "75a02ffbfb7c92ef97a730c29e7477108cf23cf60927305d79a7c9b71b38cb82",
+          "docs/contracts/extended.json": "ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb",
+          "src/rfa_mas/adapters/local.py": "e3a108373140047d7f302b7d50acb18ea9fc5884a155fcf82f4d5fddc854e19c",
+          "src/rfa_mas/adapters/mock.py": "aab4f494933038cdc7037e04774952c4d75738e381344c0202319059c5dcbe88",
+          "src/rfa_mas/api/app.py": "52c7d6c7119867a40cbb2e7aa1e4cc46c86ce668ce84a897f044e88821c04db1",
+          "src/rfa_mas/application/drafts.py": "1bcbc935766dadf2784d6f66ead9f554e62b57bab901a3f1ff5c170b09efc8f4",
+          "src/rfa_mas/application/graphs/supervisor.py": "5fb39128d5669b2e868efc64a06bfa4b20c800b415fdc2d38c04c7a45b8253bd",
+          "src/rfa_mas/application/observations.py": "4a44a154afe86ce797be3e57de2487eecb73f7c7193f98d08b74104465e6dc90",
+          "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
+          "src/rfa_mas/bootstrap.py": "2fd32620d84a20f3143396ad3af60de515d82090407e0a6e323748d8c750e435",
+          "src/rfa_mas/contracts/__init__.py": "ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9",
+          "src/rfa_mas/contracts/models.py": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
+          "tests/test_draft_lifecycle.py": "f1c81f94a622966772ea1cb685ce17d1746cf39f2dd20a699ceb1919ddef0ae8",
+          "tests/test_state_machine.py": "642c66d2feab725ac6c24db0947c0fb808b8799b02765f538ba083dbb692d6aa"
+        },
+        "evidence": ".agent/evidence/P1-005A/pre-P1-007-worker-0927000715/result.json",
+        "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-005A-int-0926171947"
+      },
+      "submission_generation": 10,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Inspected 71b2d09..a6c271d INTEGRATION diff: adds P1-007 sandbox-agent placement and existing-route reference only; changes no DTO, API, policy or this task AC. Source/config/spec/contract/global binding is checked by taskctl. Retain original execution timestamps; no tests rerun.",
+    "reviewed_at": "2026-09-27T00:44:17+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "version/hash/target 불변 저장만 verified; lifecycle missing/not_run. 상태 local(false), 승인·게시 mock(true). 실제 승인 원본은 승희이며 이 mirror가 권한을 생성하지 않음; callback·timeout 확장은 P1-008.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_state_machine.py",
+          "tests/test_draft_lifecycle.py"
+        ],
+        "assertions": [
+          "본문·첨부·대상·권한·source/policy 변화는 기존 승인 무효화와 재검토",
+          "검증된 승인 없는 상태는 publication succeeded로 전이 불가",
+          "current version/hash/target/정책/근거에 안 맞는 결정을 거절",
+          "run 상태와 publication 상태 분리, simulated receipt와 실제 영수증 구분."
+        ],
+        "counts": {
+          "collected": 91,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 91,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 6.11,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:07:46.628046+00:00",
+        "id": "V1",
+        "log_excerpt": "91 passed, 15 warnings in 5.09s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:07:40.517072+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:07:46.628124+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:07:40.516065+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "1a1990996ceea696b81d23f8daf979fab29ebd50867919b4ee884b3bc762235e",
+  "source_manifest": ".agent/evidence/P1-005A/p1007-reference-review/source.json",
+  "spec_digest": "5e34bc774f61faf6413f6279b5d23ef19ee995fcc03d665a53569b12f6d1e475",
+  "spec_revision": 11,
+  "task_id": "P1-005A"
+}

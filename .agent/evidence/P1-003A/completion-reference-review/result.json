@@ -1,0 +1,116 @@
+{
+  "attempt_id": "completion-reference-review",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "documentation_review": {
+    "changes": {
+      "docs/EDUCATION_MAPPING.md": {
+        "after": "905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554",
+        "before": "da20c0ef61ed0f76e5be7e2a65358fc89062b89a70066caa927ac16b0bbf68bf"
+      },
+      "docs/INTEGRATION.md": {
+        "after": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9",
+        "before": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-003A/freeze-reval3-target-0927003109/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-003A/freeze-reval3-target-0927003109/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "verification_summary": {
+          "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+          "evidence": ".agent/evidence/P1-003A/freeze-reval3-target-0927003109/result.json",
+          "source_fingerprint": "12b805e156563c9c8c3af81541a398cf96180f25d11ae9c77266e49984c39db2",
+          "spec_digest": "3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664",
+          "spec_revision": 2,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "branch": "task/P1-003A-r2",
+        "changed_files": {
+          "docs/EDUCATION_MAPPING.md": "da20c0ef61ed0f76e5be7e2a65358fc89062b89a70066caa927ac16b0bbf68bf",
+          "docs/evidence/nvidia-skill.md": "ff1900ada0c43a9ef7f6df2d2c3d360bbde07841c6d7ed19d12a808f8bd3f5a5",
+          "tests/integration/fixtures/retriever/make_fixtures.py": "3c9fa529c7a54bcc22fa2bad673e7e40c03055cfcc0907a239a147c9211929a8",
+          "tests/integration/fixtures/retriever/synthetic_alpha_minutes.pdf": "5323d8dd4f3bc670c13bb1ddeba72600926e5f801a2a27663bfbdc771f43d099",
+          "tests/integration/fixtures/retriever/synthetic_security_policy.pdf": "469aba1b3ab180336f369ac31de2de5248c3dd30887663b0002a4c6e88388666",
+          "tests/integration/test_retriever_live.py": "403b9354f7671b4a3a742f15a96e90864a07ebbfbe6897db19da529fc0a143e9"
+        },
+        "evidence": ".agent/evidence/P1-003A/freeze-reval3-worker-0927003032/result.json",
+        "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-003A-r2"
+      },
+      "submission_generation": 3,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed reference deltas: additive Langfuse retention CLI note and recorded NemoClaw/OpenShell evidence links/limitations. No DTO/contract/AC change; original execution retained. Product source changes are explicitly excluded from this review.",
+    "reviewed_at": "2026-09-27T01:09:33+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "opt-in direct official Skill smoke. build.nvidia.com Skills 카탈로그에 등재된 NVIDIA nemo-retriever Skill(SKILL.md 26.8.1)의 local LanceDB workflow를 pinned nemo-retriever==26.8.1 CLI로 실제 실행한다. CPU 호스트이므로 embedding은 hosted integrate.api.nvidia.com(nvidia/llama-nemotron-embed-vl-1b-v2)을 사용한다. 합성 한국어 PDF만 ingest/query하고, 인용된 source/page 근거만으로 hosted Nemotron 답변을 만든다. 제품 Research worker→ToolPort→EvidenceBundle 경로와 audience/policy 매핑은 P1-003 범위이며 not_run이다.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          "env",
+          "RFA_RETRIEVER_LIVE=1",
+          "RFA_NVIDIA_ENV_FILE=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas/.env.dev",
+          "RFA_RETRIEVER_BIN=/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/.tools/nemo-retriever-26.8.1/.venv/bin/retriever",
+          "RFA_RETRIEVER_EVIDENCE_OUT=/tmp/rfa-retriever-live-evidence.json",
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "-p",
+          "no:cacheprovider",
+          "tests/integration/test_retriever_live.py"
+        ],
+        "assertions": [
+          "retriever 26.8.1 ingest 5행·query evidence 실제 수행, 키 없는 query는 hosted embedding 필요로 실패",
+          "골든 질문 3개 top-1 source/page·verbatim 사실 일치",
+          "근거 기반 Research 답변의 사실과 인용이 검색 결과 citation 안에 있음",
+          "출력·evidence에 key/Authorization 없음, Skill 출처·카탈로그 등재 기록"
+        ],
+        "counts": {
+          "collected": 7,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 7,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 27.83,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:31:41.749319+00:00",
+        "id": "V1",
+        "log_excerpt": "7 passed in 26.71s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:31:13.918958+00:00",
+        "timeout_seconds": 480
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:31:41.749416+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:31:13.918131+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "25a70a37dc9327b4a6b184390cd1b766560b83ed5a5973ca8d533476908fa639",
+  "source_manifest": ".agent/evidence/P1-003A/completion-reference-review/source.json",
+  "spec_digest": "3292965c4cd9e7d57df62bf70a58abcbd0ef31602a7454aae6a82d93ad801664",
+  "spec_revision": 2,
+  "task_id": "P1-003A"
+}

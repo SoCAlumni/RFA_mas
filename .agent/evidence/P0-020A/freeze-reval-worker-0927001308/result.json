@@ -1,0 +1,57 @@
+{
+  "attempt_id": "freeze-reval-worker-0927001308",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock 제품 보수; real 모델/서비스 주장 없음",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_team_execution.py"
+        ],
+        "assertions": [
+          "내용 기준 정렬로 입력 순서와 무관하게 같은 비교를 낸다.",
+          "남은 후보는 tool_budget 사유의 skipped로 보고되고 조용히 누락되지 않는다.",
+          "baseline과 후보의 source_id·source_revision을 포함한다."
+        ],
+        "counts": {
+          "collected": 14,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 14,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 13.41,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:13:32.429383+00:00",
+        "id": "V1",
+        "log_excerpt": "14 passed, 1 warning in 12.20s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:13:19.019876+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-020A-int-0926204201",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T00:13:32.429472+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:13:19.019069+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "270861472c8acf8e536c59232d3eccad12e3e0289f84fd1cf494880850d215e6",
+  "source_manifest": ".agent/evidence/P0-020A/freeze-reval-worker-0927001308/source.json",
+  "spec_digest": "bae6b4918655dc4f8f032ec97058f9d3aacbc1a7413b0c1d088f57246f2bdcc3",
+  "spec_revision": 10,
+  "task_id": "P0-020A"
+}

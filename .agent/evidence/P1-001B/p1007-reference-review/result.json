@@ -1,0 +1,100 @@
+{
+  "attempt_id": "p1007-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406",
+        "before": "714769830fd959c17fa674d1bd1b5dd32230187a1060cf1b28c90f16783805dd"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-001B/pre-P1-007-target-0927000141/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-001B/pre-P1-007-target-0927000141/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P1-001B/pre-P1-007-target-0927000141/result.json",
+          "source_fingerprint": "b7bb6a5153f36a0cdb381a1e10f2678f9d980697c82791250488d180ad0cb933",
+          "spec_digest": "ef3ffbc72e4873b4ecb883bce23bfc60fcfdc720ce27371a0d29a9acc89892c0",
+          "spec_revision": 33,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "branch": "task/P1-001B-int-0926164313",
+        "changed_files": {
+          "src/rfa_mas/application/context.py": "db876e7a1045d6edc173e89bc5477f1fbcd9026285b1bb14dc24fac71e53b912",
+          "tests/test_context_loading.py": "444d17824d375ead7320bbcf6ce3e80d20fd88783e76bbd30aac7b75fedf543d"
+        },
+        "evidence": ".agent/evidence/P1-001B/pre-P1-007-worker-0927000120/result.json",
+        "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-001B-int-0926164313"
+      },
+      "submission_generation": 14,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Inspected 71b2d09..a6c271d INTEGRATION diff: adds P1-007 sandbox-agent placement and existing-route reference only; changes no DTO, API, policy or this task AC. Source/config/spec/contract/global binding is checked by taskctl. Retain original execution timestamps; no tests rerun.",
+    "reviewed_at": "2026-09-27T00:43:49+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_context_loading.py"
+        ],
+        "assertions": [
+          "read spy에서 선택한 L2만 읽고 전체 본문 주입 0회",
+          "multi-parent ACL/revision change는 cache 무효화, 제목/요약/관계 canary 포함 검사",
+          "지침/목표 보존·예산 부족 insufficient·실측 단위 확인"
+        ],
+        "counts": {
+          "collected": 17,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 17,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.57,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:01:46.886879+00:00",
+        "id": "V1",
+        "log_excerpt": "17 passed in 0.39s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:01:45.316210+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:01:46.886920+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:01:45.315692+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "e2c15c6440437943e0cdbdff93f2bfb0d23f47f1a9c85f3ce5aa08c3f9127877",
+  "source_manifest": ".agent/evidence/P1-001B/p1007-reference-review/source.json",
+  "spec_digest": "ef3ffbc72e4873b4ecb883bce23bfc60fcfdc720ce27371a0d29a9acc89892c0",
+  "spec_revision": 33,
+  "task_id": "P1-001B"
+}

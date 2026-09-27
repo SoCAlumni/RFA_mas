@@ -1,0 +1,39 @@
+{
+  "attempt_id": "target-0927005007",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "real not_run. blocked 사유: 실행 가능한 지원 runtime·접근·네트워크 policy 미확인. P1-007 문서와 reference API는 먼저 준비 가능.",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "지원 환경에서 제한 API 합성 호출 성공",
+          "서비스의 sandbox 안/밖 위치와 실제 운영 관찰 기록",
+          "Model/Skill/OpenShell 결과와 독립된 증거 ref."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:50:14.238081+00:00",
+        "id": "V1",
+        "observed": "Reviewed docs/evidence/nemoclaw-live.json and nemoclaw.md section 8A against the committed preset/probes and replay checks: recorded local n=1 NemoClaw v0.0.124/OpenShell 0.0.116/OpenClaw 2026.7.1 run; 5 requests on four allowed RFA routes returned 200/201 and 7 prohibited probes were refused with matching OCSF. RFA backend remained outside the sandbox and used mock data/model; real NVIDIA Super120B was the sandbox agent provider. The agent replayInvalid exit 1 and incorrect verbal characterization of a denial are recorded, not hidden. Teammate role identity, credential binding, managed MCP remain unverified. Review of the recorded run, not a new live execution.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:50:14.238079+00:00"
+      }
+    ],
+    "environment": {
+      "head": "d7d5bbb9e2fd40fd5a585072465cf9d5131978d3",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:50:14.238093+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:50:14.238010+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "7196f37ab0538a91c851092554056bc96d8cbc58f2bff7eae042d60f48651686",
+  "source_manifest": ".agent/evidence/P1-007A/target-0927005007/source.json",
+  "spec_digest": "2b8c433f426bbfc716118a45f9ff262f2de1e35c0a9e6a495d1945f98e89f83a",
+  "spec_revision": 3,
+  "task_id": "P1-007A"
+}

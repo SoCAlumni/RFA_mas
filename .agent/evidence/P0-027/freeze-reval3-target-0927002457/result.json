@@ -1,0 +1,69 @@
+{
+  "attempt_id": "freeze-reval3-target-0927002457",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "core pin 유지·actual installed versions·선택 근거가 있다",
+          "관측/재개 미지원 범위 및 실패 blocker가 명시되고 KB/eval에 NAT 선행을 추가하지 않았다"
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:25:02.442326+00:00",
+        "id": "V1",
+        "observed": "Re-checked on current integrated HEAD: canonical and P0-027 worktree venvs report LangGraph 1.2.12, langgraph-checkpoint 4.2.0 and nvidia-nat-core/langchain/eval 1.8.0 via importlib.metadata; pyproject.toml and uv.lock are unchanged since 76b2186 (git diff empty). P1-001A changed retrieval/source-access code only, not the NAT adapter or wrapper use, so the prior version-selection basis and documented wrapper limits (no RFA thread config, HITL, streaming, provider token or live-model claim) still hold. No new install was performed.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:25:02.442324+00:00"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/spikes/test_nat_compatibility.py"
+        ],
+        "assertions": [
+          "실제 설치된 wrapper가 synthetic CompiledStateGraph를 한 번 실행하고 input/output shape를 확인",
+          "NAT 미설치 core 경로는 정상; NAT 선택 시 명시 unavailable, skip/미수집을 smoke 성공으로 기록하지 않음"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.25,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:25:04.688080+00:00",
+        "id": "V2",
+        "log_excerpt": "8 passed in 1.12s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:25:02.442718+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:25:04.688208+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:25:02.442274+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "7458463f99df7b33b104b1aceefbeed20887359ad2a8d7182ca624f2093a27c0",
+  "source_manifest": ".agent/evidence/P0-027/freeze-reval3-target-0927002457/source.json",
+  "spec_digest": "ef98c709e5702369cf6494fdd669b67b1f042e47d1718888d292993ed6ec3067",
+  "spec_revision": 2,
+  "task_id": "P0-027"
+}

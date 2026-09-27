@@ -1,0 +1,110 @@
+{
+  "attempt_id": "completion-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9",
+        "before": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-004/p1007-reference-review/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-004/p1007-reference-review/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "documentation_review": true,
+        "head": "4e0a55b743176a0cf0b961b1a86f371f020ea929",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P1-004/p1007-reference-review/result.json",
+          "source_fingerprint": "e379e784c6262963a5f4ce67b661341c3d68907e5523d93fa0342c6eb0d62c7f",
+          "spec_digest": "6973122d042c46193d3113a86c6f7e4b27d9435ef61e1220cb91588f5220b003",
+          "spec_revision": 11,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "branch": "task/P1-004-int-0926174448",
+        "changed_files": {
+          "docs/CONTRACT_CHANGELOG.md": "75a02ffbfb7c92ef97a730c29e7477108cf23cf60927305d79a7c9b71b38cb82",
+          "docs/contracts/extended.json": "ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb",
+          "src/rfa_mas/api/app.py": "52c7d6c7119867a40cbb2e7aa1e4cc46c86ce668ce84a897f044e88821c04db1",
+          "src/rfa_mas/application/graphs/supervisor.py": "5fb39128d5669b2e868efc64a06bfa4b20c800b415fdc2d38c04c7a45b8253bd",
+          "src/rfa_mas/application/service.py": "7ac74a7cca24e3685e4463a4735b4d27e88696e8546684d44181c52b00626fad",
+          "src/rfa_mas/contracts/__init__.py": "ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9",
+          "src/rfa_mas/contracts/models.py": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
+          "tests/test_graph.py": "07410ebd948b10d0a04370e9c4b4f749ed1d55c50be884daca260e8125ea5fc8",
+          "tests/test_supervisor_boundaries.py": "a07027a2bbadd90fbafdcf2691ea4df3c5a5341d24f4381d3f2c0b48af9ace68"
+        },
+        "evidence": ".agent/evidence/P1-004/pre-P1-007-worker-0927000414/result.json",
+        "head": "4e0a55b743176a0cf0b961b1a86f371f020ea929",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-004-int-0926174448"
+      },
+      "submission_generation": 5,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed reference deltas: additive Langfuse retention CLI note and recorded NemoClaw/OpenShell evidence links/limitations. No DTO/contract/AC change; original execution retained. Product source changes are explicitly excluded from this review.",
+    "reviewed_at": "2026-09-27T01:09:36+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "domain keyword routing만 verified; intent missing/not_run. router local(false), model mock(true). NVIDIA/Skill/팀원 불필요.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_graph.py",
+          "tests/test_supervisor_boundaries.py"
+        ],
+        "assertions": [
+          "동일 입력은 같은 intent/domain, unsupported에는 제한과 다음 선택지",
+          "저장/검색은 task/team null이고 spawn 없음",
+          "연구·실험 intent는 기존 Task ref 또는 새 Task 후보로 연결, 외부 채널은 Supervisor 진입만 허용",
+          "budget/timeout/cancel/부분 실패를 안전한 응답에 반영하는 공통 결과 계약."
+        ],
+        "counts": {
+          "collected": 47,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 47,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 8.64,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:04:48.803601+00:00",
+        "id": "V1",
+        "log_excerpt": "47 passed, 11 warnings in 7.55s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:04:40.162645+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:04:48.803690+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:04:40.161915+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "4703b33e04e6ed5e42a4049e549dc7f91e21a549edfa21c965009f56da83108f",
+  "source_manifest": ".agent/evidence/P1-004/completion-reference-review/source.json",
+  "spec_digest": "6973122d042c46193d3113a86c6f7e4b27d9435ef61e1220cb91588f5220b003",
+  "spec_revision": 11,
+  "task_id": "P1-004"
+}

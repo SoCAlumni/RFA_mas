@@ -1,0 +1,55 @@
+{
+  "attempt_id": "worker-0927004151",
+  "contract_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "mode": "개발 task-control 전용; 제품 기능 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_task_doc_review.py"
+        ],
+        "assertions": [
+          "문서 영향 검토 성공/거절 및 원본 근거 불변·의존성 해제 경계"
+        ],
+        "counts": {
+          "collected": 13,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 13,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 32.44,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:42:28.097599+00:00",
+        "id": "V1",
+        "log_excerpt": "13 passed in 31.49s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:41:55.657511+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "4e0a55b743176a0cf0b961b1a86f371f020ea929",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/OPS-007",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T00:42:28.097679+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:41:55.656191+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "fe5bb1ea4bc0535737e4c667916a02365ff3f2725eeea6f0c3f748303a525204",
+  "source_manifest": ".agent/evidence/OPS-007/worker-0927004151/source.json",
+  "spec_digest": "8f7c790aad2521a5f3c62000a9c2899313c1a7b1eb35e5326f4fd3798b9bcd8e",
+  "spec_revision": 1,
+  "task_id": "OPS-007"
+}

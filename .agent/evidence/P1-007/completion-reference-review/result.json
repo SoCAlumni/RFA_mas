@@ -1,0 +1,92 @@
+{
+  "attempt_id": "completion-reference-review",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "documentation_review": {
+    "changes": {
+      "docs/EDUCATION_MAPPING.md": {
+        "after": "905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554",
+        "before": "29df635ae9c9249e12d5565c4e88e32f72cf6e2bc122deee026b5ef3bdaba161"
+      },
+      "docs/INTEGRATION.md": {
+        "after": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9",
+        "before": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406"
+      },
+      "docs/evidence/nemoclaw.md": {
+        "after": "bb2c727fd0989e8e5d92f27aa970e27bda5fd8ed692f7df1b15c47f6d6a7b83b",
+        "before": "ee8b0ac49b693ead6d3f1f191cbc8edce58495d146254e554f5a0f59ad71ee95"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-007/openshell-reference-review/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-007/openshell-reference-review/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "documentation_review": true,
+        "head": "fa2a882d1ccb270ad97207709c72422be5ffda72",
+        "verification_summary": {
+          "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+          "evidence": ".agent/evidence/P1-007/openshell-reference-review/result.json",
+          "source_fingerprint": "232883f36e3295d6bdf0bf0827abdf9eccb4ca84248000b41d0e45b623599bde",
+          "spec_digest": "c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c",
+          "spec_revision": 2,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "branch": "task/P1-007-int-0927001544",
+        "changed_files": {
+          "docs/EDUCATION_MAPPING.md": "29df635ae9c9249e12d5565c4e88e32f72cf6e2bc122deee026b5ef3bdaba161",
+          "docs/INTEGRATION.md": "15e87cdfa70c417bc4fd5112cdcd540a0d81b8bfa39504e36f224e4cc105e406",
+          "docs/evidence/nemoclaw.md": "ee8b0ac49b693ead6d3f1f191cbc8edce58495d146254e554f5a0f59ad71ee95"
+        },
+        "evidence": ".agent/evidence/P1-007/worker-0927001601/result.json",
+        "head": "fa2a882d1ccb270ad97207709c72422be5ffda72",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007-int-0927001544"
+      },
+      "submission_generation": 1,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed reference deltas: additive Langfuse retention CLI note and recorded NemoClaw/OpenShell evidence links/limitations. No DTO/contract/AC change; original execution retained. Product source changes are explicitly excluded from this review.",
+    "reviewed_at": "2026-09-27T01:09:42+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "경계 문서 일부 implemented, 이번 경로 설계 missing/not_run. 설계 local, simulated N/A. 외부 환경 없이 설계 가능; 실제 운영 증거는 P1-007A.",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "공식 지원 runtime/platform 확인, 임의 LangGraph 앱 자동 수용 가정 금지",
+          "서비스가 sandbox 밖이면 그 backend/process와 보호되지 않는 범위를 명시",
+          "교육 항목→task→파일→실행 증거 칸 연결, 확인하지 않은 수강 미션/필수 기술 수 추가 금지."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:24:22.968440+00:00",
+        "id": "V1",
+        "observed": "Target stage: the three changed files on main a6c271d are byte-identical (sha256) to the worker-verified submission. The worker-stage manual observation by the other coordinator session applies unchanged; not independently re-checked against the cited sources in this stage. Worker observation: Coordinator compared docs/evidence/nemoclaw.md, docs/EDUCATION_MAPPING.md and docs/INTEGRATION.md with the official sources cited there (checked 2026-09-27): NemoClaw alpha v0.0.129 lists OpenClaw, Hermes and LangChain Deep Agents Code as supported agents and other harnesses as unsupported, so the RFA LangGraph app is documented as an API outside the sandbox, not an auto-supported agent; the unprotected backend scope (.env, SQLite, checkpoints, traces, backend egress, in-process work) is stated; the minimal routes /healthz, /v1/sessions, /v1/sessions/{session_id}/work and /v1/runs/{run_id} exist in src/rfa_mas/api/app.py; education rows map the five official objectives to task/file/evidence with real/local/not_run status and add no unverified mission requirements.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:24:22.968438+00:00"
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:24:22.968443+00:00",
+    "limits": "Documentation task; local verification only; no live NemoClaw claim.",
+    "reviewer": "rfa-coordinator (Codex claude-opus-5-5; target re-attestation of identical files)",
+    "started_at": "2026-09-27T00:24:22.968399+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "fbe8d32cdbbb1ee9fd6ad213387a6b3641fd562a2feb0bda118ea3cf9dc0ecdd",
+  "source_manifest": ".agent/evidence/P1-007/completion-reference-review/source.json",
+  "spec_digest": "c280567397cf358b7210ce69e70dc72c0c7fa0a8ccc98326472d88b339873d6c",
+  "spec_revision": 2,
+  "task_id": "P1-007"
+}

@@ -1,0 +1,70 @@
+{
+  "attempt_id": "target-0927010645",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "community(OSS) Langfuse 전용(2026-09-27 사용자 결정). 앱의 자체 삭제 job이 보존 기간을 적용한다. 로컬 self-host live 검증 완료(branch task/P1-006F 8f80676), main 통합 대기.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_langfuse_retention.py",
+          "tests/test_security.py",
+          "tests/test_settings.py"
+        ],
+        "assertions": [
+          "만료된 이 앱 trace만 삭제·재조회 확인, 보존 기간 안/기간에 걸친/다른 앱 trace 유지",
+          "허가·key 없음 요청 0건, 오류·미확인은 failed/partial, 출력에 key·ID 없음"
+        ],
+        "counts": {
+          "collected": 111,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 111,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.06,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:06:51.121015+00:00",
+        "id": "V1",
+        "log_excerpt": "111 passed, 2 warnings in 1.02s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:06:49.058762+00:00",
+        "timeout_seconds": 300
+      },
+      {
+        "assertions": [
+          "실제 시계에서 삭제 0, 시계+8일에서 이 앱 trace 삭제·조회 사라짐 확인, 다른 앱 trace 유지, CLI dry-run exit 0"
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T01:06:51.121111+00:00",
+        "id": "V2",
+        "observed": "Reviewed prior branch8f80676 live evidence in docs/evidence/llmops.md: local Langfuse4.46,6passed at22:41-22:46Z, clock+8days own2deleted/readback absent and foreign kept; dedicated MinIO44to0 experiment. No new live delete executed. Current stricter shared-trace/incomplete-scan guards are covered offline; no automatic cron or arbitrary data deletion claim.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T01:06:51.121109+00:00"
+      }
+    ],
+    "environment": {
+      "head": "45427134a5de9aefedbadb350efda3ac52be5edf",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:06:51.121116+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:06:49.058002+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "225849968ce8e6e969e688e8ac3ff80f2bf21c22941bc7453400729ea4136ca3",
+  "source_manifest": ".agent/evidence/P1-006F/target-0927010645/source.json",
+  "spec_digest": "12475789d7babd775e355e21fd47100b3cfdd3139d7de88b59de824f6c74bb61",
+  "spec_revision": 10,
+  "task_id": "P1-006F"
+}

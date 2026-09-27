@@ -1,0 +1,59 @@
+{
+  "attempt_id": "completion-prerequisites-target-0927005342",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "기존 설정 검증 통과, 신규 항목 missing/not_run. local(false). 외부 의존 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_settings.py"
+        ],
+        "assertions": [
+          "현재 typed settings/example의 1대1 이름과 planned catalog 단일 소유·미적용 상태를 확인한다.",
+          "key/token 예제 값은 모두 빈칸이며 실제 env를 수정하지 않는다.",
+          "doctor/bootstrap 공통 판정은 configuration/implementation과 local lifecycle/provider probe not_run을 구분하며 값과 credential을 출력하지 않는다.",
+          "기본 mock 부팅·외부 write/egress 비활성, 선택한 미지원 real/NAT/scheduler는 명시 오류이며 fallback이 없다.",
+          "실측 SQLite 버전과 합성 patched/unpatched 경계가 올바르게 보고되며 자동 환경 교체/미실행 검사 성공 주장이 없다."
+        ],
+        "counts": {
+          "collected": 55,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 55,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.21,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:53:47.121111+00:00",
+        "id": "V1",
+        "log_excerpt": "55 passed in 0.22s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:53:45.909537+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "d7d5bbb9e2fd40fd5a585072465cf9d5131978d3",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:53:47.121161+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:53:45.908968+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "88acbb573d0eb42ffc81ab761c7135f8db6a39f3bd03c308dd4458c0d37aed4e",
+  "source_manifest": ".agent/evidence/P0-017/completion-prerequisites-target-0927005342/source.json",
+  "spec_digest": "406ff256d4d2770989cbbc65afac146a6ca476c4a9ee159369c36e3f30a76aa2",
+  "spec_revision": 44,
+  "task_id": "P0-017"
+}

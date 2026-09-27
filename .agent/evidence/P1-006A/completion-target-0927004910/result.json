@@ -1,0 +1,72 @@
+{
+  "attempt_id": "completion-target-0927004910",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "MockJudge만 verified, adapter missing/not_run. mock 계약 준비 가능; real 검증에는 provider/모델 quota 필요하며 준비 안 되면 해당 검증을 blocked로 기록.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_evaluation.py",
+          "tests/test_nvidia_judge_contract.py",
+          "tests/test_nvidia_contract.py",
+          "tests/test_settings.py"
+        ],
+        "assertions": [
+          "ENABLE_JUDGE opt-in일 때만 합성/전송 허가된 자료 평가; endpoint별 egress 허가와 opt-in 둘 다 필요, key 존재만으로 private trace/문서 전송 금지",
+          "네 품질 차원과 규칙 gate 별도, privacy/access 위반을 점수로 상쇄 금지; 근거성·유용성·요청 충족·표현/팀 선택 rubric을 기록하고 simulated Persona를 실제 만족도 측정으로 표시하지 않음",
+          "actual/simulated/not_run 및 provider 실패 구분. disabled/error/skip/증거 부족은 semantic not_run/error, 결정적 rule 결과는 보존하고 미실행 점수 null"
+        ],
+        "counts": {
+          "collected": 138,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 138,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 35.77,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:49:50.812915+00:00",
+        "id": "V1",
+        "log_excerpt": "138 passed, 12 warnings in 34.76s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:49:15.046608+00:00",
+        "timeout_seconds": 300
+      },
+      {
+        "assertions": [
+          "실제 Judge 평가와 결정적 rule gate가 별도이며 모델·rubric·prompt·시간·전송된 public source가 기록되어 있다."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:49:50.812991+00:00",
+        "id": "V2",
+        "observed": "Reviewed docs/evidence/nvidia-judge.json against recorded actual n=1 synthetic public run: Ultra550B, 2.24s, rubric/prompt v1, score 0.6 independent of passing rule checks. No new live call or security certification claimed.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:49:50.812989+00:00"
+      }
+    ],
+    "environment": {
+      "head": "096ff8cf0291fbdda03f9ffc80e8e8a58598de9b",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:49:50.812997+00:00",
+    "limits": "Offline contract verification and recorded live-evidence review.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T00:49:15.044282+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "8a1f203fe034419eabb3bcc41864c75842277081e3603da6e7e47e8fff3788a8",
+  "source_manifest": ".agent/evidence/P1-006A/completion-target-0927004910/source.json",
+  "spec_digest": "f3496883eaad32c45f31e21c546680e24c1dda87b59030be5787dbf43d9d8012",
+  "spec_revision": 6,
+  "task_id": "P1-006A"
+}

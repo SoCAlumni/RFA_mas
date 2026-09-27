@@ -1,0 +1,74 @@
+{
+  "attempt_id": "target-0927004536",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "real OpenShell(local standalone VM driver) + stand-in role spec; teammate runtime/identity(P1-008B)·NemoClaw(P1-007A)는 별도 gate",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/integration/test_openshell_live.py::test_network_deny_requires_policy_record_and_healthy_endpoint",
+          "tests/integration/test_openshell_live.py::test_network_allow_requires_openshell_allowed_record",
+          "tests/integration/test_openshell_live.py::test_filesystem_absence_or_unproven_permission_error_is_inconclusive",
+          "tests/integration/test_openshell_live.py::test_supervisor_bus_boundary_is_measured_without_openshell"
+        ],
+        "assertions": [
+          "파일 부재·endpoint 다운·정책 기록 없는 일반 오류는 denied_by_policy가 아니라 inconclusive로 분류된다.",
+          "SupervisorBus는 worker→worker를 direct_message_denied로 거절하고 worker→Supervisor를 전달한다(OpenShell 결과와 별도 판정)."
+        ],
+        "counts": {
+          "collected": 4,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 4,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 0.99,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:45:42.439621+00:00",
+        "id": "V1",
+        "log_excerpt": "4 passed in 0.03s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:45:41.451100+00:00",
+        "timeout_seconds": 300
+      },
+      {
+        "assertions": [
+          "조사 worker 역할 sandbox에서 허용 endpoint 읽기는 성공하고, 비허용 endpoint·호스트 sentinel 경로 접근은 OpenShell 정책 로그/감사 기록과 함께 거절된다. 파일 부재·endpoint 다운은 정책 거절로 집계하지 않고 inconclusive로 둔다.",
+          "승인 작업 디렉터리의 계산은 성공하고 범위 밖 쓰기/실행 시도는 실제 실행 계층에서 거절되며, 증거에 sandbox/policy 식별자·명령·결과·지연(cold 준비/warm 실행/거절)이 연결된다.",
+          "애플리케이션 SupervisorBus 결정(직접 메시지 거절, Supervisor 전달 허용)을 OpenShell 결과와 별도 판정으로 기록한다. 한쪽 결과로 다른 쪽 통제를 증명하지 않는다.",
+          "기본 테스트 실행에서는 live 경로가 명시적 not_run(skip 사유)이며 skip을 통과로 세지 않는다. 실제 실행 결과는 docs/evidence/openshell.md에 real/local-standalone으로 기록하고 teammate runtime(다영) 연동·NemoClaw 증거로 표현하지 않는다."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:45:42.439657+00:00",
+        "id": "V2",
+        "observed": "Coordinator reviewed ~/.cache/rfa-mas/openshell-e2e05/runs/0926181417/report.json produced by the real OpenShell v0.1.1 VM-driver run (nemoclaw_research): status passed; label 'real OpenShell, local standalone; teammate runtime/identity (P1-008B) and NemoClaw (P1-007A) not covered'; gateway Connected; all 14 matrix rows met (R1 allowed, R2-R5 and R7 denied_by_policy with evidence lines, R6 inconclusive, E1 allowed, E2-E4 denied_by_policy, E5 inconclusive, R4b/E6 documented limitations); supervisor_bus rows met (worker->worker direct_message_denied, worker->Supervisor delivered, no OpenShell involved); canary_absent_from_report true; docs/evidence/openshell.md table matches the report. Review of a recorded real run, not a new live run.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:45:42.439655+00:00"
+      }
+    ],
+    "environment": {
+      "head": "fa2a882d1ccb270ad97207709c72422be5ffda72",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:45:42.439661+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:45:41.450820+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "570d4a257c0c3b926482f21da199701990f809ee97623b499a7e13125f8dd5e1",
+  "source_manifest": ".agent/evidence/P1-007C/target-0927004536/source.json",
+  "spec_digest": "94bc3d131bcd31ea63052b8b60effc137e73c99a7afa77203b9f31ee27637475",
+  "spec_revision": 12,
+  "task_id": "P1-007C"
+}
