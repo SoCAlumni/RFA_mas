@@ -36,10 +36,17 @@ def audit_db(tmp_path, monkeypatch):
     monkeypatch.setenv("RFA_SG_AUDIT_DB", str(tmp_path / "audit.db"))
 
 
+def routing_with(transport: str = "cli", **broker_fields) -> cfg.Routing:
+    """Unit tests never talk to a live gateway: the CLI transport is the default here."""
+    routing = cfg.load_routing()
+    routing.broker = routing.broker.model_copy(update={"transport": transport, **broker_fields})
+    return routing
+
+
 @pytest.fixture
 def broker() -> tuple[Broker, TurnRunner]:
     runner = TurnRunner()
-    return Broker(cfg.load_assignments(), cfg.load_routing(), SECRET, TOKEN, runner), runner
+    return Broker(cfg.load_assignments(), routing_with("cli"), SECRET, TOKEN, runner), runner
 
 
 def test_route_decides_local_spawn_versus_gateway(broker):

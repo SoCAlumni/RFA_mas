@@ -384,6 +384,14 @@ class BrokerConfig(Strict):
     credential_env: str
     key_file: str
     task_turn_timeout_seconds: int = 120
+    # Task-agent turns: ``cli`` = ``nemoclaw <sb> agent`` (≈10 s overhead per turn, host lock), ``gateway`` =
+    # HTTP to the sandbox OpenClaw gateway ``/v1/chat/completions`` (needs
+    # gateway.http.endpoints.chatCompletions.enabled=true in the sandbox + the NemoClaw dashboard forward).
+    transport: Literal["cli", "gateway"] = "cli"
+    gateways: dict[str, str] = {}            # sandbox → host URL of its forwarded gateway (e.g. http://127.0.0.1:18790)
+    gateway_token_dir: str = ".local/sg"     # <dir>/gateway-<sandbox>.token (0600, from `nemoclaw <sb> gateway token`)
+    gateway_stream: bool = True              # ask for SSE so deltas can be relayed; the reply is still assembled here
+    gateway_fallback_cli: bool = True        # transport error → run the same turn through the CLI path
 
 
 class Routing(Strict):

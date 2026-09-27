@@ -14,6 +14,7 @@ from pathlib import Path
 
 import yaml
 
+from rfa_mas.nemoclaw import audit
 from rfa_mas.nemoclaw.config import DEPLOY_DIR, Assignments, ConfigError
 from rfa_mas.nemoclaw.manifests import manifest_agent_ids, render_manifest
 from rfa_mas.nemoclaw.runner import CommandResult, Runner, extract_json, strip_warnings
@@ -330,3 +331,25 @@ def summarize_policy(policy: dict) -> dict:
             rules += len(ep.get("rules") or [])
         out[key] = {"hosts": hosts, "rules": rules, "binaries": len(entry.get("binaries") or [])}
     return copy.deepcopy(out)
+
+
+# --------------------------------------------------------------------------- gateway HTTP endpoint
+
+
+def enable_gateway_http(runner: Runner, nemoclaw_bin: str, sandbox: str) -> dict:
+    """Turn on the sandbox OpenClaw gateway's OpenAI-compatible endpoint (``/v1/chat/completions``) so the
+    broker can run task-agent turns over HTTP instead of ``nemoclaw agent``. The generated sandbox config
+    pins ``gateway.reload.mode=hot``, so a ``gateway restart`` is needed for the change to apply. A fresh
+    onboarding (``--recreate-sandbox``) resets the sandbox config: re-run after onboarding."""
+    key = "gateway.http.endpoints.chatCompletions.enabled"
+    current = runner.run([nemoclaw_bin, sandbox, "exec", "--", "openclaw", "config", "get", key], timeout=120)
+    if current.ok and current.stdout.strip().splitlines()[-1:] == ["true"]:
+        return {"sandbox": sandbox, "enabled": True, "changed": False}
+    set_result = runner.run([nemoclaw_bin, sandbox, "exec", "--", "openclaw", "config", "set", key, "true"], timeout=120)
+    if not set_result.ok:
+        return {"sandbox": sandbox, "enabled": False, "changed": False, "error": (set_result.stderr or set_result.stdout)[-240:]}
+    restart = runner.run([nemoclaw_bin, sandbox, "gateway", "restart", "--quiet"], timeout=300)
+    audit.record(kind="policy", verdict="ok" if restart.ok else "error", action="gateway-http-enable",
+                 sandbox=sandbox, detail={"key": key, "restarted": restart.ok})
+    return {"sandbox": sandbox, "enabled": restart.ok, "changed": True,
+            **({} if restart.ok else {"error": (restart.stderr or restart.stdout)[-240:]})}

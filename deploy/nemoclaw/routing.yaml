@@ -50,3 +50,11 @@ broker:
   credential_env: RFA_BROKER_MCP_TOKEN
   key_file: .local/sg/broker-api.key
   task_turn_timeout_seconds: 120
+  # task 에이전트 턴 전송: cli(`nemoclaw <sb> agent`, 턴당 ≈10초 오버헤드·호스트 락) | gateway(샌드박스 OpenClaw 게이트웨이
+  # `/v1/chat/completions` HTTP, 실측 summarizer 12초 → 4초). gateway 는 샌드박스에 chatCompletions.enabled=true +
+  # `gateway restart` 가 필요하다(controller.enable_gateway_http). 실패하면 cli 로 폴백.
+  transport: gateway
+  gateways: { rfa-main: http://127.0.0.1:18790 }   # nemoclaw <sb> dashboard-url 의 포워드 포트
+  gateway_token_dir: .local/sg                     # gateway-<sandbox>.token (nemoclaw <sb> gateway token --quiet)
+  gateway_stream: true
+  gateway_fallback_cli: true
