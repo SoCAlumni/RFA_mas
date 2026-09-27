@@ -36,7 +36,7 @@ render:
 	$(SG) render
 
 test:
-	$(UV) python -m pytest -q -p no:cacheprovider tests/test_sg_controller.py tests/test_censor.py tests/test_broker.py tests/test_egress_proxy.py
+	$(UV) python -m pytest -q -p no:cacheprovider tests/test_sg_controller.py tests/test_censor.py tests/test_broker.py tests/test_egress_proxy.py tests/test_sg_ops.py tests/test_entry.py
 
 # ---- host services -------------------------------------------------------------------------
 
