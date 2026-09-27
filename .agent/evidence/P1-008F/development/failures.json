@@ -1,0 +1,10 @@
+{
+  "kind": "development_failure_summary",
+  "not_acceptance_evidence": true,
+  "attempts": [
+    {"attempt": "cycle1", "command": [".venv/bin/python", "-m", "pytest", "-q", "tests/test_poc.py"], "passed": 4, "failed": 2, "cause": "ReferenceHttpClient constructor omitted required max_read_retries", "correction": "Explicit max_read_retries=1; no automatic write retry", "raw_log": "tool execution output retained in conversation; summary only here"},
+    {"attempt": "cycle2", "command": [".venv/bin/python", "-m", "pytest", "-q", "tests/test_poc.py"], "passed": 4, "failed": 2, "cause": "EffectGuardedResponse wraps response port and has no observer attribute", "correction": "Use service.observations; service.start reapplies durable effect guard", "raw_log": ".agent/input/poc-cycle2.log"},
+    {"attempt": "browser1", "cause": "Playwright strict locator matched two existing review-refresh buttons", "correction": "Scope to work-result; bind publication button to current draft card", "raw_log": ".agent/input/poc-browser.log"}
+  ],
+  "subsequent_results": "cycle3 six tests passed; worker/target six tests passed each; Chrome browser2 passed. See authoritative task evidence and browser.json. No real external publication or NVIDIA/OpenShell call."
+}

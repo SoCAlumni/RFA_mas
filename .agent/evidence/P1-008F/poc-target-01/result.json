@@ -1,0 +1,57 @@
+{
+  "attempt_id": "poc-target-01",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; simulated=true. 실제 MCP/게시/OpenShell/UI gate는 별도 not_run.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_poc.py"
+        ],
+        "assertions": [
+          "키/env 파일 없이 loopback UI·코어·manual review가 준비되며 노트→공개 질의→승인 대기→수동 승인→모의 게시까지 동작",
+          "세션/승인 대기와 receipt 보존; 중복 서버는 거절; 외부 Host/Origin·CSRF 거절 및 비밀 미노출",
+          "실제 명령/경로·정지/재시작·포트 충돌 오류·로컬 runtime/mock publication/비sandbox 범위가 명확; 외부 write나 조용한 backend fallback 없음"
+        ],
+        "counts": {
+          "collected": 6,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 5.65,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T03:03:05.693632+00:00",
+        "id": "V1",
+        "log_excerpt": "6 passed, 1 warning in 4.61s",
+        "result": "passed",
+        "started_at": "2026-09-27T03:03:00.041225+00:00",
+        "timeout_seconds": 180
+      }
+    ],
+    "environment": {
+      "head": "6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T03:03:05.693683+00:00",
+    "limits": "Integrated new PoC composition, local/mock only. Existing core sources unchanged.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T03:03:00.040603+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "7984f323e8d70719c0edb9b0a6ee65ce30745c59fae818ff0445965a7588428f",
+  "source_manifest": ".agent/evidence/P1-008F/poc-target-01/source.json",
+  "spec_digest": "2b0331236815190dab73868248b418ccf42b1d47fc948191e8b078dfb849122e",
+  "spec_revision": 1,
+  "task_id": "P1-008F"
+}

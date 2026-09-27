@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "source_commit": "6c92479",
+  "started_at": "2026-09-27T03:02:32.338307+00:00",
+  "finished_at": "2026-09-27T03:02:34.578973+00:00",
+  "browser": "154.0.8037.57",
+  "mode": "real browser/local mock product",
+  "checks": [
+    "create session and save private synthetic note",
+    "public draft -> manual approval -> resume -> mock publication receipt",
+    "no page errors, external outbound or browser storage"
+  ],
+  "limits": "Not real publication, NVIDIA, OpenShell or teammate services"
+}
