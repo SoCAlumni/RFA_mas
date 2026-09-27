@@ -196,6 +196,7 @@ def onboard_env(routing: Routing, host_secrets: HostSecrets, ca_bundle: Path | N
         "NEMOCLAW_NON_INTERACTIVE": "1",
         "NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE": "1",
         "NEMOCLAW_ONBOARD_VALIDATION_TIMEOUT_SECONDS": "240",
+        "NEMOCLAW_MINIMAL_BOOTSTRAP": "1",  # shorter system prompts for the local model
         routing.proxy.credential_env: host_secrets.values[routing.proxy.credential_env],
     }
     if ca_bundle is not None:

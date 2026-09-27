@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RFA Security Groups — 감사 로그</title>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --line:#2a2f3a; --fg:#e6e8ee; --muted:#9aa3b2;
+          --allow:#3fb950; --redact:#d29922; --block:#f85149; --denied:#f85149; --approved:#58a6ff; --info:#8b949e; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 -apple-system, "Pretendard", "Noto Sans KR", sans-serif; }
+  header { padding:14px 18px; border-bottom:1px solid var(--line); display:flex; gap:18px; align-items:baseline; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  header .mode { color:var(--muted); }
+  .grid { display:grid; grid-template-columns: 300px 1fr; gap:14px; padding:14px 18px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .panel h2 { font-size:13px; margin:0 0 8px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; position:sticky; top:0; background:var(--panel); }
+  .tag { display:inline-block; padding:1px 7px; border-radius:10px; font-size:12px; border:1px solid var(--line); }
+  .v-allow { color:var(--allow); border-color:var(--allow); }
+  .v-redact { color:var(--redact); border-color:var(--redact); }
+  .v-block, .v-denied, .v-refused, .v-error, .v-timeout { color:var(--block); border-color:var(--block); }
+  .v-approved, .v-ok, .v-drained { color:var(--approved); border-color:var(--approved); }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  select, input, button { background:#0f1115; color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-size:13px; }
+  .detail { color:var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; white-space:pre-wrap; }
+  .counts div { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dashed var(--line); }
+  .small { color:var(--muted); font-size:12px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>RFA Security Groups — 감사 로그</h1>
+  <span class="mode" id="mode">route mode: …</span>
+  <span class="small">채널 · 검열 프로파일 · 에이전트 · verdict · OpenShell 정책 차단 · 승인 이력을 한 화면에</span>
+</header>
+<div class="grid">
+  <aside>
+    <div class="panel">
+      <h2>집계 (kind / verdict)</h2>
+      <div class="counts" id="counts"></div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>채널 → alias → 검열</h2>
+      <table id="channels"></table>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2>에이전트 배치</h2>
+      <table id="agents"></table>
+    </div>
+  </aside>
+  <main class="panel">
+    <div class="filters">
+      <select id="kind">
+        <option value="">모든 종류</option>
+        <option value="channel">channel (진입 API)</option>
+        <option value="inference">inference (egress-proxy)</option>
+        <option value="broker">broker</option>
+        <option value="censor">censor</option>
+        <option value="policy">policy (컨트롤러)</option>
+        <option value="request">request (OpenShell 차단)</option>
+        <option value="approval">approval (승인/거부)</option>
+        <option value="relocation">relocation (재배치)</option>
+      </select>
+      <input id="session" placeholder="session_id 필터">
+      <button id="refresh">새로고침</button>
+      <label class="small"><input type="checkbox" id="auto" checked> 5초 자동</label>
+    </div>
+    <table>
+      <thead><tr><th>시각</th><th>종류</th><th>채널</th><th>프로파일</th><th>샌드박스 / 에이전트</th><th>verdict</th><th>action</th><th>세부</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </main>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = (ts) => new Date(ts * 1000).toLocaleTimeString("ko-KR", {hour12:false});
+async function load() {
+  const kind = $("#kind").value, session = $("#session").value.trim();
+  const q = new URLSearchParams({limit: "300"}); if (kind) q.set("kind", kind); if (session) q.set("session_id", session);
+  const [ev, sum] = await Promise.all([fetch("/audit/api/events?" + q).then(r => r.json()), fetch("/audit/api/summary").then(r => r.json())]);
+  $("#mode").textContent = "route mode: " + sum.mode;
+  $("#rows").innerHTML = ev.events.map(e => {
+    const d = e.detail || {};
+    const bits = [];
+    if (d.alias) bits.push("alias=" + d.alias);
+    if (d.reason) bits.push("reason=" + d.reason);
+    if (d.request_redactions !== undefined) bits.push("req_redact=" + d.request_redactions);
+    if (d.response_redactions !== undefined) bits.push("resp_redact=" + d.response_redactions);
+    if (d.redactions && Object.keys(d.redactions).length) bits.push("redactions=" + JSON.stringify(d.redactions));
+    if (d.blocked_by) bits.push("blocked_by=" + d.blocked_by);
+    if (d.tampered_markers) bits.push("tampered_markers=" + d.tampered_markers);
+    if (d.route) bits.push("route=" + d.route);
+    if (d.host) bits.push("host=" + d.host + (d.port ? ":" + d.port : ""));
+    if (d.path) bits.push(d.method + " " + d.path);
+    if (d.policy) bits.push("policy=" + d.policy);
+    if (d.preset) bits.push("preset=" + d.preset);
+    if (d.from_sandbox) bits.push(d.from_sandbox + " → " + d.to_sandbox + " (" + d.direction + ")");
+    if (d.ms !== undefined) bits.push(d.ms + "ms");
+    if (d.error) bits.push("error=" + d.error);
+    return `<tr><td>${fmt(e.ts)}</td><td>${esc(e.kind)}</td><td>${esc(e.channel ?? "")}</td><td>${esc(e.profile ?? "")}</td>` +
+      `<td>${esc(e.sandbox ?? "")}${e.agent ? " / " + esc(e.agent) : ""}</td>` +
+      `<td><span class="tag v-${esc(e.verdict)}">${esc(e.verdict ?? "")}</span></td><td>${esc(e.action ?? "")}</td>` +
+      `<td class="detail">${esc(bits.join("  "))}${e.session_id ? "\nsid=" + esc(e.session_id) : ""}</td></tr>`;
+  }).join("") || `<tr><td colspan="8" class="small">이벤트 없음</td></tr>`;
+  $("#counts").innerHTML = Object.entries(sum.counts).map(([k, v]) =>
+    Object.entries(v).map(([verdict, n]) => `<div><span>${esc(k)} · <span class="tag v-${esc(verdict)}">${esc(verdict)}</span></span><b>${n}</b></div>`).join("")).join("") || `<div class="small">없음</div>`;
+  $("#channels").innerHTML = Object.entries(sum.channels).map(([c, v]) => {
+    const a = sum.aliases[v.alias] || {};
+    return `<tr><td>${esc(c)}</td><td>${esc(v.alias)}</td><td>${esc(a.backend)} · ${esc(a.model)}</td><td>${esc(v.profile)}</td></tr>`;
+  }).join("");
+  $("#agents").innerHTML = sum.agents.map(a =>
+    `<tr><td>${esc(a.agent)}${a.draining ? ' <span class="tag v-redact">draining</span>' : ""}</td><td>${esc(a.sandbox)}</td><td class="small">${esc((a.groups || []).join(","))}</td><td class="small">${esc(a.alias)}</td></tr>`).join("");
+}
+$("#refresh").onclick = load; $("#kind").onchange = load; $("#session").onchange = load;
+setInterval(() => { if ($("#auto").checked) load(); }, 5000);
+load();
+</script>
+</body>
+</html>

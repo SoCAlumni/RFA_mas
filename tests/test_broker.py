@@ -1,0 +1,142 @@
+"""Broker: routing decisions, session channel propagation, drain, MCP JSON-RPC and REST surfaces."""
+
+from __future__ import annotations
+
+import json
+
+import httpx
+import pytest
+from starlette.applications import Starlette
+from starlette.routing import Route
+
+from rfa_mas.nemoclaw import audit
+from rfa_mas.nemoclaw import config as cfg
+from rfa_mas.nemoclaw.broker import Broker
+from rfa_mas.nemoclaw.markers import find_markers
+from rfa_mas.nemoclaw.runner import CommandResult
+
+SECRET = b"b" * 48
+TOKEN = "broker-token-0123456789abcdef"
+
+
+class TurnRunner:
+    """Records nemoclaw agent invocations and answers with an OpenClaw-shaped JSON payload."""
+
+    def __init__(self, reply: str = "task reply", rc: int = 0):
+        self.reply, self.rc, self.calls = reply, rc, []
+
+    def run(self, argv, *, timeout=300, env=None, input_text=None, check=False):
+        self.calls.append(list(argv))
+        payload = {"status": "ok", "result": {"payloads": [{"text": self.reply}]}}
+        return CommandResult(list(argv), self.rc, "✓ Active gateway set\n" + json.dumps(payload), "")
+
+
+@pytest.fixture(autouse=True)
+def audit_db(tmp_path, monkeypatch):
+    monkeypatch.setenv("RFA_SG_AUDIT_DB", str(tmp_path / "audit.db"))
+
+
+@pytest.fixture
+def broker() -> tuple[Broker, TurnRunner]:
+    runner = TurnRunner()
+    return Broker(cfg.load_assignments(), cfg.load_routing(), SECRET, TOKEN, runner), runner
+
+
+def test_route_decides_local_spawn_versus_gateway(broker):
+    b, _ = broker
+    assert b.route("research", "rfa-tasks-intranet").kind == "local-spawn"
+    remote = b.route("research", "rfa-assistant")
+    assert (remote.kind, remote.sandbox, remote.openclaw_id, remote.alias) == ("gateway", "rfa-tasks-intranet", "research", "rfa-external")
+    with pytest.raises(KeyError):
+        b.route("assistant", "rfa-assistant")  # fixed agents are not delegation targets
+    with pytest.raises(KeyError):
+        b.route("nope", None)
+
+
+def test_channel_comes_from_the_entry_session_store_and_defaults_to_least_exposed(broker):
+    b, _ = broker
+    assert b.channel_for(None) == "internal" and b.channel_for("unknown") == "internal"
+    audit.remember_session("s_ext", "external", "external")
+    assert b.channel_for("s_ext") == "external"
+
+
+async def test_ask_plants_a_signed_channel_marker_and_targets_the_agent_sandbox(broker):
+    b, runner = broker
+    audit.remember_session("s_ext", "external", "external")
+    result = await b.ask("research", "근거 찾아줘", "s_ext", "rfa-assistant")
+    assert result["ok"] and result["route"] == "gateway" and result["reply"] == "task reply"
+    argv = runner.calls[0]
+    assert argv[:5] == ["nemoclaw", "rfa-tasks-intranet", "agent", "--agent", "research"]
+    assert argv[argv.index("--session-id") + 1] == "broker-s_ext"
+    marker = find_markers(argv[-1], SECRET)[0]
+    assert marker.verified and marker.fields == {"ch": "external", "sid": "s_ext"} and argv[-1].endswith("근거 찾아줘")
+    event = audit.query(kind="broker")[0]
+    assert (event["channel"], event["agent"], event["sandbox"], event["action"]) == ("external", "research", "rfa-tasks-intranet", "gateway")
+
+
+async def test_ask_refuses_unknown_and_draining_agents(broker):
+    b, runner = broker
+    assert (await b.ask("ghost", "q", None, None))["ok"] is False
+    b.draining.add("research")
+    refused = await b.ask("research", "q", None, None)
+    assert refused["ok"] is False and "draining" in refused["error"] and runner.calls == []
+    assert audit.query(kind="broker")[0]["verdict"] == "refused"
+
+
+async def test_drain_waits_for_inflight_then_reports(broker):
+    b, _ = broker
+    b.inflight["benchmark"] = 0
+    result = await b.drain("benchmark", timeout=0.5)
+    assert result == {"agent": "benchmark", "drained": True, "inflight": 0} and "benchmark" in b.draining
+    b.inflight["benchmark"] = 1
+    slow = await b.drain("benchmark", timeout=0.3)
+    assert slow["drained"] is False and audit.query(kind="relocation")[0]["verdict"] == "timeout"
+    assert b.undrain("benchmark") == {"agent": "benchmark", "draining": False}
+
+
+def app_for(b: Broker) -> httpx.AsyncClient:
+    app = Starlette(routes=[Route("/mcp", b.mcp, methods=["GET", "POST", "DELETE"]),
+                            Route("/broker/agents", b.rest_agents, methods=["GET"]),
+                            Route("/broker/ask", b.rest_ask, methods=["POST"])])
+    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://broker")
+
+
+async def test_mcp_streamable_http_surface(broker):
+    b, runner = broker
+    async with app_for(b) as c:
+        assert (await c.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "ping"})).status_code == 401
+        auth = {"Authorization": f"Bearer {TOKEN}"}
+        init = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                                                        "params": {"protocolVersion": "2025-03-26", "capabilities": {}}})
+        assert init.status_code == 200 and init.headers["mcp-session-id"]
+        assert init.json()["result"]["protocolVersion"] == "2025-03-26" and "tools" in init.json()["result"]["capabilities"]
+        notified = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "method": "notifications/initialized"})
+        assert notified.status_code == 202
+        tools = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        assert [t["name"] for t in tools.json()["result"]["tools"]] == ["ask_task_agent", "list_task_agents"]
+        listed = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                                                          "params": {"name": "list_task_agents", "arguments": {}}})
+        agents = json.loads(listed.json()["result"]["content"][0]["text"])
+        assert {a["name"] for a in agents} == {"research", "benchmark", "summarizer"}
+        asked = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                                                         "params": {"name": "ask_task_agent",
+                                                                    "arguments": {"name": "summarizer", "query": "요약", "session_id": "s_9"}}})
+        payload = json.loads(asked.json()["result"]["content"][0]["text"])
+        assert payload["ok"] and payload["sandbox"] == "rfa-tasks-none" and asked.json()["result"]["isError"] is False
+        assert runner.calls[-1][1] == "rfa-tasks-none"
+        unknown = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 5, "method": "resources/list"})
+        assert unknown.json()["error"]["code"] == -32601
+        assert (await c.get("/mcp", headers=auth)).status_code == 405
+        assert (await c.delete("/mcp", headers=auth)).status_code == 204
+
+
+async def test_rest_fallback_surface(broker):
+    b, _ = broker
+    async with app_for(b) as c:
+        auth = {"Authorization": f"Bearer {TOKEN}"}
+        assert (await c.get("/broker/agents")).status_code == 401
+        assert len((await c.get("/broker/agents", headers=auth)).json()["agents"]) == 3
+        ok = await c.post("/broker/ask", headers=auth, json={"name": "benchmark", "query": "지연"})
+        assert ok.status_code == 200 and ok.json()["route"] == "gateway"
+        bad = await c.post("/broker/ask", headers=auth, json={"name": "nope", "query": "x"})
+        assert bad.status_code == 409

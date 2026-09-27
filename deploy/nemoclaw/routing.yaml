@@ -20,9 +20,11 @@ proxy:
 
 backends:
   ollama:
-    kind: openai
-    url: http://127.0.0.1:11434/v1
+    kind: ollama                          # 네이티브 /api/chat: think 비활성 + num_ctx 지정 (OpenClaw 프롬프트가 김)
+    url: http://127.0.0.1:11434
     auth: none
+    think: false
+    num_ctx: 32768
   build:
     kind: openai
     url: https://integrate.api.nvidia.com/v1

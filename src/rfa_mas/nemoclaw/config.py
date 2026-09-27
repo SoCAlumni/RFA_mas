@@ -203,11 +203,13 @@ class ProxyConfig(Strict):
 
 
 class Backend(Strict):
-    kind: Literal["openai"] = "openai"
+    kind: Literal["openai", "ollama"] = "openai"
     url: str
     auth: Literal["none", "bearer"] = "bearer"
     credential_env: str | None = None
     env_file: str | None = None
+    think: bool = False          # ollama: disable the model's reasoning channel (JSON/tool answers)
+    num_ctx: int | None = None   # ollama: context window override (OpenClaw prompts are long)
 
     @model_validator(mode="after")
     def _auth(self) -> Backend:

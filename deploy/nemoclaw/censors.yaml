@@ -40,7 +40,10 @@ profiles:
             action: block            # 자격증명이 보이면 redact 가 아니라 전송 자체를 막는다
       - id: llm
         type: llm
-        runner: sandbox-agent        # censor 샌드박스의 OpenClaw 에이전트를 게이트웨이로 호출
+        # runner: direct = 프록시가 rfa-censor alias(로컬 Ollama, egress 0)로 분류 프롬프트만 전송(실측 5초).
+        #         sandbox-agent = rfa-censor 샌드박스의 OpenClaw 턴. 긴 시스템 프롬프트를 4B 로컬 모델이 매번
+        #         처리해 실측 60초 이상 → timeout 초과. 기본은 direct (WORK_LOG 참고).
+        runner: direct
         sandbox: rfa-censor
         agent: main
         alias: rfa-censor
