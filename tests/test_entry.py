@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -14,6 +15,8 @@ from rfa_mas.nemoclaw.censor import CensorPipeline, StaticJudge
 from rfa_mas.nemoclaw.entry import Entry
 from rfa_mas.nemoclaw.markers import find_markers
 from rfa_mas.nemoclaw.runner import CommandResult
+
+NO_TEAMS = Path("/nonexistent/teams.yaml")  # static declaration only: teams.yaml is runtime state (POST /teams, task teams)
 
 SECRET = b"e" * 48
 
@@ -34,7 +37,7 @@ def audit_db(tmp_path, monkeypatch):
 
 
 def make_entry(reply: str) -> tuple[Entry, AssistantRunner]:
-    a, r, c = cfg.load_assignments(), cfg.load_routing(), cfg.load_censors()
+    a, r, c = cfg.load_assignments(teams_path=NO_TEAMS), cfg.load_routing(), cfg.load_censors()
     runner = AssistantRunner(reply)
     pipeline = CensorPipeline(c, StaticJudge("allow"))
     broker = Broker(a, r, SECRET, "tok" * 10, runner)

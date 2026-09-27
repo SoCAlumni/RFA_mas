@@ -20,11 +20,39 @@ main:
   subagents:
     requireAgentId: true
     allowAgents:
+    - agent-ops
     - benchmark
+    - infer-opt
+    - npu-sdk
+    - ondevice-train
     - research
     - summarizer
     delegationMode: prefer
 agents:
+- id: agent-ops
+  description: '[사내 Agent 자동화 구축] task 대표(supervisor): 멤버 research, verifier 를 부려
+    답하고 verifier 로 검증한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+    allowAgents:
+    - t-automation-research
+    - t-automation-verifier
+    delegationMode: prefer
 - id: benchmark
   description: 벤치마크 수치를 사내 API 에서 조회해 답하는 담당.
   model: inference/rfa-internal
@@ -66,6 +94,82 @@ agents:
     - bundle-mcp
   subagents:
     requireAgentId: true
+- id: infer-opt
+  description: '[Inference 최적화 연구] task 대표(supervisor): 멤버 research, benchmark, verifier
+    를 부려 답하고 verifier 로 검증한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+    allowAgents:
+    - t-inference-research
+    - t-inference-benchmark
+    - t-inference-verifier
+    delegationMode: prefer
+- id: npu-sdk
+  description: '[NPU Compiler SDK] task 대표(supervisor): 멤버 research, summarizer, verifier
+    를 부려 답하고 verifier 로 검증한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+    allowAgents:
+    - t-npu-research
+    - t-npu-summarizer
+    - t-npu-verifier
+    delegationMode: prefer
+- id: ondevice-train
+  description: '[On Device LLM Training] task 대표(supervisor): 멤버 research, benchmark,
+    summarizer, verifier 를 부려 답하고 verifier 로 검증한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+    allowAgents:
+    - t-training-research
+    - t-training-benchmark
+    - t-training-summarizer
+    - t-training-verifier
+    delegationMode: prefer
 - id: research
   description: 사내 지식 API 에서 근거를 찾아 요약하는 조사 담당.
   model: inference/rfa-external
@@ -90,6 +194,257 @@ agents:
 - id: summarizer
   description: '전달받은 텍스트만 요약한다. 네트워크 도구 없음. (격리 예: sandbox 를 rfa-tasks-none 으로 지정)'
   model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-automation-research
+  description: '[사내 Agent 자동화 구축] research: 사내 지식 API 에서 근거를 찾아 출처 id 와 함께 요약한다.'
+  model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - write
+    - edit
+    - apply_patch
+    - process
+    - code_execution
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-automation-verifier
+  description: '[사내 Agent 자동화 구축] verifier: supervisor 초안을 멤버 근거와 대조해 pass/revise
+    와 근거 없는 주장 목록을 JSON 으로 답한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-inference-benchmark
+  description: '[Inference 최적화 연구] benchmark: 벤치마크·성능 수치를 사내 API 에서 조회해 비교한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - write
+    - edit
+    - apply_patch
+    - process
+    - code_execution
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-inference-research
+  description: '[Inference 최적화 연구] research: 사내 지식 API 에서 근거를 찾아 출처 id 와 함께 요약한다.'
+  model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - write
+    - edit
+    - apply_patch
+    - process
+    - code_execution
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-inference-verifier
+  description: '[Inference 최적화 연구] verifier: supervisor 초안을 멤버 근거와 대조해 pass/revise
+    와 근거 없는 주장 목록을 JSON 으로 답한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-npu-research
+  description: '[NPU Compiler SDK] research: 사내 지식 API 에서 근거를 찾아 출처 id 와 함께 요약한다.'
+  model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - write
+    - edit
+    - apply_patch
+    - process
+    - code_execution
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-npu-summarizer
+  description: '[NPU Compiler SDK] summarizer: 전달받은 텍스트만 요약한다. 네트워크 도구 없음.'
+  model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-npu-verifier
+  description: '[NPU Compiler SDK] verifier: supervisor 초안을 멤버 근거와 대조해 pass/revise
+    와 근거 없는 주장 목록을 JSON 으로 답한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-training-benchmark
+  description: '[On Device LLM Training] benchmark: 벤치마크·성능 수치를 사내 API 에서 조회해 비교한다.'
+  model: inference/rfa-internal
+  tools:
+    profile: coding
+    deny:
+    - write
+    - edit
+    - apply_patch
+    - process
+    - code_execution
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-training-research
+  description: '[On Device LLM Training] research: 사내 지식 API 에서 근거를 찾아 출처 id 와 함께
+    요약한다.'
+  model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - write
+    - edit
+    - apply_patch
+    - process
+    - code_execution
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-training-summarizer
+  description: '[On Device LLM Training] summarizer: 전달받은 텍스트만 요약한다. 네트워크 도구 없음.'
+  model: inference/rfa-external
+  tools:
+    profile: coding
+    deny:
+    - group:runtime
+    - write
+    - edit
+    - apply_patch
+    - group:sessions
+    - group:web
+    - cron
+    - group:memory
+    - group:media
+    - skill_workshop
+    - browser
+    - bundle-mcp
+  subagents:
+    requireAgentId: true
+- id: t-training-verifier
+  description: '[On Device LLM Training] verifier: supervisor 초안을 멤버 근거와 대조해 pass/revise
+    와 근거 없는 주장 목록을 JSON 으로 답한다.'
+  model: inference/rfa-internal
   tools:
     profile: coding
     deny:

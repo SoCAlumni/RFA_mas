@@ -16,6 +16,7 @@ from rfa_mas.nemoclaw.controller import (
     Observed,
     Observer,
     PlanInputs,
+    agent_config_ops,
     apply,
     custom_presets,
     plan,
@@ -31,6 +32,8 @@ from rfa_mas.nemoclaw.manifests import (
 )
 from rfa_mas.nemoclaw.markers import find_markers, make_marker, strip_markers
 from rfa_mas.nemoclaw.runner import CommandResult
+
+NO_TEAMS = Path("/nonexistent/teams.yaml")  # static declaration only: teams.yaml is runtime state (POST /teams, task teams)
 
 DEPLOY = cfg.DEPLOY_DIR
 BASELINE = yaml.safe_load((DEPLOY / "baseline" / "openclaw-sandbox.yaml").read_text())
@@ -84,7 +87,7 @@ def live_policy(presets: dict[str, dict] | None = None, excluded: set[str] = fro
 
 @pytest.fixture
 def assignments() -> cfg.Assignments:
-    return cfg.load_assignments()
+    return cfg.load_assignments(teams_path=NO_TEAMS)
 
 
 @pytest.fixture
@@ -97,7 +100,7 @@ def rendered(tmp_path, assignments) -> dict[str, Path]:
 
 
 def test_checked_in_configs_load_and_cross_check():
-    a, r, c = cfg.load_assignments(), cfg.load_routing(), cfg.load_censors()
+    a, r, c = cfg.load_assignments(teams_path=NO_TEAMS), cfg.load_routing(), cfg.load_censors()
     assert cfg.cross_check(a, r, c) == []
     assert a.default_sandbox == "rfa-main"
     assert a.placement() == {a_id: "rfa-main" for a_id in ("assistant", "censor", "research", "benchmark", "summarizer")}
@@ -118,7 +121,7 @@ def test_agent_may_only_land_where_its_groups_are_provided(tmp_path):
     path = tmp_path / "a.yaml"
     path.write_text(yaml.safe_dump(data, allow_unicode=True))
     with pytest.raises(cfg.ConfigError, match="lacks security groups"):
-        cfg.load_assignments(path)
+        cfg.load_assignments(path, teams_path=NO_TEAMS)
 
 
 def test_opting_an_agent_into_a_sandbox_activates_it(tmp_path):
@@ -126,7 +129,7 @@ def test_opting_an_agent_into_a_sandbox_activates_it(tmp_path):
     data["agents"]["summarizer"]["sandbox"] = "rfa-tasks-none"
     path = tmp_path / "a.yaml"
     path.write_text(yaml.safe_dump(data, allow_unicode=True))
-    a = cfg.load_assignments(path)
+    a = cfg.load_assignments(path, teams_path=NO_TEAMS)
     assert a.sandbox_for("summarizer") == "rfa-tasks-none" and a.active_sandboxes() == ["rfa-main", "rfa-tasks-none"]
     assert a.sandbox_agents("rfa-main") == ["benchmark", "censor", "research"]
 
@@ -137,7 +140,7 @@ def test_exactly_one_default_sandbox(tmp_path):
     path = tmp_path / "a.yaml"
     path.write_text(yaml.safe_dump(data, allow_unicode=True))
     with pytest.raises(cfg.ConfigError, match="exactly one sandbox"):
-        cfg.load_assignments(path)
+        cfg.load_assignments(path, teams_path=NO_TEAMS)
 
 
 def test_routing_alias_resolution_prefers_least_exposure_and_bypass():
@@ -351,3 +354,59 @@ def test_unbound_mcp_registration_is_removed_and_re_added(assignments, rendered,
             {"provider": {"attached": True, "state": "configured"}, "policy": {"state": "configured"}}),
     })
     assert Observer(healthy).mcp_list("rfa-main") == {"broker"}
+
+
+# ----------------------------------------------------------------------------- per-agent config sync
+
+
+def _live_openclaw(manifest: dict, *, stale: tuple[str, ...] = ()) -> dict:
+    """openclaw.json as `agents apply` leaves it: entries exist; ``stale`` ids lack model/subagents/tools."""
+    entries = [{"id": "main", "workspace": "/sandbox/.openclaw/workspace",
+                **{k: manifest["main"][k] for k in ("subagents", "tools") if manifest["main"].get(k) is not None}}]
+    for e in manifest["agents"]:
+        base = {"id": e["id"], "workspace": f"/sandbox/.openclaw/workspace-{e['id']}", "agentDir": "x"}
+        entries.append(base if e["id"] in stale else {**base, **{k: e[k] for k in ("model", "subagents", "tools")}})
+    return {"agents": {"defaults": {"subagents": dict(manifest["defaults"]["subagents"])}, "list": entries}}
+
+
+def test_agent_config_ops_sync_fields_agents_apply_cannot_set(assignments):
+    manifest = render_manifest(assignments, "rfa-main")
+    assert agent_config_ops(manifest, _live_openclaw(manifest)) == []
+    live = _live_openclaw(manifest, stale=("research",))
+    live["agents"]["defaults"]["subagents"]["maxSpawnDepth"] = 1
+    live["agents"]["list"][0]["subagents"] = {"allowAgents": ["research"]}   # main still has the old allowlist
+    ops = {op["path"]: op["value"] for op in agent_config_ops(manifest, live)}
+    idx = next(i for i, e in enumerate(live["agents"]["list"]) if e["id"] == "research")
+    research = next(e for e in manifest["agents"] if e["id"] == "research")
+    assert ops == {"agents.defaults.subagents.maxSpawnDepth": 2,
+                   "agents.list[0].subagents": manifest["main"]["subagents"],
+                   f"agents.list[{idx}].model": research["model"],
+                   f"agents.list[{idx}].subagents": research["subagents"],
+                   f"agents.list[{idx}].tools": research["tools"]}
+    # an agent not yet added (agents apply runs first) is left for the next plan
+    live["agents"]["list"] = [e for e in live["agents"]["list"] if e["id"] != "summarizer"]
+    assert not any("summarizer" in str(v) and "tools" in p for p, v in ops.items())
+
+
+def test_plan_emits_config_sync_and_restart_only_once_the_roster_matches(assignments, rendered, tmp_path):
+    intranet = yaml.safe_load(rendered["sg-intranet-ro"].read_text())
+    manifest = render_manifest(assignments, "rfa-main")
+    roster = ["main", *manifest_agent_ids(manifest)]
+    observed = Observed(
+        sandboxes={"rfa-main": {"name": "rfa-main"}},
+        policies={"rfa-main": live_policy({"sg-intranet-ro": intranet}, excluded=set(assignments.baseline_excludes))},
+        agents={"rfa-main": roster}, mcp={"rfa-main": {"broker"}},
+        openclaw={"rfa-main": _live_openclaw(manifest, stale=("summarizer",))},
+    )
+    mcp = {"mcp_url": "https://192.168.123.191:8798/mcp", "mcp_credential_env": "RFA_BROKER_MCP_TOKEN"}
+    actions = plan(_inputs(assignments, observed, rendered, tmp_path, **mcp))
+    assert [a.kind for a in actions] == ["agents-config", "gateway-restart", "policy-explain"]
+    sync = actions[0]
+    assert sync.argv[:9] == ["nemoclaw", "rfa-main", "exec", "--timeout", "120", "--", "openclaw", "config", "set"]
+    ops = json.loads(sync.argv[sync.argv.index("--batch-json") + 1])
+    assert ops and all(".tools" in o["path"] or ".model" in o["path"] or ".subagents" in o["path"] for o in ops)
+    # roster still changing → only agents-apply now; unreadable config → no sync at all
+    observed.agents["rfa-main"] = ["main", "research"]
+    assert "agents-config" not in [a.kind for a in plan(_inputs(assignments, observed, rendered, tmp_path, **mcp))]
+    observed.agents["rfa-main"], observed.openclaw["rfa-main"] = roster, None
+    assert plan(_inputs(assignments, observed, rendered, tmp_path, **mcp)) == []

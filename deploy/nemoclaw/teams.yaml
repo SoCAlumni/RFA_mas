@@ -1,4 +1,80 @@
 # `POST /teams` 가 쓰는 상주 팀 선언. load_assignments() 가 agents 로 병합하고 /ask 카탈로그에 task 로 올린다.
 # 사람이 편집해도 된다. 팀 하나 = supervisor(secondary, 브로커 위임 대상) + 멤버(팀 전용 인스턴스, supervisor 만 spawn).
+# task 명세: deploy/nemoclaw/task-specs/<team_id>.md → supervisor IDENTITY.md 의 `# TASK SPEC` (manifests.render_identity).
 version: 1
-teams: []
+teams:
+  - team_id: t-training
+    task:
+      id: training
+      name: On Device LLM Training
+      keywords: [온디바이스, 온디바이스 학습, QAT, 양자화 인지 학습, LoRA, 파인튜닝, 체크포인트, 어댑터]
+    description: 온디바이스 LLM 학습(QAT · LoRA 파인튜닝 · 체크포인트) 관련 문의에 답변 초안을 씁니다.
+    supervisor: ondevice-train
+    members:
+      - { agent_id: t-training-research, role: research }
+      - { agent_id: t-training-benchmark, role: benchmark }
+      - { agent_id: t-training-summarizer, role: summarizer }
+      - { agent_id: t-training-verifier, role: verifier }
+    pattern:
+      capabilities: [intranet_evidence, benchmark_numbers, summarize, verify]
+      roles: [research, benchmark, summarizer, verifier]
+      source: manual
+      reason: 학습 방법 근거(research) + 메모리·학습 수치(benchmark) + 외부 개발자용 공개 초안(summarizer)
+    status: declared
+    created_at: "2026-09-28T00:00:00+0900"
+
+  - team_id: t-inference
+    task:
+      id: inference
+      name: Inference 최적화 연구
+      keywords: [추론 최적화, 캘리브레이션, ORBIT, 재현, 추론 지연, 처리량, 양자화 벤치마크]
+    description: 양자화 · 캘리브레이션 · 벤치마크 등 추론 최적화 연구 문의에 답합니다. 내부 지표 수치는 사외로 내보내지 않습니다.
+    supervisor: infer-opt
+    members:
+      - { agent_id: t-inference-research, role: research }
+      - { agent_id: t-inference-benchmark, role: benchmark }
+      - { agent_id: t-inference-verifier, role: verifier }
+    pattern:
+      capabilities: [intranet_evidence, benchmark_numbers, verify]
+      roles: [research, benchmark, verifier]
+      source: manual
+      reason: 캘리브레이션·재현 근거(research) + 벤치마크 수치(benchmark). 내부 지표는 internal alias 에만 머문다
+    status: declared
+    created_at: "2026-09-28T00:00:00+0900"
+
+  - team_id: t-automation
+    task:
+      id: automation
+      name: 사내 Agent 자동화 구축
+      keywords: [PRISM, 사내 Agent, 에이전트 자동화, 에이전트 권한, 배포 승인, 설계 문서, 파이프라인 연동]
+    description: 사내 Agent 자동화 플랫폼(PRISM) 연동 · 권한 · 설계 문서 요청을 받아 사내 등급으로 답합니다.
+    supervisor: agent-ops
+    members:
+      - { agent_id: t-automation-research, role: research }
+      - { agent_id: t-automation-verifier, role: verifier }
+    pattern:
+      capabilities: [intranet_evidence, verify]
+      roles: [research, verifier]
+      source: manual
+      reason: PRISM 설계 문서·권한 정책 근거(research). 사내 독자라 요약 전용 멤버 불필요
+    status: declared
+    created_at: "2026-09-28T00:00:00+0900"
+
+  - team_id: t-npu
+    task:
+      id: npu
+      name: NPU Compiler SDK
+      keywords: [NPU, Compiler SDK, NPU SDK, 연산자, Conv3D, LayerNorm, 모델 변환, unsupported op, 릴리스]
+    description: NPU Compiler SDK의 연산자 지원 · 모델 변환 오류 · 릴리스 일정 문의에 답합니다. 미공개 일정은 빼고 답합니다.
+    supervisor: npu-sdk
+    members:
+      - { agent_id: t-npu-research, role: research }
+      - { agent_id: t-npu-summarizer, role: summarizer }
+      - { agent_id: t-npu-verifier, role: verifier }
+    pattern:
+      capabilities: [intranet_evidence, summarize, verify]
+      roles: [research, summarizer, verifier]
+      source: manual
+      reason: 연산자 지원표·릴리스 노트·변환 오류 사례 근거(research) + 공개 이메일 답변 초안(summarizer)
+    status: declared
+    created_at: "2026-09-28T00:00:00+0900"

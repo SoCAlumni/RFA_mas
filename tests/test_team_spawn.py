@@ -111,9 +111,13 @@ async def test_team_declaration_merges_into_assignments_and_manifest_allows_only
     assert manifest["defaults"] == {"subagents": {"maxSpawnDepth": 2}}
     entries = {a["id"]: a for a in manifest["agents"]}
     assert entries["t-aurora_dash-sup"]["subagents"]["allowAgents"] == sup.allow_agents
-    assert "sessions_spawn" in entries["t-aurora_dash-sup"]["tools"]["allow"]
-    assert all("allowAgents" not in entries[m["agent_id"]]["subagents"] and "sessions_spawn" not in entries[m["agent_id"]]["tools"]["allow"]
-               for m in members)
+    # coding profile narrowed by deny (a `minimal` profile would strip sessions_spawn after allow, sg-4g):
+    # the supervisor keeps the sessions tools, members lose them
+    sup_tools = entries["t-aurora_dash-sup"]["tools"]
+    assert sup_tools["profile"] == "coding" and "group:sessions" not in sup_tools["deny"]
+    assert {"group:runtime", "write", "bundle-mcp"} <= set(sup_tools["deny"])
+    assert all("allowAgents" not in entries[m["agent_id"]]["subagents"]
+               and "group:sessions" in entries[m["agent_id"]]["tools"]["deny"] for m in members)
     assert "t-aurora_dash-sup" in manifest["main"]["subagents"]["allowAgents"]
     assert not any(m["agent_id"] in manifest["main"]["subagents"]["allowAgents"] for m in members)
     identity = render_identity(merged, "t-aurora_dash-sup", b"s" * 48)
@@ -198,6 +202,8 @@ async def test_real_apply_runs_agents_apply_then_seeds_and_records_failures(tmp_
 def test_checked_in_roles_and_teams_files_load():
     roles = cfg.load_roles()
     assert set(roles.roles) == {"research", "benchmark", "summarizer", "verifier"} and roles.always == ["verify"]
-    assert cfg.load_teams().teams == []
+    teams = cfg.load_teams().teams   # resident task teams (tests/test_task_teams.py checks their contents)
     tmp = Path(tempfile.mkdtemp())
-    assert cfg.load_assignments(teams_path=tmp / "missing.yaml").agents.keys() == cfg.load_assignments().agents.keys()
+    static = cfg.load_assignments(teams_path=tmp / "missing.yaml").agents.keys()
+    team_agents = {a for t in teams for a in [t.supervisor, *(m.agent_id for m in t.members)]}
+    assert set(cfg.load_assignments().agents.keys()) == set(static) | team_agents

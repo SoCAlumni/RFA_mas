@@ -12,13 +12,14 @@ from pathlib import Path
 
 import yaml
 
-from rfa_mas.nemoclaw.config import Assignments, ToolPolicy
+from rfa_mas.nemoclaw.config import DEPLOY_DIR, Assignments, ToolPolicy
 from rfa_mas.nemoclaw.markers import make_marker
 
 ROUTE_PROVIDER = "inference"  # NemoClaw routeProvider for the managed inference.local route
 HEAD_TOOLS = {"profile": "coding", "deny": ["group:runtime", "write", "edit", "apply_patch", "group:web", "cron",
               "group:memory", "group:media", "skill_workshop", "browser", "bundle-mcp"]}
 WORKSPACE_ROOT = "/sandbox/.openclaw"
+TASK_SPECS_DIR = DEPLOY_DIR / "task-specs"   # <team_id>.md: the task's scope/disclosure spec for its supervisor
 
 
 def tools_dict(policy: ToolPolicy) -> dict:
@@ -104,7 +105,8 @@ def manifest_agent_ids(manifest: dict) -> list[str]:
     return sorted(a["id"] for a in manifest.get("agents", []))
 
 
-def render_identity(assignments: Assignments, agent_id: str, secret: bytes) -> str:
+def render_identity(assignments: Assignments, agent_id: str, secret: bytes,
+                    task_specs_dir: Path | None = None) -> str:
     """``IDENTITY.md`` for an agent workspace, carrying the signed agent marker that the
     egress-proxy uses to resolve the agent's alias (workspace files are injected into the
     system prompt; the marker is HMAC-signed so a prompt cannot forge a different alias)."""
@@ -138,6 +140,9 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes) -> s
             + (f"send your draft plus the members' evidence to {verifier} last and apply one revision if it says revise; " if verifier else "")
             + "answer with the evidence ids you used.\n"
         )
+        spec_file = (task_specs_dir or TASK_SPECS_DIR) / f"{spec.team}.md" if spec.team else None
+        if spec_file is not None and spec_file.is_file():
+            text += "\n# TASK SPEC\n\n" + spec_file.read_text(encoding="utf-8").strip() + "\n"
     return text
 
 

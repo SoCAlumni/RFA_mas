@@ -8,6 +8,7 @@ Only NemoClaw CLI verbs are used (``policy add --from-file``, ``policy remove``,
 from __future__ import annotations
 
 import copy
+import json
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,6 +32,7 @@ class Observed:
     agents: dict[str, list[str]] = field(default_factory=dict)
     mcp: dict[str, set[str]] = field(default_factory=dict)
     stale_mcp: dict[str, set[str]] = field(default_factory=dict)  # registered but provider unbound
+    openclaw: dict[str, dict | None] = field(default_factory=dict)  # live openclaw.json (None = unreadable)
 
     def exists(self, sandbox: str) -> bool:
         return sandbox in self.sandboxes
@@ -117,6 +119,18 @@ class Observer:
         policy = data.get("policy") or {}
         return bool(provider.get("attached")) and policy.get("state") == "configured"
 
+    def openclaw_config(self, sandbox: str) -> dict | None:
+        """The sandbox's live ``openclaw.json`` (per-agent model/subagents/tools), or None if unreadable."""
+        result = self.runner.run([self.bin, sandbox, "exec", "--timeout", "60", "--", "cat", OPENCLAW_CONFIG],
+                                 timeout=120)
+        if not result.ok:
+            return None
+        try:
+            data = extract_json(result.stdout)
+        except ValueError:
+            return None
+        return data if isinstance(data, dict) and isinstance(data.get("agents"), dict) else None
+
     def observe(self, sandboxes: Iterable[str]) -> Observed:
         observed = Observed(sandboxes=self.list_sandboxes())
         for sandbox in sandboxes:
@@ -126,7 +140,37 @@ class Observer:
             observed.agents[sandbox] = self.agents_list(sandbox)
             observed.mcp[sandbox] = self.mcp_list(sandbox)
             observed.stale_mcp[sandbox] = set(self.stale_mcp.get(sandbox, set()))
+            observed.openclaw[sandbox] = self.openclaw_config(sandbox)
         return observed
+
+
+# --------------------------------------------------------------------------- per-agent config sync
+
+OPENCLAW_CONFIG = "/sandbox/.openclaw/openclaw.json"
+AGENT_FIELDS = ("model", "subagents", "tools")
+
+
+def agent_config_ops(manifest: dict, live: dict) -> list[dict]:
+    """``openclaw config set --batch-json`` operations that bring the live per-agent ``model``/``subagents``/
+    ``tools``, ``main`` overrides and ``defaults.subagents`` to the manifest. ``nemoclaw agents apply`` only adds or
+    deletes agents; these fields would otherwise stay at whatever the sandbox was onboarded with (e.g. a new
+    team's agents get no tool policy and its supervisor no spawn allowlist)."""
+    agents = live.get("agents") or {}
+    ops: list[dict] = []
+    for key, value in ((manifest.get("defaults") or {}).get("subagents") or {}).items():
+        if ((agents.get("defaults") or {}).get("subagents") or {}).get(key) != value:
+            ops.append({"path": f"agents.defaults.subagents.{key}", "value": value})
+    index = {str(e.get("id")): i for i, e in enumerate(agents.get("list") or []) if isinstance(e, dict)}
+    entries = agents.get("list") or []
+    desired = [("main", manifest.get("main") or {})] + [(str(e["id"]), e) for e in manifest.get("agents") or []]
+    for agent_id, want in desired:
+        if agent_id not in index:
+            continue  # agents apply adds it first; the next plan syncs it
+        have = entries[index[agent_id]]
+        for key in AGENT_FIELDS:
+            if want.get(key) is not None and have.get(key) != want[key]:
+                ops.append({"path": f"agents.list[{index[agent_id]}].{key}", "value": want[key]})
+    return ops
 
 
 # --------------------------------------------------------------------------- presets
@@ -263,6 +307,18 @@ def plan(inputs: PlanInputs) -> list[Action]:
                                    "--yes", "--non-interactive"],
                                   f"roster {sorted(live_agents)} → {desired_agents}", timeout=600))
             changed = True
+        elif obs.openclaw.get(sandbox) is not None:
+            ops = agent_config_ops(render_manifest(a, sandbox), obs.openclaw[sandbox])
+            if ops:
+                fields = sorted({op["path"].split("].")[-1] if "]." in op["path"] else op["path"] for op in ops})
+                actions.append(Action("agents-config", sandbox,
+                                      [nb, sandbox, "exec", "--timeout", "120", "--", "openclaw", "config", "set",
+                                       "--batch-json", json.dumps(ops, ensure_ascii=False)],
+                                      f"{len(ops)} per-agent setting(s) differ from the manifest ({', '.join(fields)}); "
+                                      "agents apply cannot set them", timeout=180))
+                actions.append(Action("gateway-restart", sandbox, [nb, sandbox, "gateway", "restart", "--quiet"],
+                                      "load the new agent settings (gateway.reload.mode=hot)", timeout=300))
+                changed = True
         if not inputs.mcp_fallback:
             desired_mcp = set(a.sandbox_mcp_servers(sandbox))
             live_mcp = obs.mcp.get(sandbox, set())

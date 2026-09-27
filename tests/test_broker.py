@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -14,6 +15,8 @@ from rfa_mas.nemoclaw import config as cfg
 from rfa_mas.nemoclaw.broker import Broker
 from rfa_mas.nemoclaw.markers import find_markers
 from rfa_mas.nemoclaw.runner import CommandResult
+
+NO_TEAMS = Path("/nonexistent/teams.yaml")  # static declaration only: teams.yaml is runtime state (POST /teams, task teams)
 
 SECRET = b"b" * 48
 TOKEN = "broker-token-0123456789abcdef"
@@ -46,7 +49,7 @@ def routing_with(transport: str = "cli", **broker_fields) -> cfg.Routing:
 @pytest.fixture
 def broker() -> tuple[Broker, TurnRunner]:
     runner = TurnRunner()
-    return Broker(cfg.load_assignments(), routing_with("cli"), SECRET, TOKEN, runner), runner
+    return Broker(cfg.load_assignments(teams_path=NO_TEAMS), routing_with("cli"), SECRET, TOKEN, runner), runner
 
 
 def test_route_decides_local_spawn_versus_gateway(broker):

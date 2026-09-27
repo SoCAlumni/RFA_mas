@@ -128,6 +128,12 @@ def cmd_apply(args) -> int:
 
     results = controller.apply(runnable, runner, secrets.get, on_result=record)
     failed = [r for _, r in results if not r.ok]
+    if not failed and any(x.kind == "agents-apply" for x, _ in results):
+        # agents apply only adds/deletes agents; a second plan syncs the new agents' model/subagents/tools
+        _, _, _, follow = _plan(args)
+        follow = [x for x in follow if x.kind != "onboard"]
+        results = controller.apply(follow, runner, secrets.get, on_result=record)
+        failed = [r for _, r in results if not r.ok]
     if failed:
         print((failed[0].stderr or failed[0].stdout).strip()[-600:], file=sys.stderr)
         return 1
