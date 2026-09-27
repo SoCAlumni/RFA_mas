@@ -1,0 +1,204 @@
+schema_version: '1.0'
+id: P1-008H
+title: 담당 Task 자동 라우팅·비서 fallback·실제 단계 스트림
+objective: 입력/질의 모두 적합한 기존 Task를 재사용하고 없거나 모호하면 비서가 처리하며 실제 서버 단계를 순서대로 표시한다.
+kind: task
+source_tasks:
+- P1-008G
+requirement_refs:
+- docs/POC.md
+priority: P0
+status: todo
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 3.0
+product_owner: 민섭 사용자 승인 PoC; 팀원 UI 교체 가능
+execution_class: 이 저장소 구현
+product_mode: local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님
+scope:
+  included:
+  - owner-scoped 기존 팀 목록과 보수적 자동 선택
+  - 저장/질의 담당 표시 및 no-match 비서 로컬 검색
+  - 실제 단계 NDJSON 스트림·재조회·중복 보호
+  excluded:
+  - 새 Task 자동 생성
+  - 토큰/내부 사고 스트리밍
+  - 실제 외부 게시/모델 호출
+  owned_paths:
+  - src/rfa_mas/poc
+  - src/rfa_mas/ui
+  - src/rfa_mas/application/chat.py
+  - src/rfa_mas/adapters/local.py
+  - src/rfa_mas/ports/interfaces.py
+  - tests/test_chat_poc.py
+  - tests/test_chat_routing.py
+  - docs/POC.md
+  read_only_paths:
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/graphs/supervisor.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  planned_paths:
+  - src/rfa_mas/poc/routing.py
+  - tests/test_chat_routing.py
+  shared_resources:
+  - composition
+  - repository-migrations
+  - ports
+depends_on:
+- id: P1-008G
+  condition: integrated_done
+  required_output: 영속 채팅과 기존 ACL/승인 경계
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/poc/bootstrap.py
+    section: create_poc_app
+    reason: 교체형 조립 재사용
+  - path: src/rfa_mas/application/service.py
+    section: assist/present_result
+    reason: 기존 Supervisor와 권한 재검사 재사용
+  - path: src/rfa_mas/ui
+    section: API/static
+    reason: same-origin 경계 보존
+  - path: src/rfa_mas/adapters/local.py
+    section: get_team_lifecycle / authorized_metadata / read_sources
+    reason: owner 범위 조회·현재 ACL lexical 검색 재사용
+  handoff: tasks/P1-008H/handoff.md
+  dependency_results:
+  - tasks/P1-008G/handoff.md
+deliverables:
+- path: src/rfa_mas/poc/routing.py
+  availability: planned
+  description: 주입형 담당 선택/비서 검색
+- path: src/rfa_mas/poc/chat.py
+  availability: existing
+  description: durable routing/events/refs
+- path: src/rfa_mas/ui
+  availability: existing
+  description: 실제 단계 stream API/UI
+- path: src/rfa_mas/adapters/local.py
+  availability: existing
+  description: owner-scoped team 조회
+- path: src/rfa_mas/ports/interfaces.py
+  availability: existing
+  description: team 목록 계약
+- path: tests/test_chat_routing.py
+  availability: planned
+  description: 라우팅·스트림·취소·권한 검증
+- path: tests/test_chat_poc.py
+  availability: existing
+  description: 기존 채팅 회귀
+- path: docs/POC.md
+  availability: existing
+  description: 기능과 한계
+acceptance_criteria:
+- id: AC1
+  given: 기존 active Task·다른 owner·모호/무관 질의 및 메모
+  expect: owner Task 목표에 맞으면 같은 task/team 재사용; 모호/무관하면 비서; no spawn; 도메인 worker와 Task
+    구분
+  required: true
+- id: AC2
+  given: 실시간 요청·지연된 실행·재연결·오류
+  expect: 이해→담당 확인→준비→결과 실제 단계가 완료 전 도착; 중복 실행/재시도 없음; 취소/실패 unknown와 안전한 오류
+  required: true
+- id: AC3
+  given: 현재 자료 삭제/ACL변경·재시작·위조/공개 요청
+  expect: 허용 근거만 재표시; 기존 승인·CSRF·멱등성 유지; 메모는 private
+  required: true
+- id: AC4
+  given: 실제 브라우저
+  expect: 자동 기본값과 담당/단계 표시; 질문/저장/no-match 사용 가능; JS 오류 없음
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 합성 데이터·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_chat_routing.py
+  - tests/test_chat_poc.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  timeout_seconds: 240
+  procedure: []
+  assertions:
+  - 기존 Task 재사용·불일치/모호/다른 owner 제외
+  - 완료 전 stream 수신·중복/실패/취소 보호
+  - 현재 ACL·CSRF·승인 회귀
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC4
+  type: UI
+  availability: planned
+  prerequisites:
+  - 합성 별도 PoC 서버와 새 브라우저
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - 자동 라우팅 저장/질의
+  - 담당 없는 질문과 서버 단계 표시
+  - 새로고침 결과 복구
+  assertions:
+  - 실제 stream event UI 표시
+  - 담당/비서 구분·JS 오류 없음
+  runner: manual
+evidence_dir: .agent/evidence/P1-008H
+latest_evidence_file: null
+verification_summary:
+  state: not_run
+integration:
+  state: pending
+  target: main canonical control checkout
+  reason: null
+revision: 1
+spec_revision: 1
+claim_generation: 0
+claim: null
+attempts:
+  count: 0
+  cycles: 0
+  no_progress_count: 0
+  latest_attempt: null
+  evidence_refs: []
+  approaches: []
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 담당 자동 라우팅/streaming 사용자 요청
+  prior_claim: P1-008G 완료; 담당 선택/실시간 단계는 신규
+  implementation_facts: 기존 채팅은 domain 기본 triv3 강제 및 최종 JSON 응답
+  previous_evidence: []
+  checks_this_migration:
+  - UI/비서/세션/KB 코드 확인
+  judgment: 기존 완료 유지·별도 기능 추가
+  initial_spec_revision: 1
+updated_at: '2026-09-27T05:00:00+00:00'
+concise_result: '조사: 두 화면 항목은 Domain; 사용자 runtime의 persisted Task=0. 기존 팀 재사용 API는
+  존재.'
+next_action: owner-scoped 목록과 보수적 라우팅부터 구현
