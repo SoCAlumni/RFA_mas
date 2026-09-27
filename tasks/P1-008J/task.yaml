@@ -1,0 +1,205 @@
+schema_version: '1.0'
+id: P1-008J
+title: 처리 상태 카드 — 추론 단계·라우팅·팀 구성 state 목록
+objective: 비서 추론 단계, 담당 라우팅 근거, Task 팀 spawn/구성(역할·agent·결과)을 stage detail로 기록하고 대화 버블 상단에 유지되는 하나의 상태
+  카드에 목록으로 보여준다.
+kind: task
+source_tasks:
+- P1-008I
+requirement_refs:
+- docs/POC.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 1.5
+product_owner: 민섭 사용자 승인 PoC; 팀원 UI 교체 가능
+execution_class: 이 저장소 구현
+product_mode: local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님
+scope:
+  included:
+  - stage event detail(intent, route kind/reason/candidates, team members·role outcomes)
+  - team_spawn/team/team_result 단계 추가
+  - 대화 버블 상단 sticky 상태 카드(live·이력 재조회)
+  excluded:
+  - 질의/메모만으로 자동 Task 생성
+  - 토큰/내부 사고 스트리밍
+  - 실제 외부 게시/모델 호출
+  owned_paths:
+  - src/rfa_mas/poc
+  - src/rfa_mas/ui
+  - src/rfa_mas/application/chat.py
+  - tests/test_chat_poc.py
+  - tests/test_chat_routing.py
+  - docs/POC.md
+  read_only_paths:
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/graphs/supervisor.py
+  - src/rfa_mas/adapters/local.py
+  planned_paths: []
+  shared_resources:
+  - composition
+depends_on: []
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/poc/chat.py
+    section: LocalChat.send/stage
+    reason: 단계 이벤트에 detail 추가
+  - path: src/rfa_mas/ui/static/app.js
+    section: renderTurn/send/streamChat
+    reason: 상태 카드 렌더링
+  handoff: tasks/P1-008J/handoff.md
+  dependency_results: []
+deliverables:
+- path: src/rfa_mas/poc/chat.py
+  availability: existing
+  description: stage detail·team 단계
+- path: src/rfa_mas/poc/routing.py
+  availability: existing
+  description: 라우팅 후보 근거
+- path: src/rfa_mas/ui
+  availability: existing
+  description: 상태 카드
+- path: tests/test_chat_routing.py
+  availability: existing
+  description: 단계 detail·팀 구성 검증
+- path: docs/POC.md
+  availability: existing
+  description: 상태 카드 설명
+acceptance_criteria:
+- id: AC1
+  given: 메모/질의/명시 Task 요청
+  expect: 각 단계 이벤트가 intent, route(kind/reason/후보), 팀 구성(역할·agent_id·상태)을 detail로 포함하고 재조회(history)에서도
+    동일하게 복원된다
+  required: true
+- id: AC2
+  given: 새 Task 팀 생성과 기존 팀 재사용
+  expect: team_spawn(패턴·예정 역할)→team(실제 구성·역할 결과) 순서가 기록되고 기존 팀은 team→team_result로 기록된다; 비공개 원문·키는 detail에
+    없다
+  required: true
+- id: AC3
+  given: 실제 브라우저
+  expect: 버블 상단 상태 카드가 스트리밍 중 실시간 갱신되고 완료 후에도 유지되며 새로고침 후 마지막 턴 상태를 복원한다; JS 오류 없음
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  type: command
+  availability: available
+  prerequisites:
+  - 합성 데이터·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_chat_routing.py
+  - tests/test_chat_poc.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 단계 detail·팀 구성 기록
+  - spawn/재사용 순서·비공개 미노출
+  - 기존 회귀
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC3
+  type: UI
+  availability: available
+  prerequisites:
+  - 합성 별도 PoC 서버와 브라우저
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - 상태 카드 실시간 갱신
+  - 새로고침 후 복원
+  assertions:
+  - 상태 카드 live/유지/복원
+  - JS 오류 없음
+  runner: manual
+evidence_dir: .agent/evidence/P1-008J
+latest_evidence_file: .agent/evidence/P1-008J/state-target-01/result.json
+verification_summary:
+  state: passed
+  spec_revision: 1
+  spec_digest: db088fee0b036c01fceec21bd9a1faa608a57b6d5179b0b62c1b81b689367827
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: a5c6ab012889401e34da7757f3e492065893b9bde0c6967ab7a69032041cceda
+  evidence: .agent/evidence/P1-008J/state-target-01/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 1
+  submission:
+    head: 809d6dc5971441e7e19bef5eeb4e91e090b77cb1
+    baseline_head: 12de29e2862bbc3fd19feb5e57d9c1848504e4e9
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008J-state
+    branch: task/P1-008J-state
+    evidence: .agent/evidence/P1-008J/state-worker-01/result.json
+    changed_files:
+      docs/POC.md: 7acbbe3ba3ba2896631f12573e305658f3ce873acbea13a75f96a8976e6d7512
+      src/rfa_mas/poc/chat.py: e65b1d7c8b9d50d7b2a51fa789108c00d42e92e8ba2c6e86407590cc218e6f05
+      src/rfa_mas/poc/routing.py: 0d9433dc0073c36cd07541469422baf42848646558c701e76c87e37f0b168906
+      src/rfa_mas/ui/static/app.css: 0852a26453447e7fcffbddfe35ed7d3e1c85a805bdd0cad0fcdb0db19496dc86
+      src/rfa_mas/ui/static/app.js: e9eaf25ba0874d410004589605f368399af825af28319f942df969744d63e863
+      src/rfa_mas/ui/static/index.html: 54ba6fbf310094a6256194001b9d1b62a87ab1c7b1cd54e63de9e949e8b410e4
+      tests/test_chat_routing.py: 0c1d2463b8a7384f3f4f4bd0b3400cac49baebeb8c5531fda5344636931dbdbb
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: db088fee0b036c01fceec21bd9a1faa608a57b6d5179b0b62c1b81b689367827
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: a5c6ab012889401e34da7757f3e492065893b9bde0c6967ab7a69032041cceda
+      evidence: .agent/evidence/P1-008J/state-target-01/result.json
+    head: 794907d5a40b220ea34e53cba3319775c4c0251b
+  evidence: .agent/evidence/P1-008J/state-target-01/result.json
+revision: 9
+spec_revision: 1
+claim_generation: 1
+claim: null
+attempts:
+  count: 2
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: state-target-01
+  evidence_refs:
+  - .agent/evidence/P1-008J/state-worker-01/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 처리 상태 카드 요청
+  prior_claim: P1-008I 완료; 단계 detail/상태 카드는 신규
+  implementation_facts: 단계 이벤트는 label만; 팀 구성은 결과 후 한 줄 표시
+  previous_evidence: []
+  checks_this_migration:
+  - chat/ui 코드 확인
+  judgment: 기존 완료 유지·별도 기능 추가
+  initial_spec_revision: 1
+updated_at: '2026-09-27T05:48:04+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: stage detail부터 구현

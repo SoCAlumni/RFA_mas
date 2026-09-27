@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 471bd8ac19b31b1e426e62bd850e9a4b1fd7bed9d1a7e6b594bfc0242b4efbae
+source_digest: caf4e5dfb22ce00852ea24edfbee912af6d922df2ce4b95c4b84f72765770189
 source_revisions:
   OPS-000: 8
   OPS-001: 13
@@ -81,6 +81,7 @@ source_revisions:
   P1-008G: 17
   P1-008H: 16
   P1-008I: 12
+  P1-008J: 9
   P1-009: 16
   P1-010: 19
   P1-011: 15
@@ -93,7 +94,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T05:34:07+00:00'
+generated_at: '2026-09-27T05:48:05+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -664,6 +665,11 @@ tasks:
   depends_on:
   - P1-008H
   path: tasks/P1-008I/task.yaml
+- id: P1-008J
+  title: 처리 상태 카드 — 추론 단계·라우팅·팀 구성 state 목록
+  workstream: integration/evaluation
+  depends_on: []
+  path: tasks/P1-008J/task.yaml
 - id: P1-009
   title: D4 회귀·교육/심사 증거·최종 상태 확정
   workstream: integration/evaluation

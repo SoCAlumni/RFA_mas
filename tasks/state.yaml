@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 471bd8ac19b31b1e426e62bd850e9a4b1fd7bed9d1a7e6b594bfc0242b4efbae
+source_digest: caf4e5dfb22ce00852ea24edfbee912af6d922df2ce4b95c4b84f72765770189
 source_revisions:
   OPS-000: 8
   OPS-001: 13
@@ -81,6 +81,7 @@ source_revisions:
   P1-008G: 17
   P1-008H: 16
   P1-008I: 12
+  P1-008J: 9
   P1-009: 16
   P1-010: 19
   P1-011: 15
@@ -93,13 +94,13 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T05:34:07+00:00'
+generated_at: '2026-09-27T05:48:05+00:00'
 counts:
   todo: 1
   in_progress: 0
   verifying: 20
   blocked: 4
-  done: 56
+  done: 57
   deferred: 9
   cancelled: 1
 final_acceptance:
@@ -1218,6 +1219,19 @@ tasks:
   reasons:
   - status:verifying
   - dependency:P1-008H
+- id: P1-008J
+  status: done
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: integrated
+  reserved: false
+  blocker: null
+  verification: passed
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:done
 - id: P1-009
   status: blocked
   workstream: integration/evaluation

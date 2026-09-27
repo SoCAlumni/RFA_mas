@@ -1025,3 +1025,9 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 환경 사고와 복구: 워크트리에서 uv run --active를 쓰면서 main .venv의 rfa_mas editable 경로가 워크트리로 바뀌어 8780 서버가 워크트리 코드를 실행했다. uv sync로 되돌리다 nat extra가 제거되어 uv sync --locked --extra nat로 복구(nat import 확인). 이후 main 코드로 8780 재기동.
 - 사용자 PoC 시드: 기존 대화1/KB18 보존 상태에서 채팅 API로 샘플 Task 팀 2개 생성 — Benchmark(TRIV3, 오로라 지연 벤치마크)·Research(양자화 INT4 논문). 동일 key 재전송은 같은 run(중복 팀 없음). "오로라 지연 벤치마크 결과 알려줘"→오로라 Task 팀, "양자화 INT4 논문 근거 알려줘"→양자화 Task 팀, "안드로메다 점심 메뉴"→비서(no_suitable_assignee). 실험 수치는 mock(simulated). 8780 서버는 setsid 분리 프로세스로 실행해 세션 종료 후에도 유지된다.
 - 다른 세션 흔적: 49ca1b4(docs P1-010/011 시나리오)와 tasks/P1-010 state 변경이 병행 발생. 코드 충돌 없음(no-ff merge). 그 상태 파일은 coordinator generated view 일관성을 위해 함께 commit한다.
+## P1-008J — 처리 상태 카드 (2026-09-27)
+
+- 사용자 요청: 비서 추론 단계·라우팅·Task 팀 spawn 시 구성을 하나의 카드에 state 목록으로, 대화 버블 상단에 유지, 답변 본문과 별도.
+- 809d6dc(merge 794907d): 단계 이벤트에 detail 추가(understanding intent/rule, routing route+considered+candidates/shared_subjects, team 기존 구성 역할·agent_id·capabilities·tools, team_spawn 패턴·예정 역할, team 새 구성, team_result 역할별 status/steps/tool_calls·simulated, completed run/source). chat_stages에 보존해 history 재조회 시 동일 복원. UI sticky #process-card: 진행 중 live 갱신·완료 유지·새로고침 복원·오류 행. 공통 DTO/graph/adapters 변경 없음. docs/POC.md 갱신.
+- 개발 오류: 기존 stage 순서 assertion 실패(새 단계 추가, 예상) → 테스트 갱신; outcome UnboundLocalError → 초기화; 브라우저 harness 과잉 assertion과 서버 재사용 오염 → 수정. worker state-worker-01·target state-target-01 각각 39 passed + Chrome154 통과. P1-008J integrated/done. P1-008J는 depends_on을 비워 등록했다(실제 선행 P1-008I는 stale cascade로 claim이 막히기 때문; 산출물 의존은 source_tasks로 기록).
+- 사용자 8780 서버를 main 코드로 재시작(대화·KB18·Task 팀 2개 보존). 임시 18780 서버 종료.
