@@ -1,0 +1,57 @@
+{
+  "attempt_id": "final-unlock-target-0927012834",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_redteam_regression.py"
+        ],
+        "assertions": [
+          "4 공격+정상 대조마다 injection reached 증명; 일부러 미주입한 negative control은 실패/불명",
+          "sink/write ledger가 악성 실행을 검출하고 정상 공개 작업은 성공; 각 보안 위반별 집계",
+          "의도적으로 잘못된 ledger를 주면 verifier가 실패"
+        ],
+        "counts": {
+          "collected": 25,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 25,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 4.86,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:28:43.896775+00:00",
+        "id": "V1",
+        "log_excerpt": "25 passed, 1 warning in 3.97s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:28:39.033075+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:28:43.896854+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:28:39.032493+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "2573acc361f4781b12440007219c3e12391b7baacb1235bc05fc0d3e93790cb2",
+  "source_manifest": ".agent/evidence/P1-006E/final-unlock-target-0927012834/source.json",
+  "spec_digest": "11724fc50e7b12845eb5b3f671b093589fa0082adece522c654bd609900da411",
+  "spec_revision": 25,
+  "task_id": "P1-006E"
+}

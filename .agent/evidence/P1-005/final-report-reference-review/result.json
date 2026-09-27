@@ -1,0 +1,107 @@
+{
+  "attempt_id": "final-report-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a",
+        "before": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-005/final-local-unlock-target-0927013813/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-005/final-local-unlock-target-0927013813/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P1-005/final-local-unlock-target-0927013813/result.json",
+          "source_fingerprint": "9ed44d8b9b2ecbbd0c781e6abf9a486e5bf9998682707e10c9c71e88942ff1ad",
+          "spec_digest": "474a5694ae719d11a245f56b756df2f7f65faaf82bae6a1b1f8c1b609fae09f7",
+          "spec_revision": 34,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+        "branch": "task/P1-005-int-0926171838",
+        "changed_files": {
+          "src/rfa_mas/adapters/local.py": "e3a108373140047d7f302b7d50acb18ea9fc5884a155fcf82f4d5fddc854e19c",
+          "src/rfa_mas/application/graphs/domain.py": "fc0c3e1ae3b599d5b4226f375426418f1ace46b789222f66bd95359e8bd3cc33",
+          "src/rfa_mas/bootstrap.py": "d827e42d330dcf35ed72fa640db3457e8803a0d5ee6b03e82dfbb0074fc3def1",
+          "src/rfa_mas/contracts/models.py": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
+          "src/rfa_mas/ports/interfaces.py": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
+          "tests/test_graph.py": "07410ebd948b10d0a04370e9c4b4f749ed1d55c50be884daca260e8125ea5fc8",
+          "tests/test_policy.py": "3def8e749c2a813e0cf248875ed9b0189a4eb7a32bb79e2406ecb2767407efaa"
+        },
+        "evidence": ".agent/evidence/P1-005/final-local-unlock-worker-0927013749/result.json",
+        "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-005-int-0926171838"
+      },
+      "submission_generation": 14,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed final report deltas: factual status corrected to already integrated implementation; current local commands and evidence links/mode limitations updated. No product DTO, port, state-machine or authorization semantics changed. Keep original test execution times; tests not reexecuted. Actual source/spec/contract deltas excluded; normative requirement refs remain separately gated.",
+    "reviewed_at": "2026-09-27T02:07:01+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "기존 public source 제한만 verified; 공유/egress 보강 missing/not_run. 정책 local(false), 생성 mock(true). 기밀 검수 소유권 미확정이어도 LocalPolicy로 완료; 선택적 LLM 검수는 보조이며 결정적 거절을 완화 못함.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_policy.py",
+          "tests/test_graph.py"
+        ],
+        "assertions": [
+          "owner/BU/company/public + 프로젝트 membership + 개인 선호 적용, 읽기 가능≠공유 가능",
+          "공유 허가된 근거로 먼저 초안 생성; private 초안을 마지막 문자열 삭제만으로 공개화하지 않음; loader의 선택 source·L0/L1/L2·실측 크기·insufficient를 실제 Model 입력 spy에서 확인",
+          "cloud Model/Tool 호출 전 전송 허가, 모의 악성 문서 지시는 정책/tool 권한을 바꾸지 못함 Response/embedding/reranker/Judge/trace 수신처에도 같은 endpoint-egress 원칙. private 본문뿐 아니라 제목/요약/관계·인자/첨부를 선차단",
+          "개인 1:1·내부 GPU canary가 외부 DTO/오류/알림/trace에 없음. source/정책 갱신 시 이전 context를 재판정; 모델이 만든 allow·tool의 승인 위장으로 우회 불가"
+        ],
+        "counts": {
+          "collected": 36,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 36,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 6.0,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:38:24.301854+00:00",
+        "id": "V1",
+        "log_excerpt": "36 passed, 12 warnings in 4.98s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:38:18.300038+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:38:24.301920+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:38:18.299312+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "679607630446785de40d3d8989c8df0008a212fef982de5c437facd2e0fbc3ca",
+  "source_manifest": ".agent/evidence/P1-005/final-report-reference-review/source.json",
+  "spec_digest": "474a5694ae719d11a245f56b756df2f7f65faaf82bae6a1b1f8c1b609fae09f7",
+  "spec_revision": 34,
+  "task_id": "P1-005"
+}

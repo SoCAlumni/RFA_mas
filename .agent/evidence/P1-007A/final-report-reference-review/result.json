@@ -1,0 +1,91 @@
+{
+  "attempt_id": "final-report-reference-review",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "documentation_review": {
+    "changes": {
+      "docs/EDUCATION_MAPPING.md": {
+        "after": "37154abbb7882e875fe0594d840978669c7b08bb33d30bf292a46908ae7c14a4",
+        "before": "905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554"
+      },
+      "docs/INTEGRATION.md": {
+        "after": "0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a",
+        "before": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-007A/completion-reference-review/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-007A/completion-reference-review/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "documentation_review": true,
+        "head": "54118a0834634bc1563071dce69dd678a8bea3a9",
+        "verification_summary": {
+          "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+          "evidence": ".agent/evidence/P1-007A/completion-reference-review/result.json",
+          "source_fingerprint": "4adf262b579238ccdf4e13dc76d09944548911918f257ab0f42d3c1b8c69106f",
+          "spec_digest": "2b8c433f426bbfc716118a45f9ff262f2de1e35c0a9e6a495d1945f98e89f83a",
+          "spec_revision": 3,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "21e9bc186a01758b5eff53fa179a5771a917a656",
+        "branch": "task/P1-007A-completion",
+        "changed_files": {
+          "deploy/nemoclaw/probes.sh": "d45b0ca336a75bb3f8dcea0a0c7982de25f65a858406abc2f13bbb9e4d48d306",
+          "deploy/nemoclaw/rfa-api-minimal.yaml": "404dd5e4a236b23c5a820f4ab3206f66df074144253d6b2acaf7a229c79325b1",
+          "docs/EDUCATION_MAPPING.md": "905dfb5c4beea58278b3b99b94be00a82f1f78734cdaafb2582aa2972ae8b554",
+          "docs/evidence/nemoclaw-live.json": "d6d25a061c906815c6a31180b700dc3aab78804e03d7d5502332b8c8b23cf874",
+          "docs/evidence/nemoclaw.md": "bb2c727fd0989e8e5d92f27aa970e27bda5fd8ed692f7df1b15c47f6d6a7b83b",
+          "tests/integration/test_nemoclaw_live.py": "c06f3809a45953d3c46da7067c688922aef32e62de3c899838288e88c02ea300"
+        },
+        "evidence": ".agent/evidence/P1-007A/worker-0927004950/result.json",
+        "head": "54118a0834634bc1563071dce69dd678a8bea3a9",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-007A-completion"
+      },
+      "submission_generation": 1,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed final report deltas: factual status corrected to already integrated implementation; current local commands and evidence links/mode limitations updated. No product DTO, port, state-machine or authorization semantics changed. Keep original test execution times; tests not reexecuted. Actual source/spec/contract deltas excluded; normative requirement refs remain separately gated.",
+    "reviewed_at": "2026-09-27T02:08:24+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "real not_run. blocked 사유: 실행 가능한 지원 runtime·접근·네트워크 policy 미확인. P1-007 문서와 reference API는 먼저 준비 가능.",
+  "report": {
+    "checks": [
+      {
+        "assertions": [
+          "지원 환경에서 제한 API 합성 호출 성공",
+          "서비스의 sandbox 안/밖 위치와 실제 운영 관찰 기록",
+          "Model/Skill/OpenShell 결과와 독립된 증거 ref."
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T00:50:14.238081+00:00",
+        "id": "V1",
+        "observed": "Reviewed docs/evidence/nemoclaw-live.json and nemoclaw.md section 8A against the committed preset/probes and replay checks: recorded local n=1 NemoClaw v0.0.124/OpenShell 0.0.116/OpenClaw 2026.7.1 run; 5 requests on four allowed RFA routes returned 200/201 and 7 prohibited probes were refused with matching OCSF. RFA backend remained outside the sandbox and used mock data/model; real NVIDIA Super120B was the sandbox agent provider. The agent replayInvalid exit 1 and incorrect verbal characterization of a denial are recorded, not hidden. Teammate role identity, credential binding, managed MCP remain unverified. Review of the recorded run, not a new live execution.",
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T00:50:14.238079+00:00"
+      }
+    ],
+    "environment": {
+      "head": "d7d5bbb9e2fd40fd5a585072465cf9d5131978d3",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:50:14.238093+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:50:14.238010+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "19051753350833e39dedc9820be2e78f58ead2ce253592785463046f4ad5bcf3",
+  "source_manifest": ".agent/evidence/P1-007A/final-report-reference-review/source.json",
+  "spec_digest": "2b8c433f426bbfc716118a45f9ff262f2de1e35c0a9e6a495d1945f98e89f83a",
+  "spec_revision": 3,
+  "task_id": "P1-007A"
+}

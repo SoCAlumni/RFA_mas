@@ -1,0 +1,90 @@
+{
+  "attempt_id": "final-nat-target-0927012739",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; 제품 실행과 평가 도구의 실제 실행 여부를 별도 기록",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_nat_adapter.py"
+        ],
+        "assertions": [
+          "same fixture/seed의 정책·draft binding과 authorized ledger 호출 수가 native와 일치; WorkService 한 번 호출 및 실제 읽기 calls>0",
+          "독립 DB alias join/영속 sequence와 transport 확인; uncollected/incomplete 또는 test_sink를 실제 ToolPort/publication 성공으로 승격하지 않음",
+          "NAT dependency 누락 오류·core fallback 없음; exporter canary/unknown token과 없는 원본 stage ID null 유지",
+          "전체 EvaluationRun ambient tracing guard·owned empty callbacks·CLI 미import·안전 output/error를 검사"
+        ],
+        "counts": {
+          "collected": 22,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 22,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 7.47,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:27:51.403323+00:00",
+        "id": "V1",
+        "log_excerpt": "22 passed, 15 warnings in 6.35s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:27:43.937157+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_nat_smoke.py"
+        ],
+        "assertions": [
+          "실제 설치한 EvaluationRun과 local evaluator 호출, 예상 evaluator/case 수·output 존재·error/workflow_interrupted 검사; 누락/예외/빈 결과는 passed 아님",
+          "collect>0, skip=0, actual NAT versions와 invocation argv·safe ledger/export ref 보존; fake provider 결과를 실제 Judge 품질 점수로 표시하지 않음",
+          "NAT raw 파일/오류 로그 canary 및 외부 network/tracer spy 검사; P1-006D allowlist export만 저장"
+        ],
+        "counts": {
+          "collected": 2,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 2,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.82,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:27:54.229095+00:00",
+        "id": "V2",
+        "log_excerpt": "2 passed, 3 warnings in 1.77s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:27:51.404062+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:27:54.229161+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:27:43.936253+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "7ef9701f11a99e00ce7fb079a1eee0cdcbb1295bcc3970bd4d6a8d8bc08f7bcc",
+  "source_manifest": ".agent/evidence/P0-028/final-nat-target-0927012739/source.json",
+  "spec_digest": "9299da545b92e2b8672c9c2c364ea719e6f31a4aaec6d4a76ff1f536c488c608",
+  "spec_revision": 32,
+  "task_id": "P0-028"
+}

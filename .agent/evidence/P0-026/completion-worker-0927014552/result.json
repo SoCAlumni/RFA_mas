@@ -1,0 +1,92 @@
+{
+  "attempt_id": "completion-worker-0927014552",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "미통합 ea76550의 local/mock 데모와 controlled API/process harness 회수. 현재 main에서 새 worker/target 인수 검증 전이며 real-model/UI/standalone sandbox 증거는 별도 판정.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_demo_e2e.py"
+        ],
+        "assertions": [
+          "합성 저장→권한/context 선택→Benchmark/Research 팀 선택·재사용→역할 근거·후보→공개 DRAFT→정확한 mock 승인/게시 결과를 키/GPU/Docker/NAT 없이 완주; 실험 measured/mock/not_run 표시",
+          "새 프로세스 승인 대기·일정 복구, 동일 이벤트 team/tool/draft 중복 없음",
+          "DRAFT 수정/권한 회수 후 이전 승인 무효, 공개 DTO/알림/trace canary 없음; 동일 입력세트의 정상/공격 경계를 실제 replay하고 주입 도달/성공·차단·unknown·승인 위반·outbound/write를 분리, 차단 후 공개 근거로 작업 계속",
+          "제공 명령을 임시 데이터 경로에서 실행 후에만 README에 사용 가능 표시, 증거에 local/mock/real/not_run 기록. Run에 source/policy/approval/receipt가 연결된 화면용 DTO/report를 제공(UI 구현 제외). 실제 latency·token 수집 범위/null, code/contract/model/prompt/template/fixture/policy versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님"
+        ],
+        "counts": {
+          "collected": 11,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 11,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 10.71,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:46:09.237925+00:00",
+        "id": "V1",
+        "log_excerpt": "11 passed in 6.10s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:45:58.529018+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/e2e/test_rfa_scenarios.py",
+          "tests/e2e/test_fixture_pack.py"
+        ],
+        "counts": {
+          "collected": 57,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 3,
+          "passed": 54,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 133.28,
+        "exit_code": 1,
+        "failures": [
+          "FAILED tests/e2e/test_rfa_scenarios.py::test_e2e03_unavailable_capability_worker_failure_and_budget_stop[1]",
+          "FAILED tests/e2e/test_rfa_scenarios.py::test_e2e03_unavailable_capability_worker_failure_and_budget_stop[2]",
+          "FAILED tests/e2e/test_rfa_scenarios.py::test_e2e03_unavailable_capability_worker_failure_and_budget_stop[3]"
+        ],
+        "finished_at": "2026-09-27T01:48:22.533049+00:00",
+        "id": "V2",
+        "log_excerpt": "3 failed, 54 passed, 50 warnings in 131.76s (0:02:11)",
+        "result": "failed",
+        "started_at": "2026-09-27T01:46:09.256356+00:00",
+        "timeout_seconds": 600
+      }
+    ],
+    "environment": {
+      "head": "82b69199bd84eb4043fc4ff3477f2651c6d987d2",
+      "isolation": "env -i; synthetic controlled/local; no external key or network",
+      "report_directory": "/tmp/rfa-final-worker-completion-worker-0927014552",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-026-completion",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T01:48:22.551824+00:00",
+    "limits": "Command execution only until V5 manually reviews scenario/variant/gate results. No real/UI success inferred.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T01:45:58.528300+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "9f40e1c2c2f0694a7ca53d28fe206fceb5449d2beeb952829b3f7c7b7f091ab1",
+  "source_manifest": ".agent/evidence/P0-026/completion-worker-0927014552/source.json",
+  "spec_digest": "d41967ff0e8acfaee8de90aec7d48e1be27ee8350b87513ec8be3106755a103c",
+  "spec_revision": 29,
+  "task_id": "P0-026"
+}

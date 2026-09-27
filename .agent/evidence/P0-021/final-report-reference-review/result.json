@@ -1,0 +1,115 @@
+{
+  "attempt_id": "final-report-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a",
+        "before": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P0-021/completion-reference-review/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P0-021/completion-reference-review/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "documentation_review": true,
+        "head": "54118a0834634bc1563071dce69dd678a8bea3a9",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P0-021/completion-reference-review/result.json",
+          "source_fingerprint": "75ec054c7d68b5fe92f6c228b508db4a43d047a13b2983ecd9a7949368a07e75",
+          "spec_digest": "97fe99b82758eaa69ee823576c9284b5fe5d603024d497d4d4bb67e64065047a",
+          "spec_revision": 16,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+        "branch": "task/P0-021-int-0926180917",
+        "changed_files": {
+          "docs/contracts/extended.json": "ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb",
+          "src/rfa_mas/adapters/local.py": "e3a108373140047d7f302b7d50acb18ea9fc5884a155fcf82f4d5fddc854e19c",
+          "src/rfa_mas/adapters/mock.py": "aab4f494933038cdc7037e04774952c4d75738e381344c0202319059c5dcbe88",
+          "src/rfa_mas/application/effects.py": "59d4f2dee1cb47ca4cf40610925da60cbaae72c4d063218ded5de391c5611302",
+          "src/rfa_mas/application/graphs/supervisor.py": "5fb39128d5669b2e868efc64a06bfa4b20c800b415fdc2d38c04c7a45b8253bd",
+          "src/rfa_mas/application/observations.py": "4a44a154afe86ce797be3e57de2487eecb73f7c7193f98d08b74104465e6dc90",
+          "src/rfa_mas/application/service.py": "7ac74a7cca24e3685e4463a4735b4d27e88696e8546684d44181c52b00626fad",
+          "src/rfa_mas/application/state_machine.py": "3602e579ba95d005f9d8620aacff60bd99073d3ef4fdfb350283877351e8339a",
+          "src/rfa_mas/ports/interfaces.py": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
+          "tests/test_effect_ledger.py": "ad5e2bf5c53ed4d2c6470c21c7857390333cad4acec49c51098f3798c5d78c2a",
+          "tests/test_knowledge.py": "db25db6d8eec872ae89819a20e997092358c0759f996e83ce27ecc9076fa630d",
+          "tests/test_resume.py": "b969f59bd999349f0a24e374881c69638be3a04b457c9f4621309db9dfe9d17f",
+          "tests/test_sessions.py": "a1016f7162576590f45152e1513911354b73304f14de89bd9f68742f41f1395e",
+          "tests/test_teams.py": "ef4ff249f339838a185c5554d1295bb5e8e9124d622237c0666cccdf2b443cfe"
+        },
+        "evidence": ".agent/evidence/P0-021/pre-P1-007-worker-0927000848/result.json",
+        "head": "54118a0834634bc1563071dce69dd678a8bea3a9",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-021-int-0926180917"
+      },
+      "submission_generation": 7,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed final report deltas: factual status corrected to already integrated implementation; current local commands and evidence links/mode limitations updated. No product DTO, port, state-machine or authorization semantics changed. Keep original test execution times; tests not reexecuted. Actual source/spec/contract deltas excluded; normative requirement refs remain separately gated.",
+    "reviewed_at": "2026-09-27T02:05:40+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "process-local cache와 run unique conflict만 verified; durable 보장 missing/not_run. ledger local(false), 외부 effect/receipt mock(true), 실제 write 금지. 상대 조회 미지원은 unknown 유지; 실연동은 P1-008A/B.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_resume.py",
+          "tests/test_effect_ledger.py"
+        ],
+        "assertions": [
+          "완료 effect는 동일 key 결과 재사용, 다른 payload 거절, team/draft 중복 없음",
+          "승인 대기·중단 상태는 재조회/허가 후 resume; failed/cancelled terminal은 보존하고 명시적 재시도만 새 run으로 연결",
+          "intent 저장 직후/호출 후 결과 저장 전 crash는 outcome_unknown으로 조회·대사하고 자동 재게시 안 함",
+          "checkpoint와 DB 사이 원자성을 가정하지 않고 ledger로 복구; 취소·권한 회수 후 후속 호출 금지."
+        ],
+        "counts": {
+          "collected": 47,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 47,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 25.47,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:10:02.250748+00:00",
+        "id": "V1",
+        "log_excerpt": "47 passed, 29 warnings in 24.04s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:09:36.779813+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "71b2d09d1293c69bf83994e46456792da2b370a8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:10:02.250874+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:09:36.773440+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "3b965d3d5513b7eaf070c2e2b9bb1d1dfc2ae217e7d17a64b63a722676e834b9",
+  "source_manifest": ".agent/evidence/P0-021/final-report-reference-review/source.json",
+  "spec_digest": "97fe99b82758eaa69ee823576c9284b5fe5d603024d497d4d4bb67e64065047a",
+  "spec_revision": 16,
+  "task_id": "P0-021"
+}

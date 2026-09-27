@@ -1,0 +1,57 @@
+{
+  "attempt_id": "completion-final-slices-target-0927020817",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; simulated=true. 실제 MCP/게시/OpenShell/UI gate는 별도 not_run.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_local_ui.py"
+        ],
+        "assertions": [
+          "세션 생성/목록, 노트 입력, 질의/결과, pending 검토 상태와 수동 승인 동작. mock/local 표시와 미지원 기능 비활성. core API/DB 원본을 복제하지 않는다.",
+          "입력은 text로 렌더링, 임의 URL 프록시 없음; Host/Origin/CSRF 위반 거절; 서비스 token이 HTML/JS/응답/URL/localStorage에 없음.",
+          "안전한 오류/조회 필요 표시; 성공 추정/자동 재게시 없음. 검토/게시/실험 mock과 실측 구분. 실제 UI/통합 gate not_run 유지."
+        ],
+        "counts": {
+          "collected": 7,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 7,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.9,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T02:08:36.014142+00:00",
+        "id": "V1",
+        "log_excerpt": "7 passed, 3 warnings in 1.87s",
+        "result": "passed",
+        "started_at": "2026-09-27T02:08:33.117504+00:00",
+        "timeout_seconds": 180
+      }
+    ],
+    "environment": {
+      "head": "191378ed2cd150e9140e241b9b8f9d7975e2db75",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T02:08:36.014217+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T02:08:33.116761+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "a20519ba287aae5170c5552b1b4563ed017c508086f093b757f02b6886b16dd6",
+  "source_manifest": ".agent/evidence/P0-025A/completion-final-slices-target-0927020817/source.json",
+  "spec_digest": "e8f440269bbf1cd16fbefc79b1c2878563b1da60ea4adbdd8cb27fa59de9aecd",
+  "spec_revision": 16,
+  "task_id": "P0-025A"
+}

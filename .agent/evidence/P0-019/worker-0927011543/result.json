@@ -1,0 +1,97 @@
+{
+  "attempt_id": "worker-0927011543",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "Task/TeamInstance 테이블 없음; missing/not_run. registry·중복 방지 local(false), provisioning fixture mock(true). 외부 의존 없음; actual identity/lifecycle는 P1-008B.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_teams.py"
+        ],
+        "assertions": [
+          "동시 생성과 migration 재적용에서 Task당 occupied 팀 하나 및 기존 owner/session 데이터가 유지된다.",
+          "멱등 충돌·타인 owner/domain·위조 선택·폐기 pin·예산 변형을 runtime 실행 전에 거절한다.",
+          "재시작/다른 session에서도 같은 팀과 승인 template를 재사용하며 별도 execution_budget이 실제로 전달된다.",
+          "member 부분 실패/unknown/cleanup 실패/늦은 응답을 기록하고 반쪽 실행·중복·silent fallback이 없다.",
+          "같은 service 인스턴스에서 grant/pin 회수 후 재사용을 차단하고 schema-valid 타인 응답·mode/budget/member/model_copy 변조를 수용하거나 타인 runtime을 cleanup하지 않는다.",
+          "decorator의 lifecycle 메서드가 있어도 실제 configured runtime이 미지원이면 슬롯 예약·runtime IO 전에 거절한다. 지원되는 Factory는 주입된 원래 RuntimePort를 사용하며 준비·정리의 durable DB 결과와 trace 미수집을 구분한다. 기존 graph run 관측 경로는 보존한다."
+        ],
+        "counts": {
+          "collected": 38,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 38,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.54,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:15:49.107398+00:00",
+        "id": "V1",
+        "log_excerpt": "38 passed in 0.59s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:15:47.564711+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_contracts.py",
+          "tests/test_contract_baseline.py",
+          "tests/test_trace_eval_contract.py",
+          "tests/test_team_selector.py",
+          "tests/test_sessions.py",
+          "tests/test_local_adapters.py",
+          "tests/test_trace_contract.py"
+        ],
+        "assertions": [
+          "기존 selector/session/local adapter 회귀와 frozen/extended schema 및 fixture 검사가 통과한다.",
+          "앞선 테스트로 env lookup cache가 warm해진 실행 순서에서도 실제 fake tracer positive control이 실행되고 native run/resume에서는 생성되지 않는다. 테스트 종료 후 cache를 비워 다른 테스트에 상태를 남기지 않는다. 선행 full-regression-01 실패를 새 통과로 덮어쓰지 않는다."
+        ],
+        "counts": {
+          "collected": 183,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 183,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 18.03,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:16:07.142209+00:00",
+        "id": "V2",
+        "log_excerpt": "183 passed, 30 warnings in 17.33s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:15:49.107811+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-019",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T01:16:07.142310+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA/teammate/OpenShell claim.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:15:47.563742+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "73cf76f0d6d5ce366c070cfad1fdce8de6aaae5a80cd47f7a46b52be80835306",
+  "source_manifest": ".agent/evidence/P0-019/worker-0927011543/source.json",
+  "spec_digest": "ede588dc60bfd67959f269b821045170ee5e804c7c8e18bc467600287b86f397",
+  "spec_revision": 10,
+  "task_id": "P0-019"
+}

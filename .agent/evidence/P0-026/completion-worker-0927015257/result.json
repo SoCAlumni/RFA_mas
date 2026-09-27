@@ -1,0 +1,771 @@
+{
+  "attempt_id": "completion-worker-0927015257",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "미통합 ea76550의 local/mock 데모와 controlled API/process harness 회수. 현재 main에서 새 worker/target 인수 검증 전이며 real-model/UI/standalone sandbox 증거는 별도 판정.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_demo_e2e.py"
+        ],
+        "assertions": [
+          "합성 저장→권한/context 선택→Benchmark/Research 팀 선택·재사용→역할 근거·후보→공개 DRAFT→정확한 mock 승인/게시 결과를 키/GPU/Docker/NAT 없이 완주; 실험 measured/mock/not_run 표시",
+          "새 프로세스 승인 대기·일정 복구, 동일 이벤트 team/tool/draft 중복 없음",
+          "DRAFT 수정/권한 회수 후 이전 승인 무효, 공개 DTO/알림/trace canary 없음; 동일 입력세트의 정상/공격 경계를 실제 replay하고 주입 도달/성공·차단·unknown·승인 위반·outbound/write를 분리, 차단 후 공개 근거로 작업 계속",
+          "제공 명령을 임시 데이터 경로에서 실행 후에만 README에 사용 가능 표시, 증거에 local/mock/real/not_run 기록. Run에 source/policy/approval/receipt가 연결된 화면용 DTO/report를 제공(UI 구현 제외). 실제 latency·token 수집 범위/null, code/contract/model/prompt/template/fixture/policy versions 보존. P0-028 installed NAT, NVIDIA/Skill/NemoClaw/OpenShell/팀원 gate 미실행이면 전체 완료 아님"
+        ],
+        "counts": {
+          "collected": 11,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 11,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 6.19,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:53:08.994344+00:00",
+        "id": "V1",
+        "log_excerpt": "11 passed in 5.23s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:53:02.805022+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/e2e/test_rfa_scenarios.py",
+          "tests/e2e/test_fixture_pack.py"
+        ],
+        "assertions": [
+          "E2E-01/02/03/04/06/07/08/09를 실제 controlled API/graph/DB와 합성 transport에서 독립 fixture로 핵심 사례 각3회 재생한다.",
+          "R01~R10·변형/M01, 숫자·권한·공개 근거·정확 승인·outcome_unknown·실제 sink/write·정상 대조 assertion 통과; 품질/성능은 실제 측정 별도.",
+          "20 golden의 허용 source 기준 Recall@5와 인용 precision, loading 단계·토큰 null/측정 단위를 보고하며 금지 전송/중복/승인 위반은 보안 gate 실패."
+        ],
+        "counts": {
+          "collected": 57,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 57,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 131.82,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:55:27.146467+00:00",
+        "id": "V2",
+        "log_excerpt": "57 passed, 50 warnings in 130.83s (0:02:10)",
+        "result": "passed",
+        "started_at": "2026-09-27T01:53:15.325154+00:00",
+        "timeout_seconds": 600
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/e2e/test_process_recovery.py"
+        ],
+        "assertions": [
+          "E2E-10의 checkpoint/진행 중 tool 도달 증거 뒤 앱 subprocess를 실제 중단/재기동하고 상태/소유권·중복 방지·스케줄 coalescing을 확인한다.",
+          "취소는 실제 tool 종료/자원 회수로 검사; 미지원 runtime은 pending이며 신규 부작용 차단, queue와 다른 세션 응답 유지."
+        ],
+        "counts": {
+          "collected": 6,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 6,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 28.53,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:55:55.700352+00:00",
+        "id": "V3",
+        "log_excerpt": "6 passed in 26.88s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:55:27.165848+00:00",
+        "timeout_seconds": 600
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/e2e/test_load.py"
+        ],
+        "assertions": [
+          "정상 controlled n=100 부하를 장애 구간과 별도로 실행하고 실제 p50/p95·성공/오류·queue·CPU/RSS·전체 worker≤2를 기록한다.",
+          "1000문서 warm 검색과 수락/팀/예약/restart/cancel의 사전 설정 목표를 실제 측정, provider 지연/unknown usage를 숨기지 않는다."
+        ],
+        "counts": {
+          "collected": 1,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 18.5,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:56:14.214067+00:00",
+        "id": "V4",
+        "log_excerpt": "1 passed in 17.72s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:55:55.717639+00:00",
+        "timeout_seconds": 600
+      },
+      {
+        "assertions": [
+          "10개 제목 등록만으로 완료되지 않으며 필수 실제 gate 미검증을 명시한다.",
+          "비밀 원문 없는 attempt/source/version/명령/시간/assertion·성능 원시 값·실패 재현/후속 task가 연결된다."
+        ],
+        "finished_at": "2026-09-27T01:56:37.849355+00:00",
+        "id": "V5",
+        "observed": {
+          "matrix": {
+            "E2E-01/ingest-provenance-replay-partial": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "passed"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "connector_pull_first_failure_retry",
+                  "next_task": "P2-004",
+                  "reason": "the product ingests pushed exports only; the fault is replayed as a corrupted export row"
+                },
+                {
+                  "item": "ui_ingest_entrypoint",
+                  "next_task": "P0-025A",
+                  "reason": "no UI; ingestion exercised through the HTTP API"
+                }
+              ]
+            },
+            "E2E-02/benchmark-numbers-citations-unanswerable": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "passed"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "readiness_conclusion_r05",
+                  "next_task": "P1-002A",
+                  "reason": "'not ready while issue #17 is open' is an answer-level judgement no controlled path produces; the evidence (R05 open) is cited"
+                },
+                {
+                  "item": "key_fact_accuracy_and_judge",
+                  "next_task": "P1-006A",
+                  "reason": "computed facts (18%, 0.2%p, 8 days) are not produced by the mock model; Judge not run"
+                },
+                {
+                  "item": "staged_l0_l1_l2_loading",
+                  "next_task": "P1-001B",
+                  "reason": "graph does not use the L0/L1/L2 context loader; context tokens unmeasured"
+                }
+              ]
+            },
+            "E2E-02/load1000-retrieval": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "passed"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            },
+            "E2E-03/auto-task-creation": {
+              "gates": {
+                "functional_security": [
+                  "not_run"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            },
+            "E2E-03/select-create-reuse-caps": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "auto_task_creation",
+                  "next_task": "P2-001",
+                  "reason": "no automatic Task creation from accumulated sources"
+                },
+                {
+                  "item": "real_gpu_benchmark",
+                  "next_task": "P2-005",
+                  "reason": "experiment_runner parses fixture logs; no real model/GPU benchmark"
+                }
+              ]
+            },
+            "E2E-03/unavailable-failure-budget": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "auto_task_creation",
+                  "next_task": "P2-001",
+                  "reason": "no automatic Task creation"
+                }
+              ]
+            },
+            "E2E-04/briefing-scan-duplicate-missed-restart": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "passed"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "debate_variant",
+                  "next_task": "P2-002",
+                  "reason": "P0 disables Debate; no DebateLease"
+                }
+              ]
+            },
+            "E2E-04/debate": {
+              "gates": {
+                "functional_security": [
+                  "not_run"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            },
+            "E2E-05/openshell-role-isolation": {
+              "gates": {
+                "functional_security": [
+                  "not_run"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            },
+            "E2E-05/supervisor-message-boundary": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            },
+            "E2E-06/persona-matrix-canary-role-claim": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "passed"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "context_cache_persona_switch",
+                  "next_task": "P1-001B",
+                  "reason": "no answer/context cache path exists to switch personas on"
+                },
+                {
+                  "item": "notifications_and_tool_arguments",
+                  "next_task": "P0-024",
+                  "reason": "no notification or outbound tool call in this path"
+                },
+                {
+                  "item": "embedding_and_judge_boundaries",
+                  "next_task": "P1-006A",
+                  "reason": "no embedding or Judge call in controlled mode"
+                }
+              ]
+            },
+            "E2E-07/r06-document-attacks-api": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": [
+                {
+                  "item": "A4_tool_result_injection",
+                  "next_task": "P1-006E",
+                  "reason": "no tool call exists in the answer graph, so the tool-result attack cannot be delivered"
+                }
+              ]
+            },
+            "E2E-07/redteam-public_private_mix": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-07/redteam-retrieval_instruction_override": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-07/redteam-summary": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "passed"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "tool_argument_boundary",
+                  "next_task": "P1-006E",
+                  "reason": "the graph has no ToolPort call, so tool-argument injection (RN01) cannot reach a tool: unknown, not defended"
+                }
+              ]
+            },
+            "E2E-07/redteam-tool_args_attachment_canary": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-07/redteam-tool_result_forged_approval": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-08/external-draft-approval-publication-mock": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "owner_approval_callbacks",
+                  "next_task": "P1-008A",
+                  "reason": "the mock review authority approves on submit; unauthenticated/duplicate/out-of-order callbacks run in the local stand-in variant"
+                }
+              ]
+            },
+            "E2E-08/owner-approval-publication-local-stand-in": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "lost_ack_confirmed_by_status_query",
+                  "next_task": "P1-008C",
+                  "reason": "the P1-008C stand-in has no lookup by idempotency key, so a lost ack cannot be confirmed (the mock variant does)"
+                }
+              ]
+            },
+            "E2E-09/export-rebuild": {
+              "gates": {
+                "functional_security": [
+                  "not_run"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            },
+            "E2E-09/m01-feedback-memory": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "m01_output_follows_style",
+                  "next_task": "P1-002A",
+                  "reason": "3-sentence limit and '추정' marking in the answer need a real model (the mock model ignores style guidance)"
+                }
+              ]
+            },
+            "E2E-09/update-revoke-delete": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "conversational_follow_up",
+                  "next_task": "P1-004",
+                  "reason": "'지금 기준으로 다시 알려줘' alone carries no subject; follow-ups are not rewritten from session context"
+                }
+              ]
+            },
+            "E2E-10/cancel-and-responsiveness": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-10/process-kill-restart": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-10/restart-persistence": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": [
+                {
+                  "item": "approval_wait_recovery",
+                  "next_task": "P1-008C",
+                  "reason": "mock review approves at once; no pending human approval survives a restart"
+                }
+              ]
+            },
+            "E2E-10/schedule-restart-coalescing": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "not_run"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 3,
+              "not_run": []
+            },
+            "E2E-10/steady-load-n100": {
+              "gates": {
+                "functional_security": [
+                  "passed"
+                ],
+                "performance": [
+                  "passed"
+                ],
+                "quality": [
+                  "not_run"
+                ],
+                "real_integration": [
+                  "not_run"
+                ]
+              },
+              "n": 1,
+              "not_run": []
+            }
+          },
+          "raw_reports": "/tmp/rfa-final-worker-completion-worker-0927015257",
+          "review": "Coordinator inspected scenario/variant gate matrix, process-kill assertions, pinned thresholds and source/environment versions. V1-V4 total 75 passed, no skips. This is report completeness and controlled local acceptance, NOT all-real E2E.",
+          "separate_evidence": {
+            "limits": "auto-task, Debate, export/rebuild optional variants not_run. Basic restart-persistence fixture cannot test pending human approval; dedicated durable-resume tests and demo do, not a real teammate approval source. Unknown interrupted role effects are not rerun. No GPU measurement or real publication.",
+            "real_model": "93ae0a3 product + ea76550 pinned harness: Ultra/4096 9 complete, 30s targets passed; Lightning1024/4096 failures preserved. E2E06/08 semantic quality not_run.",
+            "runtime": "P1-007C standalone OpenShell matrix and P1-007A NemoClaw supported agent -> host API are separate; P1-007B/P1-008B RFA runtime identity not_run.",
+            "ui": "Fresh Chrome basic session/save/approval/resume smoke only; full ten-scenario UI not_run."
+          }
+        },
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T01:56:37.849142+00:00"
+      }
+    ],
+    "environment": {
+      "head": "d6aaa9127cddd71f6b76e9c967dacb8f31c023cb",
+      "isolation": "env -i; synthetic controlled/local; no external key or network",
+      "report_directory": "/tmp/rfa-final-worker-completion-worker-0927015257",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-026-completion",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T01:56:37.849360+00:00",
+    "limits": "Controlled local acceptance and explicit matrix review; real/UI gates remain separately limited.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T01:53:02.804010+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "8812e1aa9b49931a158c4310a6901d8f462c2fe4c187411e465b78d5adbefd1e",
+  "source_manifest": ".agent/evidence/P0-026/completion-worker-0927015257/source.json",
+  "spec_digest": "d41967ff0e8acfaee8de90aec7d48e1be27ee8350b87513ec8be3106755a103c",
+  "spec_revision": 29,
+  "task_id": "P0-026"
+}

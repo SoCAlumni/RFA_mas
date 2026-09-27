@@ -1,0 +1,149 @@
+{
+  "attempt_id": "final-report-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a",
+        "before": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P0-014/completion-reference-review/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P0-014/completion-reference-review/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "documentation_review": true,
+        "head": "54118a0834634bc1563071dce69dd678a8bea3a9",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P0-014/completion-reference-review/result.json",
+          "source_fingerprint": "cb785c9cb6a6d3952d9e0d13fb91327013869ac8c82beefc6f921dc81eefd96e",
+          "spec_digest": "89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e",
+          "spec_revision": 4,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+        "branch": "task/P0-014",
+        "changed_files": {
+          "docs/CONTRACT_CHANGELOG.md": "75a02ffbfb7c92ef97a730c29e7477108cf23cf60927305d79a7c9b71b38cb82",
+          "docs/INTEGRATION.md": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9",
+          "docs/contracts/extended.json": "ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb",
+          "fixtures/contracts/reference_cases.json": "e8c4d6c45e898ac93bba629ed4b1714bab0f1663e805469ef48821df9b2861ec",
+          "fixtures/contracts/retriever/index_manifest.json": "147363035d2dcb93562c1d66c5b4ef255c946fa8803a941857a43fb94d4564ca",
+          "fixtures/contracts/retriever/query_evidence_empty.txt": "735f113aeca254171eaec99e817044ae09ee9df4cdbd96e3b6aec900549e33a5",
+          "fixtures/contracts/retriever/query_evidence_malformed.txt": "ba6fb8740faea8035d9d1293428c98ea22788096a92fbfe28fcf5b1eb631690f",
+          "fixtures/contracts/retriever/query_evidence_ok.txt": "4b839707ba7272278e7fc9903b1a5a76d85b75a0dd795e34836a804a9fbe4c16",
+          "fixtures/contracts/retriever/query_evidence_trailing.txt": "c7c2bc2e758e837ce9f863c456fc8d9b216b9e922ee03aecd9cddeaed9924f19",
+          "fixtures/contracts/trace_eval_cases.json": "3b3e36ccd03ca9c69ff25a1be1b72b65932607a1c326597875d3c3e1ec450514",
+          "scripts/contract_baseline.py": "8f4b7dbf19f4c77a69108b5c0acdc6637b214d111da58544d7766b830fd73c85",
+          "src/rfa_mas/contracts/__init__.py": "ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9",
+          "src/rfa_mas/contracts/common.py": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+          "src/rfa_mas/contracts/models.py": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
+          "src/rfa_mas/ports/__init__.py": "00c7789b04fb6229bd55e006e801f795472f4a1adacddd8cf83b1639665a56bf",
+          "src/rfa_mas/ports/interfaces.py": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
+          "tests/test_contracts.py": "9af711c44c1078fc5bedb85e13c7006b99beffa969ea07fc2fe61c56e449f54f",
+          "tests/test_trace_eval_contract.py": "be1258e37400f08e1c68ccb955509185137b0cca04ebcf11e6b02a93b9da9ea9"
+        },
+        "evidence": ".agent/evidence/P0-014/freeze-reval3-worker-0927002447/result.json",
+        "head": "54118a0834634bc1563071dce69dd678a8bea3a9",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-014"
+      },
+      "submission_generation": 27,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed final report deltas: factual status corrected to already integrated implementation; current local commands and evidence links/mode limitations updated. No product DTO, port, state-machine or authorization semantics changed. Keep original test execution times; tests not reexecuted. Actual source/spec/contract deltas excluded; normative requirement refs remain separately gated.",
+    "reviewed_at": "2026-09-27T02:05:18+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "schema 1.0 기반만 implemented/verified; 확장 missing, 검증 not_run. 계약 local, fixture simulated=true. 외부 의존 없음; 상대 스키마 미확인은 provisional 유지.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_contracts.py"
+        ],
+        "assertions": [
+          "위 식별자 관계와 상태 원본, 읽기/공유/전송 권한 명시; session/task/team/run/agent/trace와 source revision/location·policy decision·draft/approval/receipt를 join하며 발생 전 단계는 null. trace ID/모델 allow는 인증·정책 증명이 아님",
+          "direct user와 internal/public channel 진입 DTO 구분, 외부 요청은 Supervisor에만 도달; context stage와 역할/목표/endpoint read/share/egress 판단 및 다중 부모 제한을 전달; 선택 읽기와 권한 선필터 인터페이스를 동결",
+          "Runtime의 run/status/cancel 유지, prepare/cleanup 보충 계약과 TeamSpec→AgentSpec binding 정의; 승인/게시 원본 승희·runtime 원본 다영·Policy 소유 미확정. 본문/첨부 hash·대상·정책·source ACL 변경과 unknown→조회 상태, mock/local/real·실험 measured/mock/not_run 구분",
+          "OpenAPI/예제 round-trip·변경 이력·미구현 route 표기 일치. 정상/deny/미승인/본문 변경/ACL 변경/중복/timeout fixture가 schema와 일치. EvalCase/Result는 evaluator/실행·모델·prompt·policy·dataset/source 버전·증거 및 pass/fail/error/not_run를 분리; default trace allowlist 밖 raw 값 거절, 미지원 계약 version 명시 거절"
+        ],
+        "counts": {
+          "collected": 15,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 15,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.69,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:25:11.212231+00:00",
+        "id": "V1",
+        "log_excerpt": "15 passed in 0.03s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:25:09.524505+00:00",
+        "timeout_seconds": 120
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_trace_eval_contract.py"
+        ],
+        "assertions": [
+          "7종 fixture round-trip·필수/optional/null 관계·위조 allow/version mismatch를 검증",
+          "합성 Run의 연결 및 raw metadata reject; exporter canary는 P1-006D에서 별도 확인"
+        ],
+        "counts": {
+          "collected": 50,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 50,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.98,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T00:25:14.191798+00:00",
+        "id": "V2",
+        "log_excerpt": "50 passed in 1.60s",
+        "result": "passed",
+        "started_at": "2026-09-27T00:25:11.213004+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "a6c271d6fcbea1cb7ce948815817d45e6c9b91d8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T00:25:14.191835+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T00:25:09.523975+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "525dc06119aef3bd982110a73992b16178375c63ee315bd36dd915b0a6e3d7a0",
+  "source_manifest": ".agent/evidence/P0-014/final-report-reference-review/source.json",
+  "spec_digest": "89590d925d2bd4e2116ffa044f1c4f7639865bbecf9074c9f3860b6c1515c57e",
+  "spec_revision": 4,
+  "task_id": "P0-014"
+}

@@ -1,0 +1,59 @@
+{
+  "attempt_id": "final-local-unlock-worker-0927013749",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "기존 public source 제한만 verified; 공유/egress 보강 missing/not_run. 정책 local(false), 생성 mock(true). 기밀 검수 소유권 미확정이어도 LocalPolicy로 완료; 선택적 LLM 검수는 보조이며 결정적 거절을 완화 못함.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_policy.py",
+          "tests/test_graph.py"
+        ],
+        "assertions": [
+          "owner/BU/company/public + 프로젝트 membership + 개인 선호 적용, 읽기 가능≠공유 가능",
+          "공유 허가된 근거로 먼저 초안 생성; private 초안을 마지막 문자열 삭제만으로 공개화하지 않음; loader의 선택 source·L0/L1/L2·실측 크기·insufficient를 실제 Model 입력 spy에서 확인",
+          "cloud Model/Tool 호출 전 전송 허가, 모의 악성 문서 지시는 정책/tool 권한을 바꾸지 못함 Response/embedding/reranker/Judge/trace 수신처에도 같은 endpoint-egress 원칙. private 본문뿐 아니라 제목/요약/관계·인자/첨부를 선차단",
+          "개인 1:1·내부 GPU canary가 외부 DTO/오류/알림/trace에 없음. source/정책 갱신 시 이전 context를 재판정; 모델이 만든 allow·tool의 승인 위장으로 우회 불가"
+        ],
+        "counts": {
+          "collected": 36,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 36,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 7.76,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:38:02.551967+00:00",
+        "id": "V1",
+        "log_excerpt": "36 passed, 12 warnings in 6.32s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:37:54.789374+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-005-int-0926171838",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T01:38:02.552083+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:37:54.788300+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "9ed44d8b9b2ecbbd0c781e6abf9a486e5bf9998682707e10c9c71e88942ff1ad",
+  "source_manifest": ".agent/evidence/P1-005/final-local-unlock-worker-0927013749/source.json",
+  "spec_digest": "474a5694ae719d11a245f56b756df2f7f65faaf82bae6a1b1f8c1b609fae09f7",
+  "spec_revision": 34,
+  "task_id": "P1-005"
+}

@@ -1,0 +1,118 @@
+{
+  "attempt_id": "final-report-reference-review",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "documentation_review": {
+    "changes": {
+      "docs/INTEGRATION.md": {
+        "after": "0313ef7c8046b1e3ee7dbb1bb063ca68efed9c75eaf97314c36bc612aa25ea5a",
+        "before": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9"
+      }
+    },
+    "previous_evidence": ".agent/evidence/P1-008/final-local-unlock-target-0927014151/result.json",
+    "previous_integration": {
+      "evidence": ".agent/evidence/P1-008/final-local-unlock-target-0927014151/result.json",
+      "reason": null,
+      "reservation": true,
+      "result": {
+        "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+        "verification_summary": {
+          "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+          "evidence": ".agent/evidence/P1-008/final-local-unlock-target-0927014151/result.json",
+          "source_fingerprint": "ff995337bf0f29464c981720e2e41c4441cd31a79804d65503ebec6d6853ab60",
+          "spec_digest": "4c536576ed8164f9dbf42559a759ef8d20b327205bc4858503e827aa94cc42c3",
+          "spec_revision": 18,
+          "state": "passed"
+        }
+      },
+      "state": "integrated",
+      "submission": {
+        "baseline_head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+        "branch": "task/P1-008-int-0926182546",
+        "changed_files": {
+          "docs/INTEGRATION.md": "ed9d21f43da9226b5ee0106104ebdbc5eea1c0e6387a9fd727371b207db3ccc9",
+          "docs/contracts/extended.json": "ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb",
+          "fixtures/contracts/reference_cases.json": "e8c4d6c45e898ac93bba629ed4b1714bab0f1663e805469ef48821df9b2861ec",
+          "fixtures/contracts/retriever/index_manifest.json": "147363035d2dcb93562c1d66c5b4ef255c946fa8803a941857a43fb94d4564ca",
+          "fixtures/contracts/retriever/query_evidence_empty.txt": "735f113aeca254171eaec99e817044ae09ee9df4cdbd96e3b6aec900549e33a5",
+          "fixtures/contracts/retriever/query_evidence_malformed.txt": "ba6fb8740faea8035d9d1293428c98ea22788096a92fbfe28fcf5b1eb631690f",
+          "fixtures/contracts/retriever/query_evidence_ok.txt": "4b839707ba7272278e7fc9903b1a5a76d85b75a0dd795e34836a804a9fbe4c16",
+          "fixtures/contracts/retriever/query_evidence_trailing.txt": "c7c2bc2e758e837ce9f863c456fc8d9b216b9e922ee03aecd9cddeaed9924f19",
+          "fixtures/contracts/trace_eval_cases.json": "3b3e36ccd03ca9c69ff25a1be1b72b65932607a1c326597875d3c3e1ec450514",
+          "src/rfa_mas/adapters/http.py": "0262bf6af254a91ef2a0328f71b302bcc0bc3626442891e6d7ef0249ed1d4dcd",
+          "src/rfa_mas/adapters/mock.py": "aab4f494933038cdc7037e04774952c4d75738e381344c0202319059c5dcbe88",
+          "src/rfa_mas/bootstrap.py": "d827e42d330dcf35ed72fa640db3457e8803a0d5ee6b03e82dfbb0074fc3def1",
+          "src/rfa_mas/reference/app.py": "a769804c1f85eea3f1c754d074a92d1abc39b1a0a1eb405e057121f2e708573a",
+          "src/rfa_mas/ui/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "tests/test_callbacks.py": "7dcf19ff7093e84742ec3eaf710f67dbdc6f747a806c2a2c6240141bf8a3fac2",
+          "tests/test_consumer_safety.py": "d1958f29da37e8f2597ab6b3925e9d60dd3c9af98540c70a48c41e9fed25a7f7",
+          "tests/test_http_contract.py": "ec7cb487165b7deb20470c1ef004661a9a66bb0d00ae7d50cf309c65b5140306"
+        },
+        "evidence": ".agent/evidence/P1-008/final-local-unlock-worker-0927014123/result.json",
+        "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+        "worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008-int-0926182546"
+      },
+      "submission_generation": 5,
+      "target": "canonical integration branch after OPS-000"
+    },
+    "reason": "Reviewed final report deltas: factual status corrected to already integrated implementation; current local commands and evidence links/mode limitations updated. No product DTO, port, state-machine or authorization semantics changed. Keep original test execution times; tests not reexecuted. Actual source/spec/contract deltas excluded; normative requirement refs remain separately gated.",
+    "reviewed_at": "2026-09-27T02:05:04+00:00",
+    "reviewer": "rfa-coordinator",
+    "tests_reexecuted": false
+  },
+  "mode": "기존 4-port reference 기반 verified; callback/receipt/TeamSpec 확장 missing/not_run. local transport + simulated=true fixture, real 호환성 미검증. 상대 미제공 시 이 카드 진행 가능; 실제 OpenAPI/auth/idempotency TTL/status 항목은 아래 통합 표.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_http_contract.py",
+          "tests/test_callbacks.py",
+          "tests/test_consumer_safety.py"
+        ],
+        "assertions": [
+          "approved/rejected/revision_requested/timeout/outcome_unknown을 mock와 reference HTTP가 같은 의미로 재현; 정상/정책 deny/승인 없음/본문 변경/source ACL 회수/중복/timeout 7종을 같은 consumer로 실행하고 unsupported contract version 명시 오류",
+          "미인증 callback·승인자/대상/version/hash 불일치·이벤트 replay 거절/멱등 처리; 정책/identity/승인 proof 누락·위조·expired이면 보호 동작 0회. 승인 뒤 본문/첨부/대상/policy/source ACL이 바뀌면 재검토",
+          "게시 timeout은 실패·재게시로 단정하지 않고 원본 status/receipt 대사, run 상태와 분리; 원본 결과 참조로 조회/복구할 때까지 unknown, 자동 재게시 0회",
+          "mock/reference 동일 suite 통과, graph에 URL/auth/MCP SDK 없음; P0 network write 선차단 유지.; mock transport 성공은 real OpenShell/MCP/게시 증거가 아니며 model/retrieval/response egress 결정 참조 유지"
+        ],
+        "counts": {
+          "collected": 64,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 64,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 12.13,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:42:08.796477+00:00",
+        "id": "V1",
+        "log_excerpt": "64 passed, 31 warnings in 11.05s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:41:56.663806+00:00",
+        "timeout_seconds": 120
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:42:08.796573+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:41:56.663115+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "593cf1018ff7e80a29abbb1a707e9d2414f46e7f8b1c8b89048c76b1fc7c8272",
+  "source_manifest": ".agent/evidence/P1-008/final-report-reference-review/source.json",
+  "spec_digest": "4c536576ed8164f9dbf42559a759ef8d20b327205bc4858503e827aa94cc42c3",
+  "spec_revision": 18,
+  "task_id": "P1-008"
+}

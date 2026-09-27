@@ -1,0 +1,59 @@
+{
+  "attempt_id": "final-local-unlock-target-0927013722",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock 제품 보수; real 모델/서비스 주장 없음",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_extraction_rules.py",
+          "tests/test_knowledge.py",
+          "tests/test_candidates.py"
+        ],
+        "assertions": [
+          "공식 날짜 문장은 인용된 결정으로 추출되고 비결정 문구는 결정 false positive가 되지 않는다.",
+          "행동·아이디어는 후보가 되고 중복 언급은 같은 후보로 병합되며 blocker 표식이 설정된다(규칙 버전 extract-rules-v2).",
+          "인용 사실만 추출, 비공개 부모 규칙, 재실행 무중복, 기각 후보 재알림 없음이 유지된다."
+        ],
+        "counts": {
+          "collected": 58,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 58,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 2.63,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T01:37:29.586503+00:00",
+        "id": "V1",
+        "log_excerpt": "58 passed, 1 warning in 1.69s",
+        "result": "passed",
+        "started_at": "2026-09-27T01:37:26.955226+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "93ae0a3760b1848d72a7c9324513075b98b856e8",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T01:37:29.586569+00:00",
+    "limits": "Revalidation after contract publication; local/mock only.",
+    "reviewer": "rfa-coordinator (claude-opus-5-5)",
+    "started_at": "2026-09-27T01:37:26.954380+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "4976dd985d722f75a6215c643ace4dfade2fb34bbf6431ca265ec8fcb2eeab4a",
+  "source_manifest": ".agent/evidence/P1-004C/final-local-unlock-target-0927013722/source.json",
+  "spec_digest": "9816feaa8f9fdecaea40e7d57cdfe9c4a78216548a6ac9d93b81336cbfe582a2",
+  "spec_revision": 6,
+  "task_id": "P1-004C"
+}

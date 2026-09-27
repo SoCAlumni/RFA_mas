@@ -1,0 +1,62 @@
+{
+  "attempt_id": "completion-report-0927020356",
+  "contract_digest": "590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7",
+  "mode": "최종 통합 미실행. local/mock/real을 각 artifact별 구분, 과장 없는 보고는 외부 실패에도 가능. live 실패 카드는 blocked로 남겨 P0 완료와 해커톤 실제 활용 증거 완성을 분리.",
+  "report": {
+    "checks": [
+      {
+        "assertions": [],
+        "id": "V1",
+        "observed": "AC1-3 inspected against actual source, P0-026 target75 pass, 65 controlled/9 real-model reports, Chrome result and existing NVIDIA/Skill/NAT/NemoClaw/OpenShell/LLMOps evidence. Local Markdown links0 broken; JSON parse, helper --help, ruff check/format and git diff --check passed. Official form AC4 attempted at 01:23:39UTC but redirected to accounts.google.com Google Forms: Sign-in; current submission text unverified, no login/submission. Thus this combined required manual gate is NOT passed.",
+        "procedure_performed": true,
+        "result": "not_run"
+      },
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_demo_e2e.py"
+        ],
+        "assertions": [
+          "README/DEMO에 쓴 rfa demo --full 명령이 실제로 동작하고 mock/local/simulated 표시·canary 없음·재시작 보존을 만족한다."
+        ],
+        "counts": {
+          "collected": 11,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 11,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 13.35,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T02:04:15.061992+00:00",
+        "id": "V2",
+        "log_excerpt": "11 passed in 7.35s",
+        "result": "passed",
+        "started_at": "2026-09-27T02:04:01.711121+00:00",
+        "timeout_seconds": 300
+      }
+    ],
+    "environment": {
+      "head": "191378ed2cd150e9140e241b9b8f9d7975e2db75",
+      "mode": "documentation review + mock/local demo; no live call",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-009-completion",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T02:04:15.062047+00:00",
+    "limits": "Only AC4 official current submission text remains blocked; no security/performance AC lowered.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T02:04:01.704842+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "1acab87f3031db514fd5977b9b956e42d8195380c2f4b825498c9af637f8e340",
+  "source_manifest": ".agent/evidence/P1-009/completion-report-0927020356/source.json",
+  "spec_digest": "dc922a3ac928e41b1e9ca1a606b6aefda0655310bc7af8caecba0bc36bd31af6",
+  "spec_revision": 8,
+  "task_id": "P1-009"
+}
