@@ -56,14 +56,19 @@ def exports(container):
     return sorted((container.settings.trace_dir / "rfa-observations-v1").glob("events-*.jsonl"))
 
 
-async def test_actual_calls_aliases_allowlist_and_unknown_coverage(container, principal):
-    request = work(request_id=CANARY, trace_id=CANARY, agent_id=CANARY, query=f"TRIV3 {CANARY}")
+@pytest.mark.parametrize("explicit_unknown_subject", [False, True])
+async def test_actual_calls_aliases_allowlist_and_unknown_coverage(container, principal, explicit_unknown_subject):
+    # Exercise both source-backed and deliberately insufficient queries. The ALL-CAPS
+    # marker is an unknown named subject under relevance-gate-v2; a lowercase marker
+    # retains the known TRIV3 match. Neither spelling may enter raw traces.
+    marker = CANARY if explicit_unknown_subject else CANARY.lower()
+    request = work(request_id=CANARY, trace_id=CANARY, agent_id=CANARY, query=f"TRIV3 {marker}")
     result = await container.service.run(request, principal)
     assert result.status == WorkStatus.COMPLETED, result.errors
     assert result.request_id == result.trace_id == CANARY  # successful 1.0 correlation unchanged
     ledger = await container.service.observations.ledger(result.run_id, principal)
     raw = "".join(path.read_text() for path in exports(container))
-    assert raw and CANARY not in raw and principal.user_id not in raw
+    assert raw and CANARY.lower() not in raw.lower() and principal.user_id not in raw
     assert result.run_id not in raw and result.draft.content not in raw
     assert ledger.execution.run_id != result.run_id
     rows = ledger.observations
@@ -81,8 +86,12 @@ async def test_actual_calls_aliases_allowlist_and_unknown_coverage(container, pr
     # P1-001A: the outward view re-checks current source policy after the graph stop;
     # those are actual policy calls, never a model/response/tool re-execution.
     after = rows[rows.index(stop[0]) + 1 :]
-    assert after and all(r.event.event == "policy" for r in after)
-    assert any(r.event.versions.sources for r in rows)
+    if explicit_unknown_subject:
+        assert not after and not result.draft.allowed_evidence
+        assert not any(r.event.versions.sources for r in rows)
+    else:
+        assert after and all(r.event.event == "policy" for r in after)
+        assert any(r.event.versions.sources for r in rows)
     coverage = {item.boundary: item for item in ledger.coverage}
     for name in ("request", "model", "retrieval", "policy", "runtime", "approval"):
         assert coverage[name].state == "collected" and coverage[name].calls >= 1
