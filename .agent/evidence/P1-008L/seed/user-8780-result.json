@@ -1,0 +1,128 @@
+{
+  "dataset": "poc-demo-seed-v2",
+  "started_at": "2026-09-27T06:09:35.856169+00:00",
+  "notes_before": 38,
+  "notes": [
+    {
+      "key": "poc-demo-seed-v2-01",
+      "source_id": "source_e740f1e50ed44c52988f103f30ea1411",
+      "source_revision": "revision_348cba4f8d94400193e57aea61659298",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-02",
+      "source_id": "source_d6a45c1f8fd24b66b55577c767566c16",
+      "source_revision": "revision_a16d86c4b7b340efb89a02dad5740f51",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-03",
+      "source_id": "source_fdde938e6d8843409c30bf04187d3b62",
+      "source_revision": "revision_5f76d890b2334f39968e15c623435c5d",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-04",
+      "source_id": "source_29eb7493c73644aaa0a2bc156c900f9f",
+      "source_revision": "revision_7ca9ad169c4b45a5964e1f9af2797eec",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-05",
+      "source_id": "source_627d1eecb2fc4555b75002125c7e3cdd",
+      "source_revision": "revision_98087a6d643d4e9e90d2a0210b2fdd07",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-06",
+      "source_id": "source_7f804e97a49c429594ebedbefbbfdcba",
+      "source_revision": "revision_cdcaa172b0f54007ae29209d501c5690",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-07",
+      "source_id": "source_b1bfa05916c949e09a3c0af72fa20e0b",
+      "source_revision": "revision_fd5b1ac8e34e47f2aaf22703a4c30417",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-08",
+      "source_id": "source_602aeb18bdfd40be92fad5d1e826d14d",
+      "source_revision": "revision_bf022d8e21b148af8cc67a538dd8f330",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-09",
+      "source_id": "source_d25b1196310e44b0986cd644a9ddf474",
+      "source_revision": "revision_099ba51f934e48c0818ce7ce03d776ba",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-10",
+      "source_id": "source_bc99ea2c3d6e4b6b887dbe5edb3d216c",
+      "source_revision": "revision_f2df1e981dd34f9cbe86f512458825fc",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-11",
+      "source_id": "source_6d2825686b0c4bca94c97458f934b512",
+      "source_revision": "revision_6284f2f3fa434af1a56abbd41f334d18",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-12",
+      "source_id": "source_188b4064d79c4c3e94c8b466e28feea7",
+      "source_revision": "revision_c1ab54e40f30491f881aed7528e8fef3",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-13",
+      "source_id": "source_56db6202dc6c4bfa82d9d6c8964e896e",
+      "source_revision": "revision_860691e8e4cd4af2b859b448474d3da6",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-14",
+      "source_id": "source_712a0f00a74240659b2dd09cfca29948",
+      "source_revision": "revision_ef265a91c9274fe49a26d4ff8afc0315",
+      "audience": "private"
+    }
+  ],
+  "tasks": [
+    {
+      "key": "poc-demo-seed-v2-task-aurora",
+      "goal": "오로라 벤치마크 지연 로그 A1/B2 성능 비교 결과를 검증해줘",
+      "created": false,
+      "reused_via": "existing_goal_subject_match",
+      "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+      "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+      "pattern": "benchmark",
+      "team_state": "ready",
+      "members": [
+        "supervisor",
+        "paper_scout",
+        "experiment_runner",
+        "result_analyst"
+      ],
+      "linked_sources": 24
+    },
+    {
+      "key": "poc-demo-seed-v2-task-nebula",
+      "goal": "네뷸라 INT4 양자화 논문 근거를 조사해줘",
+      "created": false,
+      "reused_via": "existing_goal_subject_match",
+      "task_id": "task_350fc835dab040949630e5928a5a7877",
+      "team_id": "team_81e09175e2214026a93c02cfac6dc665",
+      "pattern": "research",
+      "team_state": "ready",
+      "members": [
+        "supervisor",
+        "source_scout",
+        "evidence_reviewer"
+      ],
+      "linked_sources": 10
+    }
+  ],
+  "notes_after": 38,
+  "finished_at": "2026-09-27T06:09:35.992466+00:00"
+}
