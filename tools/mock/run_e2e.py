@@ -27,7 +27,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "tools" / "mock"))
 
-from approval import DEFAULT_REGEX, create_app as create_approval_app  # noqa: E402
+from approval import DEFAULT_REGEX  # noqa: E402
+from approval import create_app as create_approval_app
 from desk import Desk, load_scenarios, table  # noqa: E402
 
 SCENARIOS = sorted(str(p) for p in (ROOT / "tools" / "mock" / "scenarios").glob("*.yaml"))

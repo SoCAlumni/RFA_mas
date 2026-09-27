@@ -23,11 +23,11 @@ from rfa_mas.nemoclaw.ask_contract import (
     ASK_CONTRACT_VERSION,
     AskRequest,
     AskResponse,
+    CensorSummary,
     ChatRequest,
     ErrorBody,
     QueuedResponse,
     Refusal,
-    CensorSummary,
 )
 
 

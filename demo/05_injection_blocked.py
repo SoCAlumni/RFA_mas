@@ -3,9 +3,10 @@
 `<external_input>` 로 감싸 head 에 데이터로만 넘긴다. 답변은 질문에 대한 근거 요약이고 canary/원자료 덤프는 없으며,
 감사 로그에 injection_flags 가 남는다."""
 
-from _lib import ENTRY, ROOT, ask_token, main
 import sys
 import time
+
+from _lib import ENTRY, ROOT, ask_token, main
 
 sys.path.insert(0, str(ROOT / "tools" / "mock"))
 from desk import load_scenarios  # noqa: E402
