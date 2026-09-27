@@ -1,0 +1,16 @@
+{
+  "task": "P1-008G",
+  "stage": "development before formal evidence capture",
+  "mode": "local/mock; synthetic data",
+  "source_manifest": null,
+  "note": "Development tool outputs summarized honestly; no pre-fix immutable source manifest was captured.",
+  "failures": [
+    {"kind": "control", "error": "refresh required explicit control root", "fix": "used existing tc helper with explicit canonical root; claim refreshed views"},
+    {"kind": "editing", "error": "apply_patch rejected delete and add of same target in one patch", "fix": "used whole-file update patch; rejected patch changed no files"},
+    {"kind": "control", "error": "heartbeat rejected while another session was writing P1-010 requirement refs", "fix": "preserved other session files; continued isolated source work; subsequent heartbeat succeeded"},
+    {"kind": "lint", "error": "imports/line lengths", "fix": "ruff import/format then split remaining long SQL and literal strings; final lint passed"},
+    {"kind": "pytest", "cycle": 1, "counts": {"passed": 26, "failed": 2}, "errors": ["second question rejected because prior core thread waited for approval", "legacy UI test required explicit local/not_run metadata"], "fix": "map conversation to independent execution sessions without auto-approval; retain mode metadata"},
+    {"kind": "pytest", "cycle": 2, "counts": {"passed": 28, "failed": 0}, "result": "passed; later added declarative-name and legacy form-history regressions for formal verification"}
+  ],
+  "browser_development": {"status": "passed", "browser": "Chrome 154.0.8037.57", "assertions": ["note save", "private question", "KB detail", "reload", "public approval/mock receipt", "text rendering", "390px responsive", "no JS errors or outbound"]}
+}

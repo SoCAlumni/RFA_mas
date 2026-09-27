@@ -1,0 +1,87 @@
+{
+  "attempt_id": "chat-target-01",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_chat_poc.py",
+          "tests/test_local_ui.py",
+          "tests/test_poc.py"
+        ],
+        "assertions": [
+          "서버 자동 저장/검색",
+          "중복·재시작·권한·CSRF 회귀",
+          "기존 승인/게시 보호 통과"
+        ],
+        "counts": {
+          "collected": 30,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 30,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 10.4,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T04:23:57.422495+00:00",
+        "id": "V1",
+        "log_excerpt": "30 passed, 7 warnings in 9.22s",
+        "result": "passed",
+        "started_at": "2026-09-27T04:23:47.018938+00:00",
+        "timeout_seconds": 240
+      },
+      {
+        "assertions": [
+          "채팅/KB/승인함 탭 동작",
+          "JS 오류 없음·본문 안전 렌더링·대화 복구"
+        ],
+        "finished_at": "2026-09-27T04:24:01.579328+00:00",
+        "id": "V2",
+        "observed": {
+          "browser": "154.0.8037.57",
+          "checks": [
+            "declarative note auto-stored; question auto-routed to private core retrieval",
+            "KB tab filter, full body, private label and source metadata visible",
+            "reload restores server-side conversation without duplicate turns",
+            "public answer excludes private note; manual approval then mock receipt",
+            "HTML-like note remains text",
+            "390px mobile chat + KB navigation; no horizontal overflow"
+          ],
+          "finished_at": "2026-09-27T04:24:01.490661+00:00",
+          "limits": "not NVIDIA, real publication or teammate UI",
+          "mode": "actual Chrome/local mock",
+          "outbound": [],
+          "page_errors": [],
+          "started_at": "2026-09-27T04:23:57.663993+00:00",
+          "status": "passed"
+        },
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T04:23:47.013046+00:00"
+      }
+    ],
+    "environment": {
+      "mode": "local/mock, real fresh Chrome",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T04:24:01.579370+00:00",
+    "limits": "No NVIDIA call, no external write, no OpenShell claim; scoped chat and existing UI/PoC regressions.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T04:23:47.013046+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "7a9b298b1b1e31cf051fa2704d30211c78f663f627a38020b0c9d5508fa565f8",
+  "source_manifest": ".agent/evidence/P1-008G/chat-target-01/source.json",
+  "spec_digest": "ceab2e71604a627bc8a44e3c801d676b8e3d87bebf4448b6a1a70f662462ad88",
+  "spec_revision": 1,
+  "task_id": "P1-008G"
+}

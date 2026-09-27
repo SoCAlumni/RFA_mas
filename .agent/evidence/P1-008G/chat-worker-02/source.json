@@ -1,0 +1,181 @@
+{
+  "branch": "task/P1-008G-chat",
+  "captured_at": "2026-09-27T04:21:30+00:00",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "exclusions": [
+    "secrets/.env except .env.example",
+    "runtime/vendor/generated task state/evidence",
+    ">2MB rejected",
+    "symlinks rejected"
+  ],
+  "files": {
+    "docs/POC.md": {
+      "index_blob": null,
+      "sha256": "e855c3d75d1598b051a06f3787e033763b16db14c3aec5908e43b8790d2a84af",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "pyproject.toml": {
+      "index_blob": null,
+      "sha256": "3bb22977a8111ba62715a71ac77d00942f23ac292224e1af40ee728c5b390ee8",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/chat.py": {
+      "index_blob": null,
+      "sha256": "0b03bb642ac8ca17aa750179dd08d8da9ea74383bf0c0b46f6adf2f32bbcbcd4",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/graphs/supervisor.py": {
+      "index_blob": null,
+      "sha256": "5fb39128d5669b2e868efc64a06bfa4b20c800b415fdc2d38c04c7a45b8253bd",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/application/service.py": {
+      "index_blob": null,
+      "sha256": "7ac74a7cca24e3685e4463a4735b4d27e88696e8546684d44181c52b00626fad",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/__init__.py": {
+      "index_blob": null,
+      "sha256": "ada80643752b13db54088ca1fac77eff59895348ae7c0ccda797fcb2bbc755d9",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/common.py": {
+      "index_blob": null,
+      "sha256": "2897f5de34ccc2163c239d4160d3040b9a711a31c98c50ce65190b817efa0eba",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/contracts/models.py": {
+      "index_blob": null,
+      "sha256": "206777b388b185ab75314796e0a19e6b8a59a713c4ae18068bd7c3d1e2a0541a",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/poc/__init__.py": {
+      "index_blob": null,
+      "sha256": "ee23e07b87180f6a825c0cbbe74584040efbba0b6437d270c6f9b474865ae399",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/poc/__main__.py": {
+      "index_blob": null,
+      "sha256": "dbf450dacf989faf5895a77032125635beb5088802166735fcf4e16f1c5666d2",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/poc/bootstrap.py": {
+      "index_blob": null,
+      "sha256": "e790b7bc203b38aaa0ce1b76e4bd528fa556bfa80f1c48f0db0ddeddf7d54544",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/poc/chat.py": {
+      "index_blob": null,
+      "sha256": "6bbfab35065a2f33f7c4721b3caa69ef6166ea7499a9c84764bb09c7a7e12764",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ports/interfaces.py": {
+      "index_blob": null,
+      "sha256": "40cc368ab293e976edeb205938516989b2e32ad9666d2d9276e5fb244ab0f1f6",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/settings.py": {
+      "index_blob": null,
+      "sha256": "b61591f5e2a0b3be8413b8c9ef577e7047ec69fb281881b6762d9341114aaf8a",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ui/__init__.py": {
+      "index_blob": null,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ui/app.py": {
+      "index_blob": null,
+      "sha256": "4796012c5dc3e527c27c136b22b76ccc9f7020f4336740cede5415b608a79928",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ui/static/app.css": {
+      "index_blob": null,
+      "sha256": "9be439d5beb224168f67b970d777f3ce70d8a94452563430781d59e3934d54ec",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ui/static/app.js": {
+      "index_blob": null,
+      "sha256": "834c3ffa139602eb54095388c446923a3da77b5dd8de36422f9b71860579b2d5",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "src/rfa_mas/ui/static/index.html": {
+      "index_blob": null,
+      "sha256": "a57e962c36621352338f4879bbe9752c5d09e4e9ecf21ad0de99ac4642017667",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_chat_poc.py": {
+      "index_blob": null,
+      "sha256": "ea0a4cfe7c1490e6d888c680e68844fc23517b736108aee359ff5747652ab443",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_local_ui.py": {
+      "index_blob": null,
+      "sha256": "0656191a05096bcbf41b4fa429f21e07e11086baa333d966ee3e03e72568fbd7",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "tests/test_poc.py": {
+      "index_blob": null,
+      "sha256": "bae7124d4417beb3081df9a424ab5854e5a43ddc40a6425fbb07510f3b9db0fc",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    },
+    "uv.lock": {
+      "index_blob": null,
+      "sha256": "961647b38902b81e373ba64dd568bb6dd286d1841031b2b09fc9e567005d477f",
+      "staged": false,
+      "unstaged": false,
+      "untracked": false
+    }
+  },
+  "fingerprint": "a6f611791216b9aec5cacd2b4a8db33c01ba51f615970866373b602c724817ae",
+  "head": "bd8921ad9c48cbe561a7b2e5c298f1cc151c50be",
+  "mode": "git_worktree",
+  "repository_id": "rfa-mas-2026-local",
+  "source_worktree": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008G-chat",
+  "spec_digest": "ceab2e71604a627bc8a44e3c801d676b8e3d87bebf4448b6a1a70f662462ad88",
+  "spec_revision": 1
+}

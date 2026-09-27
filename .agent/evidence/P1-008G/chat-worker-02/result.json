@@ -1,0 +1,70 @@
+{
+  "attempt_id": "chat-worker-02",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_chat_poc.py",
+          "tests/test_local_ui.py",
+          "tests/test_poc.py"
+        ],
+        "assertions": [
+          "서버 자동 저장/검색",
+          "중복·재시작·권한·CSRF 회귀",
+          "기존 승인/게시 보호 통과"
+        ],
+        "counts": {
+          "collected": 30,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 30,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 10.1,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T04:21:44.336682+00:00",
+        "id": "V1",
+        "log_excerpt": "30 passed, 7 warnings in 8.57s",
+        "result": "passed",
+        "started_at": "2026-09-27T04:21:34.240486+00:00",
+        "timeout_seconds": 240
+      },
+      {
+        "assertions": [],
+        "finished_at": "2026-09-27T04:21:53.346399+00:00",
+        "id": "V2",
+        "observed": {
+          "error": "blic / preview / local-preview요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.승인수정 요청거절공개 초안 · 버전 1mock / reference_mock결정: approved by owner_92cc12f7dd2c47efb3bef8d76f4d95fe대상: public / preview / local-preview요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.모의 게시 (mock receipt)\"\n    3 × locator resolved to <div id=\"reviews\">…</div>\n      - unexpected value \"공개 초안 · 버전 1mock / reference_mock결정: pending대상: public / preview / local-preview요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.승인수정 요청거절공개 초안 · 버전 1mock / reference_mock결정: approved by owner_92cc12f7dd2c47efb3bef8d76f4d95fe대상: public / preview / local-preview요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.모의 게시 (mock receipt)오류: upstream_rejected (publication_exists)서비스가 요청을 거절했습니다.\"\n    10 × locator resolved to <div id=\"reviews\">…</div>\n       - unexpected value \"공개 초안 · 버전 1mock / reference_mock결정: approved by owner_92cc12f7dd2c47efb3bef8d76f4d95fe대상: public / preview / local-preview요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.모의 게시 (mock receipt)공개 초안 · 버전 1mock / reference_mock결정: approved by owner_92cc12f7dd2c47efb3bef8d76f4d95fe대상: public / preview / local-preview요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다.\n\n허용된 근거:\n- TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview]\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.모의 게시 (mock receipt)\"\n\nAria snapshot:\n- article:\n  - heading \"공개 초안 · 버전 1\" [level=3]\n  - text: mock / reference_mock\n  - paragraph: \"결정: approved by owner_92cc12f7dd2c47efb3bef8d76f4d95fe\"\n  - paragraph: \"대상: public / preview / local-preview\"\n  - text: \"요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다. 허용된 근거: - TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview] 이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.\"\n  - button \"모의 게시 (mock receipt)\"\n- article:\n  - heading \"공개 초안 · 버전 1\" [level=3]\n  - text: mock / reference_mock\n  - paragraph: \"결정: approved by owner_92cc12f7dd2c47efb3bef8d76f4d95fe\"\n  - paragraph: \"대상: public / preview / local-preview\"\n  - text: \"요청 요약: 공개 대상에 맞춰 허용된 근거만 요약합니다. 허용된 근거: - TRIV3는 이 데모를 위해 만든 합성 벤치마크다. 세 트랙은 trace consistency, retrieval fidelity, evidence alignment이며, 공개 데모는 합성 질의와 공개 가능한 근거만 사용한다. [triv3-public-overview@1 / public-overview] 이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.\"\n  - button \"모의 게시 (mock receipt)\"\n",
+          "exit_code": 1
+        },
+        "procedure_performed": true,
+        "result": "failed",
+        "started_at": "2026-09-27T04:21:34.233978+00:00"
+      }
+    ],
+    "environment": {
+      "mode": "local/mock, real fresh Chrome",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008G-chat",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T04:21:53.346449+00:00",
+    "limits": "No NVIDIA call, no external write, no OpenShell claim; scoped chat and existing UI/PoC regressions.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T04:21:34.233978+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "a6f611791216b9aec5cacd2b4a8db33c01ba51f615970866373b602c724817ae",
+  "source_manifest": ".agent/evidence/P1-008G/chat-worker-02/source.json",
+  "spec_digest": "ceab2e71604a627bc8a44e3c801d676b8e3d87bebf4448b6a1a70f662462ad88",
+  "spec_revision": 1,
+  "task_id": "P1-008G"
+}
