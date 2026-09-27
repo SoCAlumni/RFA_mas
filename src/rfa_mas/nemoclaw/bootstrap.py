@@ -220,6 +220,37 @@ def onboard(sandbox: str, manifest: Path, env: dict[str, str], runner: Runner, n
     log(f"onboard {sandbox}: ready in {took}s")
 
 
+def interrupted_onboarding(state_root: Path | None = None) -> str | None:
+    """Sandbox name of a resumable, still in-progress NemoClaw onboarding session, if any."""
+    path = (state_root or Path.home() / ".nemoclaw") / "onboard-session.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if data.get("status") == "in_progress" and data.get("resumable") and data.get("sandboxName"):
+        return str(data["sandboxName"])
+    return None
+
+
+def resume_interrupted_onboarding(assignments: Assignments, env: dict[str, str], runner: Runner,
+                                  nemoclaw_bin: str, *, dry_run: bool = False) -> bool:
+    """A killed bootstrap can leave `nemoclaw onboard` mid-session; finish it before anything else
+    (NemoClaw resumes from the last completed step and skips the rest)."""
+    sandbox = interrupted_onboarding()
+    if sandbox is None or sandbox not in assignments.sandboxes:
+        return False
+    log(f"onboard {sandbox}: resuming interrupted session (nemoclaw onboard --resume)")
+    if dry_run:
+        return True
+    result = runner.run([nemoclaw_bin, "onboard", "--resume", "--name", sandbox, "--non-interactive",
+                         "--yes-i-accept-third-party-software"], timeout=2400, env=env)
+    if not result.ok:
+        tail = (result.stderr or result.stdout).strip().splitlines()[-8:]
+        raise ConfigError(f"resume of {sandbox} failed:\n" + "\n".join(tail))
+    log(f"onboard {sandbox}: resumed session complete")
+    return True
+
+
 def retire_legacy(name: str, runner: Runner, nemoclaw_bin: str) -> None:
     stamp = time.strftime("%Y%m%d-%H%M%S")
     log(f"retire {name}: snapshot create --name pre-sg-{stamp}, then destroy")
@@ -322,6 +353,7 @@ def bootstrap(options: BootstrapOptions, runner: Runner | None = None) -> dict:
                 retire_legacy(legacy, runner, nb)
                 report["steps"].append(f"retired:{legacy}")
     env = onboard_env(routing, host_secrets, ca_bundle)
+    resume_interrupted_onboarding(assignments, env, runner, nb, dry_run=options.dry_run)
     for sandbox in assignments.ordered_sandboxes():
         if options.only and sandbox not in options.only:
             continue
