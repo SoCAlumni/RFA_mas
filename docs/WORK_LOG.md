@@ -1101,3 +1101,9 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - manifest: 기본 샌드박스 main=assistant 에 `subagents.allowAgents=[benchmark, research, summarizer]`(같은 샌드박스 sessions_spawn 경로 활성), 브로커는 같은 샌드박스면 `local-spawn` 로 분류. 선택 샌드박스는 head 만. NemoClaw validateExtraAgents 로 rfa-main(secondary 4)·rfa-tasks-none 모두 valid.
 - relocate: `--to-sandbox <name>` 추가, `--to-groups` 는 그 그룹 집합의 선택 샌드박스, 둘 다 없으면 기본 샌드박스 복귀. `rewrite_agent_sandbox` 가 assignments.yaml 의 `sandbox:` 줄을 추가/교체/삭제. bootstrap legacy 목록에 `rfa-tasks-intranet` 추가.
 - 검증: validate problems 0, 전체 테스트 71 passed. 라이브: 기존 샌드박스 3개는 legacy 가 되어 폐기 후 `rfa-main` 하나만 온보딩 예정(예상 VM 메모리 약 2 GiB).
+
+## SG-4d — 라이브: rfa-main 온보딩·managed MCP 등록 성공 (2026-09-27 21:20~21:35)
+
+- 메모리 회복 후(사용자가 다른 프로젝트 스택 정지, VM 여유 5.9 GB) legacy 샌드박스 3개 destroy(`rfa-censor` 는 상태 볼륨 제거 실패로 2회, 나머지는 "already absent" 처리). `make bootstrap`: `nemoclaw onboard --fresh --name rfa-main --agents rfa-main.agents.yaml --non-interactive`(provider=custom → egress-proxy, tier=restricted, CA 번들 포함) 250초 완료 → `policy add sg-intranet-ro`, baseline 5개 `policy exclude`, **`mcp add broker --url https://192.168.123.191:8798/mcp --env RFA_BROKER_MCP_TOKEN --trusted-private-host 192.168.123.191` 성공**(provider `rfa-main-mcp-broker` attached·credentialReady, policy `mcp-bridge-broker` configured, adapter registered, trustedPrivateTarget match), `policy explain --write`, 5개 에이전트 workspace 시드(IDENTITY.md + skill 10개). `nemoclaw rfa-main status`: Inference healthy, Policies sg-intranet-ro, agents main/benchmark/censor/research/summarizer.
+- 오류·수정: (1) 이전 세션 파일이 `rfa-tasks-intranet` 을 가리켜 새 온보딩 거부 → 새 샌드박스 온보딩은 `--fresh`. (2) 시드가 fixed main 이 있는 샌드박스의 secondary 를 건너뜀 → 수정 후 `seed rfa-main` 10개 파일. (3) `mcp list --json` 은 `{"bridges":[{"server":…}]}` 형식 → 파서 보정. 대시보드 대상에서 censor 제외.
+- 데모 01/02/07/08 을 단일 기본 샌드박스 모델로 갱신(02 는 control-plane 그룹에 REST preset 추가/제거로 broker /healthz 허용·차단 확인, 08 은 summarizer 를 선택 샌드박스 rfa-tasks-none 으로 격하 후 기본 샌드박스로 복귀).

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Demo 01 — 외부 curl 차단: egress-none 샌드박스에서 example.com 과 integrate.api.nvidia.com 으로의
+"""Demo 01 — 외부 curl 차단: 기본 샌드박스(rfa-main)에서 example.com 과 integrate.api.nvidia.com 으로의
 직접 요청이 OpenShell 정책에 막히고, OCSF DENIED 기록이 남으며, 차단 요청이 승인 대기 목록에 오른다."""
 
 from _lib import main, nemoclaw_bin
 
-SANDBOX = "rfa-tasks-none"
+SANDBOX = "rfa-main"
 
 
 def body(demo):

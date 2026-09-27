@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Demo 07 — task 에이전트 런타임 추가: assignments.yaml 에 task 에이전트 `notes` 를 선언하면 manifest 가
-다시 생성되고 `nemoclaw rfa-tasks-none agents apply -f` 가 재빌드 없이 roster 를 맞춘다(추가 → 목록 확인 → 제거)."""
+다시 생성되고 `nemoclaw rfa-main agents apply -f` 가 재빌드 없이 기본 샌드박스의 roster 를 맞춘다(추가 → 목록 확인 → 제거)."""
 
 from _lib import ROOT, main, nemoclaw_bin
 
-SANDBOX = "rfa-tasks-none"
+SANDBOX = "rfa-main"
 ASSIGNMENTS = ROOT / "deploy" / "nemoclaw" / "assignments.yaml"
 MANIFEST = ROOT / "deploy" / "nemoclaw" / "agents" / f"{SANDBOX}.agents.yaml"
 SG = ["uv", "run", "--offline", "--frozen", "python", "-m", "rfa_mas.nemoclaw"]
 NEW_AGENT = """  notes:
     kind: task
-    groups: [egress-none]
+    groups: []
     alias: rfa-internal
     skill: task-summarizer
     description: 데모 07 에서 런타임에 추가한 메모 정리 담당.
