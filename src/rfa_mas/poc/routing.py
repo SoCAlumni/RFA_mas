@@ -43,9 +43,48 @@ class LocalChatRouter:
     def __init__(self, repository, catalog: TeamCatalogPort, *, policy_version):
         self.repository, self.catalog, self.policy_version = repository, catalog, policy_version
 
+    @staticmethod
+    def describe(record):
+        """Safe UI summary of one owner Task team (no runtime/identity claims)."""
+        return {
+            "task_id": record.task.task_id,
+            "team_id": record.task.team_id,
+            "goal": record.task.goal[:160],
+            "domain_id": record.task.domain_id.value,
+            "pattern": record.team.spec.template.pattern,
+            "status": record.task.status,
+            "team_state": record.reason,
+            "selectable": record.task.status == "active" and record.reason == "ready",
+        }
+
+    async def assignees(self):
+        principal = await self.repository.local_principal()
+        return [self.describe(r) for r in await self.catalog.list_for(principal)]
+
+    @staticmethod
+    def task_route(record, reason):
+        return {
+            "kind": "task",
+            "label": record.task.goal[:80],
+            "reason": reason,
+            "task_id": record.task.task_id,
+            "team_id": record.task.team_id,
+            "domain_id": record.task.domain_id.value,
+        }
+
     async def resolve(self, body):
         principal = await self.repository.local_principal()
         teams = await self.catalog.list_for(principal)
+        if body.task_id:
+            # Explicit assignee: must be one of the owner's own selectable Task teams.
+            for record in teams:
+                if record.task.task_id == body.task_id:
+                    if record.task.status != "active" or record.reason != "ready":
+                        raise RfaError(
+                            "task_unavailable", "선택한 Task 팀은 지금 사용할 수 없습니다."
+                        )
+                    return self.task_route(record, "explicit_task")
+            raise RfaError("not_found", "선택한 Task 팀을 찾을 수 없습니다.")
         words = subjects(body.text)
         matches = []
         for record in teams:
@@ -62,15 +101,7 @@ class LocalChatRouter:
                 matches.append((len(shared), record))
         matches.sort(key=lambda item: -item[0])
         if matches and (len(matches) == 1 or matches[0][0] > matches[1][0]):
-            record = matches[0][1]
-            return {
-                "kind": "task",
-                "label": record.task.goal[:80],
-                "reason": "existing_task_subject_match",
-                "task_id": record.task.task_id,
-                "team_id": record.task.team_id,
-                "domain_id": record.task.domain_id.value,
-            }
+            return self.task_route(matches[0][1], "existing_task_subject_match")
         if matches:
             return self.fallback("ambiguous_tasks")
         domains = []

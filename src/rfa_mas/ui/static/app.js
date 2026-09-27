@@ -4,7 +4,8 @@
   let csrfToken = null, currentSession = null, busy = false, historyVersion = 0;
   let notes = [], selectedNote = null;
   const byId = (id) => document.getElementById(id);
-  const labels = {store_note:"KB에 저장", query:"내 자료 검색", external_draft:"공개 초안", clarify:"확인 필요"};
+  const labels = {store_note:"KB에 저장", query:"내 자료 검색", external_draft:"공개 초안", clarify:"확인 필요", task_run:"Task 팀 실행"};
+  const routeKinds = {task:"Task 팀", new_task:"새 Task 팀", domain:"자료 공간", assistant:"비서"};
   function el(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined && text !== null) node.textContent = String(text);
@@ -98,6 +99,29 @@
     } catch(e) { byId("status").textContent = "연결 확인 필요"; showError(byId("global-error"),e); }
   }
   async function loadSessions() {
+    return loadSessionsInner();
+  }
+  async function loadAssignees() {
+    // Owner's Task teams (one team per Task). Domains stay a storage-space fallback only.
+    const group=byId("assignee-tasks"), select=byId("chat-assignee"), keep=select.value;
+    let teams=[];
+    try { teams=await api("GET","/ui/api/chat/assignees"); } catch(_e) { teams=[]; }
+    clear(group);
+    teams.forEach((t)=>{
+      const option=el("option",(t.selectable?"":"(사용 불가) ")+t.goal+" · "+({benchmark:"Benchmark",research:"Research"}[t.pattern]||t.pattern));
+      option.value="task:"+t.task_id; option.disabled=!t.selectable; group.append(option);
+    });
+    if(!teams.length){ const none=el("option","아직 Task 팀 없음 · “…조사해/검증해”로 만들 수 있어요"); none.disabled=true; group.append(none); }
+    if([...select.options].some(o=>o.value===keep && !o.disabled)) select.value=keep; else select.value="";
+    return teams;
+  }
+  function assigneeBody() {
+    const value=byId("chat-assignee").value;
+    if(value.startsWith("task:")) return {task_id:value.slice(5), domain_id:null};
+    if(value.startsWith("domain:")) return {task_id:null, domain_id:value.slice(7)};
+    return {task_id:null, domain_id:null};
+  }
+  async function loadSessionsInner() {
     const sessions = await api("GET","/ui/api/chat/sessions");
     clear(byId("sessions"));
     sessions.sort((a,b) => b.updated_at.localeCompare(a.updated_at));
@@ -119,8 +143,12 @@
     const answer=message("assistant",displayReply(turn));
     answer.querySelector(".speaker").append(el("span",labels[turn.intent]||"응답","route-label"));
     if(turn.route && turn.route.label) {
-      const kind={task:"Task 팀",domain:"도메인 담당",assistant:"비서"}[turn.route.kind];
+      const kind=routeKinds[turn.route.kind]||turn.route.kind;
       answer.append(el("p",kind+" · "+turn.route.label,"assignee"));
+    }
+    if(turn.team) {
+      const t=turn.team;
+      answer.append(el("p","Task "+t.task_id+" · 팀 "+t.team_id+" · "+t.pattern+" · "+t.status+(t.simulated?" · 실험값 simulated(mock)":""),"assignee"));
     }
     if(turn.stages && turn.stages.length) {
       const timeline=el("ol",null,"stage-timeline");
@@ -209,7 +237,7 @@
       const timeline=el("ol",null,"stage-timeline live"); progress.append(timeline); list.append(progress);
       list.scrollTop=list.scrollHeight;
       await streamChat(currentSession, {
-        text, message_id:newKey("chat"), domain_id:byId("chat-domain").value || null
+        text, message_id:newKey("chat"), ...assigneeBody()
       }, (stage)=>{
         progress.querySelector(".bubble").textContent=stage.label;
         timeline.append(el("li",stage.label));
@@ -217,7 +245,7 @@
         list.scrollTop=list.scrollHeight;
       });
       input.value=""; byId("chat-notice").textContent="";
-      await selectSession(currentSession); await loadNotes();
+      await selectSession(currentSession); await Promise.all([loadNotes(),loadAssignees()]);
     } catch(e) {
       byId("chat-notice").textContent="전송 결과를 확인해 주세요. 자동 재전송하지 않습니다.";
       showError(byId("global-error"),e);
@@ -392,7 +420,7 @@
     byId("kb-search").addEventListener("input",renderNotes);
     byId("kb-domain").addEventListener("change",renderNotes);
     try {
-      await loadStatus(); await Promise.all([loadNotes(),loadReviews()]);
+      await loadStatus(); await Promise.all([loadNotes(),loadReviews(),loadAssignees()]);
       const sessions=await loadSessions(); if(sessions.length)await selectSession(sessions[0].session_id);
     } catch(e){showError(byId("global-error"),e);}
     finally {busy=false;byId("send-message").disabled=false;byId("create-session").disabled=false;}

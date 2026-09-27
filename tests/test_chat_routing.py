@@ -221,3 +221,78 @@ async def test_fallback_searches_both_domains_public_does_not_leak(tmp_path):
         assert answer["route"]["kind"] == "assistant" and "CANARY-ROUTE-PRIVATE" in answer["reply"]
         public = await send(c, sid, "제피르 공개 초안 만들어줘", "public")
         assert "CANARY-ROUTE-PRIVATE" not in public["reply"] and public["run_id"] is None
+
+
+async def test_assignee_list_and_explicit_task_selection(tmp_path):
+    async with stack(tmp_path) as (app, c):
+        container = app.state.container
+        mine = await prepare(container, "아틀라스 research 자료 조사", "atlas")
+        # Fixture: a persisted Task/team owned by someone else (authoritative owner registry).
+        with sqlite3.connect(container.repository.path) as db:
+            db.execute(
+                "INSERT INTO product_task_owners VALUES ('foreign-task','other-synthetic','triv3')"
+            )
+            db.execute(
+                "INSERT INTO product_tasks SELECT 'foreign-task', task_json FROM product_tasks"
+            )
+            db.execute(
+                "INSERT INTO team_slots SELECT 'foreign-task', 'foreign-team', generation, phase,"
+                " request_fingerprint, lifecycle_json FROM team_slots"
+            )
+        listed = (await c.get("/ui/api/chat/assignees")).json()
+        assert [t["task_id"] for t in listed] == [mine.task.task_id]
+        assert listed[0]["pattern"] == "research" and listed[0]["selectable"] is True
+        sid = (await c.post("/ui/api/sessions", json={})).json()["session_id"]
+        # Explicit selection routes an otherwise unrelated question to that Task team.
+        answer = await send(c, sid, "마감이 언제야?", "explicit", task_id=mine.task.task_id)
+        assert answer["route"]["kind"] == "task" and answer["route"]["reason"] == "explicit_task"
+        assert answer["route"]["team_id"] == mine.task.team_id and answer["run_id"]
+        assert answer["team"]["task_id"] == mine.task.task_id
+        for bad in ("foreign-task", "missing-task"):
+            rejected = await c.post(
+                f"/ui/api/sessions/{sid}/chat",
+                json={"text": "마감이 언제야?", "message_id": "bad-" + bad, "task_id": bad},
+            )
+            assert rejected.status_code == 404, rejected.text
+        history = (await c.get(f"/ui/api/sessions/{sid}/chat")).json()
+        assert [t["message_id"] for t in history] == ["explicit"]  # rejected turns never persist
+
+
+async def test_explicit_request_creates_one_task_team_then_reuses_it(tmp_path):
+    async with stack(tmp_path) as (app, c):
+        container = app.state.container
+        owner = await container.repository.local_principal()
+        catalog = SqliteTeamCatalog(container.repository)
+        sid = (await c.post("/ui/api/sessions", json={})).json()["session_id"]
+        assert (await c.get("/ui/api/chat/assignees")).json() == []
+        # Plain notes/questions never create a Task team.
+        await send(c, sid, "메모: 헬리오스 벤치마크 계획은 초안 상태입니다.", "note")
+        asked = await send(c, sid, "헬리오스 벤치마크 계획 알려줘", "ask")
+        assert asked["route"]["kind"] == "assistant" and await catalog.list_for(owner) == []
+        created = await send(c, sid, "헬리오스 지연 벤치마크 결과를 검증해줘", "create")
+        assert created["intent"] == "task_run" and created["route"]["kind"] == "new_task"
+        assert created["route"]["reason"] == "explicit_task_request_no_match"
+        teams = await catalog.list_for(owner)
+        assert len(teams) == 1 and created["route"]["task_id"] == teams[0].task.task_id
+        assert created["team"]["pattern"] == "benchmark" and created["team"]["simulated"] is True
+        assert [e["stage"] for e in created["stages"]] == [
+            "understanding",
+            "routing",
+            "preparing",
+            "completed",
+        ]
+        # Same message again: idempotent replay, no second Task/team.
+        replay = await send(c, sid, "헬리오스 지연 벤치마크 결과를 검증해줘", "create")
+        assert replay["run_id"] == created["run_id"] and len(await catalog.list_for(owner)) == 1
+        listed = (await c.get("/ui/api/chat/assignees")).json()
+        assert listed[0]["task_id"] == teams[0].task.task_id and listed[0]["pattern"] == "benchmark"
+        # A later related question is routed to the same Task team automatically.
+        follow = await send(c, sid, "헬리오스 지연 결과 알려줘", "follow")
+        assert follow["route"]["kind"] == "task"
+        assert follow["route"]["task_id"] == teams[0].task.task_id
+        result = await container.service.team_result(follow["run_id"], owner)
+        assert result.team_id == teams[0].task.team_id
+        assert len(await catalog.list_for(owner)) == 1
+        # An explicit request that matches the existing Task reuses it (no new team).
+        again = await send(c, sid, "헬리오스 지연 벤치마크를 다시 분석해줘", "again")
+        assert again["route"]["kind"] == "task" and len(await catalog.list_for(owner)) == 1
