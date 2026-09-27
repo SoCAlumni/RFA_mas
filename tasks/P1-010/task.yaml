@@ -1,0 +1,272 @@
+schema_version: '1.0'
+id: P1-010
+title: 승희 knowledge 계약 구현 facade와 다영 실행 형태 정합
+objective: RFA_module contracts/knowledge.openapi.yaml(GET /tasks, POST /tasks/{id}/ask)을 core 정책·검색·egress
+  필터·모델 포트 위에서 실제로 제공하고, RequestForApproval modules.yaml의 8791/0.0.0.0 실행 형태로 띄울 수 있게 한다. stub 교체 시 KNOWLEDGE_URL만
+  바꾸면 된다.
+kind: task
+source_tasks:
+- P1-008F
+- P1-001
+- P1-005
+requirement_refs:
+- docs/INTEGRATION.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: worker
+estimated_effort: 3.0
+product_owner: 민섭(실무대장 API 제공); 계약 원본은 승희 RFA_module contracts/knowledge.openapi.yaml
+execution_class: 이 저장소 구현(실제 로컬 코드; 모델은 설정된 provider)
+product_mode: local/mock 기본; 공개 근거만 답변. 실제 승희 서비스 연동·샌드박스 정책 통과는 별도 not_run.
+scope:
+  included:
+  - rfa_common 모델과 1:1인 Pydantic DTO(TaskInfo, AskRequest, KnowledgeResult)
+  - 별도 FastAPI facade 앱과 CLI 실행(host/port/audience 명시)
+  - 정책 결정→audience 제한 검색→share/sensitive/egress 필터→모델 생성→answer/sources/confidence 구성
+  - 승희 yaml 고정 사본과 응답 schema 호환 테스트
+  excluded:
+  - Supervisor graph·공통 DTO·bootstrap·settings 변경
+  - 실제 승희 review 서비스 호출·게시
+  - OpenShell/NemoClaw 실행
+  owned_paths:
+  - src/rfa_mas/cli.py
+  - src/rfa_mas/knowledge_facade
+  - tests/test_knowledge_facade.py
+  - tests/helpers/openapi_check.py
+  - fixtures/contracts/rfa_module
+  - docs/api/knowledge-facade.openapi.json
+  - docs/TEAM_ALIGNMENT.md
+  read_only_paths:
+  - src/rfa_mas/application/graphs/domain.py
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/api/app.py
+  planned_paths:
+  - src/rfa_mas/cli.py
+  - src/rfa_mas/knowledge_facade
+  - tests/test_knowledge_facade.py
+  - tests/helpers/openapi_check.py
+  - fixtures/contracts/rfa_module
+  - docs/api/knowledge-facade.openapi.json
+  - docs/TEAM_ALIGNMENT.md
+  shared_resources: []
+depends_on: []
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/application/graphs/domain.py
+    section: authorize/retrieve/generate, share_egress_filter
+    reason: 동일한 정책·egress 규칙을 facade에서 재사용
+  - path: src/rfa_mas/bootstrap.py
+    section: Container
+    reason: 포트 조립 재사용; 새 backend 분기 금지
+  handoff: tasks/P1-010/handoff.md
+  dependency_results: []
+deliverables:
+- path: src/rfa_mas/knowledge_facade
+  availability: planned
+  description: 승희 계약 DTO·facade 서비스·FastAPI 앱(CLI 진입은 src/rfa_mas/cli.py)
+- path: docs/api/knowledge-facade.openapi.json
+  availability: planned
+  description: 생성 OpenAPI
+- path: docs/TEAM_ALIGNMENT.md
+  availability: planned
+  description: 팀원 레포 대응표·실행 명령·교체 절차
+acceptance_criteria:
+- id: AC1
+  given: GET /tasks와 POST /tasks/{id}/ask 호출
+  expect: 승희 knowledge.openapi.yaml schema를 만족하는 응답; 없는 task는 404 {error, id}; 근거 없음은 answer 빈 문자열과 sources
+    []
+  required: true
+- id: AC2
+  given: public audience facade에 비공개/canary 자료가 있는 도메인 질의
+  expect: 비공개 자료와 canary marker가 answer/sources에 나타나지 않음; 정책 거절 시 빈 답변
+  required: true
+- id: AC3
+  given: CLI 실행 형태
+  expect: host/port/audience를 명시적으로 받고 public 외 audience는 API key 없이 non-loopback bind를 거절
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 합성 fixture·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_knowledge_facade.py
+  timeout_seconds: 180
+  procedure: []
+  assertions:
+  - 승희 schema 호환
+  - 공개 근거 제한과 canary 미노출
+  - CLI bind/audience 검사
+  runner: pytest
+evidence_dir: .agent/evidence/P1-010
+latest_evidence_file: .agent/evidence/P1-010/target-0927044245/result.json
+verification_summary:
+  state: passed
+  spec_revision: 3
+  spec_digest: 8ef11dc51a5332d512c16d753cf45ba1cb72f4fe5bca02295f01912509ddd651
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 14d00fe5e05ce0bf29cfdab85eb5fb0b52f0824533a660ca5b38c6d42ec61b97
+  evidence: .agent/evidence/P1-010/target-0927044245/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 5
+  submission:
+    head: 31e772a9ef661cf97b072f06d2dfaa29588216b3
+    baseline_head: b095fa7a5e2ddf4de4082205baacb5658ece74d7
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-010-int-0927044208
+    branch: task/P1-010-int-0927044208
+    evidence: .agent/evidence/P1-010/worker-0927044218/result.json
+    changed_files:
+      docs/TEAM_ALIGNMENT.md: 248632019b3be6dacd95ffc0778bd1791fef507aa178ec1a9453d8bd6ce04f54
+      docs/api/knowledge-facade.openapi.json: 5ec79f0615910f7e270ce0a4223a84742f39fa00dacba7e30555049df6c41fc9
+      fixtures/contracts/rfa_module/PINNED.md: 0100e3517ad93155f414e0e214b3917420f069e2732572127c732528c7d3638d
+      fixtures/contracts/rfa_module/knowledge.openapi.yaml: c324fc6fe6eee07631be24c305d969a878941d2d4a7e26ff03cf6b1f8d7b4a5e
+      fixtures/contracts/rfa_module/review.openapi.yaml: 04d8684de0397585f1e4d85c404a464789428a905fc76d4ad7951cfa2005b75d
+      src/rfa_mas/cli.py: b8ba4785032004f1544685ded519f81954d522420237d775cc5535666614ccbd
+      src/rfa_mas/knowledge_facade/__init__.py: 938e060fce54ee5edb673aa09196a2ac0074ea31c97a0bb9d1fca4edd91ede8c
+      src/rfa_mas/knowledge_facade/app.py: 80a295e2e3cffb3cfa57fe73ac17c1898359c0af032d7adad947c1a3b7f793eb
+      src/rfa_mas/knowledge_facade/contract.py: 007d1712e529f82325bb40ab0ce381d6da15042adcfb0750973bd7bccfe13722
+      src/rfa_mas/knowledge_facade/service.py: 9f1ba4b3fad16531ba691310bb90afe047cb6f35d6cac7e24aa17f56c7d52c53
+      tests/helpers/openapi_check.py: 8e2fc7d288b7c3a9c261df3d2fe98d31856e799d584740d5df00554d753c9efa
+      tests/test_knowledge_facade.py: e42a48bf06e617aa25b86832753ea9f5b6bcff27d94c5494c36141e0d5ddbf77
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 3
+      spec_digest: 8ef11dc51a5332d512c16d753cf45ba1cb72f4fe5bca02295f01912509ddd651
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 14d00fe5e05ce0bf29cfdab85eb5fb0b52f0824533a660ca5b38c6d42ec61b97
+      evidence: .agent/evidence/P1-010/target-0927044245/result.json
+    head: 31e772a9ef661cf97b072f06d2dfaa29588216b3
+  evidence: .agent/evidence/P1-010/target-0927044245/result.json
+revision: 18
+spec_revision: 3
+claim_generation: 5
+claim: null
+attempts:
+  count: 3
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: target-0927044245
+  evidence_refs:
+  - .agent/evidence/P1-010/worker-0927043929/result.json
+  - .agent/evidence/P1-010/worker-0927044218/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
+    baseline_head: efa063ab58f54e490151e565dfd10ecacd6c6e15
+    reason: lease expired during implementation; commit 1532dcc reviewed; re-integrate from current main
+    at: '2026-09-27T04:37:49+00:00'
+    cycles: 0
+    no_progress_count: 0
+    claim:
+      session_id: worker-align-1
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-010-align
+      branch: feat/P1-010-teammate-alignment
+      generation: 1
+      claimed_at: '2026-09-27T04:15:46+00:00'
+      heartbeat_at: '2026-09-27T04:15:46+00:00'
+      lease_expires_at: '2026-09-27T04:30:46+00:00'
+      baseline_head: efa063ab58f54e490151e565dfd10ecacd6c6e15
+      recovery_required: false
+      context_digest: 8c7b695f1ae28d17c3aaae5d5e7ea217cf762460cb1f146ff9898d5c02e8b273
+    integration:
+      state: pending
+      target: main canonical control checkout
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: not_run
+      spec_revision: null
+      spec_digest: null
+      contract_digest: null
+      source_fingerprint: null
+      evidence: null
+    latest_evidence_file: null
+  - kind: release
+    at: '2026-09-27T04:41:12+00:00'
+    reason: 명세의 산출물 경로를 frozen 회피 위치(src/rfa_mas/knowledge_facade, docs/api)로 갱신하기 위해 반납
+    claim:
+      session_id: worker-align-1
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-010-int-0927043922
+      branch: task/P1-010-int-0927043922
+      generation: 3
+      claimed_at: '2026-09-27T04:39:26+00:00'
+      heartbeat_at: '2026-09-27T04:39:26+00:00'
+      lease_expires_at: '2026-09-27T04:54:26+00:00'
+      baseline_head: cc86868fa1a552ed09d80e27634d1f1354e7e788
+      recovery_required: false
+      context_digest: ae6f04b624b3a2b2a4933d1625a158874439c741f91757fadbb3c7f0871c8f62
+  - kind: recovery
+    generation: 4
+    baseline_head: cc86868fa1a552ed09d80e27634d1f1354e7e788
+    reason: 명세 경로 갱신을 위해 예약 해제; 커밋 8f55c92(worktree)와 evidence worker-0927043929 보존
+    at: '2026-09-27T04:41:37+00:00'
+    cycles: 1
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: pending
+      target: main canonical control checkout
+      reason: null
+      reservation: true
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: passed
+      spec_revision: 2
+      spec_digest: 9022f510ae48d510779914f64189245738489e7e524da5cb51903611d6c8d36c
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: a746f5d59ba7c1577c77022bef92304b83eea90a1b942fa7058ab45f729256c8
+      evidence: .agent/evidence/P1-010/worker-0927043929/result.json
+    latest_evidence_file: .agent/evidence/P1-010/worker-0927043929/result.json
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: '2026-09-27 사용자 요청: 승희/다영 레포에 맞춰 개선'
+  prior_claim: knowledge stub는 승희 레포에만 존재; rfa_mas는 자체 /v1/knowledge API만 제공
+  implementation_facts: core에 정책/검색/모델 포트와 egress 필터 존재; 승희 계약 형태의 route 없음
+  previous_evidence: []
+  checks_this_migration:
+  - RFA_module 819053f contracts/docs 확인
+  - RequestForApproval a59a789 modules.yaml/policies 확인
+  - UI PoC 아티팩트 화면 확인
+  judgment: 기존 core 변경 없이 facade로 계약 제공
+  initial_spec_revision: 1
+updated_at: '2026-09-27T04:43:06+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: DTO·facade 서비스·FastAPI 앱·CLI·호환 테스트 구현

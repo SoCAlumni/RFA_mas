@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 4eb3a6d7d5f9632e8dfad6ef712d7d717ae118e58ed32d3431b9c4ce64290138
+source_digest: 334131ad950ad472a5cacacf18e1f1a757d2962bc172c9b2e33e0acac764a236
 source_revisions:
   OPS-000: 8
   OPS-001: 13
@@ -24,10 +24,10 @@ source_revisions:
   P0-011: 1
   P0-012: 1
   P0-013: 1
-  P0-014: 247
+  P0-014: 248
   P0-015: 298
   P0-016: 315
-  P0-017: 291
+  P0-017: 292
   P0-018: 264
   P0-019: 234
   P0-020: 196
@@ -35,11 +35,11 @@ source_revisions:
   P0-020B: 18
   P0-021: 84
   P0-022: 64
-  P0-023: 80
+  P0-023: 81
   P0-024: 55
   P0-025: 48
-  P0-025A: 33
-  P0-026: 53
+  P0-025A: 34
+  P0-026: 54
   P0-027: 122
   P0-028: 93
   P1-001: 260
@@ -60,25 +60,29 @@ source_revisions:
   P1-005A: 113
   P1-005B: 35
   P1-005C: 13
-  P1-006: 309
+  P1-006: 310
   P1-006A: 23
-  P1-006B: 20
+  P1-006B: 21
   P1-006C: 32
   P1-006D: 274
   P1-006E: 44
-  P1-006F: 28
+  P1-006F: 29
   P1-007: 16
   P1-007A: 16
   P1-007B: 2
   P1-007C: 29
-  P1-008: 66
+  P1-008: 67
   P1-008A: 4
   P1-008B: 4
   P1-008C: 42
   P1-008D: 33
   P1-008E: 23
-  P1-008F: 10
+  P1-008F: 11
+  P1-008G: 16
+  P1-008H: 3
   P1-009: 16
+  P1-010: 18
+  P1-011: 14
   P2-001: 2
   P2-002: 2
   P2-003: 61
@@ -88,7 +92,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T03:14:21+00:00'
+generated_at: '2026-09-27T04:46:33+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -641,12 +645,34 @@ tasks:
   - P1-008C
   - P0-026
   path: tasks/P1-008F/task.yaml
+- id: P1-008G
+  title: 비서 채팅 자동 라우팅과 내 KB 탭
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008F
+  path: tasks/P1-008G/task.yaml
+- id: P1-008H
+  title: 담당 Task 자동 라우팅·비서 fallback·실제 단계 스트림
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008G
+  path: tasks/P1-008H/task.yaml
 - id: P1-009
   title: D4 회귀·교육/심사 증거·최종 상태 확정
   workstream: integration/evaluation
   depends_on:
   - P0-026
   path: tasks/P1-009/task.yaml
+- id: P1-010
+  title: 승희 knowledge 계약 구현 facade와 다영 실행 형태 정합
+  workstream: integration/evaluation
+  depends_on: []
+  path: tasks/P1-010/task.yaml
+- id: P1-011
+  title: 결재 인박스 UI PoC 대응 API 계약과 reference 서버
+  workstream: contracts/control
+  depends_on: []
+  path: tasks/P1-011/task.yaml
 - id: P2-001
   title: clustering 기반 Task 후보 제안
   workstream: knowledge

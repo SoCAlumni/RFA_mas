@@ -1,0 +1,57 @@
+{
+  "attempt_id": "target-0927044414",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "reference/mock; simulated=true. 실제 결재·게시·샌드박스 제어 없음.",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_inbox_reference.py"
+        ],
+        "assertions": [
+          "화면 항목 계약 매핑",
+          "결정 상태 전이·규칙·알림",
+          "승희 Review 매핑"
+        ],
+        "counts": {
+          "collected": 8,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 8,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 1.55,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T04:44:22.019934+00:00",
+        "id": "V1",
+        "log_excerpt": "8 passed in 0.41s",
+        "result": "passed",
+        "started_at": "2026-09-27T04:44:20.472332+00:00",
+        "timeout_seconds": 180
+      }
+    ],
+    "environment": {
+      "head": "e6bfa129b86166bf4a737b03aa4d6c3d6a994cfc",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T04:44:22.019985+00:00",
+    "limits": "Local/mock synthetic verification only; no live NVIDIA, teammate service, OpenShell, publication or final E2E claim.",
+    "reviewer": "rfa-coordinator (claude-fable-5-1)",
+    "started_at": "2026-09-27T04:44:20.471166+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "f11a41828b307b9dc9d24f578e7f8e05bf8969d392d441450e65b15a9af0a070",
+  "source_manifest": ".agent/evidence/P1-011/target-0927044414/source.json",
+  "spec_digest": "d8fe8cbc2e6d5ac88561c464ce3a6355dffdd58fcd97f9a8eccdd257cea33f1a",
+  "spec_revision": 4,
+  "task_id": "P1-011"
+}

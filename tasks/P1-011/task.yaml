@@ -1,0 +1,229 @@
+schema_version: '1.0'
+id: P1-011
+title: 결재 인박스 UI PoC 대응 API 계약과 reference 서버
+objective: 결재 인박스 UI 시안(메일형 3단·차단·Slack·리서치·관리자 에이전트/샌드박스 화면)이 필요로 하는 API를 Pydantic 계약으로 정의하고 OpenAPI로
+  내보내며, PoC 데이터로 동작하는 reference 서버와 승희 Review→인박스 요청 매퍼를 제공한다.
+kind: task
+source_tasks:
+- P1-008F
+- P0-025A
+requirement_refs:
+- docs/INTEGRATION.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: contracts/control
+execution_role: worker
+estimated_effort: 4.0
+product_owner: 민섭(계약·reference); 결재 원본 승희, runtime/UI 원본 다영
+execution_class: 이 저장소 구현(계약 + reference/mock)
+product_mode: reference/mock; simulated=true. 실제 결재·게시·샌드박스 제어 없음.
+scope:
+  included:
+  - /v1/inbox 계약 DTO(인박스·요청·결재 카드·결정·미리보기·알림·활동·규칙·관리자 에이전트/샌드박스)
+  - operation별 x-rfa-authority 소유 표시와 생성 OpenAPI(json/yaml)
+  - PoC 표본 데이터 fixture와 in-memory reference 서버(상태 전이·규칙·알림)
+  - 승희 Review JSON→RequestDetail 매퍼와 표본 테스트
+  excluded:
+  - 실제 승희 review 호출·다영 runtime 제어(3단계 공개 범위 실제 매핑은 승희 Step 12+ 재작성 루프 뒤; 관리자 설정 원본은 다영 runtime)
+  - 기존 UI/PoC 변경(P1-008G 소유)
+  - 공통 DTO·bootstrap 변경
+  owned_paths:
+  - src/rfa_mas/inbox
+  - fixtures/inbox
+  - fixtures/contracts/rfa_module
+  - tests/test_inbox_reference.py
+  - tests/helpers/openapi_check.py
+  - docs/api/inbox.openapi.json
+  - docs/api/inbox.openapi.yaml
+  - docs/INBOX_API.md
+  - scripts/export_openapi.py
+  read_only_paths:
+  - src/rfa_mas/ui
+  - src/rfa_mas/poc
+  planned_paths:
+  - src/rfa_mas/inbox
+  - fixtures/inbox
+  - fixtures/contracts/rfa_module
+  - tests/test_inbox_reference.py
+  - tests/helpers/openapi_check.py
+  - docs/api/inbox.openapi.json
+  - docs/api/inbox.openapi.yaml
+  - docs/INBOX_API.md
+  - scripts/export_openapi.py
+  shared_resources: []
+depends_on: []
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/reference/local_response.py
+    section: create_local_response_app
+    reason: reference 앱 작성 관례
+  handoff: tasks/P1-011/handoff.md
+  dependency_results: []
+deliverables:
+- path: docs/api/inbox.openapi.yaml
+  availability: planned
+  description: UI PoC용 생성 OpenAPI
+- path: src/rfa_mas/inbox
+  availability: planned
+  description: 계약 DTO·PoC 데이터 reference 서버·승희 Review 매퍼
+- path: docs/INBOX_API.md
+  availability: planned
+  description: 화면→route 대응표와 authority
+acceptance_criteria:
+- id: AC1
+  given: PoC 4개 화면과 관리자 2개 화면의 표시 항목
+  expect: 각 항목이 계약 필드로 표현되고 reference 응답으로 조회 가능; OpenAPI에 operation 소유(x-rfa-authority) 표시
+  required: true
+- id: AC2
+  given: 결정 제출(범위 선택/응답하지 않기/보류/차단 처리, 규칙 저장)
+  expect: 상태 전이와 알림·규칙 생성이 일관되고 종료 상태 재결정은 409; 잘못된 option은 422
+  required: true
+- id: AC3
+  given: 승희 Review 표본 JSON
+  expect: 상태·원본·결재 카드가 손실 없이 RequestDetail로 매핑되고 reviewed만 needs_approval
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - fixture만 사용; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_inbox_reference.py
+  timeout_seconds: 180
+  procedure: []
+  assertions:
+  - 화면 항목 계약 매핑
+  - 결정 상태 전이·규칙·알림
+  - 승희 Review 매핑
+  runner: pytest
+evidence_dir: .agent/evidence/P1-011
+latest_evidence_file: .agent/evidence/P1-011/target-0927044414/result.json
+verification_summary:
+  state: passed
+  spec_revision: 4
+  spec_digest: d8fe8cbc2e6d5ac88561c464ce3a6355dffdd58fcd97f9a8eccdd257cea33f1a
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: f11a41828b307b9dc9d24f578e7f8e05bf8969d392d441450e65b15a9af0a070
+  evidence: .agent/evidence/P1-011/target-0927044414/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 3
+  submission:
+    head: e6bfa129b86166bf4a737b03aa4d6c3d6a994cfc
+    baseline_head: 31e772a9ef661cf97b072f06d2dfaa29588216b3
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-011-int-0927044320
+    branch: task/P1-011-int-0927044320
+    evidence: .agent/evidence/P1-011/worker-0927044328/result.json
+    changed_files:
+      docs/INBOX_API.md: 1ba07e5bb28208977883e2db210e66230d075317a45708138e372eeb07338428
+      docs/api/inbox.openapi.json: 4f6c8e4b6d3106f0cd8fd0038729cc9de371693050ccecefb3ef5f2a6538e82f
+      docs/api/inbox.openapi.yaml: f867343f853fe5426ed311791a37f4e95c85576dc35a67c4f0d524c371cdbb23
+      fixtures/inbox/poc_cases.json: 6db8f3f2580a063861accc1250163a4295a5fd9f2f083d4a60d9b99096ba367b
+      fixtures/inbox/rfa_module_reviews.json: d2e0c20b4b1d87f865cbc9e826b819d2969cc68eb3ce51ea7bb936da605bb17e
+      scripts/export_openapi.py: 3437af8b9f38884a98609e904afea9c6bfa25545ccd06e9d8c5a4977750efa82
+      src/rfa_mas/inbox/__init__.py: 0361a6f6b960466274e07b4dc04a67ab402d03b9d5fda4c89f990894e759780b
+      src/rfa_mas/inbox/__main__.py: 4b2696f4f0db10212119391b0a9720413dc8ad64f4bf1cd886838076bc49032c
+      src/rfa_mas/inbox/contract.py: 8ca657e165dacdb0d4db47ce72acb7ebbdd4a8337a2bdeb41f315e80bf72eff0
+      src/rfa_mas/inbox/reference.py: 5bedb114f9dacfd5b8a775b61cc46ae4c73c1cff995bbffb29f2cbfcd60ec539
+      src/rfa_mas/inbox/rfa_module.py: 65f9ba553681b447bfc9e7ff579ef254ba4fb4b7e4654849059db2ca8262618f
+      tests/test_inbox_reference.py: 2c059e029ce288916d57f4b6ed4c3a40e38c8b888439f1f6fdf87e00ab9deeeb
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 4
+      spec_digest: d8fe8cbc2e6d5ac88561c464ce3a6355dffdd58fcd97f9a8eccdd257cea33f1a
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: f11a41828b307b9dc9d24f578e7f8e05bf8969d392d441450e65b15a9af0a070
+      evidence: .agent/evidence/P1-011/target-0927044414/result.json
+    head: e6bfa129b86166bf4a737b03aa4d6c3d6a994cfc
+  evidence: .agent/evidence/P1-011/target-0927044414/result.json
+revision: 14
+spec_revision: 4
+claim_generation: 3
+claim: null
+attempts:
+  count: 2
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: target-0927044414
+  evidence_refs:
+  - .agent/evidence/P1-011/worker-0927044328/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
+    baseline_head: efa063ab58f54e490151e565dfd10ecacd6c6e15
+    reason: lease expired during implementation; commit ced00b8 reviewed; re-integrate from current main
+    at: '2026-09-27T04:37:56+00:00'
+    cycles: 0
+    no_progress_count: 0
+    claim:
+      session_id: worker-align-2
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-011-inbox
+      branch: feat/P1-011-inbox-contract
+      generation: 1
+      claimed_at: '2026-09-27T04:16:05+00:00'
+      heartbeat_at: '2026-09-27T04:16:05+00:00'
+      lease_expires_at: '2026-09-27T04:31:05+00:00'
+      baseline_head: efa063ab58f54e490151e565dfd10ecacd6c6e15
+      recovery_required: false
+      context_digest: e71b00c57c44c40accc4df3fdd699cf4aa411d1e03112160bd3cb5a0d95246be
+    integration:
+      state: pending
+      target: main canonical control checkout
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: not_run
+      spec_revision: null
+      spec_digest: null
+      contract_digest: null
+      source_fingerprint: null
+      evidence: null
+    latest_evidence_file: null
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 사용자 제공 UI PoC(결재 인박스 UI 시안 아티팩트)
+  prior_claim: 기존 UI는 폼 기반 로컬 UI; 인박스/결재 카드/관리자 화면 계약 없음
+  implementation_facts: reference 앱 관례(local_response.py) 존재; 승희 Review 모델은 rfa_common에 정의
+  previous_evidence: []
+  checks_this_migration:
+  - RFA_module 819053f contracts/docs 확인
+  - RequestForApproval a59a789 modules.yaml/policies 확인
+  - UI PoC 아티팩트 화면 확인
+  judgment: 계약과 reference를 먼저 제공하고 실제 upstream 매핑은 후속
+  initial_spec_revision: 1
+updated_at: '2026-09-27T04:44:35+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: DTO·reference 서버·fixture·매퍼·OpenAPI 내보내기 구현
