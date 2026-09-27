@@ -253,11 +253,28 @@ def resume_interrupted_onboarding(assignments: Assignments, env: dict[str, str],
     return True
 
 
+def delete_orphan_mcp_providers(name: str, runner: Runner) -> list[str]:
+    """`nemoclaw destroy` can leave the sandbox's managed-MCP providers (`<sandbox>-mcp-<server>`)
+    in the OpenShell gateway; a later `mcp add` for a same-named sandbox then fails with
+    "non-prefix partial state". Delete them explicitly (documented operator cleanup)."""
+    listed = runner.run(["openshell", "provider", "list"], timeout=60)
+    deleted: list[str] = []
+    for line in listed.stdout.splitlines():
+        provider = line.split()[0] if line.split() else ""
+        if provider.startswith(f"{name}-mcp-"):
+            if runner.run(["openshell", "provider", "delete", provider], timeout=60).ok:
+                deleted.append(provider)
+    if deleted:
+        log(f"retire {name}: deleted orphan MCP providers {deleted}")
+    return deleted
+
+
 def retire_legacy(name: str, runner: Runner, nemoclaw_bin: str) -> None:
     stamp = time.strftime("%Y%m%d-%H%M%S")
     log(f"retire {name}: snapshot create --name pre-sg-{stamp}, then destroy")
     runner.run([nemoclaw_bin, name, "snapshot", "create", "--name", f"pre-sg-{stamp}"], timeout=600)
     runner.run([nemoclaw_bin, name, "destroy", "--yes"], timeout=600, check=True)
+    delete_orphan_mcp_providers(name, runner)
 
 
 # --------------------------------------------------------------------------- seeding
@@ -421,6 +438,7 @@ def teardown(runner: Runner | None = None, *, names: tuple[str, ...] = ()) -> li
         result = runner.run([nb, sandbox, "destroy", "--yes"], timeout=600)
         if result.ok:
             destroyed.append(sandbox)
+            delete_orphan_mcp_providers(sandbox, runner)
         else:
             log(f"teardown {sandbox}: destroy failed: {(result.stderr or result.stdout)[-200:]}")
     return destroyed
