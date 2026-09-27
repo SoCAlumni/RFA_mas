@@ -90,7 +90,7 @@ KF_PORT ?= 8795
 knowledge-facade:
 	@mkdir -p $(SG_DIR)
 	@if [ -f $(SG_DIR)/kf.pid ] && kill -0 $$(cat $(SG_DIR)/kf.pid) 2>/dev/null; then echo "knowledge-facade running"; else \
-	  nohup $(UV) rfa knowledge-facade --host 0.0.0.0 --port $(KF_PORT) --audience public > $(SG_DIR)/kf.log 2>&1 & echo $$! > $(SG_DIR)/kf.pid; \
+	  RFA_FACADE_TEAM_NOTES=1 nohup $(UV) rfa knowledge-facade --host 0.0.0.0 --port $(KF_PORT) --audience public > $(SG_DIR)/kf.log 2>&1 & echo $$! > $(SG_DIR)/kf.pid; \
 	  echo "knowledge-facade started (pid $$(cat $(SG_DIR)/kf.pid))"; fi
 
 knowledge-facade-stop:

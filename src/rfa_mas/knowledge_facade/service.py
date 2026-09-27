@@ -12,6 +12,7 @@ Not a graph node and not a new backend: adapters are injected by the caller.
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -35,6 +36,7 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.errors import RfaError
 from rfa_mas.knowledge_facade.contract import KnowledgeResult, TaskInfo
+from rfa_mas.knowledge_facade.notes import NoteStore
 
 FACADE_AGENT_ID = "task-supervisor-facade"
 KNOWLEDGE_CHANNEL = "knowledge"
@@ -103,6 +105,7 @@ class KnowledgeFacadeService:
         disclosure_markers=None,
         catalog: tuple[TaskCatalogEntry, ...] = DEFAULT_CATALOG,
         limit: int = 5,
+        notes: NoteStore | None = None,
     ) -> None:
         if audience in {Audience.OWNER, Audience.PRIVATE}:
             # Owner-only material must never be served to an external writer channel.
@@ -117,6 +120,11 @@ class KnowledgeFacadeService:
         self.disclosure_markers = disclosure_markers
         self.catalog = {entry.id: entry for entry in catalog}
         self.limit = limit
+        # Task-team notes (deploy/nemoclaw/kb/t-*.jsonl) beside the core domains; opt-in so the
+        # pinned core catalog stays as is (`make knowledge-facade` sets RFA_FACADE_TEAM_NOTES=1).
+        if notes is None and os.environ.get("RFA_FACADE_TEAM_NOTES") == "1":
+            notes = NoteStore(limit=limit)
+        self.notes = notes
         self.started_on: date = datetime.now(UTC).date()
 
     @classmethod
@@ -191,7 +199,7 @@ class KnowledgeFacadeService:
                     updated_at=await self._updated_on(principal, entry.domain_id),
                 )
             )
-        return tasks
+        return tasks + (self.notes.list_tasks() if self.notes else [])
 
     async def _updated_on(self, principal: TrustedPrincipal, domain_id: DomainId) -> date:
         try:
@@ -202,9 +210,11 @@ class KnowledgeFacadeService:
         return latest.date() if latest is not None else self.started_on
 
     def has_task(self, task_id: str) -> bool:
-        return task_id in self.catalog
+        return task_id in self.catalog or bool(self.notes and self.notes.has_task(task_id))
 
     async def ask(self, task_id: str, question: str) -> KnowledgeResult:
+        if task_id not in self.catalog and self.notes:
+            return self.notes.ask(task_id, question)
         entry = self.catalog[task_id]
         empty = KnowledgeResult(task_id=task_id, answer="", confidence=0.0, sources=[])
         principal = await self._principal()
