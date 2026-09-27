@@ -1,18 +1,23 @@
 """Small replaceable chat contract; routing is not an authorization decision."""
 
 import re
+from collections.abc import AsyncIterator
 from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from rfa_mas.contracts import DomainId
+from rfa_mas.contracts import DomainId, TeamLifecycle, TrustedPrincipal
+
+
+class TeamCatalogPort(Protocol):
+    async def list_for(self, principal: TrustedPrincipal) -> list[TeamLifecycle]: ...
 
 
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     text: str = Field(min_length=1, max_length=10000)
     message_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,160}$")
-    domain_id: DomainId = DomainId.TRIV3
+    domain_id: DomainId | None = None
 
 
 class ChatPort(Protocol):
@@ -21,6 +26,8 @@ class ChatPort(Protocol):
     async def history(self, session_id: str) -> list[dict]: ...
 
     async def send(self, session_id: str, body: ChatMessage) -> dict: ...
+
+    async def stream(self, session_id: str, body: ChatMessage) -> AsyncIterator[dict]: ...
 
 
 def chat_intent(text: str) -> str:

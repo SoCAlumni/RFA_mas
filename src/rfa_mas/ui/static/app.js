@@ -118,6 +118,20 @@
     const list=byId("messages"); list.append(message("user",turn.text));
     const answer=message("assistant",displayReply(turn));
     answer.querySelector(".speaker").append(el("span",labels[turn.intent]||"응답","route-label"));
+    if(turn.route && turn.route.label) {
+      const kind={task:"Task 팀",domain:"도메인 담당",assistant:"비서"}[turn.route.kind];
+      answer.append(el("p",kind+" · "+turn.route.label,"assignee"));
+    }
+    if(turn.stages && turn.stages.length) {
+      const timeline=el("ol",null,"stage-timeline");
+      turn.stages.forEach(s=>timeline.append(el("li",s.label)));
+      answer.append(timeline);
+    }
+    if(turn.evidence && turn.evidence.length) {
+      const detail=el("details",null,"run-detail"); detail.append(el("summary","검색 근거"));
+      turn.evidence.forEach(ref=>detail.append(el("p",ref.source_id+" · "+ref.source_revision)));
+      answer.append(detail);
+    }
     const actions=el("div",null,"message-meta");
     if(turn.source_id) {
       const b=el("button","저장한 메모 보기 ↗","text-button"); b.type="button";
@@ -186,9 +200,16 @@
       }
       const list=byId("messages"), empty=list.querySelector(".welcome"); if(empty) empty.remove();
       const pending=message("user",text); list.append(pending);
+      const progress=message("assistant","요청 접수 중…");
+      const timeline=el("ol",null,"stage-timeline live"); progress.append(timeline); list.append(progress);
       list.scrollTop=list.scrollHeight;
-      await api("POST","/ui/api/sessions/"+encodeURIComponent(currentSession)+"/chat", {
-        text, message_id:newKey("chat"), domain_id:byId("chat-domain").value
+      await streamChat(currentSession, {
+        text, message_id:newKey("chat"), domain_id:byId("chat-domain").value || null
+      }, (stage)=>{
+        progress.querySelector(".bubble").textContent=stage.label;
+        timeline.append(el("li",stage.label));
+        byId("chat-notice").textContent=stage.label;
+        list.scrollTop=list.scrollHeight;
       });
       input.value=""; byId("chat-notice").textContent="";
       await selectSession(currentSession); await loadNotes();
@@ -199,6 +220,34 @@
       busy=false; byId("send-message").disabled=false; byId("create-session").disabled=false;
       byId("messages").setAttribute("aria-busy","false"); input.focus();
     }
+  }
+  async function streamChat(session, body, onStage) {
+    const response=await fetch("/ui/api/sessions/"+encodeURIComponent(session)+"/chat/stream",{
+      method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+      headers:{"Content-Type":"application/json","X-RFA-CSRF":await ensureCsrf()},
+      body:JSON.stringify(body)
+    });
+    if(!response.ok || !response.body) throw {code:"chat_rejected",message:"요청을 처리할 수 없습니다."};
+    const reader=response.body.getReader(), decoder=new TextDecoder();
+    let buffer="", finished=false;
+    function consume(line) {
+      if(!line.trim()) return;
+      const event=JSON.parse(line);
+      if(event.type==="stage") onStage(event);
+      if(event.type==="result") finished=true;
+      if(event.type==="error") throw event;
+    }
+    try {
+      while(true) {
+        const {value,done}=await reader.read();
+        buffer+=decoder.decode(value,{stream:!done});
+        let end;
+        while((end=buffer.indexOf("\n"))>=0) {consume(buffer.slice(0,end));buffer=buffer.slice(end+1);}
+        if(done) break;
+      }
+      if(buffer.trim()) consume(buffer);
+      if(!finished) throw {code:"outcome_unknown",message:"연결이 종료되었습니다. 대화를 다시 조회하세요.",query_required:true};
+    } finally { await reader.cancel(); reader.releaseLock(); }
   }
   function noteMatches(n) {
     const q=byId("kb-search").value.toLowerCase(), domain=byId("kb-domain").value;

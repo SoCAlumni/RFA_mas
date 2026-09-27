@@ -75,7 +75,8 @@ async def test_note_question_kb_history_restart_and_idempotency(tmp_path):
         answer = await send(c, sid, "아틀라스 프로젝트 마감 알려줘", "msg-2")
         assert answer["intent"] == "query", answer
         assert "10월 2일" in answer["reply"], answer
-        assert answer["run"]["draft"]["audience"] == "private"
+        assert answer["run"] is None and answer["route"]["kind"] == "assistant"
+        assert answer["evidence"][0]["source_id"] == stored["source_id"]
         assert (await send(c, sid, "아틀라스 프로젝트 마감 알려줘", "msg-2"))["run_id"] == answer[
             "run_id"
         ]
@@ -110,7 +111,7 @@ async def test_deleted_source_does_not_replay_cached_answer(tmp_path):
         )
         history = (await c.get(f"/ui/api/sessions/{sid}/chat")).json()
         assert "CANARY-CHAT-551" not in history[1]["reply"]
-        assert history[1]["run"]["draft"] is None
+        assert history[1]["run"] is None and history[1]["evidence"] == []
         # User's own original message is personal history; retrieved answers are not cached.
         with sqlite3.connect(tmp_path / "acl" / "chat" / "history.db") as db:
             columns = [r[1] for r in db.execute("PRAGMA table_info(chat_turns)")]

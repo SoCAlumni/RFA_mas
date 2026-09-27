@@ -25,9 +25,17 @@ provider 환경변수도 적용하지 않는다. 키/GPU/Docker/팀원 서버가
    승인된 카드의 `모의 게시`는 mock 영수증만 만든다. 개인 메모는 공개 근거가 아니다.
 5. 새로고침/재시작 후 대화를 이어간다. 저장 메시지·응답 참조·승인 대기가 보존된다.
 
-라우팅은 명시적으로 **로컬 규칙 기반**, 답변은 기존 **mock 모델**이다. 모호한 입력은
+라우팅은 명시적으로 **로컬 규칙 기반**이며, 담당 경로의 답변은 기존 **mock 모델**이다. 모호한 입력은
 확인 안내를 반환한다. 임의 대명사 해석/장기 대화 추론, 자동 일정·삭제·도구 실행은
-지원하지 않는다. 자료 공간은 기본 TRIV3이며 양자화 용어 또는 선택값으로 바뀐다.
+지원하지 않는다. 담당 선택은 기본 **자동**이다. 현재 사용자의 active/ready Task 목표에
+관련 주제가 있으면 기존 Task/팀을 재사용한다. 동점 후보는 억지로 고르지 않는다.
+Task가 없어도 TRIV3/양자화의 명시적 주제는 해당 도메인 담당이 처리하며, 이는 영속 Task 팀이 아니다.
+그 밖의 질문은 **비서 직접 처리**로 두 자료 공간의 현재 허용 KB를 검색하고 원문 발췌를 보여준다.
+근거가 없으면 부족함을 알리며 새 팀을 만들지 않는다. 담당 미지정 메모의 저장 공간만 기존
+기본 KB(TRIV3)를 재사용하며 이는 TRIV3 worker 배정/실행이 아니다. 관련 메모는 담당 Task의
+자료 공간에 저장하고 task/team 참조를 대화에 남긴다(저장만으로 worker를 실행하지 않는다).
+담당을 직접 지정할 수도 있다. 제목/목표 주제 기반 규칙은 의미 모델이 아니므로 임의 동의어·대명사
+해석을 보장하지 않는다. no-match 공개 요청은 public 근거 미리보기이며 승인용 Draft를 만들지 않는다.
 현재 질문에 키워드를 포함해 주세요. 저장/검색을 사용자가 별도 폼에서 선택할 필요는 없다.
 
 ## 조립·교체 경계
@@ -39,6 +47,7 @@ provider 환경변수도 적용하지 않는다. 키/GPU/Docker/팀원 서버가
 | 검토/게시 | 별도 SQLite의 수동 검토 원본·mock receipt | ResponsePort / Publisher·HTTP mapper |
 | UI | 채팅/KB/승인함, 동일 출처 plain DOM | UI 전체 교체 또는 `UpstreamTarget` HTTP transport 교체 |
 | 채팅 | `ChatPort` + `poc/chat.py`의 로컬 turn ledger | ChatPort 구현/고정 core HTTP consumer 교체 |
+| 담당 목록 | `TeamCatalogPort` + `poc/catalog.py` read-only owner ID 조회 및 기존 repository 재검증 | 이후 core task-list HTTP adapter로 교체; 다른 서비스 DB 공유 아님 |
 | 조립 | `src/rfa_mas/poc/bootstrap.py` | graph를 바꾸지 않고 조립/mapper 교체 |
 
 TCP에 노출되는 것은 UI 한 포트뿐이다. core/review는 같은 프로세스 안에서 HTTP 계약을
@@ -53,22 +62,32 @@ ASGI transport로 호출한다. `18781/18782`는 내부 논리 URL이며 실제 
 
 저장소는 `data-dir/core/`, `data-dir/review/`, `data-dir/traces/`, `data-dir/chat/`으로
 분리한다. 채팅 저장소는 사용자 메시지와 source/run 참조만 보관한다. 검색 답변은 매번
-core의 현재 ACL 검사를 거쳐 재구성하며 원문 응답 캐시를 재사용하지 않는다. 브라우저에는
+core의 현재 ACL 검사를 거쳐 재구성하며 원문 응답 캐시를 재사용하지 않는다. 비서 직접 검색도
+원문 대신 revision/ACL 참조를 저장하고 재조회 때 core repository의 현재 정책을 다시 확인한다.
+처리 단계와 담당 참조는 대화 DB에 보존한다. 브라우저에는
 대화를 영속 저장하지 않는다. 이는 암호화 저장이 아니므로 신뢰된 로컬 계정에서 사용한다.
 `poc.lock` 파일은 남아도 프로세스가 끝나면 OS lock은 해제된다.
 파일을 지워 lock을 우회하지 않는다. 로컬 OS 계정은 신뢰 경계이며 LAN 공개용이 아니다.
 
-대화 session과 LangGraph 실행 thread는 다르다. 질문마다 독립 실행 session을 만들고
+대화 session과 LangGraph 실행 thread는 다르다. 담당 에이전트에 배정한 질문마다 독립 실행 session을 만들고
 대화 ledger에 run을 연결한다. 승인 대기 초안 때문에 다음 질문이 막히지 않으며, 이를
 해결하려고 자동 승인하거나 기존 checkpoint를 덮어쓰지 않는다. 개인 답변도 core의
 검토 대상 초안이며 실행 정보에서 실제 상태를 표시한다. 공개 초안만 승인함에 노출한다.
-개인 답변 표시가 게시 승인이나 제품 run 완료를 의미하지 않는다.
+개인 답변 표시가 게시 승인이나 제품 run 완료를 의미하지 않는다. 비서 직접 검색은 모델/worker
+실행이 아니므로 존재하지 않는 Run/Task/승인 ID를 만들어 채우지 않는다.
 
 `GET /ui/api/chat/sessions`, `GET/POST /ui/api/sessions/{id}/chat`,
 `GET /ui/api/notes/{source_id}`는 ChatPort를 주입한 PoC에서 제공한다. 메시지는
 `text`, `message_id`, 선택 `domain_id`만 받고 identity/권한/공유 대상 입력은 거절한다.
 동일 session/message ID 재전송은 기존 결과 조회이며 다른 내용이면409다. 처리 중 중단된
 메시지는 outcome_unknown으로 남기고 재시작이 자동 재실행 권한을 주지 않는다.
+
+`POST /ui/api/sessions/{id}/chat/stream`은 동일 CSRF 경계의 NDJSON 스트림이다.
+실제 서버 단계 `understanding → routing(담당자) → preparing → completed`와 최종 `result`를 보낸다.
+화면은 chunk를 도착 즉시 읽으며 타이머로 단계를 연출하지 않는다. 입력 저장은 저장 준비/완료로 표시한다.
+LLM 토큰/내부 사고/세부 worker 노드를 스트리밍하는 것은 아니다. 매우 빠른 로컬 실행은 단계가
+거의 동시에 보일 수 있고 완료 후에도 타임라인은 남는다. 연결 중단은 대화 재조회로 확인하며
+자동 재전송하지 않는다. 오류는 안전한 메시지만 전송한다. 중복 message ID에는 저장된 결과만 반환한다.
 
 기본 UI는 채팅 저장·검색·공개 초안·수동 검토·모의 게시 범위다. 예약/Task 팀 관리 화면은 없다.
 팀·예약의 기존 core API와 `uv run rfa demo --full`은 별도 경로로 유지된다.
@@ -77,7 +96,7 @@ NVIDIA/OpenShell/NemoClaw 실제 증거 및 팀원 교체 gate는 이 PoC 통과
 ## 검증
 
 ```sh
-uv run python -m pytest -q tests/test_chat_poc.py tests/test_local_ui.py tests/test_poc.py
+uv run python -m pytest -q tests/test_chat_routing.py tests/test_chat_poc.py tests/test_local_ui.py tests/test_poc.py
 ```
 
 실제 loopback subprocess 시작·세 번 재시작, 승인 전 거절, 현재 정책 재검사, 동일 게시

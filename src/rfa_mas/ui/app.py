@@ -9,6 +9,7 @@ server (never in HTML, JS, responses, URLs, cookies or browser storage).
 
 import hashlib
 import hmac
+import json
 import re
 import secrets
 from collections.abc import AsyncIterator, Iterable
@@ -20,7 +21,7 @@ from typing import Annotated, Any, Literal
 import httpx
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -492,6 +493,24 @@ def create_local_ui_app(
         @app.get("/ui/api/notes/{source_id}")
         async def read_note(source_id: str) -> Any:
             return await core_upstream.call("GET", f"/v1/knowledge/sources/{_path_id(source_id)}")
+
+        @app.post("/ui/api/sessions/{session_id}/chat/stream")
+        async def chat_stream(session_id: str, body: ChatMessage, _: Csrf) -> Any:
+            try:
+                events = await chat.stream(_path_id(session_id), body)
+            except RfaError as exc:
+                raise UiError(404 if exc.code == "not_found" else 409,
+                              "upstream_rejected", upstream_code=exc.code) from None
+
+            async def encode():
+                try:
+                    async for event in events:
+                        yield json.dumps(event, ensure_ascii=False) + "\n"
+                finally:
+                    await events.aclose()
+
+            return StreamingResponse(encode(), media_type="application/x-ndjson",
+                                     headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
     @app.get("/ui/api/reviews")
     async def list_reviews(

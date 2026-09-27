@@ -4,29 +4,32 @@ Only user text and result references persist here. Answers are re-read through t
 core's current-ACL presentation API, never replayed from a stale answer cache.
 """
 
+import asyncio
 import json
 import sqlite3
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
 
 from rfa_mas.application.chat import ChatMessage, chat_intent
+from rfa_mas.application.graphs.supervisor import PATTERN_OUTPUTS
 from rfa_mas.contracts import (
     Audience,
     DirectWorkRequest,
     DraftTarget,
     KnowledgeProvenance,
     KnowledgeWrite,
+    TeamExecutionRequest,
     sha256_text,
 )
 from rfa_mas.errors import RfaError
 
 
 class LocalChat:
-    def __init__(self, path: Path, core: httpx.AsyncClient):
-        self.path, self.core = path, core
+    def __init__(self, path: Path, core: httpx.AsyncClient, router):
+        self.path, self.core, self.router = path, core, router
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         with self.connect() as db:
             db.execute("""CREATE TABLE IF NOT EXISTS chat_turns (
@@ -36,6 +39,16 @@ class LocalChat:
                 PRIMARY KEY(session_id, message_id))""")
             db.execute("""CREATE TABLE IF NOT EXISTS chat_execution_sessions (
                 execution_session_id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL)""")
+            columns = {r[1] for r in db.execute("PRAGMA table_info(chat_turns)")}
+            for column, default in (("route_json", "{}"), ("refs_json", "[]")):
+                if column not in columns:
+                    db.execute(
+                        f"ALTER TABLE chat_turns ADD COLUMN {column} "
+                        f"TEXT NOT NULL DEFAULT '{default}'"
+                    )
+            db.execute("""CREATE TABLE IF NOT EXISTS chat_stages (
+                session_id TEXT, message_id TEXT, sequence INTEGER, event_json TEXT,
+                PRIMARY KEY(session_id,message_id,sequence))""")
             # An interrupted write is never automatically repeated on restart.
             db.execute("UPDATE chat_turns SET status='outcome_unknown' WHERE status='pending'")
 
@@ -123,15 +136,46 @@ class LocalChat:
             )
         return legacy + [await self.present(dict(row)) for row in rows]
 
-    async def send(self, session_id, body: ChatMessage):
+    async def stream(self, session_id, body: ChatMessage):
+        # Authenticate before returning a StreamingResponse / HTTP 200.
+        await self.call("GET", f"/v1/sessions/{session_id}")
+
+        async def events():
+            queue = asyncio.Queue(maxsize=16)
+
+            async def produce():
+                try:
+                    result = await self.send(session_id, body, emit=queue.put)
+                    await queue.put({"type": "result", "result": result})
+                except Exception:
+                    await queue.put(
+                        {
+                            "type": "error",
+                            "code": "chat_interrupted",
+                            "message": "처리 결과를 확인해 주세요. 자동 재실행하지 않습니다.",
+                        }
+                    )
+                finally:
+                    await queue.put(None)
+
+            task = asyncio.create_task(produce())
+            try:
+                while (event := await queue.get()) is not None:
+                    yield event
+            finally:
+                if not task.done():
+                    task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
+
+        return events()
+
+    async def send(self, session_id, body: ChatMessage, *, emit=None):
         await self.call("GET", f"/v1/sessions/{session_id}")
         fingerprint = sha256_text(body.model_dump_json())
         intent = chat_intent(body.text)
-        domain = (
-            "quantization_research"
-            if any(t in body.text.lower() for t in ("양자화", "quantization"))
-            else body.domain_id.value
-        )
+        # Storage bucket is not a worker assignment. Legacy DB's domain is NOT NULL.
+        domain = body.domain_id.value if body.domain_id else "triv3"
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             old = db.execute(
@@ -148,7 +192,9 @@ class LocalChat:
                 ).fetchone():
                     raise RfaError("chat_busy", "이 대화의 이전 메시지를 처리하고 있습니다.")
                 db.execute(
-                    "INSERT INTO chat_turns VALUES (?,?,?,?,?,?,'pending',NULL,NULL,?)",
+                    "INSERT INTO chat_turns (session_id,message_id,fingerprint,text,domain_id,"
+                    "intent,status,source_id,run_id,created_at) "
+                    "VALUES (?,?,?,?,?,?,'pending',NULL,NULL,?)",
                     (
                         session_id,
                         body.message_id,
@@ -161,8 +207,49 @@ class LocalChat:
                 )
         if old is not None:
             return await self.present(dict(old))
+
+        async def stage(code, label):
+            with self.connect() as db:
+                sequence = (
+                    db.execute(
+                        "SELECT count(*) FROM chat_stages WHERE session_id=? AND message_id=?",
+                        (session_id, body.message_id),
+                    ).fetchone()[0]
+                    + 1
+                )
+                event = {
+                    "type": "stage",
+                    "sequence": sequence,
+                    "stage": code,
+                    "label": label,
+                    "at": datetime.now(UTC).isoformat(),
+                }
+                db.execute(
+                    "INSERT INTO chat_stages VALUES (?,?,?,?)",
+                    (session_id, body.message_id, sequence, json.dumps(event)),
+                )
+            if emit:
+                await emit(event)
+            return event
+
         source_id = run_id = None
         try:
+            await stage(
+                "understanding", "입력 이해 중" if intent == "store_note" else "질문 이해 중"
+            )
+            route = await self.router.resolve(body)
+            domain = route["domain_id"] or domain
+            with self.connect() as db:
+                db.execute(
+                    "UPDATE chat_turns SET route_json=?,domain_id=? "
+                    "WHERE session_id=? AND message_id=?",
+                    (json.dumps(route), domain, session_id, body.message_id),
+                )
+            label = route["label"]
+            if route["kind"] == "assistant":
+                label = "적합한 담당자 없음 또는 후보 모호 · " + label
+            await stage("routing", "담당자 확인: " + label)
+            await stage("preparing", "자료 저장 준비" if intent == "store_note" else "답변 준비")
             if intent == "store_note":
                 key = sha256_text(json.dumps([session_id, body.message_id]))
                 write = KnowledgeWrite(
@@ -178,6 +265,14 @@ class LocalChat:
                     "POST", "/v1/knowledge/sources", write.model_dump(mode="json")
                 )
                 source_id, status = stored["document"]["source_id"], "stored"
+            elif intent in {"query", "external_draft"} and route["kind"] == "assistant":
+                refs = await self.router.find_refs(body.text, public=intent == "external_draft")
+                with self.connect() as db:
+                    db.execute(
+                        "UPDATE chat_turns SET refs_json=? WHERE session_id=? AND message_id=?",
+                        (json.dumps(refs), session_id, body.message_id),
+                    )
+                status = "answered"
             elif intent in {"query", "external_draft"}:
                 # Conversation != execution thread. An unapproved draft must not
                 # prevent a later question, nor be auto-approved to unlock a thread.
@@ -188,10 +283,25 @@ class LocalChat:
                         "INSERT INTO chat_execution_sessions VALUES (?,?)",
                         (execution_id, session_id),
                     )
+                team = None
+                if route["task_id"]:
+                    # Fresh authoritative ownership/template check; never trust message fields.
+                    principal = await self.router.repository.local_principal()
+                    existing = await self.router.repository.get_team_lifecycle(
+                        route["task_id"], principal
+                    )
+                    pattern = existing.team.spec.template.pattern
+                    team = TeamExecutionRequest(
+                        goal=existing.task.goal,
+                        outputs=PATTERN_OUTPUTS[pattern],
+                        requested_pattern=pattern,
+                    )
                 work = DirectWorkRequest(
                     query=body.text,
                     session_id=execution_id,
                     domain_id=domain,
+                    task_id=route["task_id"],
+                    team=team,
                     request_id=f"chat-{sha256_text(session_id + body.message_id)[:32]}",
                     target=DraftTarget(
                         audience=Audience.PUBLIC if intent == "external_draft" else Audience.PRIVATE
@@ -203,7 +313,7 @@ class LocalChat:
                 run_id, status = run["run_id"], "answered"
             else:
                 status = "clarify"
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             with self.connect() as db:
                 db.execute(
                     "UPDATE chat_turns SET status='outcome_unknown' "
@@ -223,7 +333,11 @@ class LocalChat:
                     (session_id, body.message_id),
                 ).fetchone()
             )
-        return await self.present(row)
+        result = await self.present(row)
+        result["stages"].append(
+            await stage("completed", "저장 완료" if status == "stored" else "답변")
+        )
+        return result
 
     async def present(self, row):
         result = {
@@ -240,6 +354,16 @@ class LocalChat:
             )
         }
         result.update(reply="", run=None)
+        result["route"] = json.loads(row.get("route_json", "{}"))
+        with self.connect() as db:
+            result["stages"] = [
+                json.loads(r[0])
+                for r in db.execute(
+                    "SELECT event_json FROM chat_stages WHERE session_id=? "
+                    "AND message_id=? ORDER BY sequence",
+                    (row["session_id"], row["message_id"]),
+                )
+            ]
         if row["status"] == "stored":
             try:
                 await self.call("GET", f"/v1/knowledge/sources/{row['source_id']}")
@@ -254,6 +378,27 @@ class LocalChat:
             else:
                 result["reply"] = (
                     "현재 허용된 자료로 답변을 만들 수 없어요. 자료나 질문을 확인해 주세요."
+                )
+        elif row["status"] == "answered" and result["route"].get("kind") == "assistant":
+            evidence = await self.router.excerpts(
+                json.loads(row["refs_json"]), public=row["intent"] == "external_draft"
+            )
+            result["evidence"] = evidence
+            result["reply"] = (
+                (
+                    "내 자료에서 찾았어요. (비서 직접 검색)\n\n"
+                    + "\n\n".join(e["excerpt"] for e in evidence)
+                )
+                if evidence
+                else (
+                    "적합한 담당 에이전트가 없어 비서가 직접 확인했어요. "
+                    "현재 허용된 KB에서 관련 근거를 찾지 못했어요. "
+                    "자료나 질문을 조금 더 알려주세요."
+                )
+            )
+            if row["intent"] == "external_draft":
+                result["reply"] += (
+                    "\n\n공개 근거 미리보기입니다. 승인/게시용 초안은 생성하지 않았어요."
                 )
         elif row["status"] in {"pending", "outcome_unknown"}:
             result["reply"] = (
