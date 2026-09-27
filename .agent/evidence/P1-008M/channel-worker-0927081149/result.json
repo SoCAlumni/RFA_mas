@@ -1,0 +1,85 @@
+{
+  "attempt_id": "channel-worker-0927081149",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "NemoClaw v0.0.124 + OpenShell 0.0.116(docker) 실제 sandbox; RFA 코어는 host 프로세스",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_poc_channel.py",
+          "tests/test_poc.py",
+          "tests/test_chat_llm.py"
+        ],
+        "assertions": [
+          "게이트웨이 인증·allowlist·loopback",
+          "PoC 회귀"
+        ],
+        "counts": {
+          "collected": 16,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 16,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 8.2,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T08:12:02.968140+00:00",
+        "id": "V1",
+        "log_excerpt": "16 passed, 1 warning in 6.73s",
+        "result": "passed",
+        "started_at": "2026-09-27T08:11:54.764266+00:00",
+        "timeout_seconds": 300
+      },
+      {
+        "assertions": [
+          "허용/거부 OCSF 일치",
+          "agent 답변이 코어 run과 연결"
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T08:12:02.968225+00:00",
+        "id": "V2",
+        "observed": {
+          "observed": "rfa-demo sandbox (NemoClaw v0.0.124/OpenShell 0.0.116) with preset rfa-assistant: healthz 200 with key, 401 without; /v1/sessions, /v1/assistant, DELETE knowledge -> 403 policy_denied (OCSF DENIED FORWARD_L7); example.com blocked; UI port 8780 denied. POST /channel/chat answered by nvidia-chat-completions (simulated=false) with citation. OpenClaw agent turn via rfa-assistant skill reported the RFA assistant reply routed to the Research Task team (3/3 succeeded, Supervisor LLM summary); same session visible in the PoC UI. No key values recorded.",
+          "ocsf_lines": 17,
+          "probes": {
+            "assistant_direct": "403 policy_denied",
+            "channel_chat": "201 answered by nvidia-chat-completions (nemotron-3.5-lightning-30b-a3b) with 1 citation",
+            "example_com": "blocked exit 56",
+            "healthz_key": 200,
+            "healthz_nokey": 401,
+            "knowledge_delete": "403 policy_denied",
+            "sessions_list": "403 policy_denied",
+            "ui_port_8780": "403 not allowed by any policy"
+          },
+          "status": "passed"
+        },
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T08:12:02.968223+00:00"
+      }
+    ],
+    "environment": {
+      "head": "8f076a902aad53f0e5b91049e3cefc0cade06df4",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008M-nemoclaw",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T08:12:02.968232+00:00",
+    "limits": "Real NemoClaw sandbox and NVIDIA calls in V2 only (synthetic KB, owner consent). Core not sandboxed; no per-role identity; no publication.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T08:11:54.762678+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "43dd4fafa71027b81a0938235254309e21a180976f42d48e2c9bc0c0fee5c075",
+  "source_manifest": ".agent/evidence/P1-008M/channel-worker-0927081149/source.json",
+  "spec_digest": "f03e777f1fe9e2dd21bb3d4832259b7295fcbfd8cb1e1fc5c1f8204e68975e59",
+  "spec_revision": 1,
+  "task_id": "P1-008M"
+}

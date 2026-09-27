@@ -1,0 +1,225 @@
+schema_version: '1.0'
+id: P1-008M
+title: NemoClaw 운영 채널 — PoC 코어를 sandbox agent에 노출하고 OpenClaw 비서 skill로 실행
+objective: 사용자 PoC 코어(실제 모델·같은 KB/Task 팀)를 인증된 LAN 게이트웨이로 NemoClaw sandbox에 노출하고, OpenShell 정책으로 허용 route만
+  열어 sandbox 안 OpenClaw agent가 RFA 비서(/v1/assistant)를 통해 응답하게 한다. 선택을 LLM이 후보 안에서 추론하며 그 과정을 상태 카드에 보인다.
+  동의 없으면 기존 mock/로컬 경로를 유지한다. 카드에 목록으로 보여준다.
+kind: task
+source_tasks:
+- P1-007A
+- P1-008K
+requirement_refs:
+- docs/POC.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 3.0
+product_owner: 민섭 사용자 승인 PoC; 팀원 UI 교체 가능
+execution_class: 이 저장소 구현
+product_mode: NemoClaw v0.0.124 + OpenShell 0.0.116(docker) 실제 sandbox; RFA 코어는 host 프로세스
+scope:
+  included:
+  - PoC --channel-bind IP:PORT 게이트웨이(별도 bearer key, route allowlist, loopback 재작성, forwarded 헤더 제거)
+  - deploy/nemoclaw rfa-assistant preset·skill·setup/ask 스크립트
+  - sandbox 안 probe(허용/거부)와 실제 OpenClaw agent 턴
+  excluded:
+  - RFA 코어 자체의 sandbox 격리
+  - 역할별 OpenShell identity(P1-007B/P1-008B)
+  - managed MCP·Supervisor middleware
+  - 공개 대상에 비공개 근거 전송
+  - 실제 게시/OpenShell
+  - 스트리밍 토큰
+  - 질의/메모만으로 자동 Task 생성
+  - 토큰/내부 사고 스트리밍
+  - 실제 외부 게시/모델 호출
+  owned_paths:
+  - src/rfa_mas/poc
+  - deploy/nemoclaw
+  - tests/test_poc_channel.py
+  - docs/POC.md
+  - docs/evidence/nemoclaw.md
+  read_only_paths:
+  - src/rfa_mas/api/app.py
+  - tests/integration/test_nemoclaw_live.py
+  planned_paths:
+  - src/rfa_mas/poc/channel.py
+  - tests/test_poc_channel.py
+  - deploy/nemoclaw/rfa-assistant.yaml
+  - deploy/nemoclaw/skills/rfa-assistant/SKILL.md
+  - deploy/nemoclaw/setup.sh
+  - deploy/nemoclaw/ask.sh
+  shared_resources:
+  - composition
+depends_on: []
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/api/app.py
+    section: resolve_principal
+    reason: keyless loopback 규칙 유지·별도 채널 key
+  - path: docs/evidence/nemoclaw.md
+    section: 8A
+    reason: 검증된 preset/upload/exec 절차 재사용
+  handoff: tasks/P1-008M/handoff.md
+  dependency_results: []
+deliverables:
+- path: src/rfa_mas/poc/channel.py
+  availability: planned
+  description: 인증 게이트웨이 ASGI
+- path: src/rfa_mas/poc/__main__.py
+  availability: existing
+  description: --channel-bind/--channel-key-file
+- path: deploy/nemoclaw/rfa-assistant.yaml
+  availability: planned
+  description: assistant route preset 템플릿
+- path: deploy/nemoclaw/skills/rfa-assistant/SKILL.md
+  availability: planned
+  description: OpenClaw agent용 RFA 비서 skill
+- path: deploy/nemoclaw/setup.sh
+  availability: planned
+  description: preset 적용·key 업로드·skill 설치
+- path: deploy/nemoclaw/ask.sh
+  availability: planned
+  description: agent 턴 실행
+- path: tests/test_poc_channel.py
+  availability: planned
+  description: 게이트웨이 인증·allowlist·loopback 검증
+acceptance_criteria:
+- id: AC1
+  given: 채널 게이트웨이(bearer key 파일)
+  expect: key 없음/불일치→401, allowlist 밖 route→403, forwarded 헤더 제거·loopback 재작성 후 코어에 전달, 허용 route는 코어 응답
+    그대로
+  required: true
+- id: AC2
+  given: rfa-demo sandbox + preset 적용
+  expect: sandbox 안 curl로 허용 route 200/201, 그 외 route·외부 호스트는 OpenShell policy_denied/차단(OCSF DENIED)
+  required: true
+- id: AC3
+  given: OpenClaw agent 턴(skill)
+  expect: agent가 /v1/assistant를 호출해 실제 코어 답변(nvidia adapter)을 보고하고 그 run이 PoC 세션에 나타난다; 키·원문 미기록
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  type: command
+  availability: available
+  prerequisites:
+  - 합성 데이터·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_poc_channel.py
+  - tests/test_poc.py
+  - tests/test_chat_llm.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - 게이트웨이 인증·allowlist·loopback
+  - PoC 회귀
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC2
+  - AC3
+  type: manual
+  availability: available
+  prerequisites:
+  - 합성 별도 PoC 서버와 브라우저
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - PoC --channel-bind로 기동, setup.sh로 preset/key/skill 적용
+  - sandbox probe와 agent 턴 실행
+  assertions:
+  - 허용/거부 OCSF 일치
+  - agent 답변이 코어 run과 연결
+  runner: manual
+evidence_dir: .agent/evidence/P1-008M
+latest_evidence_file: .agent/evidence/P1-008M/channel-target-0927081209/result.json
+verification_summary:
+  state: passed
+  spec_revision: 1
+  spec_digest: f03e777f1fe9e2dd21bb3d4832259b7295fcbfd8cb1e1fc5c1f8204e68975e59
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 43dd4fafa71027b81a0938235254309e21a180976f42d48e2c9bc0c0fee5c075
+  evidence: .agent/evidence/P1-008M/channel-target-0927081209/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 1
+  submission:
+    head: 8f076a902aad53f0e5b91049e3cefc0cade06df4
+    baseline_head: 35d4974f87c4f4b04d5bd9bd6ee7e3a5b551d459
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008M-nemoclaw
+    branch: task/P1-008M-nemoclaw
+    evidence: .agent/evidence/P1-008M/channel-worker-0927081149/result.json
+    changed_files:
+      deploy/nemoclaw/ask.sh: 0fff4260ac3f9f2e6a2f21f5fe0bf4e384c4a81dc9a5c93fb8d9638c83a1c4cb
+      deploy/nemoclaw/rfa-assistant.yaml: 00930e8c7065392b445d9f8bc123df35bac01cc0b6e101888608cf91acfb1424
+      deploy/nemoclaw/setup.sh: da692d5a493775fa7f7d569fe303a0e29bfd9ec6e83bf8ecede7c705b7aeaa73
+      deploy/nemoclaw/skills/rfa-assistant/SKILL.md: 768cfc16bb9abfe4499f28c303cb421b4a81861d7bc559e9367f88a0ad93173e
+      docs/POC.md: b5bfa62fb34e1e871b53cd258b6dba5a0e80aa91702b4935f4a594474e8d840f
+      docs/evidence/nemoclaw.md: 798ae67d416cd23b9e6e103f9d017475e694570f51ae70c2adda65a5037addde
+      src/rfa_mas/poc/__main__.py: 9da0781c37d3ec468d45071255d68a3d47506af3364488a8d7c61872731e8f91
+      src/rfa_mas/poc/bootstrap.py: f0e3354545ad7361787028c40d96199a2813d3e55bbcb0324eb0ab55a5160182
+      src/rfa_mas/poc/channel.py: 66faa6f57a058c2c9c703b9ed7abc5150c5941a27e785d4cf81a36541bd17658
+      tests/test_poc_channel.py: 592a6747cb144c1a7bdd899f3401bcd9a68e2b15699b62543615e5bffca876a1
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: f03e777f1fe9e2dd21bb3d4832259b7295fcbfd8cb1e1fc5c1f8204e68975e59
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 43dd4fafa71027b81a0938235254309e21a180976f42d48e2c9bc0c0fee5c075
+      evidence: .agent/evidence/P1-008M/channel-target-0927081209/result.json
+    head: 8f076a902aad53f0e5b91049e3cefc0cade06df4
+  evidence: .agent/evidence/P1-008M/channel-target-0927081209/result.json
+revision: 10
+spec_revision: 1
+claim_generation: 1
+claim: null
+attempts:
+  count: 2
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: channel-target-0927081209
+  evidence_refs:
+  - .agent/evidence/P1-008M/channel-worker-0927081149/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 nemoclaw 기반 실행 요청
+  prior_claim: P1-007A n=1 시연(격리 profile, mock 모델)
+  implementation_facts: PoC 코어는 in-process ASGI만; 채널 노출 없음
+  previous_evidence:
+  - docs/evidence/nemoclaw-live.json
+  checks_this_migration:
+  - nemoclaw CLI/sandbox 상태 확인
+  judgment: 기존 완료 유지·운영 채널 추가
+  initial_spec_revision: 1
+updated_at: '2026-09-27T08:12:34+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 게이트웨이부터 구현

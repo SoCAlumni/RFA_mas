@@ -1,0 +1,35 @@
+{
+ "task": "P1-008M",
+ "mode": "real NemoClaw v0.0.124 sandbox rfa-demo (OpenShell 0.0.116 docker) -> host PoC 192.168.123.191:8010 (real NVIDIA model, owner-consented egress)",
+ "probes": {
+  "healthz_key": 200,
+  "healthz_nokey": 401,
+  "sessions_list": "403 policy_denied",
+  "assistant_direct": "403 policy_denied",
+  "knowledge_delete": "403 policy_denied",
+  "example_com": "blocked exit 56",
+  "ui_port_8780": "403 not allowed by any policy",
+  "channel_chat": "201 answered by nvidia-chat-completions (nemotron-3.5-lightning-30b-a3b) with 1 citation"
+ },
+ "ocsf_lines": [
+  "ALLOWED /usr/bin/curl(4654) -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7]",
+  "ALLOWED /usr/bin/curl(4654) -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:opa]",
+  "ALLOWED /usr/bin/curl(4659) -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7]",
+  "ALLOWED /usr/bin/curl(4659) -> GET http://192.168.123.191:8010/healthz [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:opa]",
+  "DENIED /usr/bin/curl(4664) -> GET http://192.168.123.191:8010/v1/sessions [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7] [reason:FORWARD_L7 deny GET 192.168.123.191:8010/v1/sessions reason",
+  "DENIED /usr/bin/curl(4669) -> POST http://192.168.123.191:8010/v1/assistant [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7] [reason:FORWARD_L7 deny POST 192.168.123.191:8010/v1/assistant re",
+  "DENIED /usr/bin/curl(4674) -> DELETE http://192.168.123.191:8010/v1/knowledge/sources/x [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7] [reason:FORWARD_L7 deny DELETE 192.168.123.191:8010/v",
+  "DENIED /usr/bin/curl(4679) -> example.com:443 [policy:- engine:opa] [reason:endpoint example.com:443 is not allowed by any policy]",
+  "DENIED /usr/bin/curl(4680) -> GET http://192.168.123.191:8780/ui/ [policy:- engine:opa] [reason:endpoint 192.168.123.191:8780 is not allowed by any policy]",
+  "ALLOWED /usr/bin/curl(4808) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7]",
+  "ALLOWED /usr/bin/curl(4808) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:opa]",
+  "ALLOWED /usr/bin/curl(5039) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7]",
+  "ALLOWED /usr/bin/curl(5039) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:opa]",
+  "ALLOWED /usr/bin/curl(5144) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7]",
+  "ALLOWED /usr/bin/curl(5144) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:opa]",
+  "ALLOWED /usr/bin/curl(5286) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:l7]",
+  "ALLOWED /usr/bin/curl(5286) -> POST http://192.168.123.191:8010/channel/chat [policy:nemoclaw_custom__rfa-assistant__rfa_assistant engine:opa]"
+ ],
+ "agent_turn_excerpt": "\u001b[1m\u001b[32m✓\u001b[39m\u001b[0m Active gateway set to 'nemoclaw'\n사용자는 양자화 INT4 논문 조사를 목표로 했으나, 현재까지 검토된 5건의 근거 모두 '합성 샘플' 또는 '가상 연구'로 표시돼 실제 검증된 결과는 없다. 네뷸라 소형 언어 모델의 INT4 가중치 및 KV 캐시 양자화 재현을 계획하고 있으나, 실험 자원과 로컬 환경 확정이 선행 조건으로 남아 있다. INT4 양자화가 정확도에 미치는 영향, 보정 데이터 활용 가능성, 그룹 크기 및 아웃라이어 처리 방식 등 구체적인 검증이 필요한 부분이 다수 존재한다.\n\n미확인 질문:\n- 실제 실험 자원(로컬 환경 등)이 확정되지 않은 상태에서 INT4 양자화 재현이 가능한가?\n- 네뷸라 모델에 적용 시 INT4 양자화가 정확도에 미치는 손실 규모와 허용 범위는 어떻게 되는가?\n- KV 캐시 양자화 시 그룹 단위 스케일링 및 아웃라이어 처리 방식이 정확도 회복에 미치는 영향은 무엇인가?\n- 양자화 후 정확도 회복을 위해 보정 데이터를 로컬에서 생성·활용할 수 있는가?\n\n[역할별 근거 기록]\n[팀 결과] 목표: [샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)\n- 근거 5건 검토, 잠정/미검증 1건\nroute: task/[샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)\n- 질문 이해 중\n- LLM 추론: 의도 내 자료 질의 · 담당 Task task_350fc835dab040949630e5928a5a7877\n- 담당자 확인: [샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)\n- 기존 Task 팀 구성 확인: research · 역할 3개 (supervisor, source_scout, evidence_reviewer)\n- 답변 준비\n- 팀 실행 결과: completed · 역할 3/3 succeeded · 실험값 simulated(mock) · Supervisor 요약 LLM(nvidia-chat-completions)\n- 답변\nteam: task_350fc835dab040949630e5928a5a7877 (research, completed, simulated=true)\n\n[gateway]   ┌────────────────────────────────────────────────────────┐\n[gateway]   │  NemoClaw registered                                   │\n[gateway]   │                                                        │\n[gateway]   │  Endpoint:  Managed Inference Route (inference.local)  │\n[gateway]   │  Provider:  NVIDIA Endpoints                           │\n[gateway]   │  Model:     nvidia/nemotron-3-super-120b-a12b          │\n[gateway]   │  Slash:     /nemoclaw                                  │\n[gateway]   └────────────────────────────────────────────────────────┘\n\n",
+ "credential_check": "no Bearer/key values in this document"
+}

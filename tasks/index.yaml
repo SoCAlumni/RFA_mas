@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: a7396ea637df6bfb12f4447384236612834a0ce6a163b271112ca2e4bb961851
+source_digest: e13c89ec26b4c71a5ebe4a63783d42bb731b1fbe91f51bcd2218b2aa9f672a6b
 source_revisions:
   OPS-000: 9
   OPS-001: 13
@@ -83,6 +83,7 @@ source_revisions:
   P1-008I: 12
   P1-008J: 10
   P1-008K: 14
+  P1-008M: 10
   P1-009: 16
   P1-010: 19
   P1-011: 15
@@ -95,7 +96,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T06:27:44+00:00'
+generated_at: '2026-09-27T08:12:35+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -676,6 +677,11 @@ tasks:
   workstream: integration/evaluation
   depends_on: []
   path: tasks/P1-008K/task.yaml
+- id: P1-008M
+  title: NemoClaw 운영 채널 — PoC 코어를 sandbox agent에 노출하고 OpenClaw 비서 skill로 실행
+  workstream: integration/evaluation
+  depends_on: []
+  path: tasks/P1-008M/task.yaml
 - id: P1-009
   title: D4 회귀·교육/심사 증거·최종 상태 확정
   workstream: integration/evaluation
