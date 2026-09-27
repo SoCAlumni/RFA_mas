@@ -190,7 +190,22 @@ make teardown    # 선언된 샌드박스 destroy, 호스트 서비스 정지
 (`tests/test_sg_controller.py` 컨트롤러 reconcile, `tests/test_censor.py` regex/LLM/fail-closed, `tests/test_broker.py` 브로커 라우팅,
 `tests/test_egress_proxy.py` 프록시, `tests/test_sg_ops.py` 승인·재배치·스캔).
 
-__VERIFICATION_STATUS__
+**2026-09-27 21:00 KST 기준 라이브 결과** (host 16 GiB, Colima 4 vCPU/8 GiB, NemoClaw 0.0.124, OpenShell 0.0.116):
+
+| 항목 | 결과 |
+| --- | --- |
+| 단위 테스트 `make test` | 70 passed (컨트롤러 14, 검열 11, 프록시 12, 브로커 7, ops 5, 진입점 3, /ask 및 mock e2e 18) |
+| 온보딩 `nemoclaw onboard --agents … --non-interactive` (provider=custom → egress-proxy, tier=restricted) | `rfa-censor` 263초, `rfa-tasks-none` 155초 완료. `rfa-tasks-intranet` 컨테이너 생성 후 세션 in_progress(메모리 부족으로 호스트가 bootstrap 종료). `rfa-assistant`·managed MCP 등록 미실행 |
+| reconcile (`policy exclude` ×5, `policy explain --write`, IDENTITY·skill 시드) | rfa-censor, rfa-tasks-none 적용 완료 |
+| 샌드박스 → inference.local → egress-proxy | 온보딩 검증 요청과 `curl` probe 가 프록시에 도달(자격증명은 OpenShell 이 주입, 미귀속 → rfa-internal → Ollama 5~6초) |
+| egress-proxy 검열 (대시보드 샘플) | external: 요청 마스킹 8건 후 hosted Nemotron super-120b 응답 49초, verdict allow / credential: regex block 14ms(상류 전송 없음) / internal: 로컬 5.8초 마스킹 없음 |
+| 검열 LLM 단계 (direct, rfa-censor alias → 로컬) | JSON 분류 5~13초, verdict redact 확인 |
+| KB 시드 → knowledge facade | 10건 입력, `POST /tasks/triv3/ask` 가 새 노트를 근거로 반환 |
+| 샌드박스 안 OpenClaw 턴 (브로커 → summarizer) | **미확인**: Colima VM 메모리 소진(7.8/7.9 GiB, 샌드박스 3개 ×1.5~1.7 GiB + 유휴 Langfuse 컨테이너 12개)으로 OpenClaw 게이트웨이가 기동하지 못해 턴이 150초 timeout. `nemoclaw <sb> status` "agent delivery chain could not be proven" |
+| 데모 라이브 기록 (`DEMO_MODE=live make demo`) | 미실행(위 메모리 문제 해소 후) — `--replay` 기록 없음 |
+| managed MCP | 미시도(rfa-assistant 온보딩 전). 로컬 CA·IP SAN 인증서는 생성됨(`.local/sg/tls`) |
+
+다음 실행 조건: Colima VM 여유 메모리 확보(유휴 Langfuse 스택 정지 또는 `colima start --memory 12`) 후 `make bootstrap`(중단 세션 자동 resume) → `DEMO_MODE=live make demo`.
 
 ---
 
