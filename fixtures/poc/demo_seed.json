@@ -1,0 +1,121 @@
+{
+  "dataset": "poc-demo-seed-v2",
+  "synthetic": true,
+  "notice": "모든 인물·일정·프로젝트·논문·수치는 가상 샘플이며 사용자의 실제 정보나 실측 결과가 아니다. 모든 자료는 비공개로 입력하고, Task 팀은 제품 채팅 경로(명시적 조사/검증 요청)로 core Supervisor가 생성한다.",
+  "notes": [
+    {
+      "key": "poc-demo-seed-v2-01",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 벤치마크 — 측정 환경과 절차",
+      "content": "[합성 샘플 · 실측 아님]\n오로라 응답 파이프라인 벤치마크는 가상 노트북 환경 mac-m3-16gb에서 수행한다. 절차: 워밍업 3회 후 10회 측정, p50 지연과 정확도를 기록한다. 로그는 '벤치마크 <라벨>' 제목과 '환경 / 지연 / 정확도' 항목을 포함해야 result_analyst가 비교할 수 있다. 합격 기준은 지연 0.7초 이하, 정확도 88퍼센트 이상이다. 이 기준은 오로라 팀 내부 합의이며 외부 공개 수치가 아니다."
+    },
+    {
+      "key": "poc-demo-seed-v2-02",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 벤치마크 A1 — 기준 로그",
+      "content": "[합성 로그 · 실측 아님]\n벤치마크 A1 기준선(baseline) 실행 로그. 환경 mac-m3-16gb. 지연 842 ms, 정확도 88.5 %. 10회 측정 p50. 오로라 응답 파이프라인의 검색 캐시 미적용 상태. 측정일 2026-09-24, 담당 가상 사용자."
+    },
+    {
+      "key": "poc-demo-seed-v2-03",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 벤치마크 B2 — 후보 로그",
+      "content": "[합성 로그 · 실측 아님]\n벤치마크 B2 후보안(candidate) 실행 로그. 환경 mac-m3-16gb. 지연 611 ms, 정확도 87.9 %. 10회 측정 p50. 오로라 검색 캐시 적용 후 결과. 정확도는 기준 대비 소폭 하락, 지연은 개선. 측정일 2026-09-25."
+    },
+    {
+      "key": "poc-demo-seed-v2-04",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 벤치마크 C3 — 검증 전 로그",
+      "content": "[합성 로그 · 실측 아님 · 검증 전]\n벤치마크 C3 실험 로그. 환경 mac-m3-16gb. 지연 498 ms, 정확도 90.1 %. 검증 전 가설: 워밍업 없이 1회만 측정했고 캐시 상태가 불명확하다. 재측정 전까지 비교 근거로 사용하지 않는다. 미검증."
+    },
+    {
+      "key": "poc-demo-seed-v2-05",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 벤치마크 — 회귀 기준과 결정",
+      "content": "[합성 샘플 · 실제 결정 아님]\n9월 26일 오로라 회의 결정: 후보안 B2는 기준 A1 대비 지연이 개선되고 정확도 하락이 1포인트 이내이면 채택한다. C3처럼 검증 전 로그는 비교에서 제외한다. 회귀 판정은 result_analyst 비교 결과와 함께 담당자가 최종 확인한다. 채택 여부는 데모 마감(10월 2일) 전 확정한다."
+    },
+    {
+      "key": "poc-demo-seed-v2-06",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 벤치마크 — 참고 논문 메모",
+      "content": "[합성 샘플 · 가상 논문]\n참고 논문 1: 'Latency-aware retrieval caching for personal assistants' (가상). 검색 결과 캐시가 p50 지연을 20~30퍼센트 줄이지만 정확도 손실 관리가 필요하다는 주장. 참고 논문 2: 'Reproducible micro-benchmarks on laptops' (가상). 워밍업과 반복 측정 없이는 노트북 벤치마크 결과를 신뢰할 수 없다는 연구. 오로라 벤치마크 절차의 근거로 인용한다."
+    },
+    {
+      "key": "poc-demo-seed-v2-07",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 릴리스 노트 — 0.3 초안",
+      "content": "[합성 샘플 · 검토 전 초안]\n오로라 0.3 변경 사항: 채팅 화면 개편, 담당 자동 라우팅, 처리 상태 카드, 팀 에이전트 현황 탭. 알려진 제한: 답변 모델은 mock, 실제 게시 없음, 벤치마크 수치는 합성 로그 기반. 공개 문구는 승인 전까지 외부 공유 금지."
+    },
+    {
+      "key": "poc-demo-seed-v2-08",
+      "domain_id": "triv3",
+      "title": "[샘플] 오로라 자주 묻는 질문 — 공개 후보",
+      "content": "[합성 샘플 · 공개 검토 전]\nQ. 오로라는 어떤 서비스인가요? A. 개인 메모를 저장하고 근거를 찾아주는 로컬 비서입니다. Q. 데이터는 어디에 저장되나요? A. 사용자 PC의 로컬 저장소에만 저장됩니다. Q. 외부로 자동 전송되나요? A. 아니요. 공개 초안은 사용자가 승인해야 합니다. 이 문답은 공개 전 검토가 필요하다."
+    },
+    {
+      "key": "poc-demo-seed-v2-09",
+      "domain_id": "quantization_research",
+      "title": "[샘플] 네뷸라 INT4 양자화 — 연구 목표",
+      "content": "[합성 샘플 · 실제 연구 아님]\n네뷸라는 소형 언어 모델의 INT4 가중치 양자화와 KV 캐시 양자화를 노트북에서 재현하는 가상 연구 과제다. 목표: (1) 관련 논문 근거 정리, (2) 정확도 손실 허용 범위 정의, (3) 재현 실험 계획 수립. 실험 실행은 아직 시작하지 않았다."
+    },
+    {
+      "key": "poc-demo-seed-v2-10",
+      "domain_id": "quantization_research",
+      "title": "[샘플] 네뷸라 논문 노트 — INT4 KV 캐시 양자화 (가상 논문)",
+      "content": "[합성 샘플 · 가상 논문 요약]\n논문 'KV cache quantization at 4 bits without retraining' (가상). 주장: KV 캐시를 INT4로 양자화해도 그룹 단위 스케일링을 쓰면 긴 문맥에서 정확도 손실이 작다. 근거: 세 가지 벤치마크에서 손실이 1포인트 미만이라는 표. 네뷸라 적용 시 그룹 크기와 아웃라이어 처리 방식을 확인해야 한다."
+    },
+    {
+      "key": "poc-demo-seed-v2-11",
+      "domain_id": "quantization_research",
+      "title": "[샘플] 네뷸라 논문 노트 — 정확도 회복 기법 (가상 논문)",
+      "content": "[합성 샘플 · 가상 논문 요약]\n논문 'Accuracy recovery after low-bit weight quantization' (가상). 주장: INT4 가중치 양자화 후 소량의 보정 데이터로 정확도를 회복할 수 있다. 근거: 보정 데이터 크기별 정확도 회복 곡선. 네뷸라에서는 보정 데이터를 로컬에서 만들 수 있는지가 관건이다."
+    },
+    {
+      "key": "poc-demo-seed-v2-12",
+      "domain_id": "quantization_research",
+      "title": "[샘플] 네뷸라 가설 — 4비트 이하 손실 (검증 전)",
+      "content": "[합성 샘플 · 검증 전 가설]\n가설: 네뷸라 대상 모델은 INT4 이하(3비트)로 내려가면 정확도 손실이 급격히 커질 것이다. 아직 실험하지 않았고 논문 근거도 간접적이다. 미검증 상태이며 evidence_reviewer가 잠정으로 표시해야 한다. 실험 전에는 결론으로 인용하지 않는다."
+    },
+    {
+      "key": "poc-demo-seed-v2-13",
+      "domain_id": "quantization_research",
+      "title": "[샘플] 네뷸라 실험 계획 — 단계와 선행 조건",
+      "content": "[합성 샘플 · 계획]\n1단계: 논문 근거 정리와 허용 손실 정의(이번 주). 2단계: INT4 가중치 양자화 재현(선행 조건: 로컬 실험 자원 확정). 3단계: KV 캐시 양자화 추가 실험. 각 단계 결과는 네뷸라 KB에 기록하고 검증 전 결과는 잠정으로 표시한다. 실험 자원은 아직 미확정이다."
+    },
+    {
+      "key": "poc-demo-seed-v2-14",
+      "domain_id": "quantization_research",
+      "title": "[샘플] 네뷸라 회의 — 9월 26일 결정",
+      "content": "[합성 샘플 · 실제 결정 아님]\n결정 1: 네뷸라 1단계 논문 조사는 research 팀(source_scout, evidence_reviewer)에 맡긴다. 결정 2: 근거 없는 수치는 보고서에 넣지 않는다. 결정 3: 실험 자원이 확정되기 전에는 2단계를 시작하지 않는다. 다음 회의는 10월 1일."
+    }
+  ],
+  "tasks": [
+    {
+      "key": "poc-demo-seed-v2-task-aurora",
+      "domain_id": "triv3",
+      "text": "오로라 벤치마크 지연 로그 A1/B2 성능 비교 결과를 검증해줘",
+      "linked_note_keys": [
+        "poc-demo-seed-v2-01",
+        "poc-demo-seed-v2-02",
+        "poc-demo-seed-v2-03",
+        "poc-demo-seed-v2-04",
+        "poc-demo-seed-v2-05",
+        "poc-demo-seed-v2-06"
+      ],
+      "link_subject_matches": true
+    },
+    {
+      "key": "poc-demo-seed-v2-task-nebula",
+      "domain_id": "quantization_research",
+      "text": "네뷸라 INT4 양자화 논문 근거를 조사해줘",
+      "linked_note_keys": [
+        "poc-demo-seed-v2-09",
+        "poc-demo-seed-v2-10",
+        "poc-demo-seed-v2-11",
+        "poc-demo-seed-v2-12",
+        "poc-demo-seed-v2-13",
+        "poc-demo-seed-v2-14"
+      ],
+      "link_subject_matches": true
+    }
+  ]
+}

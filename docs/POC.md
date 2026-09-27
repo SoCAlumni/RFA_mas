@@ -70,6 +70,8 @@ succeeded/steps/tool calls·simulated) → `completed`(결과·run/source ID)이
 | UI | 채팅/KB/승인함, 동일 출처 plain DOM | UI 전체 교체 또는 `UpstreamTarget` HTTP transport 교체 |
 | 채팅 | `ChatPort` + `poc/chat.py`의 로컬 turn ledger | ChatPort 구현/고정 core HTTP consumer 교체 |
 | 담당 목록 | `TeamCatalogPort` + `poc/catalog.py` read-only owner ID 조회 및 기존 repository 재검증 | 이후 core task-list HTTP adapter로 교체; 다른 서비스 DB 공유 아님 |
+| 팀 에이전트 탭 | `poc/teams.py`의 Task 팀 현황·연결 KB(대화 DB의 `task_kb_links`) + core 팀 결과의 인용 근거 | 링크 ledger를 core/팀원 task-list API로 교체; 자료는 항상 core 현재 ACL로 재조회 |
+| 데모 시드 | `python -m rfa_mas.poc.seed` + `fixtures/poc/demo_seed.json` (UI API만 사용) | 다른 fixture로 교체; runtime DB 직접 쓰기 없음 |
 | 조립 | `src/rfa_mas/poc/bootstrap.py` | graph를 바꾸지 않고 조립/mapper 교체 |
 
 TCP에 노출되는 것은 UI 한 포트뿐이다. core/review는 같은 프로세스 안에서 HTTP 계약을
@@ -111,14 +113,36 @@ LLM 토큰/내부 사고/세부 worker 노드를 스트리밍하는 것은 아�
 거의 동시에 보일 수 있고 완료 후에도 타임라인은 남는다. 연결 중단은 대화 재조회로 확인하며
 자동 재전송하지 않는다. 오류는 안전한 메시지만 전송한다. 중복 message ID에는 저장된 결과만 반환한다.
 
-기본 UI는 채팅 저장·검색·공개 초안·수동 검토·모의 게시 범위다. 예약/Task 팀 관리 화면은 없다.
+`팀 에이전트` 탭(`GET /ui/api/teams`, `GET /ui/api/teams/{task_id}`)은 소유자의 Task 팀마다
+목표·자료 공간·Task 상태·팀 state/reason·runtime/mode·템플릿·예산·통신 규칙과 역할 구성
+(agent ID, capability, 러너 허용 tool, prepare 상태), 최근 실행(팀 결과 상태·역할별 결과·
+simulated 표기), 그리고 세 종류의 KB를 보여준다. `연결된 KB`는 대화 DB `task_kb_links`의
+명시 링크(`POST /ui/api/teams/{task_id}/kb`, `DELETE .../kb/{source_id}`, CSRF 필요)이며
+같은 자료 공간에서 현재 접근 가능한 자료만 연결된다(다른 공간·삭제·타인 Task는 거절).
+`실행에서 인용된 근거`는 최근 실행 5건의 core 팀 결과에서 역할이 실제 인용한 source/revision이다.
+`주제 일치 자료`는 Task 목표의 구별 주제어와 겹치는 미연결 자료 제안이다. 연결 링크는 담당
+참고 범위일 뿐 자료 권한이 아니다. 역할 검색은 자료 공간의 현재 ACL/정책 버전 범위에서
+수행되며, 제목/본문은 매번 core 현재 ACL 목록으로 재조회해 삭제·회수된 자료는 접근 불가로 표시한다.
+
+데모 시드는 실행 중인 PoC에 UI API로만 입력한다.
+
+```sh
+uv run python -m rfa_mas.poc.seed --url http://127.0.0.1:8780 --fixture fixtures/poc/demo_seed.json
+```
+
+합성 자료 14건(TRIV3 오로라 벤치마크 로그/기준/논문 메모, 양자화 네뷸라 논문/가설/계획)을 비공개로
+저장하고, 명시 요청 2건(`…검증해줘`, `…조사해줘`)을 채팅 경로로 보내 core Supervisor가
+benchmark/research Task 팀을 각각 하나씩 만들게 한 뒤 fixture 링크와 주제 일치 자료를 연결한다.
+같은 key 재실행은 자료·Task를 다시 만들지 않는다. loopback URL만 허용하며 실제 실측·모델·게시가 아니다.
+
+기본 UI는 채팅 저장·검색·공개 초안·수동 검토·모의 게시·팀 에이전트 현황 범위다. 예약 화면은 없다.
 팀·예약의 기존 core API와 `uv run rfa demo --full`은 별도 경로로 유지된다.
 NVIDIA/OpenShell/NemoClaw 실제 증거 및 팀원 교체 gate는 이 PoC 통과로 덮어쓰지 않는다.
 
 ## 검증
 
 ```sh
-uv run python -m pytest -q tests/test_chat_routing.py tests/test_chat_poc.py tests/test_local_ui.py tests/test_poc.py
+uv run python -m pytest -q tests/test_chat_routing.py tests/test_chat_poc.py tests/test_local_ui.py tests/test_poc.py tests/test_team_overview.py tests/test_poc_seed.py
 ```
 
 실제 loopback subprocess 시작·세 번 재시작, 승인 전 거절, 현재 정책 재검사, 동일 게시

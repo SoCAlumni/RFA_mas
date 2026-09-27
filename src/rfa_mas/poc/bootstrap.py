@@ -30,6 +30,7 @@ from rfa_mas.errors import RfaError
 from rfa_mas.poc.catalog import SqliteTeamCatalog
 from rfa_mas.poc.chat import LocalChat
 from rfa_mas.poc.routing import LocalChatRouter
+from rfa_mas.poc.teams import TeamOverview
 from rfa_mas.reference.local_response import create_local_response_app
 from rfa_mas.reference.local_security import LocalServiceBoundary
 from rfa_mas.settings import Settings
@@ -258,16 +259,18 @@ def create_poc_app(data_dir: Path, *, port: int = 8780):
                     )
                     container.response = response
                     container.service.start(container.checkpoints.saver)
-                    ui = create_local_ui_app(
-                        chat=LocalChat(
-                            root / "chat" / "history.db",
-                            core_client,
-                            LocalChatRouter(
-                                container.repository,
-                                SqliteTeamCatalog(container.repository),
-                                policy_version=container.policy.policy_version,
-                            ),
+                    chat = LocalChat(
+                        root / "chat" / "history.db",
+                        core_client,
+                        LocalChatRouter(
+                            container.repository,
+                            SqliteTeamCatalog(container.repository),
+                            policy_version=container.policy.policy_version,
                         ),
+                    )
+                    ui = create_local_ui_app(
+                        chat=chat,
+                        teams=TeamOverview(chat),
                         allowed_hosts=[f"127.0.0.1:{port}", f"localhost:{port}"],
                         core=UpstreamTarget.in_process("core", core_app, base_url=CORE_URL),
                         review=UpstreamTarget(

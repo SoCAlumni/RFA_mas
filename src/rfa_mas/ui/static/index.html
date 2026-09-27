@@ -16,6 +16,7 @@
     <nav aria-label="작업 공간">
       <button id="tab-chat" type="button" class="nav-item active" aria-current="page">◌ <span>비서 채팅</span></button>
       <button id="tab-kb" type="button" class="nav-item">▤ <span>내 KB</span><span id="kb-count" class="count">0</span></button>
+      <button id="tab-teams" type="button" class="nav-item">◈ <span>팀 에이전트</span><span id="team-count" class="count">0</span></button>
       <button id="tab-reviews" type="button" class="nav-item">✓ <span>승인함</span><span id="review-count" class="count">0</span></button>
     </nav>
     <div class="history-heading">최근 대화 <button id="reload-sessions" type="button" aria-label="대화 목록 새로고침">↻</button></div>
@@ -38,6 +39,11 @@
       <p id="kb-summary" class="muted"></p><div class="kb-layout"><div id="notes" class="note-list"></div><article id="note-detail" class="note-detail"><p class="muted">자료를 선택하면 원문과 출처를 볼 수 있어요.</p></article></div>
     </section>
     <section id="panel-reviews" class="panel reviews-panel" hidden aria-label="승인함"><div class="section-heading"><div><p class="eyebrow">HUMAN IN THE LOOP</p><h2>공유하기 전, 한 번 더 확인.</h2><p>공개용 초안을 검토해 주세요. 승인은 자동으로 이루어지지 않습니다.</p></div><button id="reload-reviews" type="button" class="secondary">새로고침 ↻</button></div><p class="mode-note">로컬 UI PoC · 승인과 게시는 mock입니다. 실제 외부 게시·OpenShell 격리는 비활성입니다.</p><div id="reviews"></div></section>
+    <section id="panel-teams" class="panel teams-panel" hidden aria-label="팀 에이전트">
+      <div class="section-heading"><div><p class="eyebrow">TASK AGENTS</p><h2>담당 팀과, 그 팀이 보는 자료.</h2><p>Task마다 하나의 팀이 붙습니다. 역할 구성, 실행 상태, 연결된 KB와 실제 인용 근거를 확인하세요.</p></div><button id="reload-teams" type="button" class="secondary">새로고침 ↻</button></div>
+      <p class="mode-note">로컬 runtime · 역할 실행은 결정적 mock입니다. 연결 자료는 담당 참고 범위이며, 역할 검색은 자료 공간의 현재 권한 범위에서 수행됩니다.</p>
+      <div id="teams"></div>
+    </section>
   </main>
 </body>
 </html>

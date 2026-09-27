@@ -128,14 +128,15 @@
 
 
   function switchTab(name) {
-    ["chat","kb","reviews"].forEach((tab) => {
+    ["chat","kb","teams","reviews"].forEach((tab) => {
       byId("panel-" + tab).hidden = tab !== name;
       byId("tab-" + tab).classList.toggle("active", tab === name);
       if (tab === name) byId("tab-" + tab).setAttribute("aria-current","page");
       else byId("tab-" + tab).removeAttribute("aria-current");
     });
-    byId("page-title").textContent = {chat:"비서 채팅",kb:"내 KB",reviews:"승인함"}[name];
+    byId("page-title").textContent = {chat:"비서 채팅",kb:"내 KB",teams:"팀 에이전트",reviews:"승인함"}[name];
     if (name === "kb") loadNotes();
+    if (name === "teams") loadTeams();
     if (name === "reviews") loadReviews();
   }
   async function loadStatus() {
@@ -367,6 +368,108 @@
       detail.append(meta);
     } catch(e){showError(detail,e);}
   }
+  function openNote(sourceId) {
+    switchTab("kb");
+    selectNote(sourceId).catch((e)=>showError(byId("global-error"),e));
+  }
+  const ROLE_LABELS={supervisor:"Supervisor · 취합/요약",paper_scout:"논문 조사",experiment_runner:"실험 로그 파싱",result_analyst:"결과 비교 (검증)",source_scout:"자료 조사",evidence_reviewer:"근거 검토 (검증)"};
+  const TEAM_STATE_LABELS={ready:"준비됨",provisioning:"구성 중",running:"실행 중",failed:"실패",cancelled:"취소됨",cleaned:"정리됨",unknown:"불명",cleanup_pending:"정리 대기"};
+  function sourceRow(source, actions) {
+    const row=el("li",null,"source-row");
+    const open=el("button",source.title||source.source_id,"text-button");
+    open.type="button"; open.disabled=!source.available;
+    open.addEventListener("click",()=>openNote(source.source_id));
+    row.append(open);
+    const meta=[];
+    if(!source.available) meta.push("현재 접근 불가/삭제됨");
+    if(source.audience) meta.push(source.audience==="private"?"비공개":source.audience);
+    if(source.revision_number) meta.push("v"+source.revision_number);
+    if(source.roles&&source.roles.length) meta.push("인용: "+source.roles.join(", "));
+    if(source.shared&&source.shared.length) meta.push("공통 주제: "+source.shared.join(", "));
+    row.append(el("small",meta.join(" · ")));
+    (actions||[]).forEach((a)=>row.append(a));
+    return row;
+  }
+  function renderTeam(view) {
+    const t=view.task, team=view.team;
+    const card=el("article",null,"team-card"); card.dataset.taskId=t.task_id;
+    const head=el("div",null,"team-head");
+    head.append(el("h3",t.goal));
+    const badges=el("div",null,"team-badges");
+    badges.append(badge(({benchmark:"Benchmark 팀",research:"Research 팀"})[team.pattern]||team.pattern));
+    badges.append(badge(({triv3:"TRIV3",quantization_research:"양자화 연구"})[t.domain_id]||t.domain_id));
+    badges.append(badge("Task "+t.status));
+    badges.append(badge("팀 "+(TEAM_STATE_LABELS[team.state]||team.state)+" · "+team.reason, view.selectable?"done":"error"));
+    badges.append(badge(team.runtime_kind+" runtime · "+team.mode,"mock"));
+    head.append(badges);
+    card.append(head);
+    const ids=el("dl",null,"team-ids");
+    [["Task",t.task_id],["팀",team.team_id],["템플릿",team.template_id+" v"+team.template_version],["통신",team.communication],["예산",
+      "steps "+team.budget.max_steps+" · tools "+team.budget.max_tool_calls+" · tokens "+team.budget.max_tokens+" · "+team.budget.timeout_seconds+"s · 동시 "+team.budget.concurrency]
+    ].forEach(([k,v])=>ids.append(el("dt",k),el("dd",v)));
+    card.append(ids);
+    const grid=el("div",null,"team-grid");
+    const members=el("section"); members.append(el("h4","역할 구성 ("+team.members.length+")"));
+    const memberList=el("ol",null,"member-list");
+    team.members.forEach((m)=>{
+      const item=el("li");
+      item.append(el("strong",m.role),el("span"," · "+(ROLE_LABELS[m.role]||"")));
+      const detail=[ "agent "+m.agent_id, m.capabilities.length?"capability: "+m.capabilities.join(", "):"capability 없음 (취합 전용)", m.tools.length?"tool: "+m.tools.join(", "):null, "prepare "+m.prepare+(m.failed?" · 실패":"") ].filter(Boolean);
+      item.append(el("small",detail.join(" · ")));
+      memberList.append(item);
+    });
+    members.append(memberList); grid.append(members);
+    const runs=el("section"); runs.append(el("h4","최근 실행 ("+view.runs.count+")"));
+    if(!view.runs.recent.length) runs.append(el("p","아직 이 팀으로 실행한 요청이 없어요. 채팅에서 담당을 선택하거나 관련 주제로 질문해 보세요.","empty"));
+    const runList=el("ul",null,"run-list");
+    view.runs.recent.forEach((r)=>{
+      const item=el("li");
+      item.append(el("strong",r.text));
+      const roles=r.roles.map((x)=>x.role+":"+x.status).join(", ");
+      item.append(el("small",[r.created_at.slice(0,19).replace("T"," "),"run "+r.run_id,"팀 결과 "+(r.team_status||r.chat_status)+(r.simulated?" · simulated(mock)":""),roles].filter(Boolean).join(" · ")));
+      runList.append(item);
+    });
+    runs.append(runList); grid.append(runs);
+    card.append(grid);
+    const kb=el("section",null,"team-kb");
+    kb.append(el("h4","연결된 KB ("+view.linked_sources.length+")"));
+    const output=el("div");
+    const linked=el("ul",null,"source-list");
+    if(!view.linked_sources.length) linked.append(el("li","연결된 자료가 없어요. 아래 주제 일치 자료에서 연결할 수 있어요.","empty"));
+    view.linked_sources.forEach((s)=>{
+      const unlink=el("button","해제","text-button danger"); unlink.type="button";
+      unlink.addEventListener("click",async()=>{unlink.disabled=true;try{const updated=await api("DELETE","/ui/api/teams/"+encodeURIComponent(t.task_id)+"/kb/"+encodeURIComponent(s.source_id));card.replaceWith(renderTeam(updated));}catch(e){unlink.disabled=false;showError(output,e);}});
+      linked.append(sourceRow(s,[unlink]));
+    });
+    kb.append(linked);
+    kb.append(el("h4","실행에서 인용된 근거 ("+view.cited_sources.length+")"));
+    const cited=el("ul",null,"source-list");
+    if(!view.cited_sources.length) cited.append(el("li","최근 실행에서 인용된 근거가 없어요.","empty"));
+    view.cited_sources.forEach((s)=>cited.append(sourceRow(s)));
+    kb.append(cited);
+    kb.append(el("h4","주제 일치 자료 · 미연결 ("+view.subject_matches.length+")"));
+    const matches=el("ul",null,"source-list");
+    if(!view.subject_matches.length) matches.append(el("li","같은 자료 공간에서 Task 목표와 주제가 겹치는 미연결 자료가 없어요.","empty"));
+    view.subject_matches.forEach((s)=>{
+      const link=el("button","연결","text-button"); link.type="button";
+      link.addEventListener("click",async()=>{link.disabled=true;try{const updated=await api("POST","/ui/api/teams/"+encodeURIComponent(t.task_id)+"/kb",{source_ids:[s.source_id],note:"ui"});card.replaceWith(renderTeam(updated));}catch(e){link.disabled=false;showError(output,e);}});
+      matches.append(sourceRow(s,[link]));
+    });
+    kb.append(matches);
+    kb.append(el("p",view.notice,"muted"));
+    kb.append(output);
+    card.append(kb);
+    return card;
+  }
+  async function loadTeams() {
+    const target=byId("teams");
+    try {
+      const teams=await api("GET","/ui/api/teams");
+      clear(target); byId("team-count").textContent=String(teams.length);
+      if(!teams.length) target.append(el("p","아직 Task 팀이 없어요. 채팅에서 “…조사해 줘” 또는 “…검증해 줘”라고 요청하면 새 Task 팀이 만들어져요.","empty"));
+      teams.forEach((view)=>target.append(renderTeam(view)));
+    } catch(e){clear(target);showError(target,e);}
+  }
   function decisionBody(view, decision) {
     return {
       draft_version: view.version,
@@ -461,17 +564,18 @@
   document.addEventListener("DOMContentLoaded",async()=>{
     busy=true; byId("send-message").disabled=true; byId("create-session").disabled=true;
     welcome=byId("welcome").cloneNode(true); wireExamples();
-    ["chat","kb","reviews"].forEach((name)=>byId("tab-"+name).addEventListener("click",()=>switchTab(name)));
+    ["chat","kb","teams","reviews"].forEach((name)=>byId("tab-"+name).addEventListener("click",()=>switchTab(name)));
     byId("chat-form").addEventListener("submit",send);
     byId("chat-input").addEventListener("keydown",(e)=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();byId("chat-form").requestSubmit();}});
     byId("create-session").addEventListener("click",()=>newSession().catch(e=>showError(byId("global-error"),e)));
     byId("reload-sessions").addEventListener("click",()=>loadSessions().catch(e=>showError(byId("global-error"),e)));
     byId("reload-notes").addEventListener("click",loadNotes);
+    byId("reload-teams").addEventListener("click",loadTeams);
     byId("reload-reviews").addEventListener("click",loadReviews);
     byId("kb-search").addEventListener("input",renderNotes);
     byId("kb-domain").addEventListener("change",renderNotes);
     try {
-      await loadStatus(); await Promise.all([loadNotes(),loadReviews(),loadAssignees()]);
+      await loadStatus(); await Promise.all([loadNotes(),loadReviews(),loadAssignees(),loadTeams()]);
       const sessions=await loadSessions(); if(sessions.length)await selectSession(sessions[0].session_id);
     } catch(e){showError(byId("global-error"),e);}
     finally {busy=false;byId("send-message").disabled=false;byId("create-session").disabled=false;}

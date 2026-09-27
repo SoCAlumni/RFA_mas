@@ -1,0 +1,134 @@
+{
+  "dataset": "poc-demo-seed-v2",
+  "started_at": "2026-09-27T06:01:18.295771+00:00",
+  "notes_before": 0,
+  "notes": [
+    {
+      "key": "poc-demo-seed-v2-01",
+      "source_id": "source_59064e850c0c4058a859f12263daabd5",
+      "source_revision": "revision_3600f821d1104dfeb2ee4e459ee91bfd",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-02",
+      "source_id": "source_d9833359da64430eb737baf103c7c0a3",
+      "source_revision": "revision_c26e6a8d86e84970a03af5d270afc605",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-03",
+      "source_id": "source_27e0e90498ad4a2fb1495b85af28ba6f",
+      "source_revision": "revision_e566b8f426114cd894c98241144372f4",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-04",
+      "source_id": "source_4f8a8d2cddfc4fc1a7023e7cc94d08c0",
+      "source_revision": "revision_94a63ab0ba874333a36e6881045c4199",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-05",
+      "source_id": "source_7ae8a28137b54f1d846b2b352d77f087",
+      "source_revision": "revision_e6e7040bb97b4578b869d3f14659a4b5",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-06",
+      "source_id": "source_4d7c2e9dd3694c34b618a54b18633504",
+      "source_revision": "revision_93ef5329967743a087fc328a1b58b5ae",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-07",
+      "source_id": "source_c974e5c08dac4117961ef0f4dc35cb61",
+      "source_revision": "revision_f245d4770d234fa9971cb37d0832a22f",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-08",
+      "source_id": "source_66a39a7f47a84fccbe917cb067d1ca40",
+      "source_revision": "revision_7fcd4d29ceb34373b41b974846eb976d",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-09",
+      "source_id": "source_ddcab1eca8e140cf9a136e0db7bf3fae",
+      "source_revision": "revision_1dfedb0e76ec4263a457b299be49d899",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-10",
+      "source_id": "source_5d6b738b0b684bb28b5277e9b3f9a0a4",
+      "source_revision": "revision_625dc3e34507448e8440b7e747b9bbde",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-11",
+      "source_id": "source_c1b0312a835f454eb8258f284e9b0e0e",
+      "source_revision": "revision_12c73385e5f3447dac5711e26b030e68",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-12",
+      "source_id": "source_11b1faf7fb96440a8573f13be25851fe",
+      "source_revision": "revision_5e937e783c0f403ebbc0d595665e9aec",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-13",
+      "source_id": "source_277106d173234df4af7c8bdcb65633a4",
+      "source_revision": "revision_d3d4f7fe6e4048c0adbc24055f691a70",
+      "audience": "private"
+    },
+    {
+      "key": "poc-demo-seed-v2-14",
+      "source_id": "source_8fc0e33405214cc7b8c54e990f7bc75c",
+      "source_revision": "revision_1d5b7fb663e648839c2e4bf69d8f1425",
+      "audience": "private"
+    }
+  ],
+  "tasks": [
+    {
+      "key": "poc-demo-seed-v2-task-aurora",
+      "goal": "오로라 벤치마크 지연 로그 A1/B2 성능 비교 결과를 검증해줘",
+      "created": true,
+      "session_id": "session_28f36f9b3eac4d3b9afcd0b824f6928b",
+      "run_id": "run_07dc715e38ea4c9782566165f85064e8",
+      "team_status": "completed",
+      "simulated": true,
+      "task_id": "task_3d4b7ea04f9f4238bb908decd8aa9ca4",
+      "team_id": "team_f528adb711124af4bf532f3958d6f1df",
+      "pattern": "benchmark",
+      "team_state": "ready",
+      "members": [
+        "supervisor",
+        "paper_scout",
+        "experiment_runner",
+        "result_analyst"
+      ],
+      "linked_sources": 10
+    },
+    {
+      "key": "poc-demo-seed-v2-task-nebula",
+      "goal": "네뷸라 INT4 양자화 논문 근거를 조사해줘",
+      "created": true,
+      "session_id": "session_9293da138e0f44a4b48f9ac879c4eb1f",
+      "run_id": "run_d6ec135b94174c34a60d1885ddafaa8f",
+      "team_status": "completed",
+      "simulated": true,
+      "task_id": "task_a1ca6ab5df174bd48fd94e65cc7f5c94",
+      "team_id": "team_5fc0ae41b6624c3a92b5624e358dbb45",
+      "pattern": "research",
+      "team_state": "ready",
+      "members": [
+        "supervisor",
+        "source_scout",
+        "evidence_reviewer"
+      ],
+      "linked_sources": 6
+    }
+  ],
+  "notes_after": 16,
+  "finished_at": "2026-09-27T06:01:20.006313+00:00"
+}

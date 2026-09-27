@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "started_at": "2026-09-27T06:03:18.706462+00:00",
+  "finished_at": "2026-09-27T06:03:21.407519+00:00",
+  "browser": "154.0.8037.57",
+  "checks": [
+    "sidebar team count 2",
+    "two team cards",
+    "benchmark card: roles, tools, run, 10 linked, cited evidence",
+    "research card: roles, 6 linked",
+    "unlink then re-link from subject matches: [샘플] 오로라 벤치마크 — 측정 환경과 절차",
+    "linked source opens KB detail: [샘플] 오로라 벤치마크 A1 — 기준 로그",
+    "reload keeps 2 teams",
+    "mobile 390px no horizontal overflow: True"
+  ],
+  "js_errors": [],
+  "outbound": [],
+  "browser_storage": [
+    0,
+    0
+  ],
+  "overflow": false
+}

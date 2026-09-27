@@ -155,6 +155,13 @@ class UiNoteBody(BaseModel):
     content: str = Field(min_length=1, max_length=50_000)
 
 
+class TeamKbLinkBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_ids: list[str] = Field(min_length=1, max_length=50)
+    note: str = Field(default="", max_length=200)
+
+
 class _Upstream:
     def __init__(self, target: UpstreamTarget) -> None:
         self.target = target
@@ -237,6 +244,7 @@ def create_local_ui_app(
     core: UpstreamTarget,
     review: UpstreamTarget | None = None,
     chat: ChatPort | None = None,
+    teams: Any | None = None,
 ) -> FastAPI:
     """Build the UI with fixed, server-injected upstreams only.
 
@@ -525,6 +533,46 @@ def create_local_ui_app(
                 media_type="application/x-ndjson",
                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
             )
+
+    if teams is not None:
+
+        def _team_error(exc: RfaError) -> UiError:
+            return UiError(
+                404 if exc.code == "not_found" else 409,
+                "upstream_rejected",
+                upstream_code=exc.code,
+            )
+
+        @app.get("/ui/api/teams")
+        async def list_teams() -> Any:
+            """Owner's Task teams: composition, state, recent runs and linked KB."""
+            try:
+                return await teams.list()
+            except RfaError as exc:
+                raise _team_error(exc) from None
+
+        @app.get("/ui/api/teams/{task_id}")
+        async def get_team(task_id: str) -> Any:
+            try:
+                return await teams.get(_path_id(task_id))
+            except RfaError as exc:
+                raise _team_error(exc) from None
+
+        @app.post("/ui/api/teams/{task_id}/kb")
+        async def link_team_kb(task_id: str, body: TeamKbLinkBody, _: Csrf) -> Any:
+            if not all(is_opaque_id(source_id) for source_id in body.source_ids):
+                raise UiError(404, "not_found")
+            try:
+                return await teams.link(_path_id(task_id), body.source_ids, note=body.note)
+            except RfaError as exc:
+                raise _team_error(exc) from None
+
+        @app.delete("/ui/api/teams/{task_id}/kb/{source_id}")
+        async def unlink_team_kb(task_id: str, source_id: str, _: Csrf) -> Any:
+            try:
+                return await teams.unlink(_path_id(task_id), _path_id(source_id))
+            except RfaError as exc:
+                raise _team_error(exc) from None
 
     @app.get("/ui/api/reviews")
     async def list_reviews(
