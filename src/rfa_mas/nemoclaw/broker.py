@@ -33,9 +33,10 @@ TOOLS = [
     {
         "name": "ask_task_agent",
         "description": (
-            "Delegate a question to a task agent by name and return its answer. The broker routes to "
-            "the agent's sandbox (same or other) and applies the session's channel policy. Always pass "
-            "the session_id from the routing marker in the user's message."
+            "Delegate a question to a task agent by name. The broker applies the session's channel policy "
+            "and routes: for an agent in another sandbox it returns the agent's reply; for an agent in your own "
+            "sandbox it returns a `delegate` object — then call sessions_spawn with that agentId and message "
+            "verbatim and relay the reply. Always pass the session_id from the routing marker in the user's message."
         ),
         "inputSchema": {
             "type": "object",
@@ -124,6 +125,18 @@ class Broker:
         sid = session_id or f"s_{uuid.uuid4().hex[:12]}"
         marker = make_marker("channel", {"ch": channel, "sid": sid}, self.secret)
         message = f"{marker}\n{query}"
+        if decision.kind == "local-spawn":
+            # Same sandbox: the caller spawns natively (OpenClaw sessions_spawn). Running another
+            # `nemoclaw agent` from inside an agent turn would block on NemoClaw's host lock.
+            ms = int((time.monotonic() - started) * 1000)
+            audit.record(kind="broker", verdict="delegated", action="local-spawn", channel=channel,
+                         profile=self.routing.channels[channel].profile, sandbox=decision.sandbox, agent=agent,
+                         session_id=sid, detail={"caller_sandbox": caller_sandbox, "ms": ms, "alias": decision.alias})
+            return {"ok": True, "agent": agent, "sandbox": decision.sandbox, "route": decision.kind, "channel": channel,
+                    "session_id": sid, "reply": None, "ms": ms,
+                    "delegate": {"tool": "sessions_spawn", "agentId": decision.openclaw_id, "message": message,
+                                 "note": "same sandbox: call sessions_spawn with exactly this agentId and message "
+                                         "(the first line is the routing marker), then relay its reply"}}
         self.inflight[agent] = self.inflight.get(agent, 0) + 1
         try:
             if self.replay:

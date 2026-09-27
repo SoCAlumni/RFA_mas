@@ -66,15 +66,24 @@ def test_channel_comes_from_the_entry_session_store_and_defaults_to_least_expose
 async def test_ask_plants_a_signed_channel_marker_and_targets_the_agent_sandbox(broker):
     b, runner = broker
     audit.remember_session("s_ext", "external", "external")
-    result = await b.ask("research", "근거 찾아줘", "s_ext", "rfa-main")
-    assert result["ok"] and result["route"] == "local-spawn" and result["reply"] == "task reply"
+    # same sandbox as the caller: no nested nemoclaw CLI call; the caller spawns natively
+    local = await b.ask("research", "근거 찾아줘", "s_ext", "rfa-main")
+    assert local["ok"] and local["route"] == "local-spawn" and local["reply"] is None and runner.calls == []
+    delegate = local["delegate"]
+    assert delegate["tool"] == "sessions_spawn" and delegate["agentId"] == "research"
+    marker = find_markers(delegate["message"], SECRET)[0]
+    assert marker.verified and marker.fields == {"ch": "external", "sid": "s_ext"} and delegate["message"].endswith("근거 찾아줘")
+    assert audit.query(kind="broker")[0]["verdict"] == "delegated"
+    # another sandbox (or a host-side caller): the broker drives the target agent through the gateway CLI
+    result = await b.ask("research", "근거 찾아줘", "s_ext", None)
+    assert result["ok"] and result["route"] == "gateway" and result["reply"] == "task reply"
     argv = runner.calls[0]
     assert argv[:5] == ["nemoclaw", "rfa-main", "agent", "--agent", "research"]
     assert argv[argv.index("--session-id") + 1] == "broker-s_ext"
     marker = find_markers(argv[-1], SECRET)[0]
     assert marker.verified and marker.fields == {"ch": "external", "sid": "s_ext"} and argv[-1].endswith("근거 찾아줘")
     event = audit.query(kind="broker")[0]
-    assert (event["channel"], event["agent"], event["sandbox"], event["action"]) == ("external", "research", "rfa-main", "local-spawn")
+    assert (event["channel"], event["agent"], event["sandbox"], event["action"]) == ("external", "research", "rfa-main", "gateway")
 
 
 async def test_ask_refuses_unknown_and_draining_agents(broker):
@@ -126,7 +135,7 @@ async def test_mcp_streamable_http_surface(broker):
                                                                     "arguments": {"name": "summarizer", "query": "요약", "session_id": "s_9"}}})
         payload = json.loads(asked.json()["result"]["content"][0]["text"])
         assert payload["ok"] and payload["sandbox"] == "rfa-main" and asked.json()["result"]["isError"] is False
-        assert runner.calls[-1][1] == "rfa-main"
+        assert payload["route"] == "local-spawn" and payload["delegate"]["agentId"] == "summarizer"  # MCP caller = assistant sandbox
         unknown = await c.post("/mcp", headers=auth, json={"jsonrpc": "2.0", "id": 5, "method": "resources/list"})
         assert unknown.json()["error"]["code"] == -32601
         assert (await c.get("/mcp", headers=auth)).status_code == 405
@@ -140,6 +149,6 @@ async def test_rest_fallback_surface(broker):
         assert (await c.get("/broker/agents")).status_code == 401
         assert len((await c.get("/broker/agents", headers=auth)).json()["agents"]) == 3
         ok = await c.post("/broker/ask", headers=auth, json={"name": "benchmark", "query": "지연"})
-        assert ok.status_code == 200 and ok.json()["route"] == "local-spawn"
+        assert ok.status_code == 200 and ok.json()["route"] == "local-spawn"  # REST fallback is also called from the assistant sandbox
         bad = await c.post("/broker/ask", headers=auth, json={"name": "nope", "query": "x"})
         assert bad.status_code == 409
