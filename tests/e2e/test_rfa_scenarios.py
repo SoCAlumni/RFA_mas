@@ -1089,7 +1089,24 @@ async def test_e2e03_unavailable_capability_worker_failure_and_budget_stop(
                     record["status"] == "failed"
                     and record["result"]["stop_reason"] == "role_failed",
                 )
-        async with h.open_stack(tmp_path / "budget", **(PINNED | {"max_tool_calls": 3})) as stack:
+        # The current local workload needs two calls. A ceiling of three is not
+        # exhaustion: check that success boundary too, then actually exhaust a
+        # one-call budget. Do not make product code fail an in-budget workload.
+        async with h.open_stack(
+            tmp_path / "budget-allowed", **(PINNED | {"max_tool_calls": 3})
+        ) as stack:
+            stack.people["owner"]
+            await h.ingest(stack, inputs)
+            async with stack.http() as client:
+                allowed = (await session_work(client, h.team_body(goal, goal, BENCH_OUT)))[0].json()
+            allowed_team = await team_of(stack, allowed["run_id"])
+            a.check(
+                "within_budget_workload_completes_without_false_exhaustion",
+                allowed["status"] == "completed"
+                and allowed_team.status == "completed"
+                and 1 < allowed_team.usage.tool_calls <= 3,
+            )
+        async with h.open_stack(tmp_path / "budget", **(PINNED | {"max_tool_calls": 1})) as stack:
             stack.people["owner"]
             await h.ingest(stack, inputs)
             async with stack.http() as client:
@@ -1101,7 +1118,7 @@ async def test_e2e03_unavailable_capability_worker_failure_and_budget_stop(
                 and capped["draft"] is None
                 and cteam.stop_reason == "budget_exceeded"
                 and cteam.status == "partial"
-                and cteam.usage.tool_calls <= 3,
+                and cteam.usage.tool_calls <= 1,
             )
         a.pending("auto_task_creation", "no automatic Task creation", "P2-001")
 
