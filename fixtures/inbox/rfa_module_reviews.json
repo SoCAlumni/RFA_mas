@@ -1,0 +1,255 @@
+{
+  "_source": "Synthetic RFA_module Review documents shaped by contracts/review.openapi.yaml (819053f). Not real service output.",
+  "reviewed_redact": {
+    "id": 12,
+    "status": "reviewed",
+    "channel": "public",
+    "target": "zetwhite/rfa-test#34",
+    "source_url": "https://github.com/zetwhite/rfa-test/issues/34#issuecomment-1",
+    "requester": "outside-dev",
+    "question": "@zetwhite ORBIT 벤치마크 진행 어때?",
+    "knowledge": {
+      "task_id": "orbit",
+      "answer": "INT4 이후 EM 0.5%p 하락, Nimbus2, 11/3 릴리즈",
+      "confidence": 0.8,
+      "sources": [
+        "ORBIT 9월 진행 현황: INT4 이후 소폭 하락"
+      ]
+    },
+    "draft": "Nimbus2를 INT4로 양자화한 결과 EM이 0.5%p 하락했습니다. 11/3 릴리즈 예정입니다.",
+    "edit_log": [
+      {
+        "round": 1,
+        "verdict": "pass"
+      }
+    ],
+    "scan": [],
+    "verdict": {
+      "verdict": "redact",
+      "redacted_body": "차기 모델을 INT4로 양자화한 결과 정확도가 소폭 하락했습니다. 일정은 확정되면 공유드리겠습니다.",
+      "reasons": [
+        {
+          "rule": "official:model-name",
+          "span": "Nimbus2",
+          "action": "remove"
+        },
+        {
+          "rule": "official:release-date",
+          "span": "11/3 릴리즈",
+          "action": "remove"
+        },
+        {
+          "rule": "editor:keep-direction",
+          "span": "소폭 하락",
+          "action": "keep"
+        }
+      ],
+      "summary": "모델명·릴리즈 일자 제거, 하락 방향은 유지"
+    },
+    "final_body": "차기 모델을 INT4로 양자화한 결과 정확도가 소폭 하락했습니다. 일정은 확정되면 공유드리겠습니다.",
+    "events": [
+      {
+        "at": "2026-09-27T08:40:00+09:00",
+        "who": "intake",
+        "what": "opened"
+      },
+      {
+        "at": "2026-09-27T08:41:00+09:00",
+        "who": "knowledge",
+        "what": "knowledge_ready"
+      },
+      {
+        "at": "2026-09-27T08:43:00+09:00",
+        "who": "press",
+        "what": "scanned"
+      },
+      {
+        "at": "2026-09-27T08:44:00+09:00",
+        "who": "censor_public",
+        "what": "reviewed"
+      }
+    ]
+  },
+  "reviewed_block": {
+    "id": 15,
+    "status": "reviewed",
+    "channel": "public",
+    "target": "zetwhite/rfa-test#37",
+    "source_url": "https://github.com/zetwhite/rfa-test/issues/37",
+    "requester": "someone",
+    "question": "@zetwhite GPU pool 주소 알려줘",
+    "draft": "GPU pool은 10.12.3.4 입니다.",
+    "edit_log": [],
+    "scan": [
+      {
+        "type": "private_ip",
+        "match": "10.12.3.4",
+        "span": [
+          8,
+          17
+        ]
+      }
+    ],
+    "verdict": {
+      "verdict": "block",
+      "reasons": [
+        {
+          "rule": "scanner:private-ip",
+          "span": "10.12.3.4",
+          "action": "remove"
+        }
+      ],
+      "summary": "사내 자원 주소 요청 자체가 답변 불가"
+    },
+    "events": [
+      {
+        "at": "2026-09-27T09:10:00+09:00",
+        "who": "intake",
+        "what": "opened"
+      },
+      {
+        "at": "2026-09-27T09:12:00+09:00",
+        "who": "censor_public",
+        "what": "reviewed"
+      }
+    ]
+  },
+  "posted": {
+    "id": 9,
+    "status": "posted",
+    "channel": "public",
+    "target": "zetwhite/rfa-test#32",
+    "source_url": "https://github.com/zetwhite/rfa-test/issues/32",
+    "requester": "outside-dev",
+    "question": "@zetwhite INT8 결과는 공개 논문이랑 같아?",
+    "draft": "공개 논문과 같은 조건에서 같은 결과입니다.",
+    "edit_log": [],
+    "scan": [],
+    "verdict": {
+      "verdict": "allow",
+      "reasons": [],
+      "summary": "공개 자료만 사용"
+    },
+    "final_body": "공개 논문과 같은 조건에서 같은 결과입니다.",
+    "decision": {
+      "by": "dayoung",
+      "at": "2026-09-26T16:05:00+09:00"
+    },
+    "events": [
+      {
+        "at": "2026-09-26T16:00:00+09:00",
+        "who": "intake",
+        "what": "opened"
+      },
+      {
+        "at": "2026-09-26T16:05:00+09:00",
+        "who": "human",
+        "what": "approved"
+      },
+      {
+        "at": "2026-09-26T16:05:30+09:00",
+        "who": "publisher",
+        "what": "posted",
+        "detail": "https://github.com/zetwhite/rfa-test/issues/32#issuecomment-9"
+      }
+    ]
+  },
+  "rejected": {
+    "id": 8,
+    "status": "rejected",
+    "channel": "public",
+    "target": "zetwhite/rfa-test#30",
+    "source_url": "https://github.com/zetwhite/rfa-test/issues/30",
+    "requester": "customer-a",
+    "question": "@zetwhite SDK 출시일 언제야?",
+    "draft": "SDK는 11월 출시 예정입니다.",
+    "edit_log": [],
+    "scan": [],
+    "verdict": {
+      "verdict": "redact",
+      "redacted_body": "SDK 출시 일정은 확정되면 공유드리겠습니다.",
+      "reasons": [
+        {
+          "rule": "official:release-date",
+          "span": "11월 출시",
+          "action": "remove"
+        }
+      ],
+      "summary": "일정 제거"
+    },
+    "final_body": "SDK 출시 일정은 확정되면 공유드리겠습니다.",
+    "decision": {
+      "by": "dayoung",
+      "at": "2026-09-25T15:30:00+09:00",
+      "reason": "출시 날짜는 항상 제외"
+    },
+    "events": [
+      {
+        "at": "2026-09-25T14:10:00+09:00",
+        "who": "intake",
+        "what": "opened"
+      },
+      {
+        "at": "2026-09-25T15:30:00+09:00",
+        "who": "human",
+        "what": "rejected",
+        "detail": "출시 날짜는 항상 제외"
+      }
+    ]
+  },
+  "needs_human": {
+    "id": 16,
+    "status": "needs_human",
+    "channel": "internal",
+    "target": "team/internal#5",
+    "source_url": "https://confluence.example.internal/x/5",
+    "requester": "product-team",
+    "question": "PRISM 설계 문서 경로 알려줘",
+    "edit_log": [],
+    "scan": [],
+    "events": [
+      {
+        "at": "2026-09-26T17:20:00+09:00",
+        "who": "intake",
+        "what": "opened"
+      },
+      {
+        "at": "2026-09-26T17:25:00+09:00",
+        "who": "workflow",
+        "what": "needs_human",
+        "detail": "복구 한도 초과: knowledge 서비스 503 3회"
+      }
+    ]
+  },
+  "in_progress": {
+    "id": 17,
+    "status": "knowledge_ready",
+    "channel": "public",
+    "target": "zetwhite/rfa-test#38",
+    "source_url": "https://github.com/zetwhite/rfa-test/issues/38",
+    "requester": "outside-dev",
+    "question": "@zetwhite 양자화 QAT 적용할 계획 있어?",
+    "knowledge": {
+      "task_id": "quantization",
+      "answer": "QAT 검토 중",
+      "confidence": 0.6,
+      "sources": [
+        "QAT 노트: 검토 중"
+      ]
+    },
+    "edit_log": [],
+    "scan": [],
+    "events": [
+      {
+        "at": "2026-09-27T08:12:00+09:00",
+        "who": "intake",
+        "what": "opened"
+      },
+      {
+        "at": "2026-09-27T08:13:00+09:00",
+        "who": "knowledge",
+        "what": "knowledge_ready"
+      }
+    ]
+  }
+}

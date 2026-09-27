@@ -1,0 +1,2497 @@
+openapi: 3.1.0
+info:
+  title: RFA 결재 인박스 API (reference)
+  summary: Contract for the 결재 인박스 UI PoC; served from synthetic PoC data
+  description: 'Derived from the UI PoC (A · 메일형 3단 + 관리자). Each operation''s x-rfa-authority names the
+    real owner of the data: rfa_module.review (승희 결재 원본), runtime.sandbox (다영 NemoClaw/OpenShell), core
+    (this repository) or reference (PoC fixture only). Nothing here approves, publishes or changes a sandbox.'
+  version: 0.1.0
+paths:
+  /v1/inbox/me:
+    get:
+      tags:
+      - rail
+      summary: 현재 결재자와 샌드박스 실행 수 (좌측 하단)
+      operationId: getCurrentApprover
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxUser'
+      x-rfa-authority: core
+  /v1/inbox/inboxes:
+    get:
+      tags:
+      - rail
+      summary: 인박스 목록 (채널·담당 에이전트·기밀 등급·대기 건수)
+      operationId: listInboxes
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/InboxSummary'
+                type: array
+                title: Response Listinboxes
+      x-rfa-authority: core
+  /v1/inbox/counts:
+    get:
+      tags:
+      - rail
+      summary: 결재함/알림함/모든 인박스 배지
+      operationId: getCounts
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxCounts'
+      x-rfa-authority: core
+  /v1/inbox/requests:
+    get:
+      tags:
+      - requests
+      summary: 요청 목록 (전체/결재 필요/자동응답 탭, 검색 Ctrl K, 정렬)
+      operationId: listRequests
+      parameters:
+      - name: inbox_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          title: Inbox Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - open
+            - needs_approval
+            - blocked
+            - auto_replied
+            - decided
+            - declined
+            - held
+            - in_progress
+            - needs_human
+            type: string
+          - type: 'null'
+          title: Status
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Q
+      - name: sort
+        in: query
+        required: false
+        schema:
+          enum:
+          - received_desc
+          - received_asc
+          type: string
+          default: received_desc
+          title: Sort
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: rfa_module.review
+  /v1/inbox/requests/{request_id}:
+    get:
+      tags:
+      - requests
+      summary: '요청 상세: 원본 화면·결재 카드·차단 시도·알림'
+      operationId: getRequest
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Conflict
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: rfa_module.review
+  /v1/inbox/requests/{request_id}/decision:
+    post:
+      tags:
+      - decisions
+      summary: '사람 결정: 범위 선택·응답하지 않기·보류·차단 처리 (+규칙 저장)'
+      description: 'Mapping to RFA_module review: the recommended/current-draft option → POST /reviews/{id}/approve;
+        another option or decline → POST /reviews/{id}/reject with the chosen scope as reason (rewrite
+        loop is 승희 Step 12+). research_direction cards resolve in this core (team run resume). Stale approval_id
+        → 409 stale_approval.'
+      operationId: submitDecision
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionSubmit'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionReceipt'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Unprocessable Entity
+      x-rfa-authority: rfa_module.review
+  /v1/inbox/requests/{request_id}/preview:
+    get:
+      tags:
+      - decisions
+      summary: 응답 전문 미리보기 (선택한 범위 기준, 전송 아님)
+      operationId: previewReply
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      - name: option_id
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 160
+          title: Option Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplyPreview'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: core
+  /v1/inbox/notifications:
+    get:
+      tags:
+      - notifications
+      summary: 알림함
+      operationId: listNotifications
+      parameters:
+      - name: unread_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Unread Only
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+                title: Response Listnotifications
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: core
+  /v1/inbox/notifications/{notification_id}/read:
+    post:
+      tags:
+      - notifications
+      summary: Mark Read
+      operationId: markNotificationRead
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Notification Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: core
+  /v1/inbox/activity:
+    get:
+      tags:
+      - activity
+      summary: 활동 기록 (샌드박스가 막은 호출 포함)
+      operationId: listActivity
+      parameters:
+      - name: request_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          title: Request Id
+      - name: agent_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          title: Agent Id
+      - name: outcome
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - blocked
+            - allowed
+            - info
+            type: string
+          - type: 'null'
+          title: Outcome
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityEvent'
+                title: Response Listactivity
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/rules:
+    get:
+      tags:
+      - rules
+      summary: 결정에서 만든 자동응답 규칙
+      operationId: listRules
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Rule'
+                type: array
+                title: Response Listrules
+      x-rfa-authority: core
+  /v1/inbox/rules/{rule_id}:
+    delete:
+      tags:
+      - rules
+      summary: Delete Rule
+      operationId: deleteRule
+      parameters:
+      - name: rule_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Rule Id
+      responses:
+        '204':
+          description: Successful Response
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: core
+  /v1/inbox/admin/agents:
+    get:
+      tags:
+      - admin-agents
+      summary: 에이전트 목록 (인박스·샌드박스·등급·상태·오늘 호출)
+      operationId: listAgents
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AdminAgent'
+                type: array
+                title: Response Listagents
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/admin/agents/{agent_id}:
+    get:
+      tags:
+      - admin-agents
+      summary: '에이전트 상세: 컨텍스트 사용량·불러오는 자료·호출 통계'
+      operationId: getAgent
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAgentDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/admin/agents/{agent_id}/sources/{source_id}:
+    put:
+      tags:
+      - admin-agents
+      summary: 불러오는 자료 켜기/끄기 (다른 구획은 409)
+      operationId: toggleAgentSource
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      - name: source_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Source Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentSourceToggle'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAgentDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Conflict
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: core
+  /v1/inbox/admin/agents/{agent_id}/compact:
+    post:
+      tags:
+      - admin-agents
+      summary: 대화 압축
+      operationId: compactAgentConversation
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAgentDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/admin/agents/{agent_id}/clear-memory:
+    post:
+      tags:
+      - admin-agents
+      summary: 기억 비우기
+      operationId: clearAgentMemory
+      parameters:
+      - name: agent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Agent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAgentDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/admin/sandboxes:
+    get:
+      tags:
+      - admin-sandboxes
+      summary: 샌드박스 목록 (기밀 등급마다 하나)
+      operationId: listSandboxes
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Sandbox'
+                type: array
+                title: Response Listsandboxes
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/admin/sandboxes/{sandbox_id}:
+    get:
+      tags:
+      - admin-sandboxes
+      summary: '샌드박스 상세: LLM 추론·게이트웨이·네트워크 정책'
+      operationId: getSandbox
+      parameters:
+      - name: sandbox_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Sandbox Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: runtime.sandbox
+    patch:
+      tags:
+      - admin-sandboxes
+      summary: 설정 변경 (저장만; '변경 적용' 전까지 pending_changes)
+      operationId: updateSandboxSettings
+      parameters:
+      - name: sandbox_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Sandbox Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SandboxSettingsPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxDetail'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Unprocessable Entity
+      x-rfa-authority: runtime.sandbox
+  /v1/inbox/admin/sandboxes/{sandbox_id}/apply:
+    post:
+      tags:
+      - admin-sandboxes
+      summary: 변경 적용 (컨텍스트 길이·게이트웨이는 다시 만들 때)
+      operationId: applySandboxSettings
+      parameters:
+      - name: sandbox_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Sandbox Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplyResult'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InboxError'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      x-rfa-authority: runtime.sandbox
+components:
+  schemas:
+    ActivityEvent:
+      properties:
+        activity_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Activity Id
+        at:
+          type: string
+          format: date-time
+          title: At
+        agent_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Agent Id
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        action:
+          type: string
+          title: Action
+        outcome:
+          type: string
+          enum:
+          - blocked
+          - allowed
+          - info
+          title: Outcome
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        request_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - activity_id
+      - at
+      - agent_id
+      - sandbox_id
+      - action
+      - outcome
+      title: ActivityEvent
+      description: '''활동 기록'' rows, including sandbox blocks (POST /reviews/14/approve → 결재는 사람만).'
+    AdminAgent:
+      properties:
+        agent_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Agent Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        inbox_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Inbox Id
+        inbox_name:
+          type: string
+          title: Inbox Name
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        clearance:
+          type: string
+          enum:
+          - public
+          - company
+          - division
+          - team
+          title: Clearance
+        status:
+          type: string
+          enum:
+          - running
+          - waiting_decision
+          - stopped
+          title: Status
+        calls_today:
+          type: integer
+          minimum: 0.0
+          title: Calls Today
+      additionalProperties: false
+      type: object
+      required:
+      - agent_id
+      - name
+      - description
+      - inbox_name
+      - sandbox_id
+      - clearance
+      - status
+      - calls_today
+      title: AdminAgent
+    AdminAgentDetail:
+      properties:
+        agent_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Agent Id
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        inbox_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Inbox Id
+        inbox_name:
+          type: string
+          title: Inbox Name
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        clearance:
+          type: string
+          enum:
+          - public
+          - company
+          - division
+          - team
+          title: Clearance
+        status:
+          type: string
+          enum:
+          - running
+          - waiting_decision
+          - stopped
+          title: Status
+        calls_today:
+          type: integer
+          minimum: 0.0
+          title: Calls Today
+        context:
+          $ref: '#/components/schemas/ContextUsage'
+        sources:
+          items:
+            $ref: '#/components/schemas/LoadedSource'
+          type: array
+          title: Sources
+        stats:
+          $ref: '#/components/schemas/CallStats'
+      additionalProperties: false
+      type: object
+      required:
+      - agent_id
+      - name
+      - description
+      - inbox_name
+      - sandbox_id
+      - clearance
+      - status
+      - calls_today
+      - context
+      - stats
+      title: AdminAgentDetail
+    AgentSourceToggle:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+      additionalProperties: false
+      type: object
+      required:
+      - enabled
+      title: AgentSourceToggle
+    ApplyResult:
+      properties:
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        applied:
+          items:
+            type: string
+          type: array
+          title: Applied
+        requires_recreate:
+          items:
+            type: string
+          type: array
+          title: Requires Recreate
+        upstream:
+          $ref: '#/components/schemas/UpstreamRef'
+      additionalProperties: false
+      type: object
+      required:
+      - sandbox_id
+      - applied
+      - requires_recreate
+      - upstream
+      title: ApplyResult
+    BlockedAttempt:
+      properties:
+        at:
+          type: string
+          format: date-time
+          title: At
+        action:
+          type: string
+          title: Action
+        reason:
+          type: string
+          title: Reason
+        kind:
+          type: string
+          enum:
+          - review_approve
+          - knowledge_path
+          - network
+          - tool
+          - other
+          title: Kind
+          default: other
+        activity_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Activity Id
+      additionalProperties: false
+      type: object
+      required:
+      - at
+      - action
+      - reason
+      title: BlockedAttempt
+      description: '''public 샌드박스가 막은 시도 3건'' rows.'
+    CallStats:
+      properties:
+        day:
+          type: string
+          format: date
+          title: Day
+        provider:
+          type: string
+          title: Provider
+        model:
+          type: string
+          title: Model
+        calls:
+          type: integer
+          minimum: 0.0
+          title: Calls
+        tokens_thousands:
+          type: integer
+          minimum: 0.0
+          title: Tokens Thousands
+        avg_latency_seconds:
+          type: number
+          minimum: 0.0
+          title: Avg Latency Seconds
+        blocked_calls:
+          type: integer
+          minimum: 0.0
+          title: Blocked Calls
+        last_7_days:
+          items:
+            $ref: '#/components/schemas/DailyCount'
+          type: array
+          title: Last 7 Days
+      additionalProperties: false
+      type: object
+      required:
+      - day
+      - provider
+      - model
+      - calls
+      - tokens_thousands
+      - avg_latency_seconds
+      - blocked_calls
+      title: CallStats
+    ContextBreakdown:
+      properties:
+        system_prompt:
+          type: integer
+          minimum: 0.0
+          title: System Prompt
+        tool_definitions:
+          type: integer
+          minimum: 0.0
+          title: Tool Definitions
+        memory_notes:
+          type: integer
+          minimum: 0.0
+          title: Memory Notes
+        conversation:
+          type: integer
+          minimum: 0.0
+          title: Conversation
+      additionalProperties: false
+      type: object
+      required:
+      - system_prompt
+      - tool_definitions
+      - memory_notes
+      - conversation
+      title: ContextBreakdown
+    ContextUsage:
+      properties:
+        compaction:
+          type: string
+          enum:
+          - safeguard
+          - none
+          title: Compaction
+          default: safeguard
+        preserve_recent_turns:
+          type: integer
+          minimum: 0.0
+          title: Preserve Recent Turns
+        used_tokens:
+          type: integer
+          minimum: 0.0
+          title: Used Tokens
+        limit_tokens:
+          type: integer
+          minimum: 1.0
+          title: Limit Tokens
+        breakdown:
+          $ref: '#/components/schemas/ContextBreakdown'
+      additionalProperties: false
+      type: object
+      required:
+      - preserve_recent_turns
+      - used_tokens
+      - limit_tokens
+      - breakdown
+      title: ContextUsage
+    DailyCount:
+      properties:
+        day:
+          type: string
+          format: date
+          title: Day
+        calls:
+          type: integer
+          minimum: 0.0
+          title: Calls
+      additionalProperties: false
+      type: object
+      required:
+      - day
+      - calls
+      title: DailyCount
+    DecisionCard:
+      properties:
+        approval_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Approval Id
+        asked_by:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Asked By
+        kind:
+          type: string
+          enum:
+          - disclosure_scope
+          - share_scope
+          - research_direction
+          - blocked_handling
+          - review_body
+          title: Kind
+        question:
+          type: string
+          title: Question
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+        always_excluded:
+          items:
+            type: string
+          type: array
+          title: Always Excluded
+        options:
+          items:
+            $ref: '#/components/schemas/DecisionOption'
+          type: array
+          title: Options
+        primary_label:
+          type: string
+          title: Primary Label
+        secondary_label:
+          type: string
+          title: Secondary Label
+        secondary_action:
+          type: string
+          enum:
+          - decline
+          - hold
+          title: Secondary Action
+          default: decline
+        extra_actions:
+          items:
+            type: string
+            enum:
+            - respond
+            - decline
+            - hold
+            - answer_question_only
+            - block_author
+          type: array
+          title: Extra Actions
+        allow_rule:
+          type: boolean
+          title: Allow Rule
+          default: true
+        preview_available:
+          type: boolean
+          title: Preview Available
+          default: false
+        evidence_link_label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Evidence Link Label
+        blocked_attempts:
+          items:
+            $ref: '#/components/schemas/BlockedAttempt'
+          type: array
+          title: Blocked Attempts
+        effect_note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Effect Note
+      additionalProperties: false
+      type: object
+      required:
+      - approval_id
+      - asked_by
+      - kind
+      - question
+      - primary_label
+      - secondary_label
+      title: DecisionCard
+      description: The approval question the agent asks the human.
+    DecisionOption:
+      properties:
+        option_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Option Id
+        label:
+          type: string
+          title: Label
+        description:
+          type: string
+          title: Description
+        recommended:
+          type: boolean
+          title: Recommended
+          default: false
+        badge:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Badge
+        disclosure_level:
+          anyOf:
+          - type: integer
+            maximum: 10.0
+            minimum: 0.0
+          - type: 'null'
+          title: Disclosure Level
+      additionalProperties: false
+      type: object
+      required:
+      - option_id
+      - label
+      - description
+      title: DecisionOption
+      description: 'One radio card: label · 추천 · description · badge (''내부 지표'', ''기밀 문서'').'
+    DecisionReceipt:
+      properties:
+        request_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Request Id
+        approval_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Approval Id
+        status:
+          type: string
+          enum:
+          - needs_approval
+          - blocked
+          - auto_replied
+          - decided
+          - declined
+          - held
+          - in_progress
+          - needs_human
+          title: Status
+        outcome:
+          $ref: '#/components/schemas/DecisionRecord'
+        rule:
+          anyOf:
+          - $ref: '#/components/schemas/Rule'
+          - type: 'null'
+        upstream:
+          $ref: '#/components/schemas/UpstreamRef'
+      additionalProperties: false
+      type: object
+      required:
+      - request_id
+      - approval_id
+      - status
+      - outcome
+      - upstream
+      title: DecisionReceipt
+    DecisionRecord:
+      properties:
+        action:
+          type: string
+          enum:
+          - respond
+          - decline
+          - hold
+          - answer_question_only
+          - block_author
+          title: Action
+        option_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Option Id
+        decided_by:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Decided By
+        decided_at:
+          type: string
+          format: date-time
+          title: Decided At
+        rule_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Rule Id
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      additionalProperties: false
+      type: object
+      required:
+      - action
+      - decided_by
+      - decided_at
+      title: DecisionRecord
+      description: Recorded outcome once a request leaves needs_approval/blocked.
+    DecisionSubmit:
+      properties:
+        approval_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Approval Id
+        action:
+          type: string
+          enum:
+          - respond
+          - decline
+          - hold
+          - answer_question_only
+          - block_author
+          title: Action
+        option_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Option Id
+        save_as_rule:
+          type: boolean
+          title: Save As Rule
+          default: false
+        note:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Note
+        idempotency_key:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Idempotency Key
+      additionalProperties: false
+      type: object
+      required:
+      - approval_id
+      - action
+      title: DecisionSubmit
+      description: POST .../decision body. `approval_id` must equal the card shown (stale card = 409).
+    FlaggedSpan:
+      properties:
+        start:
+          type: integer
+          minimum: 0.0
+          title: Start
+        end:
+          type: integer
+          minimum: 0.0
+          title: End
+        reason:
+          type: string
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+      - start
+      - end
+      - reason
+      title: FlaggedSpan
+      description: Prompt-injection highlight inside an original message.
+    GatewayInfo:
+      properties:
+        gateway_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Gateway Id
+        label:
+          type: string
+          title: Label
+        port:
+          type: integer
+          maximum: 65535.0
+          minimum: 1.0
+          title: Port
+        providers:
+          items:
+            type: string
+          type: array
+          title: Providers
+        has_external_key:
+          type: boolean
+          title: Has External Key
+        control_port:
+          anyOf:
+          - type: integer
+            maximum: 65535.0
+            minimum: 1.0
+          - type: 'null'
+          title: Control Port
+        current_route:
+          type: string
+          title: Current Route
+        shared_with:
+          items:
+            type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          type: array
+          title: Shared With
+      additionalProperties: false
+      type: object
+      required:
+      - gateway_id
+      - label
+      - port
+      - has_external_key
+      - current_route
+      title: GatewayInfo
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    InboxCounts:
+      properties:
+        needs_approval:
+          type: integer
+          minimum: 0.0
+          title: Needs Approval
+        notifications_unread:
+          type: integer
+          minimum: 0.0
+          title: Notifications Unread
+        all_inboxes:
+          type: integer
+          minimum: 0.0
+          title: All Inboxes
+      additionalProperties: false
+      type: object
+      required:
+      - needs_approval
+      - notifications_unread
+      - all_inboxes
+      title: InboxCounts
+      description: 'Badges: 결재함 4 · 알림함 4 · 모든 인박스 4.'
+    InboxError:
+      properties:
+        error:
+          type: string
+          enum:
+          - not_found
+          - invalid_state
+          - stale_approval
+          - invalid_option
+          - not_selectable
+          title: Error
+        message:
+          type: string
+          title: Message
+      additionalProperties: false
+      type: object
+      required:
+      - error
+      - message
+      title: InboxError
+    InboxSummary:
+      properties:
+        inbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Inbox Id
+        name:
+          type: string
+          title: Name
+        channel:
+          type: string
+          enum:
+          - github_issue
+          - slack_dm
+          - email
+          - terminal
+          title: Channel
+        agent_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Agent Id
+        clearance:
+          type: string
+          enum:
+          - public
+          - company
+          - division
+          - team
+          title: Clearance
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        pending_count:
+          type: integer
+          minimum: 0.0
+          title: Pending Count
+      additionalProperties: false
+      type: object
+      required:
+      - inbox_id
+      - name
+      - channel
+      - agent_id
+      - clearance
+      - sandbox_id
+      - pending_count
+      title: InboxSummary
+      description: 'One row under ''인박스'': GitHub 이슈 · public-desk · 공개 등급 · 2.'
+    InboxUser:
+      properties:
+        user_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: User Id
+        display_name:
+          type: string
+          title: Display Name
+        role:
+          type: string
+          enum:
+          - approver
+          - admin
+          title: Role
+        sandboxes_running:
+          type: integer
+          minimum: 0.0
+          title: Sandboxes Running
+        sandboxes_total:
+          type: integer
+          minimum: 0.0
+          title: Sandboxes Total
+      additionalProperties: false
+      type: object
+      required:
+      - user_id
+      - display_name
+      - role
+      - sandboxes_running
+      - sandboxes_total
+      title: InboxUser
+      description: 'Bottom-left status: ''이다영 · 샌드박스 4개 실행 중''.'
+    InferenceSettings:
+      properties:
+        provider:
+          type: string
+          enum:
+          - ollama_local
+          - nvidia_endpoints
+          title: Provider
+        model:
+          type: string
+          title: Model
+        context_length:
+          type: integer
+          minimum: 1.0
+          title: Context Length
+        max_output_tokens:
+          type: integer
+          minimum: 1.0
+          title: Max Output Tokens
+        provider_options:
+          items:
+            $ref: '#/components/schemas/ProviderOption'
+          type: array
+          title: Provider Options
+        models:
+          items:
+            type: string
+          type: array
+          title: Models
+        context_length_choices:
+          items:
+            type: integer
+          type: array
+          title: Context Length Choices
+      additionalProperties: false
+      type: object
+      required:
+      - provider
+      - model
+      - context_length
+      - max_output_tokens
+      title: InferenceSettings
+    LoadedSource:
+      properties:
+        source_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Source Id
+        title:
+          type: string
+          title: Title
+        clearance:
+          type: string
+          enum:
+          - public
+          - company
+          - division
+          - team
+          title: Clearance
+        enabled:
+          type: boolean
+          title: Enabled
+        available:
+          type: boolean
+          title: Available
+          default: true
+        unavailable_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unavailable Reason
+      additionalProperties: false
+      type: object
+      required:
+      - source_id
+      - title
+      - clearance
+      - enabled
+      title: LoadedSource
+      description: '''불러오는 자료'' toggle rows; unavailable ones explain why (다른 구획).'
+    NetworkPolicy:
+      properties:
+        policy_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Policy Id
+        description:
+          type: string
+          title: Description
+        enabled:
+          type: boolean
+          title: Enabled
+        note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Note
+      additionalProperties: false
+      type: object
+      required:
+      - policy_id
+      - description
+      - enabled
+      title: NetworkPolicy
+    Notification:
+      properties:
+        notification_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Notification Id
+        kind:
+          type: string
+          enum:
+          - needs_approval
+          - blocked
+          - auto_reply
+          - decided
+          - info
+          title: Kind
+        message:
+          type: string
+          title: Message
+        at:
+          type: string
+          format: date-time
+          title: At
+        request_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Request Id
+        read:
+          type: boolean
+          title: Read
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+      - notification_id
+      - kind
+      - message
+      - at
+      title: Notification
+    OriginalMessage:
+      properties:
+        author:
+          type: string
+          title: Author
+        at:
+          type: string
+          format: date-time
+          title: At
+        body:
+          type: string
+          title: Body
+        flagged_spans:
+          items:
+            $ref: '#/components/schemas/FlaggedSpan'
+          type: array
+          title: Flagged Spans
+      additionalProperties: false
+      type: object
+      required:
+      - author
+      - at
+      - body
+      title: OriginalMessage
+    OriginalView:
+      properties:
+        source:
+          $ref: '#/components/schemas/SourceRef'
+        header:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Header
+        messages:
+          items:
+            $ref: '#/components/schemas/OriginalMessage'
+          type: array
+          title: Messages
+        terminal:
+          items:
+            $ref: '#/components/schemas/TerminalLine'
+          type: array
+          title: Terminal
+        reply_placeholder:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reply Placeholder
+        injection_warning:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Injection Warning
+      additionalProperties: false
+      type: object
+      required:
+      - source
+      title: OriginalView
+      description: Read-only embed of where the request came from. Exactly one representation is used.
+    ProviderOption:
+      properties:
+        provider:
+          type: string
+          enum:
+          - ollama_local
+          - nvidia_endpoints
+          title: Provider
+        label:
+          type: string
+          title: Label
+        selectable:
+          type: boolean
+          title: Selectable
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+      - provider
+      - label
+      - selectable
+      title: ProviderOption
+    ReplyPreview:
+      properties:
+        request_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Request Id
+        option_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Option Id
+        body:
+          type: string
+          title: Body
+        excluded:
+          items:
+            type: string
+          type: array
+          title: Excluded
+        generated_at:
+          type: string
+          format: date-time
+          title: Generated At
+        simulated:
+          type: boolean
+          title: Simulated
+      additionalProperties: false
+      type: object
+      required:
+      - request_id
+      - option_id
+      - body
+      - generated_at
+      - simulated
+      title: ReplyPreview
+      description: '''응답 전문 미리보기'' for a given option (never sent from here).'
+    RequestAlert:
+      properties:
+        kind:
+          type: string
+          enum:
+          - sandbox_blocked
+          - auto_reply
+          - info
+          title: Kind
+        message:
+          type: string
+          title: Message
+        at:
+          type: string
+          format: date-time
+          title: At
+        activity_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Activity Id
+      additionalProperties: false
+      type: object
+      required:
+      - kind
+      - message
+      - at
+      title: RequestAlert
+      description: 'Footer line: ''샌드박스가 이 결재를 직접 승인하려다 차단됐습니다. 08:55 · 활동에서 보기''.'
+    RequestDetail:
+      properties:
+        request_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Request Id
+        inbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Inbox Id
+        requester:
+          $ref: '#/components/schemas/Requester'
+        title:
+          type: string
+          title: Title
+        subtitle:
+          type: string
+          title: Subtitle
+        status:
+          type: string
+          enum:
+          - needs_approval
+          - blocked
+          - auto_replied
+          - decided
+          - declined
+          - held
+          - in_progress
+          - needs_human
+          title: Status
+        approval_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Approval Id
+        received_at:
+          type: string
+          format: date-time
+          title: Received At
+        is_new:
+          type: boolean
+          title: Is New
+          default: false
+        source:
+          $ref: '#/components/schemas/SourceRef'
+        received_via:
+          type: string
+          title: Received Via
+        original:
+          $ref: '#/components/schemas/OriginalView'
+        decision:
+          anyOf:
+          - $ref: '#/components/schemas/DecisionCard'
+          - type: 'null'
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/DecisionRecord'
+          - type: 'null'
+        alerts:
+          items:
+            $ref: '#/components/schemas/RequestAlert'
+          type: array
+          title: Alerts
+        policy_link_label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Policy Link Label
+      additionalProperties: false
+      type: object
+      required:
+      - request_id
+      - inbox_id
+      - requester
+      - title
+      - subtitle
+      - status
+      - received_at
+      - source
+      - received_via
+      - original
+      title: RequestDetail
+    RequestPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/RequestSummary'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        counts:
+          $ref: '#/components/schemas/InboxCounts'
+      additionalProperties: false
+      type: object
+      required:
+      - items
+      - counts
+      title: RequestPage
+    RequestSummary:
+      properties:
+        request_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Request Id
+        inbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Inbox Id
+        requester:
+          $ref: '#/components/schemas/Requester'
+        title:
+          type: string
+          title: Title
+        subtitle:
+          type: string
+          title: Subtitle
+        status:
+          type: string
+          enum:
+          - needs_approval
+          - blocked
+          - auto_replied
+          - decided
+          - declined
+          - held
+          - in_progress
+          - needs_human
+          title: Status
+        approval_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Approval Id
+        received_at:
+          type: string
+          format: date-time
+          title: Received At
+        is_new:
+          type: boolean
+          title: Is New
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+      - request_id
+      - inbox_id
+      - requester
+      - title
+      - subtitle
+      - status
+      - received_at
+      title: RequestSummary
+      description: Request list row. `subtitle` is the second line ('결재 12 · 어디까지 공개할까요?').
+    Requester:
+      properties:
+        requester_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Requester Id
+        display_name:
+          type: string
+          title: Display Name
+        initials:
+          type: string
+          maxLength: 3
+          minLength: 1
+          title: Initials
+        kind:
+          type: string
+          enum:
+          - external
+          - internal
+          - agent
+          - customer
+          title: Kind
+      additionalProperties: false
+      type: object
+      required:
+      - requester_id
+      - display_name
+      - initials
+      - kind
+      title: Requester
+    Rule:
+      properties:
+        rule_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Rule Id
+        inbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Inbox Id
+        kind:
+          type: string
+          enum:
+          - disclosure_scope
+          - share_scope
+          - research_direction
+          - blocked_handling
+          - review_body
+          title: Kind
+        action:
+          type: string
+          enum:
+          - respond
+          - decline
+          - hold
+          - answer_question_only
+          - block_author
+          title: Action
+        option_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Option Id
+        created_from_approval_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Created From Approval Id
+        description:
+          type: string
+          title: Description
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        applied_count:
+          type: integer
+          minimum: 0.0
+          title: Applied Count
+          default: 0
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+      additionalProperties: false
+      type: object
+      required:
+      - rule_id
+      - inbox_id
+      - kind
+      - action
+      - created_from_approval_id
+      - description
+      - created_at
+      title: Rule
+      description: '''비슷한 요청에 이 결정을 규칙으로 쓰기'' → later rows show ''결재 9의 규칙으로 자동응답''.'
+    Sandbox:
+      properties:
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        name:
+          type: string
+          title: Name
+        clearance:
+          type: string
+          enum:
+          - public
+          - company
+          - division
+          - team
+          title: Clearance
+        inbox_ids:
+          items:
+            type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          type: array
+          title: Inbox Ids
+        inbox_names:
+          items:
+            type: string
+          type: array
+          title: Inbox Names
+        provider:
+          type: string
+          enum:
+          - ollama_local
+          - nvidia_endpoints
+          title: Provider
+        gateway_port:
+          type: integer
+          maximum: 65535.0
+          minimum: 1.0
+          title: Gateway Port
+        status:
+          type: string
+          enum:
+          - running
+          - stopped
+          title: Status
+        agent_count:
+          type: integer
+          minimum: 0.0
+          title: Agent Count
+      additionalProperties: false
+      type: object
+      required:
+      - sandbox_id
+      - name
+      - clearance
+      - provider
+      - gateway_port
+      - status
+      - agent_count
+      title: Sandbox
+    SandboxDetail:
+      properties:
+        sandbox_id:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          title: Sandbox Id
+        name:
+          type: string
+          title: Name
+        clearance:
+          type: string
+          enum:
+          - public
+          - company
+          - division
+          - team
+          title: Clearance
+        inbox_ids:
+          items:
+            type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          type: array
+          title: Inbox Ids
+        inbox_names:
+          items:
+            type: string
+          type: array
+          title: Inbox Names
+        provider:
+          type: string
+          enum:
+          - ollama_local
+          - nvidia_endpoints
+          title: Provider
+        gateway_port:
+          type: integer
+          maximum: 65535.0
+          minimum: 1.0
+          title: Gateway Port
+        status:
+          type: string
+          enum:
+          - running
+          - stopped
+          title: Status
+        agent_count:
+          type: integer
+          minimum: 0.0
+          title: Agent Count
+        agents_manifest:
+          type: string
+          title: Agents Manifest
+        inference:
+          $ref: '#/components/schemas/InferenceSettings'
+        gateway:
+          $ref: '#/components/schemas/GatewayInfo'
+        gateways:
+          items:
+            $ref: '#/components/schemas/GatewayInfo'
+          type: array
+          title: Gateways
+        policies:
+          items:
+            $ref: '#/components/schemas/NetworkPolicy'
+          type: array
+          title: Policies
+        pending_changes:
+          type: boolean
+          title: Pending Changes
+          default: false
+        apply_note:
+          type: string
+          title: Apply Note
+          default: 제공자와 모델은 바로 적용 · 컨텍스트 길이와 게이트웨이는 다시 만들 때 적용
+      additionalProperties: false
+      type: object
+      required:
+      - sandbox_id
+      - name
+      - clearance
+      - provider
+      - gateway_port
+      - status
+      - agent_count
+      - agents_manifest
+      - inference
+      - gateway
+      title: SandboxDetail
+    SandboxSettingsPatch:
+      properties:
+        provider:
+          anyOf:
+          - type: string
+            enum:
+            - ollama_local
+            - nvidia_endpoints
+          - type: 'null'
+          title: Provider
+        model:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model
+        context_length:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Context Length
+        max_output_tokens:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Max Output Tokens
+        gateway_id:
+          anyOf:
+          - type: string
+            maxLength: 160
+            minLength: 1
+            pattern: ^[A-Za-z0-9][A-Za-z0-9_.:/#-]*$
+          - type: 'null'
+          title: Gateway Id
+        policies:
+          anyOf:
+          - additionalProperties:
+              type: boolean
+            type: object
+          - type: 'null'
+          title: Policies
+      additionalProperties: false
+      type: object
+      title: SandboxSettingsPatch
+      description: PATCH body; only present fields change. Server rejects unselectable providers.
+    SourceRef:
+      properties:
+        kind:
+          type: string
+          enum:
+          - github_issue
+          - slack_dm
+          - email
+          - terminal
+          title: Kind
+        label:
+          type: string
+          title: Label
+        url:
+          anyOf:
+          - type: string
+            maxLength: 2083
+            minLength: 1
+            format: uri
+          - type: 'null'
+          title: Url
+        read_only:
+          type: boolean
+          title: Read Only
+          default: true
+      additionalProperties: false
+      type: object
+      required:
+      - kind
+      - label
+      title: SourceRef
+      description: 'Breadcrumb + ''원본 화면'' header: GitHub 이슈 / team/rfa-test#34 · 읽기 전용 · 원본 열기.'
+    TerminalLine:
+      properties:
+        at:
+          type: string
+          format: date-time
+          title: At
+        kind:
+          type: string
+          enum:
+          - command
+          - reading
+          - hypothesis
+          - evidence
+          - approval
+          - waiting
+          title: Kind
+        label:
+          type: string
+          title: Label
+        text:
+          type: string
+          title: Text
+      additionalProperties: false
+      type: object
+      required:
+      - at
+      - kind
+      - label
+      - text
+      title: TerminalLine
+      description: 'Research variant: 08:09 · 가설 1 · 캘리브레이션 데이터 교체.'
+    UpstreamRef:
+      properties:
+        authority:
+          type: string
+          enum:
+          - rfa_module.review
+          - runtime.sandbox
+          - core
+          - reference
+          title: Authority
+        reference:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reference
+        simulated:
+          type: boolean
+          title: Simulated
+      additionalProperties: false
+      type: object
+      required:
+      - authority
+      - simulated
+      title: UpstreamRef
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
