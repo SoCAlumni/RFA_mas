@@ -144,8 +144,8 @@ def ensure_tls(tls_dir: Path, lan_ip: str, runner: Runner) -> Path:
     runner.run(["openssl", "req", "-newkey", "rsa:2048", "-nodes", "-keyout", str(srv_key),
                 "-out", str(srv_csr), "-subj", f"/CN={lan_ip}"], timeout=60, check=True)
     runner.run(["openssl", "x509", "-req", "-in", str(srv_csr), "-CA", str(ca_pem), "-CAkey", str(ca_key),
-                "-CAcreateserial", "-out", str(srv_pem), "-days", "30", "-extfile", str(ext)],
-               timeout=60, check=True)
+                "-CAcreateserial", "-CAserial", str(tls_dir / "ca.srl"), "-out", str(srv_pem), "-days", "30",
+                "-extfile", str(ext)], timeout=60, check=True)
     log(f"tls: issued broker certificate for IP {lan_ip} under local CA {ca_pem}")
     return ca_pem
 
