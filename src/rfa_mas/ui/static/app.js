@@ -1,12 +1,10 @@
 "use strict";
-// Plain DOM only: every value is rendered with textContent. No HTML injection,
-// no eval, no browser storage, no credentials other than the same-origin cookie.
+// All user/source strings use textContent. No browser persistence or HTML rendering.
 (() => {
-  let csrfToken = null;
-  let currentSession = null;
-  let pendingWorkId = null;
+  let csrfToken = null, currentSession = null, busy = false, historyVersion = 0;
+  let notes = [], selectedNote = null;
   const byId = (id) => document.getElementById(id);
-
+  const labels = {store_note:"KB에 저장", query:"내 자료 검색", external_draft:"공개 초안", clarify:"확인 필요"};
   function el(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined && text !== null) node.textContent = String(text);
@@ -80,163 +78,161 @@
     return el("span", text, "badge " + (kind || ""));
   }
 
+
+  function switchTab(name) {
+    ["chat","kb","reviews"].forEach((tab) => {
+      byId("panel-" + tab).hidden = tab !== name;
+      byId("tab-" + tab).classList.toggle("active", tab === name);
+      if (tab === name) byId("tab-" + tab).setAttribute("aria-current","page");
+      else byId("tab-" + tab).removeAttribute("aria-current");
+    });
+    byId("page-title").textContent = {chat:"비서 채팅",kb:"내 KB",reviews:"승인함"}[name];
+    if (name === "kb") loadNotes();
+    if (name === "reviews") loadReviews();
+  }
   async function loadStatus() {
-    const target = byId("status");
     try {
-      const status = await api("GET", "/ui/api/status");
-      clear(target);
-      target.append(badge("UI: " + status.ui.mode, "local"));
-      target.append(badge("core: " + (status.core.reachable ? "연결됨" : "연결 안 됨"), status.core.reachable ? "ok" : "bad"));
-      const review = status.review;
-      const reviewText = review.configured
-        ? "검토: " + (review.reachable ? (review.mode || "unknown") + " / " + (review.authority || "") : "연결 안 됨")
-        : "검토: 미설정";
-      target.append(badge(reviewText, "mock"));
-      target.append(badge("실험: " + status.features.experiments, "notrun"));
-      Object.entries(status.gates).forEach(([name, value]) => target.append(badge(name + ": " + value, "notrun")));
-      const unsupported = byId("unsupported");
-      clear(unsupported);
-      Object.entries(status.features)
-        .filter(([, value]) => value === "disabled" || value === "not_run")
-        .forEach(([name, value]) => {
-          const item = el("li");
-          const button = el("button", name);
-          button.type = "button";
-          button.disabled = true;
-          item.append(button, el("span", " " + value, "muted"));
-          unsupported.append(item);
-        });
-      const reviewOn = status.features.manual_review === "enabled";
-      byId("reload-reviews").disabled = !reviewOn;
-    } catch (error) {
-      showError(target, error);
-    }
+      const s = await api("GET","/ui/api/status");
+      byId("status").textContent = s.core.reachable ? "로컬 연결됨 · mock" : "코어 연결 안 됨";
+      byId("reload-reviews").disabled = s.features.manual_review !== "enabled";
+    } catch(e) { byId("status").textContent = "연결 확인 필요"; showError(byId("global-error"),e); }
   }
-
   async function loadSessions() {
-    const list = byId("sessions");
+    const sessions = await api("GET","/ui/api/chat/sessions");
+    clear(byId("sessions"));
+    sessions.sort((a,b) => b.updated_at.localeCompare(a.updated_at));
+    sessions.forEach((s) => {
+      const item=el("li"), button=el("button",s.title || "새 대화");
+      button.type="button"; button.classList.toggle("selected",s.session_id===currentSession);
+      button.addEventListener("click",() => { if (!busy) selectSession(s.session_id); });
+      item.append(button); byId("sessions").append(item);
+    });
+    return sessions;
+  }
+  function message(role,text) {
+    const article=el("article",null,"message "+role);
+    if(role==="assistant") article.append(el("div","RFA 비서","speaker"));
+    article.append(el("div",text,"bubble")); return article;
+  }
+  function renderTurn(turn) {
+    const list=byId("messages"); list.append(message("user",turn.text));
+    const answer=message("assistant",displayReply(turn));
+    answer.querySelector(".speaker").append(el("span",labels[turn.intent]||"응답","route-label"));
+    const actions=el("div",null,"message-meta");
+    if(turn.source_id) {
+      const b=el("button","저장한 메모 보기 ↗","text-button"); b.type="button";
+      b.addEventListener("click",async()=>{ switchTab("kb"); await selectNote(turn.source_id); });
+      actions.append(b);
+    }
+    if(turn.run && turn.run.draft) {
+      const detail=el("details",null,"run-detail"), summary=el("summary","근거 · 실행 정보");
+      detail.append(summary,el("p","로컬 검색 · mock 답변 / "+turn.run.status));
+      const refs=turn.run.draft.allowed_evidence || [];
+      refs.forEach((ref)=>detail.append(el("p",ref.source_id+" · "+ref.source_revision)));
+      detail.append(el("pre", turn.reply));
+      answer.append(detail);
+    }
+    if(turn.intent==="external_draft" && turn.run && turn.run.draft) {
+      const b=el("button","승인함에서 검토하기 →","text-button"); b.type="button";
+      b.addEventListener("click",()=>switchTab("reviews")); actions.append(b);
+      answer.append(el("p","공개용 초안입니다. 승인 전 게시되지 않으며, 게시도 로컬 mock입니다.","muted"));
+    }
+    answer.append(actions); list.append(answer);
+  }
+  function displayReply(turn) {
+    const draft=turn.run && turn.run.draft;
+    // Only shorten the known deterministic mock presentation for personal reading.
+    // Original content stays in details. Public drafts and approved payloads are untouched.
+    if(!draft || draft.adapter!=="mock-model" || turn.intent!=="query") return turn.reply;
+    const split=turn.reply.indexOf("\n\n허용된 근거:\n");
+    if(split<0) return turn.reply;
+    let text=turn.reply.slice(split+"\n\n허용된 근거:\n".length);
+    const footer="\n\n이 초안은 합성/공개 fixture와 결정적 mock 모델로 생성되었습니다.";
+    if(text.endsWith(footer)) text=text.slice(0,-footer.length);
+    (draft.allowed_evidence||[]).forEach((ref)=>{
+      const location=ref.location && (ref.location.section || ref.location.uri);
+      text=text.replace(" ["+ref.source_id+"@"+ref.source_revision+" / "+location+"]","");
+    });
+    return "저장된 자료에서 찾았어요.\n\n"+text;
+  }
+  async function selectSession(id) {
+    const version=++historyVersion; currentSession=id; switchTab("chat");
     try {
-      const sessions = await api("GET", "/ui/api/sessions");
-      clear(list);
-      sessions.forEach((session) => {
-        const item = el("li");
-        const button = el("button", session.session_id);
-        button.type = "button";
-        button.addEventListener("click", () => selectSession(session.session_id));
-        item.append(button, el("span", " " + session.updated_at, "muted"));
-        list.append(item);
+      const turns=await api("GET","/ui/api/sessions/"+encodeURIComponent(id)+"/chat");
+      if(version!==historyVersion) return;
+      const list=byId("messages"); clear(list);
+      if(!turns.length) list.append(welcome.cloneNode(true));
+      turns.forEach(renderTurn); wireExamples(); list.scrollTop=list.scrollHeight;
+      await loadSessions();
+    } catch(e){ showError(byId("global-error"),e); }
+  }
+  async function newSession() {
+    if(busy) return;
+    const s=await api("POST","/ui/api/sessions",{}); await selectSession(s.session_id);
+    byId("chat-input").focus();
+  }
+  async function send(event) {
+    event.preventDefault();
+    const input=byId("chat-input"), text=input.value.trim();
+    if(!text || busy) return;
+    busy=true; byId("send-message").disabled=true; byId("create-session").disabled=true;
+    byId("chat-notice").textContent="비서가 메시지를 확인하고 있어요…";
+    byId("messages").setAttribute("aria-busy","true");
+    clear(byId("global-error"));
+    try {
+      if(!currentSession) {
+        const s=await api("POST","/ui/api/sessions",{}); currentSession=s.session_id;
+      }
+      const list=byId("messages"), empty=list.querySelector(".welcome"); if(empty) empty.remove();
+      const pending=message("user",text); list.append(pending);
+      list.scrollTop=list.scrollHeight;
+      await api("POST","/ui/api/sessions/"+encodeURIComponent(currentSession)+"/chat", {
+        text, message_id:newKey("chat"), domain_id:byId("chat-domain").value
       });
-    } catch (error) {
-      showError(list, error);
+      input.value=""; byId("chat-notice").textContent="";
+      await selectSession(currentSession); await loadNotes();
+    } catch(e) {
+      byId("chat-notice").textContent="전송 결과를 확인해 주세요. 자동 재전송하지 않습니다.";
+      showError(byId("global-error"),e);
+    } finally {
+      busy=false; byId("send-message").disabled=false; byId("create-session").disabled=false;
+      byId("messages").setAttribute("aria-busy","false"); input.focus();
     }
   }
-
-  async function selectSession(sessionId) {
-    currentSession = sessionId;
-    byId("work-session").textContent = "선택한 세션: " + sessionId;
-    byId("submit-work").disabled = false;
-    const target = byId("session-detail");
-    try {
-      const detail = await api("GET", "/ui/api/sessions/" + encodeURIComponent(sessionId));
-      clear(target);
-      const messages = el("ul");
-      detail.messages.forEach((message) => messages.append(el("li", message.role + ": " + message.content)));
-      const runs = el("ul");
-      detail.runs.forEach((run) => {
-        const item = el("li", run.run_id + " — " + run.status);
-        const refresh = el("button", "검토 상태 다시 조회");
-        refresh.type = "button";
-        refresh.disabled = run.status !== "waiting_approval";
-        refresh.addEventListener("click", () => refreshReview(run.run_id));
-        item.append(refresh);
-        runs.append(item);
-      });
-      target.append(el("h3", "메시지"), messages, el("h3", "실행"), runs);
-    } catch (error) {
-      showError(target, error);
-    }
+  function noteMatches(n) {
+    const q=byId("kb-search").value.toLowerCase(), domain=byId("kb-domain").value;
+    return (!domain || n.document.domain_id===domain) &&
+      (n.document.title+" "+n.document.content).toLowerCase().includes(q);
   }
-
-  function renderRun(result) {
-    const target = byId("work-result");
-    clear(target);
-    target.append(el("p", "상태: " + result.status + " / " + result.stop_reason));
-    target.append(badge(result.simulated ? "mock/simulated" : "local", result.simulated ? "mock" : "local"));
-    if (result.draft) {
-      target.append(el("h3", "DRAFT v" + result.draft.version + " → " + result.draft.target.audience));
-      target.append(el("pre", result.draft.content));
-    }
-    if (result.review) {
-      target.append(el("p", "검토: " + result.review.decision + " — " + result.review.safe_reason));
-    }
-    if (result.status === "waiting_approval") {
-      target.append(el("p", "검토 대기: 아래 수동 검토에서 결정한 뒤 '검토 상태 다시 조회'를 누르세요.", "warning"));
-      const refresh = el("button", "검토 상태 다시 조회");
-      refresh.type = "button";
-      refresh.addEventListener("click", () => refreshReview(result.run_id));
-      target.append(refresh);
-    }
-    (result.errors || []).forEach((error) => target.append(el("p", error.code + ": " + error.message, "error")));
+  function renderNotes() {
+    const list=byId("notes"); clear(list);
+    const filtered=notes.filter(noteMatches);
+    byId("kb-count").textContent=String(notes.length);
+    byId("kb-summary").textContent=filtered.length+"개의 자료 · 현재 접근 가능한 자료만 표시";
+    if(!filtered.length) list.append(el("p","아직 자료가 없어요. 채팅에서 메모를 남겨보세요.","empty"));
+    filtered.forEach((note)=>{
+      const doc=note.document, card=el("button",null,"note-card");
+      card.type="button";card.classList.toggle("selected",selectedNote===doc.source_id);
+      card.append(el("h3",doc.title),el("p",doc.content),el("small",(doc.audience==="private"?"비공개":doc.audience)+" · "+doc.domain_id+" · v"+note.revision_number));
+      card.addEventListener("click",()=>selectNote(doc.source_id));list.append(card);
+    });
   }
-
-  async function submitWork() {
-    if (!currentSession) return;
-    const body = {
-      query: byId("work-query").value,
-      target_audience: byId("work-audience").value,
-      client_request_id: pendingWorkId || (pendingWorkId = newKey("ui-work")),
-    };
-    const domain = byId("work-domain").value;
-    if (domain) body.domain_id = domain;
-    try {
-      const result = await api("POST", "/ui/api/sessions/" + encodeURIComponent(currentSession) + "/work", body);
-      pendingWorkId = null;
-      renderRun(result);
-      await selectSession(currentSession);
-      await loadReviews();
-    } catch (error) {
-      showError(byId("work-result"), error);
-    }
-  }
-
-  async function refreshReview(runId) {
-    try {
-      renderRun(await api("POST", "/ui/api/runs/" + encodeURIComponent(runId) + "/refresh-review", {}));
-      if (currentSession) await selectSession(currentSession);
-    } catch (error) {
-      showError(byId("work-result"), error);
-    }
-  }
-
   async function loadNotes() {
-    const list = byId("notes");
-    try {
-      const notes = await api("GET", "/ui/api/notes");
-      clear(list);
-      notes.forEach((note) => {
-        list.append(el("li", note.document.title + " [" + note.document.audience + ", rev " + note.revision_number + "]"));
-      });
-    } catch (error) {
-      showError(list, error);
-    }
+    try { notes=await api("GET","/ui/api/notes"); renderNotes(); }
+    catch(e){ notes=[]; clear(byId("notes"));clear(byId("note-detail"));showError(byId("notes"),e); }
   }
-
-  async function createNote() {
-    const body = {
-      domain_id: byId("note-domain").value,
-      title: byId("note-title").value,
-      content: byId("note-content").value,
-    };
+  async function selectNote(id) {
+    selectedNote=id; renderNotes();
+    const detail=byId("note-detail"); clear(detail);
     try {
-      await api("POST", "/ui/api/notes", body, newKey("ui-note"));
-      clear(byId("note-result"));
-      byId("note-result").append(el("p", "저장됨(비공개)."));
-      await loadNotes();
-    } catch (error) {
-      showError(byId("note-result"), error);
-    }
+      const note=await api("GET","/ui/api/notes/"+encodeURIComponent(id));
+      if(selectedNote!==id)return;
+      const doc=note.document; detail.append(el("h3",doc.title),el("span",doc.audience==="private"?"나만 보는 비공개 메모":doc.audience,"badge"),el("pre",doc.content));
+      const meta=el("dl");
+      [["자료 공간",doc.domain_id],["출처",doc.source_id],["버전",doc.source_revision],["수정 시각",note.created_at||doc.updated_at||"기록 없음"]].forEach(([k,v])=>{meta.append(el("dt",k),el("dd",v));});
+      detail.append(meta);
+    } catch(e){showError(detail,e);}
   }
-
   function decisionBody(view, decision) {
     return {
       draft_version: view.version,
@@ -258,7 +254,7 @@
 
   function renderReview(view) {
     const card = el("article", null, "review");
-    card.append(el("h3", view.draft_id + " v" + view.version + " (" + view.contract + ")"));
+    card.append(el("h3", "공개 초안 · 버전 " + view.version));
     card.append(badge(view.mode + " / " + view.authority, "mock"));
     card.append(el("p", "결정: " + view.decision + (view.decided_by ? " by " + view.decided_by : "")));
     card.append(el("p", "대상: " + view.target.audience + " / " + view.target.channel + " / " + view.target.destination));
@@ -271,6 +267,7 @@
         button.addEventListener("click", async () => {
           try {
             await api("POST", "/ui/api/reviews/" + encodeURIComponent(view.draft_id) + "/decision", decisionBody(view, decision), newKey("ui-decision"));
+            await api("POST", "/ui/api/runs/" + encodeURIComponent(view.run_id) + "/refresh-review", {});
             await loadReviews();
           } catch (error) {
             showError(output, error);
@@ -310,27 +307,35 @@
       const views = await api("GET", "/ui/api/reviews");
       clear(target);
       if (views.length === 0) target.append(el("p", "검토할 초안이 없습니다.", "muted"));
-      views.forEach((view) => target.append(renderReview(view)));
+      const publicViews = views.filter((v) => v.target.audience === "public");
+      byId("review-count").textContent = String(publicViews.filter(v => v.decision === "pending").length);
+      if (!publicViews.length && views.length) target.append(el("p", "공개용 초안이 없습니다. 개인 검색 답변은 채팅에서 확인하세요.", "muted"));
+      publicViews.forEach((view) => target.append(renderReview(view)));
     } catch (error) {
       showError(target, error);
     }
   }
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    byId("create-session").addEventListener("click", async () => {
-      try {
-        const session = await api("POST", "/ui/api/sessions");
-        await loadSessions();
-        await selectSession(session.session_id);
-      } catch (error) {
-        showError(byId("session-detail"), error);
-      }
+
+  let welcome;
+  function wireExamples() {
+    document.querySelectorAll("[data-example]").forEach((button) => {
+      button.onclick=()=>{byId("chat-input").value=button.dataset.example;byId("chat-input").focus();};
     });
-    byId("reload-sessions").addEventListener("click", loadSessions);
-    byId("submit-work").addEventListener("click", submitWork);
-    byId("create-note").addEventListener("click", createNote);
-    byId("reload-reviews").addEventListener("click", loadReviews);
-    await loadStatus();
-    await Promise.all([loadSessions(), loadNotes(), loadReviews()]);
+  }
+  document.addEventListener("DOMContentLoaded",async()=>{
+    welcome=byId("welcome").cloneNode(true); wireExamples();
+    ["chat","kb","reviews"].forEach((name)=>byId("tab-"+name).addEventListener("click",()=>switchTab(name)));
+    byId("chat-form").addEventListener("submit",send);
+    byId("chat-input").addEventListener("keydown",(e)=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();byId("chat-form").requestSubmit();}});
+    byId("create-session").addEventListener("click",()=>newSession().catch(e=>showError(byId("global-error"),e)));
+    byId("reload-sessions").addEventListener("click",()=>loadSessions().catch(e=>showError(byId("global-error"),e)));
+    byId("reload-notes").addEventListener("click",loadNotes);
+    byId("reload-reviews").addEventListener("click",loadReviews);
+    byId("kb-search").addEventListener("input",renderNotes);
+    byId("kb-domain").addEventListener("change",renderNotes);
+    await loadStatus(); await Promise.all([loadNotes(),loadReviews()]);
+    try { const sessions=await loadSessions(); if(sessions.length)await selectSession(sessions[0].session_id); }
+    catch(e){showError(byId("global-error"),e);}
   });
 })();

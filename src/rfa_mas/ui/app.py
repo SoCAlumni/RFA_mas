@@ -1,7 +1,8 @@
 """Small same-origin local UI over the existing core API and the local review stand-in.
 
 Replaceable by the teammate UI. The UI owns no DB and never duplicates core API
-logic: each /ui/api route maps to exactly one fixed upstream call. There is no
+logic: existing /ui/api routes map to fixed upstream calls; optional ChatPort routes
+delegate conversation orchestration to the injected application consumer. There is no
 user-supplied URL, no generic proxy, and upstream service tokens stay on the
 server (never in HTML, JS, responses, URLs, cookies or browser storage).
 """
@@ -24,6 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from rfa_mas.adapters.http import require_loopback_reference_url
+from rfa_mas.application.chat import ChatMessage, ChatPort
 from rfa_mas.contracts import (
     Audience,
     DirectWorkRequest,
@@ -36,6 +38,7 @@ from rfa_mas.contracts import (
     StructuredError,
     new_id,
 )
+from rfa_mas.errors import RfaError
 from rfa_mas.reference.local_response import LocalDecisionRequest, LocalPublicationRequest
 from rfa_mas.reference.local_security import (
     LocalBoundaryMiddleware,
@@ -232,6 +235,7 @@ def create_local_ui_app(
     allowed_hosts: Iterable[str],
     core: UpstreamTarget,
     review: UpstreamTarget | None = None,
+    chat: ChatPort | None = None,
 ) -> FastAPI:
     """Build the UI with fixed, server-injected upstreams only.
 
@@ -453,6 +457,41 @@ def create_local_ui_app(
         return await core_upstream.call(
             "POST", "/v1/knowledge/sources", json_body=write.model_dump(mode="json"), mutation=True
         )
+
+    if chat is not None:
+
+        @app.get("/ui/api/chat/sessions")
+        async def chat_sessions() -> Any:
+            try:
+                return await chat.sessions()
+            except RfaError as exc:
+                raise UiError(409, "upstream_rejected", upstream_code=exc.code) from None
+
+        @app.get("/ui/api/sessions/{session_id}/chat")
+        async def chat_history(session_id: str) -> Any:
+            try:
+                return await chat.history(_path_id(session_id))
+            except RfaError as exc:
+                raise UiError(
+                    404 if exc.code == "not_found" else 409,
+                    "upstream_rejected",
+                    upstream_code=exc.code,
+                ) from None
+
+        @app.post("/ui/api/sessions/{session_id}/chat", status_code=201)
+        async def chat_send(session_id: str, body: ChatMessage, _: Csrf) -> Any:
+            try:
+                return await chat.send(_path_id(session_id), body)
+            except RfaError as exc:
+                raise UiError(
+                    404 if exc.code == "not_found" else 409,
+                    "outcome_unknown" if exc.code == "outcome_unknown" else "upstream_rejected",
+                    upstream_code=exc.code,
+                ) from None
+
+        @app.get("/ui/api/notes/{source_id}")
+        async def read_note(source_id: str) -> Any:
+            return await core_upstream.call("GET", f"/v1/knowledge/sources/{_path_id(source_id)}")
 
     @app.get("/ui/api/reviews")
     async def list_reviews(

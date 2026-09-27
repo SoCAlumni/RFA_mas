@@ -27,6 +27,7 @@ from rfa_mas.application.resume_policy import ResumePolicy
 from rfa_mas.bootstrap import build_container
 from rfa_mas.contracts import PublicationStatus, ReviewDecision, sha256_text
 from rfa_mas.errors import RfaError
+from rfa_mas.poc.chat import LocalChat
 from rfa_mas.reference.local_response import create_local_response_app
 from rfa_mas.reference.local_security import LocalServiceBoundary
 from rfa_mas.settings import Settings
@@ -256,6 +257,7 @@ def create_poc_app(data_dir: Path, *, port: int = 8780):
                     container.response = response
                     container.service.start(container.checkpoints.saver)
                     ui = create_local_ui_app(
+                        chat=LocalChat(root / "chat" / "history.db", core_client),
                         allowed_hosts=[f"127.0.0.1:{port}", f"localhost:{port}"],
                         core=UpstreamTarget.in_process("core", core_app, base_url=CORE_URL),
                         review=UpstreamTarget(

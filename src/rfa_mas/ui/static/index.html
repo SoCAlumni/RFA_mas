@@ -4,72 +4,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>RFA 로컬 UI (local/mock)</title>
+  <title>RFA · 나의 비서</title>
+  <meta name="rfa-mode" content="local/mock; real integration not_run">
   <link rel="stylesheet" href="/ui/static/app.css">
   <script src="/ui/static/app.js" defer></script>
 </head>
 <body>
-  <header>
-    <h1>RFA 로컬 UI</h1>
-    <p class="notice">교체 가능한 로컬 대체 UI입니다. 검토·게시는 로컬 mock이며 실제 외부 게시, OpenShell, 팀원 UI 통합은 실행되지 않았습니다(not_run).</p>
-    <div id="status" aria-live="polite"></div>
-  </header>
-
-  <main>
-    <section aria-labelledby="sessions-title">
-      <h2 id="sessions-title">세션</h2>
-      <button type="button" id="create-session">새 세션</button>
-      <button type="button" id="reload-sessions">목록 새로고침</button>
-      <ul id="sessions"></ul>
-      <div id="session-detail"></div>
+  <aside class="sidebar">
+    <a class="brand" href="/ui/" aria-label="RFA 홈"><span class="brand-mark">r.</span><span>RFA<small>PERSONAL ASSISTANT</small></span></a>
+    <button id="create-session" class="new-chat" type="button"><span>＋</span> 새 대화</button>
+    <nav aria-label="작업 공간">
+      <button id="tab-chat" type="button" class="nav-item active" aria-current="page">◌ <span>비서 채팅</span></button>
+      <button id="tab-kb" type="button" class="nav-item">▤ <span>내 KB</span><span id="kb-count" class="count">0</span></button>
+      <button id="tab-reviews" type="button" class="nav-item">✓ <span>승인함</span><span id="review-count" class="count">0</span></button>
+    </nav>
+    <div class="history-heading">최근 대화 <button id="reload-sessions" type="button" aria-label="대화 목록 새로고침">↻</button></div>
+    <ul id="sessions" class="session-list"></ul>
+    <div class="sidebar-footer"><span class="avatar">나</span><div>내 작업 공간<small>로컬 · 나만 접근</small></div></div>
+  </aside>
+  <main class="workspace">
+    <header class="topbar"><div><span class="eyebrow">MY WORKSPACE</span><h1 id="page-title">비서 채팅</h1></div><span id="status" role="status" class="connection">연결 확인 중</span></header>
+    <div id="global-error" role="alert"></div>
+    <section id="panel-chat" class="panel chat-panel" aria-labelledby="page-title">
+      <div id="messages" class="messages" aria-live="polite" aria-busy="false">
+        <div id="welcome" class="welcome"><span class="welcome-mark">r.</span><p class="eyebrow">YOUR KNOWLEDGE, CONNECTED</p><h2>기억할 일도, 궁금한 것도.<br>편하게 이야기하세요.</h2><p>정보를 남기면 내 KB에 정리하고,<br>질문하면 저장된 자료에서 근거를 찾아드려요.</p><div class="suggestions"><button type="button" data-example="메모: 아틀라스 프로젝트의 마감은 10월 2일입니다."><span>기억해 두기</span>프로젝트 메모 남기기 ↗</button><button type="button" data-example="TRIV3 공개 트랙에 대해 알려줘"><span>자료 찾아보기</span>공개 자료에서 답 찾기 ↗</button></div></div>
+      </div>
+      <div class="composer-wrap"><div id="chat-notice" class="chat-notice" role="status"></div><form id="chat-form" class="composer"><label class="sr-only" for="chat-input">비서에게 메시지</label><textarea id="chat-input" rows="2" maxlength="10000" placeholder="메모를 남기거나, 궁금한 내용을 물어보세요…"></textarea><div class="composer-tools"><label class="domain-control">자료 공간 <select id="chat-domain"><option value="triv3">기본 · TRIV3</option><option value="quantization_research">양자화 연구</option></select></label><button id="send-message" type="submit" aria-label="메시지 보내기">↑</button></div></form><p class="composer-caption">새 메모는 비공개로 저장됩니다. <span>로컬 규칙 기반 라우팅 · 답변 모델 mock</span></p></div>
     </section>
-
-    <section aria-labelledby="work-title">
-      <h2 id="work-title">질의</h2>
-      <p id="work-session" class="muted">세션을 먼저 선택하세요.</p>
-      <label>질의 <textarea id="work-query" rows="3" maxlength="10000"></textarea></label>
-      <label>도메인
-        <select id="work-domain">
-          <option value="">자동</option>
-          <option value="triv3">triv3</option>
-          <option value="quantization_research">quantization_research</option>
-        </select>
-      </label>
-      <label>공개 대상
-        <select id="work-audience">
-          <option value="owner">owner</option>
-          <option value="public">public</option>
-        </select>
-      </label>
-      <button type="button" id="submit-work" disabled>질의 실행</button>
-      <div id="work-result"></div>
+    <section id="panel-kb" class="panel kb-panel" hidden aria-label="내 KB">
+      <div class="section-heading"><div><p class="eyebrow">KNOWLEDGE BASE</p><h2>흩어진 정보가, 나의 지식으로.</h2><p>채팅에서 남긴 메모와 접근 가능한 자료를 한곳에서 확인하세요.</p></div><button id="reload-notes" type="button" class="secondary">새로고침 ↻</button></div>
+      <div class="kb-toolbar"><label class="search-box"><span>⌕</span><input id="kb-search" type="search" placeholder="제목 또는 내용으로 검색" aria-label="KB 검색"></label><select id="kb-domain" aria-label="KB 자료 공간"><option value="">모든 자료 공간</option><option value="triv3">TRIV3</option><option value="quantization_research">양자화 연구</option></select></div>
+      <p id="kb-summary" class="muted"></p><div class="kb-layout"><div id="notes" class="note-list"></div><article id="note-detail" class="note-detail"><p class="muted">자료를 선택하면 원문과 출처를 볼 수 있어요.</p></article></div>
     </section>
-
-    <section aria-labelledby="notes-title">
-      <h2 id="notes-title">노트</h2>
-      <label>도메인
-        <select id="note-domain">
-          <option value="triv3">triv3</option>
-          <option value="quantization_research">quantization_research</option>
-        </select>
-      </label>
-      <label>제목 <input id="note-title" maxlength="200"></label>
-      <label>내용 (기본 비공개) <textarea id="note-content" rows="3" maxlength="50000"></textarea></label>
-      <button type="button" id="create-note">노트 저장</button>
-      <div id="note-result"></div>
-      <ul id="notes"></ul>
-    </section>
-
-    <section aria-labelledby="reviews-title">
-      <h2 id="reviews-title">수동 검토 (로컬 mock 승인 원본)</h2>
-      <button type="button" id="reload-reviews">검토 목록 새로고침</button>
-      <div id="reviews"></div>
-    </section>
-
-    <section aria-labelledby="unsupported-title">
-      <h2 id="unsupported-title">미지원 기능</h2>
-      <ul id="unsupported"></ul>
-    </section>
+    <section id="panel-reviews" class="panel reviews-panel" hidden aria-label="승인함"><div class="section-heading"><div><p class="eyebrow">HUMAN IN THE LOOP</p><h2>공유하기 전, 한 번 더 확인.</h2><p>공개용 초안을 검토해 주세요. 승인은 자동으로 이루어지지 않습니다.</p></div><button id="reload-reviews" type="button" class="secondary">새로고침 ↻</button></div><p class="mode-note">로컬 UI PoC · 승인과 게시는 mock입니다. 실제 외부 게시·OpenShell 격리는 비활성입니다.</p><div id="reviews"></div></section>
   </main>
 </body>
 </html>
