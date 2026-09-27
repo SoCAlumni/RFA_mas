@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 04b1bc425ba317f5f9044588f7fd21043b86c4e39b61584882c76fced1090149
+source_digest: 471bd8ac19b31b1e426e62bd850e9a4b1fd7bed9d1a7e6b594bfc0242b4efbae
 source_revisions:
   OPS-000: 8
   OPS-001: 13
@@ -79,9 +79,10 @@ source_revisions:
   P1-008E: 23
   P1-008F: 11
   P1-008G: 17
-  P1-008H: 15
+  P1-008H: 16
+  P1-008I: 12
   P1-009: 16
-  P1-010: 18
+  P1-010: 19
   P1-011: 15
   P2-001: 2
   P2-002: 2
@@ -92,13 +93,13 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T04:58:33+00:00'
+generated_at: '2026-09-27T05:34:07+00:00'
 counts:
   todo: 1
   in_progress: 0
-  verifying: 17
+  verifying: 20
   blocked: 4
-  done: 58
+  done: 56
   deferred: 9
   cancelled: 1
 final_acceptance:
@@ -1190,19 +1191,33 @@ tasks:
   - status:verifying
   - dependency:P1-008F
 - id: P1-008H
-  status: done
+  status: verifying
   workstream: integration/evaluation
   owner: null
   recovery_required: false
   integration: integrated
-  reserved: false
+  reserved: true
   blocker: null
-  verification: passed
+  verification: stale
   planning_ready: false
   executable: false
   reasons:
-  - status:done
+  - status:verifying
   - dependency:P1-008G
+- id: P1-008I
+  status: verifying
+  workstream: integration/evaluation
+  owner: null
+  recovery_required: false
+  integration: integrated
+  reserved: true
+  blocker: null
+  verification: stale
+  planning_ready: false
+  executable: false
+  reasons:
+  - status:verifying
+  - dependency:P1-008H
 - id: P1-009
   status: blocked
   workstream: integration/evaluation
@@ -1219,18 +1234,18 @@ tasks:
   - status:blocked
   - dependency:P0-026
 - id: P1-010
-  status: done
+  status: verifying
   workstream: integration/evaluation
   owner: null
   recovery_required: false
   integration: integrated
-  reserved: false
+  reserved: true
   blocker: null
-  verification: passed
+  verification: stale
   planning_ready: false
   executable: false
   reasons:
-  - status:done
+  - status:verifying
 - id: P1-011
   status: verifying
   workstream: contracts/control

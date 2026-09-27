@@ -87,9 +87,10 @@ Canonical control root: `/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_m
 | [P1-008E](tasks/P1-008E/task.yaml) | 승인 전 게시 시도가 run을 영구 실패로 만들지 않음(HTTP 경로) | P0 | done / passed | agents | 1 | P1-008, P0-021 |
 | [P1-008F](tasks/P1-008F/task.yaml) | 팀원 교체 전 단일 명령 로컬 PoC 실행 | P0 | verifying / stale | integration/evaluation | 2 | P0-025A, P1-008C, P0-026 |
 | [P1-008G](tasks/P1-008G/task.yaml) | 비서 채팅 자동 라우팅과 내 KB 탭 | P0 | verifying / stale | integration/evaluation | 3 | P1-008F |
-| [P1-008H](tasks/P1-008H/task.yaml) | 담당 Task 자동 라우팅·비서 fallback·실제 단계 스트림 | P0 | done / passed | integration/evaluation | 3 | P1-008G |
+| [P1-008H](tasks/P1-008H/task.yaml) | 담당 Task 자동 라우팅·비서 fallback·실제 단계 스트림 | P0 | verifying / stale | integration/evaluation | 3 | P1-008G |
+| [P1-008I](tasks/P1-008I/task.yaml) | Task 팀 단위 담당 선택·채팅에서 Task 팀 생성 | P0 | verifying / stale | integration/evaluation | 2 | P1-008H |
 | [P1-009](tasks/P1-009/task.yaml) | D4 회귀·교육/심사 증거·최종 상태 확정 | P1 | blocked / stale | integration/evaluation | 1 | P0-026 |
-| [P1-010](tasks/P1-010/task.yaml) | 승희 knowledge 계약 구현 facade와 다영 실행 형태 정합 | P0 | done / passed | integration/evaluation | 3 | — |
+| [P1-010](tasks/P1-010/task.yaml) | 승희 knowledge 계약 구현 facade와 다영 실행 형태 정합 | P0 | verifying / stale | integration/evaluation | 3 | — |
 | [P1-011](tasks/P1-011/task.yaml) | 결재 인박스 UI PoC 대응 API 계약과 reference 서버 | P0 | verifying / stale | contracts/control | 4 | — |
 | [P2-001](tasks/P2-001/task.yaml) | clustering 기반 Task 후보 제안 | P2 | deferred / not_run | knowledge | 1.5 | P1-004B, P2-003 |
 | [P2-002](tasks/P2-002/task.yaml) | 제한된 DebateLease | P2 | deferred / not_run | agents | 2 | P2-003, P1-006B, P0-020 |

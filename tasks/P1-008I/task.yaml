@@ -1,0 +1,221 @@
+schema_version: '1.0'
+id: P1-008I
+title: Task 팀 단위 담당 선택·채팅에서 Task 팀 생성
+objective: 담당 선택을 도메인이 아닌 사용자의 Task 팀 단위로 제공하고, 명시적 조사/검증 요청은 새 Task 팀을 만들어 이후 관련 질의가 그 팀으로 라우팅되게 한다.
+kind: task
+source_tasks:
+- P1-008H
+requirement_refs:
+- docs/POC.md
+priority: P0
+status: verifying
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 2.0
+product_owner: 민섭 사용자 승인 PoC; 팀원 UI 교체 가능
+execution_class: 이 저장소 구현
+product_mode: local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님
+scope:
+  included:
+  - owner Task 팀 목록 API와 드롭다운(Task 팀 우선, 자료 공간은 보조)
+  - 명시 task_id 지정 시 소유권 재검증 후 해당 팀 재사용
+  - 명시적 task_run 의도(조사해/검증해/벤치마크 돌려)는 기존 core team 경로로 새 Task 팀 생성
+  - 합성 샘플 Task 팀 2개 시드 절차(실행 중 PoC API 사용)
+  excluded:
+  - 질의/메모만으로 자동 Task 생성
+  - 토큰/내부 사고 스트리밍
+  - 실제 외부 게시/모델 호출
+  owned_paths:
+  - src/rfa_mas/poc
+  - src/rfa_mas/ui
+  - src/rfa_mas/application/chat.py
+  - tests/test_chat_poc.py
+  - tests/test_chat_routing.py
+  - docs/POC.md
+  read_only_paths:
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/application/graphs/supervisor.py
+  - src/rfa_mas/adapters/local.py
+  planned_paths: []
+  shared_resources:
+  - composition
+depends_on:
+- id: P1-008H
+  condition: integrated_done
+  required_output: 자동 라우팅·TeamCatalogPort·NDJSON 단계 스트림
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/poc/routing.py
+    section: LocalChatRouter.resolve
+    reason: 기존 Task 주제 매칭 재사용
+  - path: src/rfa_mas/poc/chat.py
+    section: LocalChat.send
+    reason: query/external_draft team 경로에 task_run 추가
+  - path: src/rfa_mas/application/service.py
+    section: assist task_run
+    reason: 새 Task는 core의 team=TeamExecutionRequest 경로만 사용
+  handoff: tasks/P1-008I/handoff.md
+  dependency_results:
+  - tasks/P1-008H/handoff.md
+deliverables:
+- path: src/rfa_mas/application/chat.py
+  availability: existing
+  description: ChatMessage.task_id, task_run 의도
+- path: src/rfa_mas/poc/routing.py
+  availability: existing
+  description: 명시 task_id 검증·new_task 라우트
+- path: src/rfa_mas/poc/chat.py
+  availability: existing
+  description: task_run 실행 및 단계 표시
+- path: src/rfa_mas/ui
+  availability: existing
+  description: /ui/api/chat/assignees와 Task 팀 드롭다운
+- path: tests/test_chat_routing.py
+  availability: existing
+  description: 명시 지정·소유권·Task 생성·재사용 검증
+- path: docs/POC.md
+  availability: existing
+  description: Task 팀 단위 담당 설명
+acceptance_criteria:
+- id: AC1
+  given: owner의 active Task 팀과 다른 owner의 Task
+  expect: 목록 API는 owner Task만 반환; 명시 task_id는 소유권 재검증 후 같은 task/team 재사용; 다른 owner/없는 ID는 거절
+  required: true
+- id: AC2
+  given: 명시적 조사/검증 요청(task_run)과 이후 관련 질의
+  expect: core team 경로로 새 Task 팀 1개 생성(팀 패턴은 core 선택); 같은 메시지 재전송 시 중복 생성 없음; 이후 관련 질의는 그 Task 팀으로 자동
+    라우팅
+  required: true
+- id: AC3
+  given: 단순 메모/질의
+  expect: 자동 Task 생성 없음; 담당 없으면 비서 처리 유지; 기존 단계 스트림·CSRF·멱등성 회귀 통과
+  required: true
+- id: AC4
+  given: 실제 브라우저
+  expect: 드롭다운에 Task 팀이 우선 표시되고 선택/자동 모두 동작; JS 오류 없음
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: available
+  prerequisites:
+  - 합성 데이터·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_chat_routing.py
+  - tests/test_chat_poc.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - owner 목록·명시 지정·거절
+  - task_run 생성·중복 방지·후속 재사용
+  - 메모/질의 무생성·기존 회귀
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC4
+  type: UI
+  availability: available
+  prerequisites:
+  - 합성 별도 PoC 서버와 브라우저
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - Task 팀 드롭다운 표시 확인
+  - 명시 선택/자동 전송
+  assertions:
+  - Task 팀 우선 표시·선택 동작
+  - JS 오류 없음
+  runner: manual
+evidence_dir: .agent/evidence/P1-008I
+latest_evidence_file: .agent/evidence/P1-008I/teams-target-01/result.json
+verification_summary:
+  state: stale
+  spec_revision: 1
+  spec_digest: c0b00f25348e1234a6403221f60a579de81083fb88b110b17709b6fb57d0abd0
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: fff3b7dfadf0f0b404a805f8effa944f824db77739343e3bf9804632e047daab
+  evidence: .agent/evidence/P1-008I/teams-target-01/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: true
+  submission_generation: 1
+  submission:
+    head: bfc4bc3aa56be6475088ce7f078471941c850b00
+    baseline_head: 5e4ea92d1f8cfe52a6472ceb9a1d9811eb7ccb88
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008I-teams
+    branch: task/P1-008I-teams
+    evidence: .agent/evidence/P1-008I/teams-worker-01/result.json
+    changed_files:
+      docs/POC.md: e734f14e59945eba978d74e652d1f27b51b6c26df0ca5f8d2e982f7fb16925e3
+      src/rfa_mas/application/chat.py: 6aa2b0f4bfdf5ebad828ca4d0402020207b6ed3f9403180d798310edccf0a0c0
+      src/rfa_mas/poc/chat.py: 1002bcd6bc7b766cfca7ee643fc71b5845f7174517818bad3482d3354afba5cb
+      src/rfa_mas/poc/routing.py: 4b76959327eab7fe0afbc43151b564884f676e186097aa526b9a863d3d29fa92
+      src/rfa_mas/ui/app.py: 81879caea1c38508c81c064702cdc3513dfc944955e582b836087e69de5c2c31
+      src/rfa_mas/ui/static/app.js: ac2f87555e0741e91092044de387fd7e3ea70186b9a2d0ec04bc184ab42e3510
+      src/rfa_mas/ui/static/index.html: 3d9f5700eb0c654605b22faede59906209629d7962c430335ad1aeb9c8423e2b
+      tests/test_chat_routing.py: a36a8b8b74e892b54fe1f1478ae72934669e686027401c61dc326b325aff49f0
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: c0b00f25348e1234a6403221f60a579de81083fb88b110b17709b6fb57d0abd0
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 992888100dce95aba72906a97813e87919cd96be6f11bc401ef45ad76382c2a6
+      evidence: .agent/evidence/P1-008I/teams-target-02/result.json
+    head: 7ebcffddb6316ee99395f3db0865615679bb33e6
+  evidence: .agent/evidence/P1-008I/teams-target-02/result.json
+revision: 12
+spec_revision: 1
+claim_generation: 1
+claim: null
+attempts:
+  count: 3
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: teams-target-02
+  evidence_refs:
+  - .agent/evidence/P1-008I/teams-worker-01/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 담당 선택을 task agent 단위로 요청
+  prior_claim: P1-008H 완료; Task 단위 선택 UI/생성은 신규
+  implementation_facts: 드롭다운은 domain 2개만 표시; 사용자 runtime 영속 Task 0
+  previous_evidence: []
+  checks_this_migration:
+  - routing/chat/ui/catalog 코드 확인
+  judgment: 기존 완료 유지·별도 기능 추가
+  initial_spec_revision: 1
+updated_at: '2026-09-27T05:34:06+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

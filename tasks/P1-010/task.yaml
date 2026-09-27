@@ -12,7 +12,7 @@ source_tasks:
 requirement_refs:
 - docs/INTEGRATION.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -126,7 +126,7 @@ verification:
 evidence_dir: .agent/evidence/P1-010
 latest_evidence_file: .agent/evidence/P1-010/target-0927044245/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 3
   spec_digest: 8ef11dc51a5332d512c16d753cf45ba1cb72f4fe5bca02295f01912509ddd651
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -136,7 +136,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 5
   submission:
     head: 31e772a9ef661cf97b072f06d2dfaa29588216b3
@@ -167,7 +167,7 @@ integration:
       evidence: .agent/evidence/P1-010/target-0927044245/result.json
     head: 31e772a9ef661cf97b072f06d2dfaa29588216b3
   evidence: .agent/evidence/P1-010/target-0927044245/result.json
-revision: 18
+revision: 19
 spec_revision: 3
 claim_generation: 5
 claim: null
@@ -267,6 +267,7 @@ migration:
   - UI PoC 아티팩트 화면 확인
   judgment: 기존 core 변경 없이 facade로 계약 제공
   initial_spec_revision: 1
-updated_at: '2026-09-27T04:43:06+00:00'
+updated_at: '2026-09-27T05:27:31+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: DTO·facade 서비스·FastAPI 앱·CLI·호환 테스트 구현
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

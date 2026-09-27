@@ -1,0 +1,66 @@
+{
+ "seeded": {
+  "route": {
+   "kind": "new_task",
+   "label": "[샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)",
+   "reason": "explicit_task_request_no_match",
+   "domain_id": "quantization_research",
+   "task_id": "task_350fc835dab040949630e5928a5a7877",
+   "team_id": "team_81e09175e2214026a93c02cfac6dc665",
+   "pattern": "research"
+  },
+  "team": {
+   "task_id": "task_350fc835dab040949630e5928a5a7877",
+   "team_id": "team_81e09175e2214026a93c02cfac6dc665",
+   "pattern": "research",
+   "status": "completed",
+   "simulated": true,
+   "summary": "[팀 결과] 목표: [샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)\n- 허용된 자료만으로는 근거가 부족합니다."
+  },
+  "stages": [
+   "요청 이해 중",
+   "담당자 확인: 적합한 기존 Task 팀 없음 · 새 Task 팀 구성",
+   "Task 팀 실행 준비",
+   "Task 팀 결과"
+  ]
+ },
+ "after": [
+  {
+   "task_id": "task_350fc835dab040949630e5928a5a7877",
+   "team_id": "team_81e09175e2214026a93c02cfac6dc665",
+   "goal": "[샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)",
+   "domain_id": "quantization_research",
+   "pattern": "research",
+   "status": "active",
+   "team_state": "ready",
+   "selectable": true
+  },
+  {
+   "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+   "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+   "goal": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+   "domain_id": "triv3",
+   "pattern": "benchmark",
+   "status": "active",
+   "team_state": "ready",
+   "selectable": true
+  }
+ ],
+ "follow_quant": {
+  "kind": "task",
+  "label": "[샘플] 양자화 INT4 논문 근거를 조사해줘 (합성 시연용)",
+  "reason": "existing_task_subject_match",
+  "task_id": "task_350fc835dab040949630e5928a5a7877",
+  "team_id": "team_81e09175e2214026a93c02cfac6dc665",
+  "domain_id": "quantization_research"
+ },
+ "follow_nomatch": {
+  "kind": "assistant",
+  "label": "비서 직접 처리",
+  "reason": "no_suitable_assignee",
+  "domain_id": null,
+  "task_id": null,
+  "team_id": null
+ },
+ "note": "first attempt seed-task-quant-research-01 was routed to the aurora task by shared [샘플]/합성/시연용 tags before commit 7ebcffd; preserved as a real observation"
+}

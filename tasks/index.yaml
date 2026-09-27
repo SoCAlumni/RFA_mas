@@ -1,6 +1,6 @@
 generated: true
 schema_version: '1.0'
-source_digest: 04b1bc425ba317f5f9044588f7fd21043b86c4e39b61584882c76fced1090149
+source_digest: 471bd8ac19b31b1e426e62bd850e9a4b1fd7bed9d1a7e6b594bfc0242b4efbae
 source_revisions:
   OPS-000: 8
   OPS-001: 13
@@ -79,9 +79,10 @@ source_revisions:
   P1-008E: 23
   P1-008F: 11
   P1-008G: 17
-  P1-008H: 15
+  P1-008H: 16
+  P1-008I: 12
   P1-009: 16
-  P1-010: 18
+  P1-010: 19
   P1-011: 15
   P2-001: 2
   P2-002: 2
@@ -92,7 +93,7 @@ source_revisions:
   P2-007: 2
   P2-008: 2
   P2-009: 2
-generated_at: '2026-09-27T04:58:33+00:00'
+generated_at: '2026-09-27T05:34:07+00:00'
 tasks:
 - id: OPS-000
   title: 사용자 변경을 보존한 Git/worktree baseline 등록
@@ -657,6 +658,12 @@ tasks:
   depends_on:
   - P1-008G
   path: tasks/P1-008H/task.yaml
+- id: P1-008I
+  title: Task 팀 단위 담당 선택·채팅에서 Task 팀 생성
+  workstream: integration/evaluation
+  depends_on:
+  - P1-008H
+  path: tasks/P1-008I/task.yaml
 - id: P1-009
   title: D4 회귀·교육/심사 증거·최종 상태 확정
   workstream: integration/evaluation

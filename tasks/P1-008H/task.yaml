@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/POC.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -165,7 +165,7 @@ verification:
 evidence_dir: .agent/evidence/P1-008H
 latest_evidence_file: .agent/evidence/P1-008H/routing-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 2
   spec_digest: ccfd59582edf07f18b8a0d6554e1e5940771b3f15c7329f11625b23c9431006e
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -175,7 +175,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 3
   submission:
     head: 1f1844e9e5885e6bb64c7540c9eacb37868f0f96
@@ -206,7 +206,7 @@ integration:
       evidence: .agent/evidence/P1-008H/routing-target-01/result.json
     head: 1f1844e9e5885e6bb64c7540c9eacb37868f0f96
   evidence: .agent/evidence/P1-008H/routing-target-01/result.json
-revision: 15
+revision: 16
 spec_revision: 2
 claim_generation: 3
 claim: null
@@ -265,6 +265,7 @@ migration:
   - UI/비서/세션/KB 코드 확인
   judgment: 기존 완료 유지·별도 기능 추가
   initial_spec_revision: 1
-updated_at: '2026-09-27T04:58:32+00:00'
+updated_at: '2026-09-27T05:29:15+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: owner-scoped 목록과 보수적 라우팅부터 구현
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

@@ -1,0 +1,55 @@
+{
+ "seeded": {
+  "route": {
+   "kind": "task",
+   "label": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+   "reason": "existing_task_subject_match",
+   "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+   "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+   "domain_id": "triv3"
+  },
+  "team": {
+   "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+   "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+   "pattern": "benchmark",
+   "status": "completed",
+   "simulated": true,
+   "summary": "[팀 결과] 목표: [샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)\n- 관련 자료 1건 확인"
+  },
+  "stages": [
+   "요청 이해 중",
+   "담당자 확인: [샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+   "Task 팀 실행 준비",
+   "Task 팀 결과"
+  ]
+ },
+ "after": [
+  {
+   "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+   "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+   "goal": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+   "domain_id": "triv3",
+   "pattern": "benchmark",
+   "status": "active",
+   "team_state": "ready",
+   "selectable": true
+  }
+ ],
+ "follow_quant": {
+  "kind": "domain",
+  "label": "양자화 연구 담당",
+  "domain_id": "quantization_research",
+  "task_id": null,
+  "team_id": null,
+  "reason": "domain_subject_match"
+ },
+ "follow_nomatch": {
+  "kind": "assistant",
+  "label": "비서 직접 처리",
+  "reason": "no_suitable_assignee",
+  "domain_id": null,
+  "task_id": null,
+  "team_id": null
+ },
+ "note": "first attempt seed-task-quant-research-01 was routed to the aurora task by shared [샘플]/합성/시연용 tags before commit 7ebcffd; preserved as a real observation"
+}

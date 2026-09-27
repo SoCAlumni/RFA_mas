@@ -1,0 +1,80 @@
+{
+ "before": [],
+ "seeded": [
+  {
+   "message_id": "seed-task-aurora-benchmark-01",
+   "intent": "task_run",
+   "route": {
+    "kind": "new_task",
+    "label": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+    "reason": "explicit_task_request_no_match",
+    "domain_id": "triv3",
+    "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+    "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+    "pattern": "benchmark"
+   },
+   "team": {
+    "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+    "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+    "pattern": "benchmark",
+    "status": "completed",
+    "simulated": true,
+    "summary": "[팀 결과] 목표: [샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)\n- 관련 자료 1건 확인"
+   },
+   "stages": [
+    "요청 이해 중",
+    "담당자 확인: 적합한 기존 Task 팀 없음 · 새 Task 팀 구성",
+    "Task 팀 실행 준비",
+    "Task 팀 결과"
+   ]
+  },
+  {
+   "message_id": "seed-task-quant-research-01",
+   "intent": "task_run",
+   "route": {
+    "kind": "task",
+    "label": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+    "reason": "existing_task_subject_match",
+    "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+    "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+    "domain_id": "triv3"
+   },
+   "team": {
+    "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+    "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+    "pattern": "benchmark",
+    "status": "completed",
+    "simulated": true,
+    "summary": "[팀 결과] 목표: [샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)\n- 관련 자료 1건 확인"
+   },
+   "stages": [
+    "요청 이해 중",
+    "담당자 확인: [샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+    "Task 팀 실행 준비",
+    "Task 팀 결과"
+   ]
+  }
+ ],
+ "after": [
+  {
+   "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+   "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+   "goal": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+   "domain_id": "triv3",
+   "pattern": "benchmark",
+   "status": "active",
+   "team_state": "ready",
+   "selectable": true
+  }
+ ],
+ "follow_route": {
+  "kind": "task",
+  "label": "[샘플] 오로라 TRIV3 지연 벤치마크 결과를 검증해줘 (합성 시연용)",
+  "reason": "existing_task_subject_match",
+  "task_id": "task_fc7715f68cf54436adbceb1d32912f85",
+  "team_id": "team_d6b72cc587f04587b5cf856d9a705dd6",
+  "domain_id": "triv3"
+ },
+ "session_id": "session_2ef29896c2a64fa4838e637ca62f870d",
+ "mode": "local/mock synthetic; simulated experiment values"
+}
