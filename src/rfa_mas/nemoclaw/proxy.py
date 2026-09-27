@@ -259,6 +259,7 @@ class EgressProxy:
             base_detail["request_redactions"] = sum(r.redacted_count for r in request_reports)
             if blocked is not None:
                 base_detail["blocked_by"] = blocked.blocked_by
+                base_detail["censor"] = blocked.summary()["stages"]
                 audit.record(kind="inference", verdict="block", action="request", channel=attr.channel,
                              profile=profile, sandbox=attr.sandbox, agent=attr.agent,
                              session_id=attr.session_id, detail={**base_detail, "ms": _ms(started)})
@@ -284,6 +285,7 @@ class EgressProxy:
                         message["content"] = BLOCKED_TEXT.format(reason=result.blocked_by)
                         message.pop("tool_calls", None)
                         base_detail["blocked_by"] = result.blocked_by
+                        base_detail["censor"] = result.summary()["stages"]
                         break
                     message["content"] = result.text
                     if result.verdict == "redact":

@@ -38,19 +38,27 @@ class DirectJudge:
         headers = {}
         if backend.auth == "bearer":
             headers["authorization"] = f"Bearer {self.backend_keys.get(alias.backend, '')}"
+        prompt = JUDGE_PROMPT.format(categories=", ".join(stage.categories), text=text)
+        if backend.kind == "ollama":
+            url = f"{backend.url.rstrip('/')}/api/chat"
+            payload = {"model": alias.model, "stream": False, "think": backend.think,
+                       "messages": [{"role": "user", "content": prompt}],
+                       "options": {"temperature": 0, "num_predict": 300, **({"num_ctx": backend.num_ctx} if backend.num_ctx else {})}}
+        else:
+            url = f"{backend.url.rstrip('/')}/chat/completions"
+            payload = {"model": alias.model, "temperature": 0, "max_tokens": 300,
+                       "messages": [{"role": "user", "content": prompt}]}
         try:
-            response = httpx.post(
-                f"{backend.url.rstrip('/')}/chat/completions",
-                json={"model": alias.model, "temperature": 0, "max_tokens": 300,
-                      "messages": [{"role": "user", "content": JUDGE_PROMPT.format(
-                          categories=", ".join(stage.categories), text=text)}]},
-                headers=headers, timeout=stage.timeout_seconds,
-            )
+            response = httpx.post(url, json=payload, headers=headers, timeout=stage.timeout_seconds)
         except httpx.HTTPError as exc:
             raise JudgeError(f"direct judge transport: {type(exc).__name__}") from exc
         if response.status_code != 200:
             raise JudgeError(f"direct judge HTTP {response.status_code}")
-        content = ((response.json().get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        data = response.json()
+        if backend.kind == "ollama":
+            content = (data.get("message") or {}).get("content") or ""
+        else:
+            content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
         return parse_judge_output(content)
 
 
