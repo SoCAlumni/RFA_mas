@@ -1,0 +1,20 @@
+preset:
+  name: rfa-assistant
+  description: "RFA personal assistant channel (P1-008M): healthz + /channel/chat only"
+network_policies:
+  rfa_assistant:
+    name: rfa_assistant
+    endpoints:
+      - host: __HOST__
+        port: __PORT__
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: "/healthz" }
+          - allow: { method: POST, path: "/channel/chat" }
+    binaries:
+      - { path: /usr/bin/curl }
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/node }
+      - { path: /usr/bin/node }
+      - { path: /usr/bin/python3 }

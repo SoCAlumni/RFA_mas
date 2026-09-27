@@ -235,7 +235,10 @@ def create_poc_app(
     model: str = "mock",
     env_file: Path | None = None,
     model_transport=None,
+    channel: tuple[str, int, str] | None = None,
 ):
+    """PoC ASGI app. `channel=(host, port, key)` additionally serves the authenticated
+    NemoClaw channel gateway (P1-008M) for requests arriving on that listener."""
     if not 1 <= port <= 65535:
         raise ValueError("invalid_port")
     root = data_dir.expanduser().resolve()
@@ -245,6 +248,14 @@ def create_poc_app(
     holder = {}
 
     async def delegate(scope, receive, send):
+        server = scope.get("server") or ("", 0)
+        if channel is not None and scope.get("type") == "http" and server[1] == channel[1]:
+            gateway = holder.get("channel")
+            if gateway is None:
+                await JSONResponse({"code": "poc_not_ready"}, status_code=503)(scope, receive, send)
+                return
+            await gateway(scope, receive, send)
+            return
         ui = holder.get("ui")
         if ui is None:
             await JSONResponse({"code": "poc_not_ready"}, status_code=503)(scope, receive, send)
@@ -315,6 +326,10 @@ def create_poc_app(
                         model=container.model,
                         model_name=settings_probe.nvidia_model if model == "nvidia" else None,
                     )
+                    if channel is not None:
+                        from rfa_mas.poc.channel import ChannelGateway
+
+                        holder["channel"] = ChannelGateway(core_app, chat, channel[2])
                     ui = create_local_ui_app(
                         chat=chat,
                         teams=TeamOverview(chat),
