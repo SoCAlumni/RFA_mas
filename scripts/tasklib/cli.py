@@ -142,6 +142,13 @@ def parser() -> argparse.ArgumentParser:
     q.add_argument("--expected-project-digest", required=True)
     q.add_argument("--inspection-file", required=True)
     q = sub.add_parser("project-digest")
+    q = sub.add_parser("review-doc-change")
+    q.add_argument("task")
+    q.add_argument("--session", required=True)
+    q.add_argument("--expected-revision", required=True, type=int)
+    q.add_argument("--attempt", required=True)
+    q.add_argument("--changed-path", action="append", required=True)
+    q.add_argument("--reason", required=True)
     q = sub.add_parser("audit-control")
     q.add_argument("task")
     q.add_argument("--session", required=True)
@@ -570,7 +577,15 @@ def execute(store: Store, args) -> dict:
         task = tasks[args.task]
         if task.revision != args.expected_revision:
             raise ControlError("Stale revision")
-        if command == "audit-control":
+        if command == "review-doc-change":
+            store.coordinator(args.session)
+            inactive_integrated_guard(store, task)
+            from .doc_review import review_doc_change
+
+            review_doc_change(
+                store, task, args.attempt, args.changed_path, args.reason, args.session
+            )
+        elif command == "audit-control":
             store.coordinator(args.session)
             if (
                 task.id not in store.project.get("administrative_tasks", [])

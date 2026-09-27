@@ -1,5 +1,23 @@
 # 후속 통합 후 task 재검증
 
+## 문서 변경만 있는 경우 (OPS-007)
+
+자동 재검증을 시작하기 전에 이전 source manifest와 현재 파일의 차이를 확인한다.
+코드·설정·의존성·계약·명세·공통 지침은 동일하고 기존 `docs/*.md`만 달라졌다면
+coordinator가 diff와 영향 AC를 읽고 다음 명령으로 기존 실행 근거를 보존할 수 있다.
+
+```sh
+python scripts/taskctl.py --control-root "$TASK_CONTROL_ROOT" review-doc-change TASK-ID \
+  --session rfa-coordinator --expected-revision CURRENT --attempt UNIQUE-REVIEW \
+  --changed-path docs/INTEGRATION.md --reason '실제로 검토한 변경 내용과 AC에 영향 없는 이유'
+```
+
+실제 바뀐 경로를 모두 정확히 지정한다. requirements/global/계약 원본·새 파일·삭제·미커밋
+변경은 거절한다. 활성 claim, 미통합 작업, 과거 실패를 이 명령으로 완료시킬 수 없다.
+원래 실행 report와 시각을 유지하고 새 불변 `documentation_review`에 검토자·사유·전후 hash·
+기존 integration을 연결하며 `tests_reexecuted=false`로 표시한다. 문서가 실제 AC의 의미를
+바꾼 경우에는 이 명령을 사용하지 말고 명세 변경·재검증을 수행한다. 자동 stale 해제는 없다.
+
 이미 통합·완료된 task의 관련 소스/계약/명세가 바뀌면 기존 검증은 `stale`이고
 task는 `verifying`/범위 예약으로 돌아간다. 과거 성공은 삭제되지 않으며 새 source의
 성공을 의미하지 않는다. 이 절차는 기존 `taskctl`의 coordinator recovery를 사용한다.
