@@ -111,7 +111,7 @@ def test_sandbox_agent_judge_calls_nemoclaw_agent_and_parses_payload(censors):
     verdict = SandboxAgentJudge(runner).classify("some text", stage)
     assert verdict.verdict == "allow"
     argv = runner.calls[0]
-    assert argv[:4] == ["nemoclaw", "rfa-censor", "agent", "--agent"] and "--json" in argv
+    assert argv[:5] == ["nemoclaw", "rfa-tasks-none", "agent", "--agent", "censor"] and "--json" in argv
     assert argv[argv.index("--timeout") + 1] == str(stage.timeout_seconds)
     assert "some text" in argv[-1] and "JSON" in argv[-1]
 

@@ -54,9 +54,10 @@ def render_manifest(assignments: Assignments, sandbox: str) -> dict:
         manifest["main"] = {"tools": tools_dict(spec.tools), "subagents": {"requireAgentId": True}}
         return manifest
     ids = assignments.sandbox_agents(sandbox)
+    spawnable = [a for a in ids if assignments.agents[a].delegatable]
     manifest["main"] = {
         "tools": dict(HEAD_TOOLS),
-        "subagents": {"allowAgents": ids, "delegationMode": "prefer", "requireAgentId": True},
+        "subagents": {"allowAgents": spawnable, "delegationMode": "prefer", "requireAgentId": True},
     }
     manifest["agents"] = [
         {
@@ -118,7 +119,7 @@ def render_identity(assignments: Assignments, agent_id: str, secret: bytes) -> s
 def render_head_identity(assignments: Assignments, sandbox: str, secret: bytes) -> str:
     """``IDENTITY.md`` for the routing head (``main``) of a task sandbox: least-exposed alias."""
     marker = make_marker("agent", {"agent": "head", "sandbox": sandbox, "alias": "rfa-internal"}, secret)
-    ids = assignments.sandbox_agents(sandbox)
+    ids = [a for a in assignments.sandbox_agents(sandbox) if assignments.agents[a].delegatable]
     return (
         "# IDENTITY\n\n"
         f"- name: head (routing only) for sandbox {sandbox}\n"

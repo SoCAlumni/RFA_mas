@@ -41,7 +41,7 @@ from rfa_mas.nemoclaw.runner import CommandError, Runner, SubprocessRunner, extr
 
 ROOT = DEPLOY_DIR.parents[1]
 SG_DIR = ROOT / ".local" / "sg"
-LEGACY_SANDBOXES = ("rfa-demo",)
+LEGACY_SANDBOXES = ("rfa-demo", "rfa-censor")  # rfa-censor: merged into rfa-tasks-none (2026-09-27)
 
 
 def log(message: str) -> None:

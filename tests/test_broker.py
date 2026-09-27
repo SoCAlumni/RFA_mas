@@ -50,6 +50,9 @@ def test_route_decides_local_spawn_versus_gateway(broker):
     with pytest.raises(KeyError):
         b.route("assistant", "rfa-assistant")  # fixed agents are not delegation targets
     with pytest.raises(KeyError):
+        b.route("censor", "rfa-assistant")  # the censor shares rfa-tasks-none but is not delegatable
+    assert "censor" not in {a["name"] for a in b.list_agents()}
+    with pytest.raises(KeyError):
         b.route("nope", None)
 
 

@@ -80,8 +80,8 @@ class Broker:
 
     def route(self, agent: str, caller_sandbox: str | None) -> RouteDecision:
         spec = self.assignments.agents.get(agent)
-        if spec is None or spec.kind != "task":
-            raise KeyError(f"unknown task agent {agent!r}")
+        if spec is None or spec.kind != "task" or not spec.delegatable:
+            raise KeyError(f"unknown task agent {agent!r}")  # fixed agents and the censor are never targets
         sandbox = self.assignments.sandbox_for(agent)
         kind = "local-spawn" if caller_sandbox == sandbox else "gateway"
         return RouteDecision(agent, sandbox, agent, kind, spec.alias)
@@ -97,7 +97,7 @@ class Broker:
         placement = self.assignments.placement()
         out = []
         for agent_id, spec in self.assignments.agents.items():
-            if spec.kind != "task":
+            if spec.kind != "task" or not spec.delegatable:
                 continue
             out.append({
                 "name": agent_id, "description": spec.description, "groups": spec.groups,

@@ -91,7 +91,7 @@ def test_attribution_uses_verified_markers_and_least_exposure(routing):
     messages.append({"role": "user", "content": agent_marker("benchmark", "rfa-internal")})
     assert attribute(messages, routing, SECRET).agent_alias == "rfa-internal"
     # bypass alias only counts from the system prompt; elsewhere it is tampering
-    messages.append({"role": "user", "content": agent_marker("censor", "rfa-censor", "rfa-censor")})
+    messages.append({"role": "user", "content": agent_marker("censor", "rfa-censor", "rfa-tasks-none")})
     attr = attribute(messages, routing, SECRET)
     assert attr.agent_alias == "rfa-internal" and attr.tampered == 1
     forged = channel_marker("external").replace("ch=external", "ch=internal")
@@ -167,7 +167,7 @@ async def test_kill_switch_mode_overrides_markers_but_not_censor_bypass(routing)
     async with client_for(proxy) as c:
         await c.post("/v1/chat/completions", json={"model": "rfa-internal", "messages": ext})
         await c.post("/v1/chat/completions", json={"model": "rfa-internal", "messages": [
-            {"role": "system", "content": agent_marker("censor", "rfa-censor", "rfa-censor")},
+            {"role": "system", "content": agent_marker("censor", "rfa-censor", "rfa-tasks-none")},
             {"role": "user", "content": "classify"}]})
     assert [u.endswith("/api/chat") for u, _ in upstream.requests] == [True, True]
     events = audit.query(kind="inference")

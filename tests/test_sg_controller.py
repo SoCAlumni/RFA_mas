@@ -100,13 +100,15 @@ def test_checked_in_configs_load_and_cross_check():
     a, r, c = cfg.load_assignments(), cfg.load_routing(), cfg.load_censors()
     assert cfg.cross_check(a, r, c) == []
     assert a.placement() == {
-        "censor": "rfa-censor",
+        "censor": "rfa-tasks-none",
         "assistant": "rfa-assistant",
         "research": "rfa-tasks-intranet",
         "benchmark": "rfa-tasks-intranet",
         "summarizer": "rfa-tasks-none",
     }
-    assert a.ordered_sandboxes() == ["rfa-censor", "rfa-tasks-none", "rfa-tasks-intranet", "rfa-assistant"]
+    assert a.ordered_sandboxes() == ["rfa-tasks-none", "rfa-tasks-intranet", "rfa-assistant"]
+    assert a.sandbox_agents("rfa-tasks-none") == ["censor", "summarizer"]
+    assert not a.agents["censor"].delegatable
     assert a.sandbox_presets("rfa-tasks-intranet") == ["sg-intranet-ro"]
     assert a.sandbox_presets("rfa-assistant") == []
     assert a.sandbox_presets("rfa-assistant", fallback=True) == ["sg-control-plane"]
@@ -159,6 +161,9 @@ def test_manifest_rendering_is_deterministic_and_schema_shaped(tmp_path, assignm
         assert set(agent) <= {"id", "description", "model", "tools", "subagents"}
     fixed = render_manifest(assignments, "rfa-assistant")
     assert "agents" not in fixed and fixed["main"]["tools"]["profile"] == "minimal"
+    none = render_manifest(assignments, "rfa-tasks-none")
+    assert manifest_agent_ids(none) == ["censor", "summarizer"]  # censor is baked as a secondary…
+    assert none["main"]["subagents"]["allowAgents"] == ["summarizer"]  # …but never a spawn target
     first = write_manifests(assignments, tmp_path / "a")
     second = write_manifests(assignments, tmp_path / "b")
     for sandbox in first:
@@ -235,12 +240,11 @@ def test_plan_converges_then_is_idempotent(assignments, rendered, tmp_path):
     observed = Observed(
         sandboxes={n: {"name": n} for n in assignments.sandboxes},
         policies={
-            "rfa-censor": live_policy(),
-            "rfa-tasks-none": live_policy(excluded=set(assignments.baseline_excludes)),
+            "rfa-tasks-none": live_policy(),
             "rfa-tasks-intranet": live_policy(excluded=set(assignments.baseline_excludes)),
             "rfa-assistant": live_policy(excluded=set(assignments.baseline_excludes)),
         },
-        agents={"rfa-censor": ["main"], "rfa-tasks-none": ["main"],
+        agents={"rfa-tasks-none": ["main"],
                 "rfa-tasks-intranet": ["main", "research"], "rfa-assistant": ["main"]},
         mcp={"rfa-assistant": set()},
     )
@@ -248,13 +252,13 @@ def test_plan_converges_then_is_idempotent(assignments, rendered, tmp_path):
                            mcp_url="https://192.168.123.191:8798/mcp",
                            mcp_credential_env="RFA_BROKER_MCP_TOKEN"))
     kinds = [(a.kind, a.sandbox) for a in actions]
-    # censor: five baseline excludes, then explain
-    assert kinds.count(("policy-exclude", "rfa-censor")) == 5
+    # egress-none sandbox: five baseline excludes, then explain
+    assert kinds.count(("policy-exclude", "rfa-tasks-none")) == 5
     assert ("policy-add", "rfa-tasks-intranet") in kinds and ("agents-apply", "rfa-tasks-intranet") in kinds
-    assert ("agents-apply", "rfa-tasks-none") in kinds  # summarizer missing
+    assert ("agents-apply", "rfa-tasks-none") in kinds  # censor + summarizer missing
     assert ("mcp-add", "rfa-assistant") in kinds
     assert [k for k in kinds if k[0] == "policy-explain"] == [
-        ("policy-explain", "rfa-censor"), ("policy-explain", "rfa-tasks-none"),
+        ("policy-explain", "rfa-tasks-none"),
         ("policy-explain", "rfa-tasks-intranet"), ("policy-explain", "rfa-assistant")]
     assert not any(a.kind == "policy-exclude" and a.argv[4] in ("managed_inference", "openclaw_gateway_dialback")
                    for a in actions)
@@ -263,11 +267,11 @@ def test_plan_converges_then_is_idempotent(assignments, rendered, tmp_path):
 
     # converge the observation the way NemoClaw would, then re-plan → no actions
     converged = copy.deepcopy(observed)
-    converged.policies["rfa-censor"] = live_policy(excluded=set(assignments.baseline_excludes))
+    converged.policies["rfa-tasks-none"] = live_policy(excluded=set(assignments.baseline_excludes))
     converged.policies["rfa-tasks-intranet"] = live_policy({"sg-intranet-ro": intranet},
                                                            excluded=set(assignments.baseline_excludes))
     converged.agents["rfa-tasks-intranet"] = ["main", "benchmark", "research"]
-    converged.agents["rfa-tasks-none"] = ["main", "summarizer"]
+    converged.agents["rfa-tasks-none"] = ["main", "censor", "summarizer"]
     converged.mcp["rfa-assistant"] = {"broker"}
     assert plan(_inputs(assignments, converged, rendered, tmp_path,
                         mcp_url="https://192.168.123.191:8798/mcp",
@@ -283,12 +287,11 @@ def test_plan_removes_unassigned_sg_presets_and_uses_fallback_when_mcp_unavailab
     observed = Observed(
         sandboxes={n: {"name": n} for n in assignments.sandboxes},
         policies={
-            "rfa-censor": live_policy(excluded=excluded),
             "rfa-tasks-none": live_policy({"sg-intranet-ro": intranet}, excluded=excluded),  # stale grant
             "rfa-tasks-intranet": live_policy({"sg-intranet-ro": intranet}, excluded=excluded),
             "rfa-assistant": live_policy(excluded=excluded),
         },
-        agents={"rfa-censor": ["main"], "rfa-tasks-none": ["main", "summarizer"],
+        agents={"rfa-tasks-none": ["main", "censor", "summarizer"],
                 "rfa-tasks-intranet": ["main", "benchmark", "research"], "rfa-assistant": ["main"]},
         mcp={"rfa-assistant": set()},
     )
@@ -323,13 +326,13 @@ def test_observer_parses_cli_json_and_yaml(tmp_path):
     policy_yaml = yaml.safe_dump(live_policy())
     runner = FakeRunner({
         ("nemoclaw", "list", "--json"): "(node) Warning: x\n" + json.dumps(
-            {"sandboxes": [{"name": "rfa-censor", "policies": []}]}),
-        ("nemoclaw", "rfa-censor", "policy", "get"): policy_yaml,
-        ("nemoclaw", "rfa-censor", "agents", "list", "--json"): "✓ Active gateway set to 'nemoclaw'\n"
+            {"sandboxes": [{"name": "rfa-tasks-none", "policies": []}]}),
+        ("nemoclaw", "rfa-tasks-none", "policy", "get"): policy_yaml,
+        ("nemoclaw", "rfa-tasks-none", "agents", "list", "--json"): "✓ Active gateway set to 'nemoclaw'\n"
         + json.dumps([{"id": "main", "isDefault": True}]),
-        ("nemoclaw", "rfa-censor", "mcp", "list", "--json"): json.dumps({"servers": [{"name": "broker"}]}),
+        ("nemoclaw", "rfa-tasks-none", "mcp", "list", "--json"): json.dumps({"servers": [{"name": "broker"}]}),
     })
-    observed = Observer(runner).observe(["rfa-censor", "rfa-assistant"])
-    assert observed.exists("rfa-censor") and not observed.exists("rfa-assistant")
-    assert observed.agents["rfa-censor"] == ["main"] and observed.mcp["rfa-censor"] == {"broker"}
-    assert "nvidia" in observed.policies["rfa-censor"]["network_policies"]
+    observed = Observer(runner).observe(["rfa-tasks-none", "rfa-assistant"])
+    assert observed.exists("rfa-tasks-none") and not observed.exists("rfa-assistant")
+    assert observed.agents["rfa-tasks-none"] == ["main"] and observed.mcp["rfa-tasks-none"] == {"broker"}
+    assert "nvidia" in observed.policies["rfa-tasks-none"]["network_policies"]

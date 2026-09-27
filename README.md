@@ -31,7 +31,7 @@
 1. **보안 그룹 = OpenShell preset 파일.** `deploy/nemoclaw/presets/sg-*.yaml`을 `nemoclaw <sb> policy add --from-file`로만
    적용하고, 컨트롤러가 `assignments.yaml`을 읽어 reconcile 한다. static(filesystem/process) 섹션은 baseline, network는 preset.
 2. **샌드박스 = 보안 그룹 조합 단위.** 같은 egress 조합의 task 에이전트는 한 샌드박스에 `agents.yaml`(NemoClaw 선언형 manifest)로
-   묶인다. 고정 에이전트 assistant/censor는 전용 샌드박스.
+   묶인다. 고정 에이전트 assistant만 전용 샌드박스이고, censor는 egress-none 샌드박스의 secondary(브로커 위임 대상 아님)로 산다.
 3. **채널 기반 검열 프로파일.** internal(로컬 Nemotron, 사내 API, 검열 없음) / external(hosted 모델, 요청·응답 검열 필수).
    프로파일은 채널 API 진입점 한 곳에서 결정되어 서명된 세션 마커로 전파된다.
 4. **검열은 egress 경계에서.** 모든 샌드박스의 inference route가 호스트 egress-proxy(유일한 provider) 하나를 가리키고,
@@ -66,14 +66,12 @@ flowchart LR
   subgraph SB1["rfa-assistant (control-plane)"]
     A["assistant (main)"]
   end
-  subgraph SB2["rfa-censor (egress-none)"]
-    C["censor (main)"]
-  end
   subgraph SB3["rfa-tasks-intranet (intranet-ro)"]
     H1["head (main)"] --> R["research"] & B["benchmark"]
   end
   subgraph SB4["rfa-tasks-none (egress-none)"]
     H2["head (main)"] --> S["summarizer"]
+    C["censor (secondary, 위임 대상 아님)"]
   end
   BUILD["build.nvidia.com<br/>(NVIDIA_INFERENCE_API_KEY는 호스트)"]
   DESK -- "/ask → 초안 → 결재 → feedback[] → /ask" --> ENTRY
@@ -86,7 +84,7 @@ flowchart LR
   PROXY -- "rfa-internal / rfa-censor" --> OLLAMA
   PROXY -- "rfa-external (검열)" --> BUILD
   R & B -- "preset sg-intranet-ro" --> KF
-  CTRL -. "reconcile" .-> SB1 & SB2 & SB3 & SB4
+  CTRL -. "reconcile" .-> SB1 & SB3 & SB4
   PROXY & BROKER & ENTRY & CTRL -. "기록" .-> AUDIT
 ```
 
@@ -112,8 +110,7 @@ security_groups:
   intranet-ro:   { privilege: 1, presets: [sg-intranet-ro] }
   control-plane: { privilege: 2, presets: [], mcp_servers: [broker], fallback_presets: [sg-control-plane] }
 sandboxes:
-  rfa-censor:         { groups: [egress-none], fixed: true }
-  rfa-tasks-none:     { groups: [egress-none] }
+  rfa-tasks-none:     { groups: [egress-none] }        # censor + summarizer
   rfa-tasks-intranet: { groups: [intranet-ro] }
   rfa-assistant:      { groups: [control-plane], fixed: true }
 agents:
@@ -142,13 +139,13 @@ profiles:
     stages:
       - { id: regex, type: regex, rules: [{ id: money-krw, pattern: '\d{1,3}(?:,\d{3})+\s*(?:원|KRW)', replacement: '[REDACTED:amount]' },
                                           { id: credential, pattern: '(?i)(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}', replacement: '[REDACTED:credential]', action: block }] }
-      - { id: llm, type: llm, runner: direct, sandbox: rfa-censor, alias: rfa-censor, timeout_seconds: 45, on_error: block }
+      - { id: llm, type: llm, runner: direct, sandbox: rfa-tasks-none, agent: censor, alias: rfa-censor, timeout_seconds: 45, on_error: block }
 ```
 
 ## 실행
 
 ```bash
-make bootstrap   # 검증 → 프록시/브로커/진입점 기동 → 사내 API 기동 → (rfa-demo 폐기) → 샌드박스 4개 순서 온보딩 → reconcile → 워크스페이스 시드
+make bootstrap   # 검증 → 프록시/브로커/진입점 기동 → KB 시드 → 사내 API 기동 → (rfa-demo·rfa-censor 폐기) → 샌드박스 3개 순서 온보딩 → reconcile → 워크스페이스 시드
 make demo        # demo/01..09 (기본 --replay; DEMO_MODE=live 로 라이브 실행, 실패·예산 초과 시 자동으로 기록 재생)
 make mock-e2e    # desk(C)/결재(A) 목업으로 /ask 시나리오 4개 — 기본 --fake-agents(샌드박스·모델 없이 계약·루프 검증)
 make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"   # 같은 시나리오를 라이브 서버(실제 head·브로커·샌드박스)에
@@ -230,8 +227,8 @@ feedback 붙여 재요청, 최대 3회)와 [`tools/mock/approval.py`](tools/mock
 | 라이브 `POST /ask` 실호출 (`make serve`, audience public) | 200/58~160초. head(direct: egress-proxy → 로컬 Ollama)가 `triv3`/`research` 를 근거 문장과 함께 선택(≈43초). 브로커의 `nemoclaw rfa-tasks-intranet agent --agent research` 턴은 OpenClaw 게이트웨이 미기동으로 150초 timeout → `refusal no_knowledge "task agent failed"`, 감사 kind=ask/broker 에 error 기록(fail-closed, 빈 knowledge) |
 | `make mock-e2e MOCK_FLAGS="--ask-url http://127.0.0.1:8799"` (라이브 head·브로커·샌드박스, 2026-09-27 20:57) | 0/4 — 네 시나리오 모두 head 는 task 를 골랐으나 샌드박스 턴 실패로 `refusal no_knowledge`(빈 knowledge, 결재 제출 없음; 149~226초). 01 은 앞선 요청이 처리 중이라 `202 queued` → 폴링 446회 후 200 으로 admission queue 경로가 라이브로 확인됨. 원인은 위 메모리 문제 + `rfa-tasks-intranet` 미reconcile |
 | 데모 03~06 (`ask()` 데모) | `serve --fake-agents` 진입점(RFA_ENTRY_URL, RFA_FAKE_TASK_DELAY=3)에 대해 4/4 PASS(03 self 이메일만 마스킹·public 은 프로젝트명·수치까지 / 04 1라운드 거절 → learned.yaml → 2라운드 승인, 감사 hints=1 / 05 canary 없음, injection_flags=['context[1]'] / 06 202 position 1 → 폴링 3회 → 200, 멱등 캐시). 라이브 샌드박스 기록(`demo/replay`)은 아래 조건 해소 후 |
-| 온보딩 `nemoclaw onboard --agents … --non-interactive` (provider=custom → egress-proxy, tier=restricted) | `rfa-censor` 263초, `rfa-tasks-none` 155초 완료. `rfa-tasks-intranet` 컨테이너 생성 후 세션 in_progress(메모리 부족으로 호스트가 bootstrap 종료). `rfa-assistant`·managed MCP 등록 미실행 |
-| reconcile (`policy exclude` ×5, `policy explain --write`, IDENTITY·skill 시드) | rfa-censor, rfa-tasks-none 적용 완료 |
+| 온보딩 `nemoclaw onboard --agents … --non-interactive` (provider=custom → egress-proxy, tier=restricted) | (구) `rfa-censor` 263초, `rfa-tasks-none` 155초 완료. `rfa-tasks-intranet` 컨테이너 생성 후 세션 in_progress(메모리 부족으로 호스트가 bootstrap 종료). `rfa-assistant`·managed MCP 등록 미실행. 이후 censor 를 `rfa-tasks-none` 의 secondary 로 합쳐 샌드박스는 3개 |
+| reconcile (`policy exclude` ×5, `policy explain --write`, IDENTITY·skill 시드) | (구) rfa-censor, rfa-tasks-none 적용 완료. censor 병합 후 rfa-tasks-none 에 `agents apply`·시드 재적용 필요 |
 | 샌드박스 → inference.local → egress-proxy | 온보딩 검증 요청과 `curl` probe 가 프록시에 도달(자격증명은 OpenShell 이 주입, 미귀속 → rfa-internal → Ollama 5~6초) |
 | egress-proxy 검열 (대시보드 샘플) | external: 요청 마스킹 8건 후 hosted Nemotron super-120b 응답 49초, verdict allow / credential: regex block 14ms(상류 전송 없음) / internal: 로컬 5.8초 마스킹 없음 |
 | 검열 LLM 단계 (direct, rfa-censor alias → 로컬) | JSON 분류 5~13초, verdict redact 확인 |

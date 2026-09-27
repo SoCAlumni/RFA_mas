@@ -49,11 +49,11 @@ profiles:
         id: llm
         type: llm
         # runner: direct = 프록시가 rfa-censor alias(로컬 Ollama, egress 0)로 분류 프롬프트만 전송(실측 5초).
-        #         sandbox-agent = rfa-censor 샌드박스의 OpenClaw 턴. 긴 시스템 프롬프트를 4B 로컬 모델이 매번
+        #         sandbox-agent = rfa-tasks-none 샌드박스의 censor 에이전트 OpenClaw 턴. 긴 시스템 프롬프트를 4B 로컬 모델이 매번
         #         처리해 실측 60초 이상 → timeout 초과. 기본은 direct (WORK_LOG 참고).
         runner: direct
-        sandbox: rfa-censor
-        agent: main
+        sandbox: rfa-tasks-none      # censor 에이전트가 사는 egress-none 샌드박스 (별도 샌드박스 없음)
+        agent: censor
         alias: rfa-censor
         timeout_seconds: 45
         skip_if_shorter_than: 24     # 아주 짧은 텍스트는 regex 단계만

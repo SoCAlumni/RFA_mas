@@ -69,6 +69,7 @@ class AgentSpec(Strict):
     skill: str
     description: str = ""
     tools: ToolPolicy
+    delegatable: bool = True  # False: lives in a task sandbox but is not an ask_task_agent/sessions_spawn target (censor)
 
     @property
     def group_key(self) -> tuple[str, ...]:
@@ -485,6 +486,11 @@ def cross_check(assignments: Assignments, routing: Routing, censors: Censors,
             if isinstance(stage, LlmStage):
                 if stage.sandbox not in assignments.sandboxes:
                     problems.append(f"profiles.{profile_name}.{stage.id}: unknown sandbox")
+                elif stage.agent != "main" and (
+                    stage.agent not in assignments.agents
+                    or assignments.sandbox_for(stage.agent) != stage.sandbox
+                ):
+                    problems.append(f"profiles.{profile_name}.{stage.id}: agent {stage.agent!r} is not placed in {stage.sandbox}")
                 if stage.alias not in routing.aliases:
                     problems.append(f"profiles.{profile_name}.{stage.id}: unknown alias")
     if routing.entry.assistant_sandbox not in assignments.sandboxes:
