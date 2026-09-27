@@ -1,0 +1,68 @@
+{
+  "attempt_id": "routing-worker-01",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_chat_routing.py",
+          "tests/test_chat_poc.py",
+          "tests/test_local_ui.py",
+          "tests/test_poc.py"
+        ],
+        "counts": {
+          "collected": 37,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 1,
+          "passed": 36,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 10.75,
+        "exit_code": 1,
+        "failures": [
+          "FAILED tests/test_chat_routing.py::test_no_match_ambiguity_domain_and_other_owner"
+        ],
+        "finished_at": "2026-09-27T04:55:13.175556+00:00",
+        "id": "V1",
+        "log_excerpt": "1 failed, 36 passed, 6 warnings in 8.98s",
+        "result": "failed",
+        "started_at": "2026-09-27T04:55:02.425733+00:00",
+        "timeout_seconds": 240
+      },
+      {
+        "assertions": [],
+        "finished_at": "2026-09-27T04:55:21.354800+00:00",
+        "id": "V2",
+        "observed": {
+          "error": "ackages/playwright/_impl/_assertions.py\", line 60, in _record_soft_or_raise\n    raise error\nAssertionError: Locator expected to contain text '저장했어요'\nActual value: None\nError: element(s) not found \nCall log:\n  - Expect \"to_contain_text\" locator(\".message.assistant\").last with timeout 5000ms\n  - waiting for locator(\".message.assistant\").last\n\nAria snapshot:\n- complementary:\n  - link \"RFA 홈\":\n    - /url: /ui/\n    - text: r. RFA PERSONAL ASSISTANT\n  - button \"＋ 새 대화\"\n  - navigation \"작업 공간\":\n    - button \"◌ 비서 채팅\"\n    - button \"▤ 내 KB 3\"\n    - button \"✓ 승인함 0\"\n  - text: 최근 대화\n  - button \"대화 목록 새로고침\": ↻\n  - list:\n    - listitem:\n      - 'button \"메모: 오로라 라우팅 시연의 마감은 10월 3일입니다.\"'\n    - listitem:\n      - button \"새 대화\"\n    - listitem:\n      - 'button \"메모: 오로라 라우팅 시연의 마감은 10월 3일입니다.\"'\n  - text: 나 내 작업 공간 로컬 · 나만 접근\n- main:\n  - text: MY WORKSPACE\n  - heading \"비서 채팅\" [level=1]\n  - status: 로컬 연결됨 · mock\n  - region \"비서 채팅\":\n    - text: r.\n    - paragraph: YOUR KNOWLEDGE, CONNECTED\n    - heading \"기억할 일도, 궁금한 것도. 편하게 이야기하세요.\" [level=2]\n    - paragraph: 정보를 남기면 내 KB에 정리하고, 질문하면 저장된 자료에서 근거를 찾아드려요.\n    - button \"기억해 두기 프로젝트 메모 남기기 ↗\"\n    - button \"자료 찾아보기 공개 자료에서 답 찾기 ↗\"\n    - status\n    - text: 비서에게 메시지\n    - textbox \"비서에게 메시지\":\n      - /placeholder: 메모를 남기거나, 궁금한 내용을 물어보세요…\n    - text: 담당 선택\n    - combobox \"담당 선택\":\n      - option \"자동 · 없으면 비서\" [selected]\n      - option \"TRIV3 직접 지정\"\n      - option \"양자화 연구\"\n    - button \"메시지 보내기\": ↑\n    - paragraph: 새 메모는 비공개로 저장됩니다. 로컬 규칙 기반 라우팅 · 답변 모델 mock\n"
+        },
+        "procedure_performed": true,
+        "result": "failed",
+        "started_at": "2026-09-27T04:55:02.419063+00:00"
+      }
+    ],
+    "environment": {
+      "mode": "local/mock synthetic only",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008H-final",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T04:55:21.354857+00:00",
+    "limits": "Scoped routing/PoC. No NVIDIA/cloud/token streaming, real publication or OpenShell tests.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T04:55:02.419063+00:00"
+  },
+  "result": "failed",
+  "source_fingerprint": "8e95047c039385e24ce7de9c43c0666164de9c69a81b01def0d8d5df64959097",
+  "source_manifest": ".agent/evidence/P1-008H/routing-worker-01/source.json",
+  "spec_digest": "ccfd59582edf07f18b8a0d6554e1e5940771b3f15c7329f11625b23c9431006e",
+  "spec_revision": 2,
+  "task_id": "P1-008H"
+}

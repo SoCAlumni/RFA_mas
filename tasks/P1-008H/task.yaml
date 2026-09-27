@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/POC.md
 priority: P0
-status: todo
+status: done
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -30,8 +30,6 @@ scope:
   - src/rfa_mas/poc
   - src/rfa_mas/ui
   - src/rfa_mas/application/chat.py
-  - src/rfa_mas/adapters/local.py
-  - src/rfa_mas/ports/interfaces.py
   - tests/test_chat_poc.py
   - tests/test_chat_routing.py
   - docs/POC.md
@@ -40,13 +38,13 @@ scope:
   - src/rfa_mas/application/graphs/supervisor.py
   - tests/test_local_ui.py
   - tests/test_poc.py
+  - src/rfa_mas/adapters/local.py
   planned_paths:
   - src/rfa_mas/poc/routing.py
   - tests/test_chat_routing.py
+  - src/rfa_mas/poc/catalog.py
   shared_resources:
   - composition
-  - repository-migrations
-  - ports
 depends_on:
 - id: P1-008G
   condition: integrated_done
@@ -90,12 +88,6 @@ deliverables:
 - path: src/rfa_mas/ui
   availability: existing
   description: 실제 단계 stream API/UI
-- path: src/rfa_mas/adapters/local.py
-  availability: existing
-  description: owner-scoped team 조회
-- path: src/rfa_mas/ports/interfaces.py
-  availability: existing
-  description: team 목록 계약
 - path: tests/test_chat_routing.py
   availability: planned
   description: 라우팅·스트림·취소·권한 검증
@@ -105,11 +97,13 @@ deliverables:
 - path: docs/POC.md
   availability: existing
   description: 기능과 한계
+- path: src/rfa_mas/poc/catalog.py
+  availability: planned
+  description: 같은 core DB의 owner task ID read-only 목록 및 기존 lifecycle 소유권 재검사; 교체형 TeamCatalogPort
 acceptance_criteria:
 - id: AC1
   given: 기존 active Task·다른 owner·모호/무관 질의 및 메모
-  expect: owner Task 목표에 맞으면 같은 task/team 재사용; 모호/무관하면 비서; no spawn; 도메인 worker와 Task
-    구분
+  expect: owner Task 목표에 맞으면 같은 task/team 재사용; 모호/무관하면 비서; no spawn; 도메인 worker와 Task 구분
   required: true
 - id: AC2
   given: 실시간 요청·지연된 실행·재연결·오류
@@ -169,24 +163,97 @@ verification:
   - 담당/비서 구분·JS 오류 없음
   runner: manual
 evidence_dir: .agent/evidence/P1-008H
-latest_evidence_file: null
+latest_evidence_file: .agent/evidence/P1-008H/routing-target-01/result.json
 verification_summary:
-  state: not_run
+  state: passed
+  spec_revision: 2
+  spec_digest: ccfd59582edf07f18b8a0d6554e1e5940771b3f15c7329f11625b23c9431006e
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 709e7304294f5364fcf89aef50b9795797bd2eb0f591fb28b5ef0ddfd1ba7811
+  evidence: .agent/evidence/P1-008H/routing-target-01/result.json
 integration:
-  state: pending
+  state: integrated
   target: main canonical control checkout
   reason: null
-revision: 1
-spec_revision: 1
-claim_generation: 0
+  reservation: false
+  submission_generation: 3
+  submission:
+    head: 1f1844e9e5885e6bb64c7540c9eacb37868f0f96
+    baseline_head: 1906494c62f6e37f811774674c3c972357fe6b50
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008H-final
+    branch: task/P1-008H-final
+    evidence: .agent/evidence/P1-008H/routing-worker-02/result.json
+    changed_files:
+      docs/POC.md: f96b3ca376d783e8d5c8432f78a51d2f92bb9c17125a4b3612f60fdd8dfdf91c
+      src/rfa_mas/application/chat.py: 31d487d444093096667950b6ea34bb4ea6dccffb6d6701e2c81c594938c2d028
+      src/rfa_mas/poc/bootstrap.py: 1f8246a0856d61f662fe4acdd1a906427268f079bb0fe7bc56b7d6a575943456
+      src/rfa_mas/poc/catalog.py: f0e27a8b4ba862c3fc36e5167a608e171b651e72a52fee82904f1dc2fd87e8c4
+      src/rfa_mas/poc/chat.py: 655ed7b6b174528f92d54ced83c044124f4bebfac9fc8c9cebd964730beb620b
+      src/rfa_mas/poc/routing.py: e110f5ec5254bfb025ea4bc8b0a5f1073094915eda1bfd5a3fd0534c49b013f5
+      src/rfa_mas/ui/app.py: e2f8b876af6a685b872d2511e80397422116103dff23054a279ebc4883dcf815
+      src/rfa_mas/ui/static/app.css: cab479f4af4853e5ae75d7906614e364167f4140179ba637878f4bdf60087004
+      src/rfa_mas/ui/static/app.js: ed94e5c7255997e8df7d5a4d8a3b5239a988fcdf29666189e4a8355a04dd7f56
+      src/rfa_mas/ui/static/index.html: dc9c30dd321e5d1288f9e3cf62da1ca57e041e1228a2e8e53e9d6f9701c3e50c
+      tests/test_chat_poc.py: b612177ef6c8218a4dc8e8bdfebce01cfbce0d20e5fc7875d1a976e386e25d8b
+      tests/test_chat_routing.py: 0749b6a68c686b3ed0c4f60407426c502a0c515dea1e2421b38a761edc65a9d8
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 2
+      spec_digest: ccfd59582edf07f18b8a0d6554e1e5940771b3f15c7329f11625b23c9431006e
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 709e7304294f5364fcf89aef50b9795797bd2eb0f591fb28b5ef0ddfd1ba7811
+      evidence: .agent/evidence/P1-008H/routing-target-01/result.json
+    head: 1f1844e9e5885e6bb64c7540c9eacb37868f0f96
+  evidence: .agent/evidence/P1-008H/routing-target-01/result.json
+revision: 15
+spec_revision: 2
+claim_generation: 3
 claim: null
 attempts:
-  count: 0
-  cycles: 0
+  count: 3
+  cycles: 2
   no_progress_count: 0
-  latest_attempt: null
-  evidence_refs: []
-  approaches: []
+  latest_attempt: routing-target-01
+  evidence_refs:
+  - .agent/evidence/P1-008H/routing-worker-01/result.json
+  - .agent/evidence/P1-008H/routing-worker-02/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
+    baseline_head: b095fa7a5e2ddf4de4082205baacb5658ece74d7
+    reason: 'Freeze policy: preserve feature artifacts and release old shared scope for narrower specification'
+    at: '2026-09-27T04:52:55+00:00'
+    cycles: 0
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008H-routing
+      branch: task/P1-008H-routing
+      generation: 1
+      claimed_at: '2026-09-27T04:40:21+00:00'
+      heartbeat_at: '2026-09-27T04:46:32+00:00'
+      lease_expires_at: '2026-09-27T05:01:32+00:00'
+      baseline_head: b095fa7a5e2ddf4de4082205baacb5658ece74d7
+      recovery_required: false
+      context_digest: 7f699ef1c213aea2dee3788bfd2b0e3d58716c6c2c363651ea961044da625f4a
+    integration:
+      state: pending
+      target: main canonical control checkout
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: not_run
+      spec_revision: null
+      spec_digest: null
+      contract_digest: null
+      source_fingerprint: null
+      evidence: null
+    latest_evidence_file: null
 blocker: null
 migration:
   original_status: new_user_authorized
@@ -198,7 +265,6 @@ migration:
   - UI/비서/세션/KB 코드 확인
   judgment: 기존 완료 유지·별도 기능 추가
   initial_spec_revision: 1
-updated_at: '2026-09-27T05:00:00+00:00'
-concise_result: '조사: 두 화면 항목은 Domain; 사용자 runtime의 persisted Task=0. 기존 팀 재사용 API는
-  존재.'
+updated_at: '2026-09-27T04:58:32+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: owner-scoped 목록과 보수적 라우팅부터 구현

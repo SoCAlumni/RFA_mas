@@ -1,0 +1,88 @@
+{
+  "attempt_id": "routing-target-01",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock; 규칙 기반 라우팅, 실제 게시/격리 아님",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_chat_routing.py",
+          "tests/test_chat_poc.py",
+          "tests/test_local_ui.py",
+          "tests/test_poc.py"
+        ],
+        "assertions": [
+          "기존 Task 재사용·불일치/모호/다른 owner 제외",
+          "완료 전 stream 수신·중복/실패/취소 보호",
+          "현재 ACL·CSRF·승인 회귀"
+        ],
+        "counts": {
+          "collected": 37,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 37,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 10.79,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T04:57:48.606748+00:00",
+        "id": "V1",
+        "log_excerpt": "37 passed, 6 warnings in 9.46s",
+        "result": "passed",
+        "started_at": "2026-09-27T04:57:37.820859+00:00",
+        "timeout_seconds": 240
+      },
+      {
+        "assertions": [
+          "실제 stream event UI 표시",
+          "담당/비서 구분·JS 오류 없음"
+        ],
+        "finished_at": "2026-09-27T04:57:51.336899+00:00",
+        "id": "V2",
+        "observed": {
+          "browser": "154.0.8037.57",
+          "checks": [
+            "automatic default",
+            "note/query assistant fallback",
+            "domain assignee displayed",
+            "unmatched question not forced",
+            "4 real NDJSON stages + result for each request",
+            "history replay",
+            "mobile no overflow"
+          ],
+          "external_requests": [],
+          "finished_at": "2026-09-27T04:57:51.252687+00:00",
+          "mode": "actual Chrome / local mock",
+          "page_errors": [],
+          "started_at": "2026-09-27T04:57:48.791487+00:00",
+          "status": "passed"
+        },
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T04:57:48.791487+00:00"
+      }
+    ],
+    "environment": {
+      "mode": "local/mock synthetic only",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas",
+      "stage": "integration"
+    },
+    "finished_at": "2026-09-27T04:57:51.336918+00:00",
+    "limits": "Scoped routing/PoC. No NVIDIA/cloud/token streaming, real publication or OpenShell tests.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T04:57:37.814433+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "709e7304294f5364fcf89aef50b9795797bd2eb0f591fb28b5ef0ddfd1ba7811",
+  "source_manifest": ".agent/evidence/P1-008H/routing-target-01/source.json",
+  "spec_digest": "ccfd59582edf07f18b8a0d6554e1e5940771b3f15c7329f11625b23c9431006e",
+  "spec_revision": 2,
+  "task_id": "P1-008H"
+}
