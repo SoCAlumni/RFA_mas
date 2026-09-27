@@ -30,6 +30,7 @@ backends:
     url: https://integrate.api.nvidia.com/v1
     credential_env: NVIDIA_API_KEY        # 값은 env_file 에서만 읽는다 (0600, git-ignore 검증)
     env_file: .env.dev
+    chat_template_kwargs: { enable_thinking: false }   # Nemotron hosted: 추론 텍스트를 응답에 섞지 않는다 (adapters/nvidia.py 와 동일)
 
 aliases:
   rfa-internal: { backend: ollama, model: nemotron-3-nano:4b, censor: none,     exposure: 0 }

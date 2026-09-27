@@ -215,6 +215,8 @@ class EgressProxy:
             payload["model"] = alias.model
             payload["messages"] = messages
             payload["stream"] = False
+            if backend.chat_template_kwargs:
+                payload["chat_template_kwargs"] = dict(backend.chat_template_kwargs)  # top-level field (NVIDIA)
         try:
             response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
         except httpx.HTTPError as exc:
@@ -233,6 +235,8 @@ class EgressProxy:
 
     async def chat(self, request: Request):
         if not self._authorized(request):
+            audit.record(kind="inference", verdict="unauthorized", action="reject",
+                         detail={"reason": "missing or wrong bearer (OpenShell credential not injected?)"})
             return JSONResponse({"error": {"message": "unauthorized"}}, status_code=401)
         try:
             body = await request.json()

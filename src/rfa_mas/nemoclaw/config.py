@@ -210,6 +210,7 @@ class Backend(Strict):
     env_file: str | None = None
     think: bool = False          # ollama: disable the model's reasoning channel (JSON/tool answers)
     num_ctx: int | None = None   # ollama: context window override (OpenClaw prompts are long)
+    chat_template_kwargs: dict[str, object] | None = None  # openai-kind extras (e.g. NVIDIA enable_thinking=false)
 
     @model_validator(mode="after")
     def _auth(self) -> Backend:
@@ -355,6 +356,67 @@ class Censors(Strict):
         return self
 
 
+# --------------------------------------------------------------------------- ask
+
+
+class AskAuth(Strict):
+    credential_env: str = "RFA_ASK_TOKEN"
+    env_file: str = ".env.dev"
+
+
+class AudienceSpec(Strict):
+    profile: str
+    channel: str
+
+
+class AdmissionConfig(Strict):
+    max_inflight: int = Field(default=1, ge=1, le=16)
+    max_queue: int = Field(default=8, ge=0, le=256)
+    timeout_seconds: int = Field(default=180, ge=1)
+    result_ttl_seconds: int = Field(default=3600, ge=1)
+
+
+class LineageConfig(Strict):
+    max_rejections: int = Field(default=3, ge=1)
+
+
+class HeadConfig(Strict):
+    runner: Literal["direct", "fake"] = "direct"
+    timeout_seconds: int = Field(default=60, ge=1)
+    fallback: Literal["keywords", "none"] = "keywords"
+
+
+class TaskSpec(Strict):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,63}$")
+    name: str
+    agent: str
+    keywords: list[str] = []
+
+
+class AskConfig(Strict):
+    version: int = 1
+    auth: AskAuth = AskAuth()
+    audiences: dict[str, AudienceSpec]
+    admission: AdmissionConfig = AdmissionConfig()
+    lineage: LineageConfig = LineageConfig()
+    head: HeadConfig = HeadConfig()
+    tasks: list[TaskSpec] = Field(min_length=1)
+    learned_rules_file: str = "deploy/nemoclaw/censor-rules/learned.yaml"
+
+    @model_validator(mode="after")
+    def _consistent(self) -> AskConfig:
+        for required in ("public", "company", "self"):
+            if required not in self.audiences:
+                raise ValueError(f"audiences.{required} is required")
+        ids = [t.id for t in self.tasks]
+        if len(ids) != len(set(ids)):
+            raise ValueError("tasks ids must be unique")
+        return self
+
+    def task(self, task_id: str | None) -> TaskSpec | None:
+        return next((t for t in self.tasks if t.id == task_id), None)
+
+
 # --------------------------------------------------------------------------- loading
 
 
@@ -391,9 +453,24 @@ def load_censors(path: Path | None = None) -> Censors:
     return _build(Censors, path or DEPLOY_DIR / "censors.yaml")
 
 
-def cross_check(assignments: Assignments, routing: Routing, censors: Censors) -> list[str]:
-    """Problems that only show across files (alias/profile/sandbox references)."""
+def load_ask(path: Path | None = None) -> AskConfig:
+    return _build(AskConfig, path or DEPLOY_DIR / "ask.yaml")
+
+
+def cross_check(assignments: Assignments, routing: Routing, censors: Censors,
+                ask: AskConfig | None = None) -> list[str]:
+    """Problems that only show across files (alias/profile/sandbox/audience references)."""
     problems: list[str] = []
+    if ask is not None:
+        for name, spec in ask.audiences.items():
+            if spec.profile not in censors.profiles:
+                problems.append(f"ask.audiences.{name}.profile {spec.profile!r} is not in censors.profiles")
+            if spec.channel not in routing.channels:
+                problems.append(f"ask.audiences.{name}.channel {spec.channel!r} is not in routing.channels")
+        for task in ask.tasks:
+            agent = assignments.agents.get(task.agent)
+            if agent is None or agent.kind != "task":
+                problems.append(f"ask.tasks.{task.id}.agent {task.agent!r} is not a task agent")
     for agent_id, agent in assignments.agents.items():
         if agent.alias not in routing.aliases:
             problems.append(f"agents.{agent_id}.alias {agent.alias!r} is not in routing.aliases")

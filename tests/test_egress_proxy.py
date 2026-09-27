@@ -238,3 +238,15 @@ async def test_replay_mode_answers_without_upstream(routing):
     async with client_for(proxy) as c:
         r = await c.post("/v1/chat/completions", json={"model": "rfa-auto", "messages": [{"role": "user", "content": "hello"}]})
     assert "(replay) rfa-internal" in r.json()["choices"][0]["message"]["content"] and upstream.requests == []
+
+
+async def test_hosted_backend_gets_chat_template_kwargs_and_unauthorized_is_audited(routing):
+    upstream = Upstream("ok")
+    proxy = make_proxy(routing, upstream)
+    async with client_for(proxy) as c:
+        await c.post("/v1/chat/completions", json={"model": "rfa-auto", "messages": [
+            {"role": "user", "content": channel_marker("external") + "\n안녕"}]})
+    assert upstream.requests[0][1]["chat_template_kwargs"] == {"enable_thinking": False}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=proxy.app), base_url="http://proxy") as c:
+        assert (await c.post("/v1/chat/completions", json={})).status_code == 401
+    assert audit.query(kind="inference")[0]["verdict"] == "unauthorized"
