@@ -1,0 +1,218 @@
+{
+  "attempt_id": "llm-worker-0927061837",
+  "contract_digest": "eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2",
+  "mode": "local/mock 기본; --model nvidia 선택 시 실제 NVIDIA 호출(소유자 동의 egress)",
+  "report": {
+    "checks": [
+      {
+        "argv": [
+          ".venv/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_chat_llm.py",
+          "tests/test_chat_routing.py",
+          "tests/test_chat_poc.py",
+          "tests/test_nvidia_contract.py",
+          "tests/test_settings.py",
+          "tests/test_local_ui.py",
+          "tests/test_poc.py"
+        ],
+        "assertions": [
+          "egress 동의/미동의·공개 대상 차단",
+          "LLM 추론 후보 제한·fallback 합성·ACL 재검사",
+          "기존 회귀"
+        ],
+        "counts": {
+          "collected": 145,
+          "deselected": 0,
+          "errors": 0,
+          "failed": 0,
+          "passed": 145,
+          "skipped": 0,
+          "xfailed": 0
+        },
+        "cwd": ".",
+        "elapsed_seconds": 15.57,
+        "exit_code": 0,
+        "finished_at": "2026-09-27T06:18:58.666884+00:00",
+        "id": "V1",
+        "log_excerpt": "145 passed, 10 warnings in 14.00s",
+        "result": "passed",
+        "started_at": "2026-09-27T06:18:43.099931+00:00",
+        "timeout_seconds": 300
+      },
+      {
+        "assertions": [
+          "실제 모델 응답·simulated=false",
+          "키/원문 미노출"
+        ],
+        "counts": {},
+        "finished_at": "2026-09-27T06:18:58.666966+00:00",
+        "id": "V2",
+        "observed": {
+          "observed": "Live PoC --model nvidia --env-file .env.dev on 18790 (synthetic data dir): note stored via LLM intent; question answered by nvidia-chat-completions (simulated=false, model_id recorded) from a private note; task_run created a Task team whose Supervisor summary came from the model and kept the synthetic/not-measured distinction; follow-up query LLM-routed to that Task; unrelated question -> clarify. Keys/endpoint values not recorded.",
+          "status": "passed",
+          "turns": [
+            {
+              "answer_model": null,
+              "intent": "store_note",
+              "key": "live-note-1",
+              "route": {
+                "kind": "assistant",
+                "reason": "no_suitable_assignee",
+                "task_id": null
+              },
+              "seconds": 1.6,
+              "stages": [
+                "입력 이해 중",
+                "LLM 추론: 의도 저장 요청 · 담당 후보 중 확신 없음 → 규칙/비서",
+                "담당자 확인: 적합한 담당자 없음 또는 후보 모호 · 비서 직접 처리",
+                "자료 저장 준비",
+                "저장 완료"
+              ]
+            },
+            {
+              "answer_model": {
+                "adapter": "nvidia-chat-completions",
+                "citations": [
+                  "source_31809a75d94c4f3ba21a5774b966fbd2@revision_8b38f5975880488b9cac7f12e280840e"
+                ],
+                "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+                "simulated": false
+              },
+              "intent": "query",
+              "key": "live-q-1",
+              "route": {
+                "kind": "assistant",
+                "reason": "no_suitable_assignee",
+                "task_id": null
+              },
+              "seconds": 65.3,
+              "stages": [
+                "질문 이해 중",
+                "LLM 추론: 의도 내 자료 질의 · 담당 후보 중 확신 없음 → 규칙/비서",
+                "담당자 확인: 적합한 담당자 없음 또는 후보 모호 · 비서 직접 처리",
+                "답변 준비",
+                "LLM 답변 생성: nvidia-chat-completions (nvidia/nemotron-3.5-lightning-30b-a3b)",
+                "답변"
+              ]
+            },
+            {
+              "answer_model": null,
+              "intent": "task_run",
+              "key": "live-task-1",
+              "route": {
+                "kind": "task",
+                "reason": "llm_selected_task",
+                "task_id": "task_6540ac2728c44a94961423b309057e7d"
+              },
+              "seconds": 6.6,
+              "stages": [
+                "요청 이해 중",
+                "LLM 추론: 의도 조사/검증 Task 요청 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+                "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+                "기존 Task 팀 구성 확인: benchmark · 역할 4개 (supervisor, paper_scout, experiment_runner, ",
+                "Task 팀 실행 준비",
+                "팀 실행 결과: completed · 역할 4/4 succeeded · 실험값 simulated(mock)",
+                "Task 팀 결과"
+              ]
+            },
+            {
+              "answer_model": null,
+              "intent": "query",
+              "key": "live-q-2",
+              "route": {
+                "kind": "task",
+                "reason": "llm_selected_task",
+                "task_id": "task_6540ac2728c44a94961423b309057e7d"
+              },
+              "seconds": 5.7,
+              "stages": [
+                "질문 이해 중",
+                "LLM 추론: 의도 내 자료 질의 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+                "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+                "기존 Task 팀 구성 확인: benchmark · 역할 4개 (supervisor, paper_scout, experiment_runner, ",
+                "답변 준비",
+                "팀 실행 결과: completed · 역할 4/4 succeeded · 실험값 simulated(mock)",
+                "답변"
+              ]
+            },
+            {
+              "answer_model": null,
+              "intent": "store_note",
+              "key": "live2-note",
+              "route": {
+                "kind": "task",
+                "reason": "llm_selected_task"
+              },
+              "seconds": 2.6,
+              "stages": [
+                "입력 이해 중",
+                "LLM 추론: 의도 저장 요청 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+                "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+                "자료 저장 준비",
+                "저장 완료"
+              ]
+            },
+            {
+              "answer_model": null,
+              "intent": "task_run",
+              "key": "live2-q",
+              "route": {
+                "kind": "task",
+                "reason": "llm_selected_task"
+              },
+              "seconds": 10.4,
+              "stages": [
+                "질문 이해 중",
+                "LLM 추론: 의도 조사/검증 Task 요청 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+                "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+                "기존 Task 팀 구성 확인: benchmark · 역할 4개 (supervisor, paper_scout, experiment_runner, result_ana",
+                "Task 팀 실행 준비",
+                "팀 실행 결과: completed · 역할 4/4 succeeded · 실험값 simulated(mock) · Supervisor 요약 LLM(nvidia-cha",
+                "Task 팀 결과"
+              ]
+            },
+            {
+              "answer_model": null,
+              "intent": "clarify",
+              "key": "live2-nomatch",
+              "route": {
+                "kind": "assistant",
+                "reason": "no_suitable_assignee"
+              },
+              "seconds": 2.5,
+              "stages": [
+                "질문 이해 중",
+                "LLM 추론: 의도 의도 불명확 · 담당 후보 중 확신 없음 → 규칙/비서",
+                "담당자 확인: 적합한 담당자 없음 또는 후보 모호 · 비서 직접 처리",
+                "답변 준비",
+                "답변"
+              ]
+            }
+          ]
+        },
+        "procedure_performed": true,
+        "result": "passed",
+        "started_at": "2026-09-27T06:18:58.666964+00:00"
+      }
+    ],
+    "environment": {
+      "head": "b0435ea4b8bc52c758db024be0f5615f003b329e",
+      "isolation": "env -i PATH/HOME(temp); no real .env/secrets/network use",
+      "source": "/Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008K-int-0927061531",
+      "stage": "worker"
+    },
+    "finished_at": "2026-09-27T06:18:58.666977+00:00",
+    "limits": "Real NVIDIA calls only in the manual V2 live run (synthetic data, owner consent). V1 uses a fake transport. No publication/OpenShell.",
+    "reviewer": "rfa-coordinator",
+    "started_at": "2026-09-27T06:18:43.098915+00:00"
+  },
+  "result": "passed",
+  "source_fingerprint": "9b619d77652ffe46382e7372feede1879c47cdf906d249b02ad667bdbdc1dc23",
+  "source_manifest": ".agent/evidence/P1-008K/llm-worker-0927061837/source.json",
+  "spec_digest": "0f2417f87b2921de3aff5e7860af77c8dda5a592ddf0cb270a36d9c04263d22a",
+  "spec_revision": 1,
+  "task_id": "P1-008K"
+}

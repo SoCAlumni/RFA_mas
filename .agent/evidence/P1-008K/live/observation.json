@@ -1,0 +1,319 @@
+{
+ "mode": "real NVIDIA model via .env.dev (values not recorded)",
+ "endpoint_host": "integrate.api.nvidia.com (NVIDIA_BASE_URL from .env.dev; value not copied)",
+ "turns": [
+  {
+   "key": "live-note-1",
+   "intent": "store_note",
+   "route": {
+    "kind": "assistant",
+    "reason": "no_suitable_assignee",
+    "task_id": null
+   },
+   "stages": [
+    {
+     "stage": "understanding",
+     "label": "입력 이해 중",
+     "detail": {
+      "intent": "store_note"
+     }
+    },
+    {
+     "stage": "reasoning",
+     "label": "LLM 추론: 의도 저장 요청 · 담당 후보 중 확신 없음 → 규칙/비서",
+     "detail": {
+      "model": "nvidia-chat-completions",
+      "intent": "store_note",
+      "assignee_task_id": null,
+      "reason": "오로라 프로젝트의 첫 시연 일정과 발표 담당자를 메모해야 함",
+      "candidates_offered": 0
+     }
+    },
+    {
+     "stage": "routing",
+     "label": "담당자 확인: 적합한 담당자 없음 또는 후보 모호 · 비서 직접 처리",
+     "detail": {}
+    },
+    {
+     "stage": "preparing",
+     "label": "자료 저장 준비",
+     "detail": {}
+    },
+    {
+     "stage": "completed",
+     "label": "저장 완료",
+     "detail": {
+      "status": "stored"
+     }
+    }
+   ],
+   "reply": "내 KB에 비공개로 저장했어요. 나중에 이 내용에 관해 물어보세요.",
+   "answer_model": null,
+   "seconds": 1.6
+  },
+  {
+   "key": "live-q-1",
+   "intent": "query",
+   "route": {
+    "kind": "assistant",
+    "reason": "no_suitable_assignee",
+    "task_id": null
+   },
+   "stages": [
+    {
+     "stage": "understanding",
+     "label": "질문 이해 중",
+     "detail": {
+      "intent": "query"
+     }
+    },
+    {
+     "stage": "reasoning",
+     "label": "LLM 추론: 의도 내 자료 질의 · 담당 후보 중 확신 없음 → 규칙/비서",
+     "detail": {
+      "model": "nvidia-chat-completions",
+      "intent": "query",
+      "assignee_task_id": null,
+      "reason": "후보 Task 팀이 비어 있어 담당자를 할당할 수 없음",
+      "candidates_offered": 0
+     }
+    },
+    {
+     "stage": "routing",
+     "label": "담당자 확인: 적합한 담당자 없음 또는 후보 모호 · 비서 직접 처리",
+     "detail": {}
+    },
+    {
+     "stage": "preparing",
+     "label": "답변 준비",
+     "detail": {}
+    },
+    {
+     "stage": "synthesis",
+     "label": "LLM 답변 생성: nvidia-chat-completions (nvidia/nemotron-3.5-lightning-30b-a3b)",
+     "detail": {
+      "model": "nvidia-chat-completions",
+      "status": "succeeded",
+      "evidence_used": 1,
+      "citations": [
+       "source_31809a75d94c4f3ba21a5774b966fbd2@revision_8b38f5975880488b9cac7f12e280840e"
+      ]
+     }
+    },
+    {
+     "stage": "completed",
+     "label": "답변",
+     "detail": {
+      "status": "answered"
+     }
+    }
+   ],
+   "reply": "오로라 프로젝트의 첫 시연은 10월 2일이며, 발표 담당은 김민석(가상)입니다.",
+   "answer_model": {
+    "adapter": "nvidia-chat-completions",
+    "model_id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "citations": [
+     "source_31809a75d94c4f3ba21a5774b966fbd2@revision_8b38f5975880488b9cac7f12e280840e"
+    ],
+    "simulated": false
+   },
+   "seconds": 65.3
+  },
+  {
+   "key": "live-task-1",
+   "intent": "task_run",
+   "route": {
+    "kind": "task",
+    "reason": "llm_selected_task",
+    "task_id": "task_6540ac2728c44a94961423b309057e7d"
+   },
+   "stages": [
+    {
+     "stage": "understanding",
+     "label": "요청 이해 중",
+     "detail": {
+      "intent": "task_run"
+     }
+    },
+    {
+     "stage": "reasoning",
+     "label": "LLM 추론: 의도 조사/검증 Task 요청 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+     "detail": {
+      "model": "nvidia-chat-completions",
+      "intent": "task_run",
+      "assignee_task_id": "task_6540ac2728c44a94961423b309057e7d",
+      "reason": "사용자가 '검증해줘'라고 요청하여 해당 task_id와 일치하는 팀을 할당함",
+      "candidates_offered": 1
+     }
+    },
+    {
+     "stage": "routing",
+     "label": "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+     "detail": {}
+    },
+    {
+     "stage": "team",
+     "label": "기존 Task 팀 구성 확인: benchmark · 역할 4개 (supervisor, paper_scout, experiment_runner, result_analyst)",
+     "detail": {}
+    },
+    {
+     "stage": "preparing",
+     "label": "Task 팀 실행 준비",
+     "detail": {}
+    },
+    {
+     "stage": "team_result",
+     "label": "팀 실행 결과: completed · 역할 4/4 succeeded · 실험값 simulated(mock)",
+     "detail": {
+      "status": "completed"
+     }
+    },
+    {
+     "stage": "completed",
+     "label": "Task 팀 결과",
+     "detail": {
+      "status": "answered"
+     }
+    }
+   ],
+   "reply": "사용자는 오로라 지연 벤치마크 결과를 검증해 줄 것을 요청했으나, 현재까지 확인된 관련 자료가 0건으로, 허용된 자료만으로는 검증에 필요한 근거가 부족한 상황입니다. 이에 따라 구체적인 검증 작업은 진행될 수 없으며, 추가적인 자료 확보가 필요함을 알립니다.\n\n미확인 질문:\n- 오로라 지연 벤치마크 검증을 위해 어떤 자료가 필요한가요?\n- 검증에 필요한 자료는 현재 제공된 범위 내에서 확보할 수 있나요?\n\n[역할별 근거 기록]\n[팀 결과] 목표: 오로라 지연 벤치마크 결과를 검증해줘\n- 관련 자료 0건 확인 (근거 부족)\n- 허용된 자료만으로는 근거가 부족합니다.",
+   "answer_model": null,
+   "seconds": 6.6
+  },
+  {
+   "key": "live-q-2",
+   "intent": "query",
+   "route": {
+    "kind": "task",
+    "reason": "llm_selected_task",
+    "task_id": "task_6540ac2728c44a94961423b309057e7d"
+   },
+   "stages": [
+    {
+     "stage": "understanding",
+     "label": "질문 이해 중",
+     "detail": {
+      "intent": "query"
+     }
+    },
+    {
+     "stage": "reasoning",
+     "label": "LLM 추론: 의도 내 자료 질의 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+     "detail": {
+      "model": "nvidia-chat-completions",
+      "intent": "query",
+      "assignee_task_id": "task_6540ac2728c44a94961423b309057e7d",
+      "reason": "사용자가 오로라 지연 벤치마크 결과 요약을 요청했으며, 해당 task의 목표와 일치합니다.",
+      "candidates_offered": 1
+     }
+    },
+    {
+     "stage": "routing",
+     "label": "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+     "detail": {}
+    },
+    {
+     "stage": "team",
+     "label": "기존 Task 팀 구성 확인: benchmark · 역할 4개 (supervisor, paper_scout, experiment_runner, result_analyst)",
+     "detail": {}
+    },
+    {
+     "stage": "preparing",
+     "label": "답변 준비",
+     "detail": {}
+    },
+    {
+     "stage": "team_result",
+     "label": "팀 실행 결과: completed · 역할 4/4 succeeded · 실험값 simulated(mock)",
+     "detail": {
+      "status": "completed"
+     }
+    },
+    {
+     "stage": "completed",
+     "label": "답변",
+     "detail": {
+      "status": "answered"
+     }
+    }
+   ],
+   "reply": "사용자는 오로라 지연 벤치마크 결과를 검증해 줄 것을 요청했으나, 현재까지 확인된 관련 자료가 0건으로, 허용된 자료만으로는 검증에 필요한 근거가 부족한 상황입니다. 이에 따라 구체적인 검증 작업은 진행될 수 없으며, 추가적인 자료 확보가 필요함을 알립니다.\n\n미확인 질문:\n- 오로라 지연 벤치마크 검증을 위한 관련 자료나 데이터가 추가로 제공될 예정인가요?\n\n[역할별 근거 기록]\n[팀 결과] 목표: 오로라 지연 벤치마크 결과를 검증해줘\n- 관련 자료 0건 확인 (근거 부족)\n- 허용된 자료만으로는 근거가 부족합니다.",
+   "answer_model": null,
+   "seconds": 5.7
+  },
+  {
+   "key": "live2-note",
+   "intent": "store_note",
+   "route": {
+    "kind": "task",
+    "reason": "llm_selected_task"
+   },
+   "stages": [
+    "입력 이해 중",
+    "LLM 추론: 의도 저장 요청 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+    "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+    "자료 저장 준비",
+    "저장 완료"
+   ],
+   "reply": "내 KB에 비공개로 저장했어요. 나중에 이 내용에 관해 물어보세요.",
+   "answer_model": null,
+   "seconds": 2.6
+  },
+  {
+   "key": "live2-q",
+   "intent": "task_run",
+   "route": {
+    "kind": "task",
+    "reason": "llm_selected_task"
+   },
+   "stages": [
+    "질문 이해 중",
+    "LLM 추론: 의도 조사/검증 Task 요청 · 담당 Task task_6540ac2728c44a94961423b309057e7d",
+    "담당자 확인: 오로라 지연 벤치마크 결과를 검증해줘",
+    "기존 Task 팀 구성 확인: benchmark · 역할 4개 (supervisor, paper_scout, experiment_runner, result_ana",
+    "Task 팀 실행 준비",
+    "팀 실행 결과: completed · 역할 4/4 succeeded · 실험값 simulated(mock) · Supervisor 요약 LLM(nvidia-cha",
+    "Task 팀 결과"
+   ],
+   "reply": "오로라 지연 벤치마크 결과는 source_97ae682cd5aa43909b2b0d6df2441164에 기반한 합성 로그에 의해 제공된 것으로, INT8 양자화 적용 전후의 지연 시간 변화(12ms→9ms)만을 확인할 수 있다. 실제 검증된 실측 데이터는 확인되지 않았으며, 제시된 수치는 합성 로그 파싱 결과임을 명시해야 한다.\n\n미확인 질문:\n- 실제 하드웨어 환경에서의 오로라 지연 시간 실측 데이터가 존재하는가?\n- 제시된 12ms→9ms 지연 감소는 양자화 기법 외의 다른 요인에 기인하는가?\n\n[역할별 근거 기록]\n[팀 결과] 목표: 오로라 지연 벤치마크 결과를 검증해줘\n- 관련 자료 1건 확인\n- source_97ae682cd5aa43909b2b0d6df2441164: 지연 12.0ms, 정확도 None% [합성 로그 파싱, 실측 아님]",
+   "answer_model": null,
+   "seconds": 10.4
+  },
+  {
+   "key": "live2-nomatch",
+   "intent": "clarify",
+   "route": {
+    "kind": "assistant",
+    "reason": "no_suitable_assignee"
+   },
+   "stages": [
+    "질문 이해 중",
+    "LLM 추론: 의도 의도 불명확 · 담당 후보 중 확신 없음 → 규칙/비서",
+    "담당자 확인: 적합한 담당자 없음 또는 후보 모호 · 비서 직접 처리",
+    "답변 준비",
+    "답변"
+   ],
+   "reply": "무엇을 도와드릴까요? 정보를 남기려면 ‘메모: …’, 찾으려면 ‘… 알려줘’처럼 말씀해 주세요. 삭제·예약·외부 전송은 이 채팅에서 실행하지 않아요.",
+   "answer_model": null,
+   "seconds": 2.5
+  }
+ ],
+ "run_adapters": [
+  [
+   {
+    "schema_version": "1.0",
+    "port": "model",
+    "adapter": "nvidia-chat-completions",
+    "simulated": false
+   }
+  ],
+  [
+   {
+    "schema_version": "1.0",
+    "port": "model",
+    "adapter": "nvidia-chat-completions",
+    "simulated": false
+   }
+  ]
+ ]
+}

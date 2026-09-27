@@ -9,7 +9,7 @@ requirement_refs:
 - docs/LOCAL_MODULES.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -133,7 +133,7 @@ verification:
 evidence_dir: .agent/evidence/P1-008D
 latest_evidence_file: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 16
   spec_digest: f0032bdb75420cbece2d1b872d6fc6f05de83a4ed8145d1f09c041ffe625e7c3
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -143,7 +143,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
@@ -165,7 +165,7 @@ integration:
       evidence: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
     head: a6c271d6fcbea1cb7ce948815817d45e6c9b91d8
   evidence: .agent/evidence/P1-008D/freeze-reval3-target-0927002705/result.json
-revision: 33
+revision: 34
 spec_revision: 16
 claim_generation: 2
 claim: null
@@ -232,7 +232,7 @@ migration:
   - 기존 DTO/port/reference app/API와 파일 소유권 확인
   judgment: 기존 ID/완료 근거/실제 연동 gate 보존. 새 사용자 승인 범위의 독립 2h task 추가.
   initial_spec_revision: 1
-updated_at: '2026-09-27T00:27:18+00:00'
+updated_at: '2026-09-27T06:19:12+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

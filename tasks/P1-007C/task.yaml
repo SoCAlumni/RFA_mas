@@ -10,7 +10,7 @@ requirement_refs:
 - docs/LOCAL_MODULES.md
 - docs/EDUCATION_MAPPING.md
 priority: P1
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -167,7 +167,7 @@ verification:
 evidence_dir: .agent/evidence/P1-007C
 latest_evidence_file: .agent/evidence/P1-007C/final-source-freeze-target-0927021014/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 12
   spec_digest: 94bc3d131bcd31ea63052b8b60effc137e73c99a7afa77203b9f31ee27637475
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -177,7 +177,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
@@ -213,7 +213,7 @@ integration:
       evidence: .agent/evidence/P1-007C/final-source-freeze-target-0927021014/result.json
     head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
   evidence: .agent/evidence/P1-007C/final-source-freeze-target-0927021014/result.json
-revision: 29
+revision: 30
 spec_revision: 12
 claim_generation: 2
 claim: null
@@ -294,7 +294,7 @@ migration:
   - P1-007B는 P1-008B(teammate identity) 대기로 blocked 유지 확인
   judgment: P1-007B 실제 teammate gate를 대체하지 않는 별도 로컬 실제 OpenShell 증거 task.
   initial_spec_revision: 1
-updated_at: '2026-09-27T02:10:54+00:00'
+updated_at: '2026-09-27T06:19:12+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

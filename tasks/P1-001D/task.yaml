@@ -9,7 +9,7 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -108,7 +108,7 @@ verification:
 evidence_dir: .agent/evidence/P1-001D
 latest_evidence_file: .agent/evidence/P1-001D/completion-final-slices-target-0927020806/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 10
   spec_digest: d7549b7a3b582c00bf3a1a6341e2cacd46c21fcdf2b4aac182a0980c4bbe937a
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -118,7 +118,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 4
   submission:
     head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
@@ -140,7 +140,7 @@ integration:
       evidence: .agent/evidence/P1-001D/completion-final-slices-target-0927020806/result.json
     head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
   evidence: .agent/evidence/P1-001D/completion-final-slices-target-0927020806/result.json
-revision: 45
+revision: 46
 spec_revision: 10
 claim_generation: 4
 claim: null
@@ -294,7 +294,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-27T02:08:56+00:00'
+updated_at: '2026-09-27T06:19:12+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

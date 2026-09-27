@@ -9,7 +9,7 @@ requirement_refs:
 - RFA_E2E_Test_Scenarios_10_ko.md
 - docs/PRODUCT_REQUIREMENTS.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -111,7 +111,7 @@ verification:
 evidence_dir: .agent/evidence/P0-020B
 latest_evidence_file: .agent/evidence/P0-020B/freeze-reval-target-0927001633/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 1
   spec_digest: 5688c8b4fe6247172536810757b928f675d69318daa672971b49b9b02a801e35
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -121,7 +121,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 71b2d09d1293c69bf83994e46456792da2b370a8
@@ -143,7 +143,7 @@ integration:
       evidence: .agent/evidence/P0-020B/freeze-reval-target-0927001633/result.json
     head: 71b2d09d1293c69bf83994e46456792da2b370a8
   evidence: .agent/evidence/P0-020B/freeze-reval-target-0927001633/result.json
-revision: 18
+revision: 19
 spec_revision: 1
 claim_generation: 2
 claim: null
@@ -210,7 +210,7 @@ migration:
   - E2E harness 보고 결함 재확인
   judgment: E2E 합격 기준을 막는 결함 보수. 기능 범위 확장 아님.
   initial_spec_revision: 1
-updated_at: '2026-09-27T00:16:54+00:00'
+updated_at: '2026-09-27T06:19:11+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

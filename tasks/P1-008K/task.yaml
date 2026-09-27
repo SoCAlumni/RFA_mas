@@ -1,0 +1,277 @@
+schema_version: '1.0'
+id: P1-008K
+title: 실제 LLM 응답·추론 — NVIDIA 모델 소유자 동의 egress·LLM 라우팅·팀 요약
+objective: 소유자가 명시 동의(ALLOW_EXTERNAL_EGRESS)하면 설정된 NVIDIA 모델 endpoint로 비공개 근거를 보내 실제 LLM이 답변·요약하고, 의도·담당
+  선택을 LLM이 후보 안에서 추론하며 그 과정을 상태 카드에 보인다. 동의 없으면 기존 mock/로컬 경로를 유지한다. 카드에 목록으로 보여준다.
+kind: task
+source_tasks:
+- P1-008J
+- P1-002
+requirement_refs:
+- docs/POC.md
+priority: P0
+status: verifying
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: coordinator
+estimated_effort: 3.0
+product_owner: 민섭 사용자 승인 PoC; 팀원 UI 교체 가능
+execution_class: 이 저장소 구현
+product_mode: local/mock 기본; --model nvidia 선택 시 실제 NVIDIA 호출(소유자 동의 egress)
+scope:
+  included:
+  - settings ALLOW_EXTERNAL_EGRESS의 model_egress 소비자 구현(nvidia 선택 시 소유자 대상 비공개 context 허용)
+  - OwnerConsentEgressGate·share_egress_filter private_egress·NvidiaChatModel.reason JSON 완성
+  - 팀 supervisor의 LLM 요약(소유자 대상, 실제 모델일 때)
+  - PoC --model nvidia --env-file 옵션, 채팅 LLM 의도/담당 추론(후보 내 제한)·비서 fallback LLM 합성·답변 보존과 ACL 재검사
+  excluded:
+  - 공개 대상에 비공개 근거 전송
+  - 실제 게시/OpenShell
+  - 스트리밍 토큰
+  - 질의/메모만으로 자동 Task 생성
+  - 토큰/내부 사고 스트리밍
+  - 실제 외부 게시/모델 호출
+  owned_paths:
+  - src/rfa_mas/poc
+  - src/rfa_mas/ui
+  - src/rfa_mas/application/chat.py
+  - src/rfa_mas/adapters/nvidia.py
+  - src/rfa_mas/application/workers.py
+  - src/rfa_mas/application/graphs/domain.py
+  - src/rfa_mas/settings.py
+  - src/rfa_mas/bootstrap.py
+  - .env.example
+  - tests/test_chat_poc.py
+  - tests/test_chat_routing.py
+  - tests/test_chat_llm.py
+  - tests/test_settings.py
+  - docs/POC.md
+  read_only_paths:
+  - src/rfa_mas/application/service.py
+  - src/rfa_mas/adapters/local.py
+  planned_paths:
+  - tests/test_chat_llm.py
+  shared_resources:
+  - composition
+depends_on: []
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/adapters/nvidia.py
+    section: PublicOnlyEgressGate/NvidiaChatModel
+    reason: 동의 gate와 reason 완성 추가
+  - path: src/rfa_mas/application/graphs/domain.py
+    section: share_egress_filter
+    reason: 소유자 대상 private egress 허용
+  - path: src/rfa_mas/poc/chat.py
+    section: LocalChat.send
+    reason: LLM 추론 단계·fallback 합성
+  handoff: tasks/P1-008K/handoff.md
+  dependency_results: []
+deliverables:
+- path: src/rfa_mas/settings.py
+  availability: existing
+  description: model_egress 소비자·scope
+- path: src/rfa_mas/adapters/nvidia.py
+  availability: existing
+  description: OwnerConsentEgressGate·reason()
+- path: src/rfa_mas/application/graphs/domain.py
+  availability: existing
+  description: private_egress 필터
+- path: src/rfa_mas/application/workers.py
+  availability: existing
+  description: supervisor LLM 요약
+- path: src/rfa_mas/poc
+  availability: existing
+  description: --model nvidia, LLM 추론/합성
+- path: tests/test_chat_llm.py
+  availability: planned
+  description: fake NVIDIA transport 기반 검증
+- path: docs/POC.md
+  availability: existing
+  description: 실제 모델 모드 설명
+acceptance_criteria:
+- id: AC1
+  given: MODEL_PROVIDER=nvidia와 ALLOW_EXTERNAL_EGRESS=true/false
+  expect: true면 소유자 대상 요청에 비공개 근거가 설정 endpoint로만 전송되고 공개 대상은 여전히 public 근거만; false면 비공개 근거 전송 0(기존 동작);
+    mock provider에서는 여전히 reserved
+  required: true
+- id: AC2
+  given: 채팅 질의/메모/조사 요청(가짜 NVIDIA transport)
+  expect: reasoning 단계에 LLM 의도·담당 선택(후보 밖 ID는 무시→비서)·사유가 기록되고, 비서 fallback은 근거 발췌로 LLM 답변을 합성해 보존하며 source
+    변경/권한 회수 시 재표시하지 않는다
+  required: true
+- id: AC3
+  given: 실제 NVIDIA endpoint(.env.dev)와 --model nvidia
+  expect: 합성 KB 질의에 실제 모델 답변이 오고 응답에 adapter=nvidia-chat-completions·simulated=false; 키/원문이 로그·trace·evidence에
+    없다
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  type: command
+  availability: available
+  prerequisites:
+  - 합성 데이터·tmp_path; 외부 호출 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_chat_llm.py
+  - tests/test_chat_routing.py
+  - tests/test_chat_poc.py
+  - tests/test_nvidia_contract.py
+  - tests/test_settings.py
+  - tests/test_local_ui.py
+  - tests/test_poc.py
+  timeout_seconds: 300
+  procedure: []
+  assertions:
+  - egress 동의/미동의·공개 대상 차단
+  - LLM 추론 후보 제한·fallback 합성·ACL 재검사
+  - 기존 회귀
+  runner: pytest
+- id: V2
+  ac_ids:
+  - AC3
+  type: manual
+  availability: available
+  prerequisites:
+  - 합성 별도 PoC 서버와 브라우저
+  cwd: .
+  argv: []
+  timeout_seconds: 120
+  procedure:
+  - .env.dev로 --model nvidia PoC 기동
+  - 합성 KB 질의 API 호출·응답 adapter 확인
+  assertions:
+  - 실제 모델 응답·simulated=false
+  - 키/원문 미노출
+  runner: manual
+evidence_dir: .agent/evidence/P1-008K
+latest_evidence_file: .agent/evidence/P1-008K/llm-target-0927061910/result.json
+verification_summary:
+  state: stale
+  spec_revision: 1
+  spec_digest: 0f2417f87b2921de3aff5e7860af77c8dda5a592ddf0cb270a36d9c04263d22a
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 9b619d77652ffe46382e7372feede1879c47cdf906d249b02ad667bdbdc1dc23
+  evidence: .agent/evidence/P1-008K/llm-target-0927061910/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: true
+  submission_generation: 3
+  submission:
+    head: b0435ea4b8bc52c758db024be0f5615f003b329e
+    baseline_head: 7568818413cd6cb87511928ec7422f31e372a39a
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008K-int-0927061531
+    branch: task/P1-008K-int-0927061531
+    evidence: .agent/evidence/P1-008K/llm-worker-0927061837/result.json
+    changed_files:
+      .env.example: 01babada4adfaac32d72e4cae47d00e57edbe5b877f76c312532f08dac2b5e13
+      docs/POC.md: 1712706bd6d677d44107e6c4481381f9e759360a3d8ace8a400b8ea2c3b302a8
+      src/rfa_mas/adapters/nvidia.py: 6e21c564e5c39f271e03e9e58a64e795e6d783ba5497cd01a9c28f073b848978
+      src/rfa_mas/application/graphs/domain.py: 2a2c4cd5a0c6950f208d2201c5d12dd0ada8805f1a89bc51a96ced819124276e
+      src/rfa_mas/application/workers.py: f40caeb76e2014d5456f5357fe98bf6ac7ecce7ef79f8b6886980c6affed63eb
+      src/rfa_mas/bootstrap.py: 0dd42bd4d962d45b4d740023f7d213cfb62d5f5a8584c254d4ae2e42547ea60d
+      src/rfa_mas/poc/__main__.py: c880038acdea47b159953d589d2c33cfc613f3843fc4ffe7e59fe3c8fe89c9ac
+      src/rfa_mas/poc/bootstrap.py: 93f31ff64b9ae2c0fb7ca4fbaa6b00d26703524a69d828339240a16089bc8e70
+      src/rfa_mas/poc/chat.py: e25e8b0c2dc6bde2c6c8636a17f1eb3e1430bb528491986f6b53b0584c7a4427
+      src/rfa_mas/poc/routing.py: 074b03be9053d8f145907f818eca9e6f147cf531248e316d1897ceddd6e7c932
+      src/rfa_mas/settings.py: d8a542753ab4ad320e848dd0f37b1e93067c3e72448f7cb7f5f75001c1ae77ab
+      src/rfa_mas/ui/app.py: 0a343012bde5f1308c0c1e40d5627b2701dbf3f17c15eaab9e80b1a7a72ec663
+      src/rfa_mas/ui/static/app.js: f8a44bb09bc5bdfbccc56766bbfbf2fd497fba62b4a7d9c673e2d22b31e66312
+      tests/test_chat_llm.py: 4cb61191d7488e65cd349aeeb5ec32047b7513a98fa2d0c2339f15119603d49e
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: 0f2417f87b2921de3aff5e7860af77c8dda5a592ddf0cb270a36d9c04263d22a
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 9b619d77652ffe46382e7372feede1879c47cdf906d249b02ad667bdbdc1dc23
+      evidence: .agent/evidence/P1-008K/llm-target-0927061910/result.json
+    head: b0435ea4b8bc52c758db024be0f5615f003b329e
+  evidence: .agent/evidence/P1-008K/llm-target-0927061910/result.json
+revision: 14
+spec_revision: 1
+claim_generation: 3
+claim: null
+attempts:
+  count: 3
+  cycles: 2
+  no_progress_count: 0
+  latest_attempt: llm-target-0927061910
+  evidence_refs:
+  - .agent/evidence/P1-008K/llm-worker-0927061753/result.json
+  - .agent/evidence/P1-008K/llm-worker-0927061837/result.json
+  approaches:
+  - kind: recovery
+    generation: 2
+    baseline_head: 683172d833cb0fbb6a9233fc1cb96abcb3ae1968
+    reason: lease expired during implementation; same coordinator discards the expired claim and re-claims
+      the committed worktree
+    at: '2026-09-27T06:14:35+00:00'
+    cycles: 0
+    no_progress_count: 0
+    claim:
+      session_id: rfa-coordinator
+      worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008K-llm
+      branch: task/P1-008K-llm
+      generation: 1
+      claimed_at: '2026-09-27T05:57:19+00:00'
+      heartbeat_at: '2026-09-27T05:57:19+00:00'
+      lease_expires_at: '2026-09-27T06:12:19+00:00'
+      baseline_head: 683172d833cb0fbb6a9233fc1cb96abcb3ae1968
+      recovery_required: false
+      context_digest: 786fafe0e20ebb3ebe3162dc617a534a6a27fdbedb6f9cc37657fa44418e7ba8
+    integration:
+      state: pending
+      target: main canonical control checkout
+      reason: null
+      reservation: false
+      submission_generation: null
+      submission: null
+      result: null
+      evidence: null
+    verification_summary:
+      state: not_run
+      spec_revision: null
+      spec_digest: null
+      contract_digest: null
+      source_fingerprint: null
+      evidence: null
+    latest_evidence_file: null
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 실제 LLM 응답 요청
+  prior_claim: P1-002 NVIDIA adapter는 public-only gate; PoC는 mock 고정
+  implementation_facts: share_egress_filter가 cloud endpoint에 non-public 차단; 팀 supervisor는 결정적 요약
+  previous_evidence:
+  - docs/evidence/nvidia-model.md
+  checks_this_migration:
+  - nvidia/domain/workers/poc 코드 확인
+  judgment: 기존 완료 유지·동의 기반 확장
+  initial_spec_revision: 1
+updated_at: '2026-09-27T06:27:43+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

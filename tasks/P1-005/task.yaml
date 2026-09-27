@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: agents
@@ -173,7 +173,7 @@ verification:
 evidence_dir: .agent/evidence/P1-005
 latest_evidence_file: .agent/evidence/P1-005/final-report-reference-review/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 34
   spec_digest: 474a5694ae719d11a245f56b756df2f7f65faaf82bae6a1b1f8c1b609fae09f7
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -183,7 +183,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 14
   submission:
     head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
@@ -210,7 +210,7 @@ integration:
     head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
   evidence: .agent/evidence/P1-005/final-report-reference-review/result.json
-revision: 163
+revision: 164
 spec_revision: 34
 claim_generation: 14
 claim: null
@@ -845,6 +845,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T02:07:01+00:00'
+updated_at: '2026-09-27T06:19:12+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
-next_action: Reverify if code, settings, contract, AC or global instructions change
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

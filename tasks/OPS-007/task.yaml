@@ -10,7 +10,7 @@ requirement_refs:
 - TASK_EXECUTION_RULES.md
 - docs/TASK_REVALIDATION.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: contracts/control
@@ -100,7 +100,7 @@ verification:
 evidence_dir: .agent/evidence/OPS-007
 latest_evidence_file: .agent/evidence/OPS-007/target-0927004235/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 1
   spec_digest: 8f7c790aad2521a5f3c62000a9c2899313c1a7b1eb35e5326f4fd3798b9bcd8e
   contract_digest: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
@@ -110,7 +110,7 @@ integration:
   state: integrated
   target: main
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 4e0a55b743176a0cf0b961b1a86f371f020ea929
@@ -133,7 +133,7 @@ integration:
       evidence: .agent/evidence/OPS-007/target-0927004235/result.json
     head: 4e0a55b743176a0cf0b961b1a86f371f020ea929
   evidence: .agent/evidence/OPS-007/target-0927004235/result.json
-revision: 9
+revision: 10
 spec_revision: 1
 claim_generation: 2
 claim: null
@@ -156,6 +156,7 @@ migration:
   - P0-020/P1-006C 등 이전 manifest delta 조사
   judgment: 실행 관련 변경은 계속 stale; 문서 변경만 명시적으로 검토
   initial_spec_revision: 1
-updated_at: '2026-09-27T00:43:33+00:00'
+updated_at: '2026-09-27T06:19:11+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: claim 후 명시적 문서 검토와 거절 경계를 구현
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

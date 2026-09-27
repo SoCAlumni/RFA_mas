@@ -10,7 +10,7 @@ requirement_refs:
 - docs/archive/TASKS_2026-09-26.md
 - docs/EVALUATION_CONTEXT.md
 priority: P1
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -178,7 +178,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006A
 latest_evidence_file: .agent/evidence/P1-006A/final-source-freeze-target-0927021812/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 6
   spec_digest: f3496883eaad32c45f31e21c546680e24c1dda87b59030be5787dbf43d9d8012
   contract_digest: 590e35594594c49e6828275e9dbdc045255c1d43ce685bc8d951fd1636023ce7
@@ -188,7 +188,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
@@ -218,7 +218,7 @@ integration:
       evidence: .agent/evidence/P1-006A/final-source-freeze-target-0927021812/result.json
     head: 72632e74f08e50ce80a33c6ce924b1826e3bcb75
   evidence: .agent/evidence/P1-006A/final-source-freeze-target-0927021812/result.json
-revision: 23
+revision: 24
 spec_revision: 6
 claim_generation: 2
 claim: null
@@ -291,7 +291,7 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T02:19:08+00:00'
+updated_at: '2026-09-27T06:19:12+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
 next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
   AC'

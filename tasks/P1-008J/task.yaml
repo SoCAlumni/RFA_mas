@@ -9,7 +9,7 @@ source_tasks:
 requirement_refs:
 - docs/POC.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -141,7 +141,7 @@ verification:
 evidence_dir: .agent/evidence/P1-008J
 latest_evidence_file: .agent/evidence/P1-008J/state-target-01/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 1
   spec_digest: db088fee0b036c01fceec21bd9a1faa608a57b6d5179b0b62c1b81b689367827
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -151,7 +151,7 @@ integration:
   state: integrated
   target: main canonical control checkout
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 1
   submission:
     head: 809d6dc5971441e7e19bef5eeb4e91e090b77cb1
@@ -177,7 +177,7 @@ integration:
       evidence: .agent/evidence/P1-008J/state-target-01/result.json
     head: 794907d5a40b220ea34e53cba3319775c4c0251b
   evidence: .agent/evidence/P1-008J/state-target-01/result.json
-revision: 9
+revision: 10
 spec_revision: 1
 claim_generation: 1
 claim: null
@@ -200,6 +200,7 @@ migration:
   - chat/ui 코드 확인
   judgment: 기존 완료 유지·별도 기능 추가
   initial_spec_revision: 1
-updated_at: '2026-09-27T05:48:04+00:00'
+updated_at: '2026-09-27T06:12:42+00:00'
 concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: stage detail부터 구현
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

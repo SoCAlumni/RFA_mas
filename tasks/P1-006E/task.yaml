@@ -8,7 +8,7 @@ source_tasks:
 requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -131,7 +131,7 @@ verification:
 evidence_dir: .agent/evidence/P1-006E
 latest_evidence_file: .agent/evidence/P1-006E/final-report-reference-review/result.json
 verification_summary:
-  state: passed
+  state: stale
   spec_revision: 25
   spec_digest: 11724fc50e7b12845eb5b3f671b093589fa0082adece522c654bd609900da411
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
@@ -141,7 +141,7 @@ integration:
   state: integrated
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
+  reservation: true
   submission_generation: 2
   submission:
     head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
@@ -164,7 +164,7 @@ integration:
     head: 191378ed2cd150e9140e241b9b8f9d7975e2db75
     documentation_review: true
   evidence: .agent/evidence/P1-006E/final-report-reference-review/result.json
-revision: 44
+revision: 45
 spec_revision: 25
 claim_generation: 2
 claim: null
@@ -232,6 +232,7 @@ migration:
   - 기존 ID/계약/파일 경계에 매핑; 명세 검증은 제품 실행 증거 아님
   judgment: 독립적으로 관찰 가능한 결과로 추가. 기존 완료 task를 다시 열지 않음.
   initial_spec_revision: 1
-updated_at: '2026-09-27T02:07:53+00:00'
+updated_at: '2026-09-27T06:19:12+00:00'
 concise_result: Documentation impact reviewed; prior execution evidence retained (no tests rerun)
-next_action: Reverify if code, settings, contract, AC or global instructions change
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'
