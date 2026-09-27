@@ -1,0 +1,37 @@
+# OpenShell baseline 의 static 섹션 (filesystem / landlock / process). 참조·검증용.
+#
+# NemoClaw 는 샌드박스 생성 시 자신의 blueprint
+# (`~/.nemoclaw/source/nemoclaw-blueprint/policies/openclaw-sandbox.yaml`)를 읽어 적용하며,
+# static 필드는 생성 시점에 고정된다(creation-locked). network_policies 는 preset(`../presets/*.yaml`)으로
+# 분리해 `nemoclaw <sb> policy add --from-file` 로 런타임에 merge 하고, 필요 없는 baseline network 항목은
+# `policy exclude <key>` 로 제거한다(`assignments.yaml: baseline_excludes`).
+#
+# `python -m rfa_mas.nemoclaw verify-baseline <sandbox>` 는 `nemoclaw <sb> policy get` 결과의
+# 아래 세 섹션이 이 파일과 일치하는지 검사한다(불일치 = 경계가 바뀐 것이므로 실패).
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+    - /usr
+    - /lib
+    - /proc
+    - /dev/urandom
+    - /app
+    - /run/nemoclaw/managed-startup-ca-bundle.pem
+    - /run/nemoclaw/managed-startup-runtime.env
+    - /etc
+    - /var/log
+    - /var/lib/dpkg
+  read_write:
+    - /tmp
+    - /dev/null
+    - /dev/pts
+    - /sandbox/.openclaw
+    - /sandbox/.nemoclaw
+    - /home/linuxbrew
+landlock:
+  compatibility: best_effort
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+# network_policies 는 이 파일에 두지 않는다. presets/ 참고.

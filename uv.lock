@@ -2047,6 +2047,7 @@ dependencies = [
     { name = "langsmith" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pyyaml" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -2075,6 +2076,7 @@ requires-dist = [
     { name = "nvidia-nat-langchain", marker = "extra == 'nat'", specifier = "==1.8.0" },
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "pydantic-settings", specifier = "==2.15.0" },
+    { name = "pyyaml", specifier = "==6.0.3" },
     { name = "sqlalchemy", specifier = "==2.0.54" },
     { name = "uvicorn", specifier = "==0.53.0" },
 ]

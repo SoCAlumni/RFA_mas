@@ -19,6 +19,7 @@ dependencies = [
   "uvicorn==0.53.0",
   "apscheduler==3.11.3",
   "sqlalchemy==2.0.54",
+  "pyyaml==6.0.3",
 ]
 
 [project.optional-dependencies]

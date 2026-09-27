@@ -1,0 +1,23 @@
+# 보안 그룹 control-plane 의 REST 폴백 preset. 기본 경로는 managed MCP(`nemoclaw <sb> mcp add broker`)이며,
+# 이 preset 은 MCP 등록이 불가능할 때(인증서/사설 호스트 이슈) 컨트롤러가 `fallback_presets` 로만 적용한다.
+# 브로커 REST 는 같은 bearer(RFA_BROKER_MCP_TOKEN)를 요구한다. __HOST__ 는 host.lan_ip 로 치환된다.
+preset:
+  name: sg-control-plane
+  description: "RFA security group control-plane: broker REST fallback (ask_task_agent, list_task_agents)"
+network_policies:
+  sg_control_plane:
+    name: sg_control_plane
+    endpoints:
+      - host: __HOST__
+        port: 8798
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: "/healthz" }
+          - allow: { method: GET, path: "/broker/agents" }
+          - allow: { method: POST, path: "/broker/ask" }
+    binaries:
+      - { path: /usr/bin/curl }
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/node }
+      - { path: /usr/bin/node }

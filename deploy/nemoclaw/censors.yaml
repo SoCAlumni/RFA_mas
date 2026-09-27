@@ -1,0 +1,50 @@
+# 검열 프로파일 선언 (설정 3개 중 3/3). censor.py 파이프라인이 읽는다.
+# 검열은 egress 경계(호스트 egress-proxy: 외부 LLM 경로 요청·응답)와 채널 API 최종 응답에서
+# 같은 함수(censor_text)로 수행한다. 2단계: regex → LLM(censor 샌드박스, egress 0, 로컬 inference).
+# 기본 동작 redact, 실패 시 fail-closed(block).
+version: 1
+default_action: redact
+fail_closed: true
+
+profiles:
+  none:
+    stages: []
+  bypass:            # rfa-censor alias 전용. 프록시가 하드코딩으로 우회하므로 여기서는 참조만 한다.
+    stages: []
+  external:
+    stages:
+      - id: regex
+        type: regex
+        rules:
+          - id: canary
+            pattern: 'SYNTHETIC_PRIVATE_CANARY_[A-Z0-9_]+'
+            replacement: '[REDACTED:canary]'
+          - id: internal-project
+            keywords: [오로라, 네뷸라, TRIV-DEMO, 아틀라스]
+            replacement: '[REDACTED:project]'
+          - id: money-krw
+            pattern: '\d{1,3}(?:,\d{3})+\s*(?:원|KRW)'
+            replacement: '[REDACTED:amount]'
+          - id: percent-metric
+            pattern: '\d+(?:\.\d+)?\s*%'
+            replacement: '[REDACTED:metric]'
+          - id: latency-ms
+            pattern: '\d+(?:\.\d+)?\s*ms\b'
+            replacement: '[REDACTED:metric]'
+          - id: email
+            pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+            replacement: '[REDACTED:email]'
+          - id: credential
+            pattern: '(?i)(?:bearer|nvapi-|sk-)[A-Za-z0-9._-]{12,}'
+            replacement: '[REDACTED:credential]'
+            action: block            # 자격증명이 보이면 redact 가 아니라 전송 자체를 막는다
+      - id: llm
+        type: llm
+        runner: sandbox-agent        # censor 샌드박스의 OpenClaw 에이전트를 게이트웨이로 호출
+        sandbox: rfa-censor
+        agent: main
+        alias: rfa-censor
+        timeout_seconds: 45
+        skip_if_shorter_than: 24     # 아주 짧은 텍스트는 regex 단계만
+        categories: [internal_project, financial_figure, personal_data, credential]
+        on_error: block              # 시간 초과/파싱 실패 = fail-closed

@@ -1,0 +1,54 @@
+# 채널 라우팅 선언 (설정 3개 중 2/3). egress-proxy(`python -m rfa_mas.nemoclaw serve`)가 읽는다.
+#
+# 확인된 사실(2026-09-27, NemoClaw 0.0.124 / OpenShell 0.0.116): 게이트웨이는 하나의 live inference
+# route 만 가지며 요청 본문의 model 을 route 모델로 덮어쓴다. 그래서 프록시가 유일한 provider 이고,
+# 채널/에이전트 구분은 서명된 in-band 마커(markers.py)로 하며, route 모델명은 게이트웨이 전체 모드다.
+version: 1
+
+proxy:
+  bind: 0.0.0.0:8797                      # host.openshell.internal 은 Colima 에서 192.168.5.2 → 호스트 전체 인터페이스
+  route_url: http://host.openshell.internal:8797/v1   # NEMOCLAW_ENDPOINT_URL (온보딩) / inference set --endpoint-url
+  credential_env: COMPATIBLE_API_KEY      # OpenShell provider store 에 저장. 프록시는 같은 값으로 bearer 를 검증한다.
+  key_file: .local/sg/proxy-api.key       # 프록시 bearer (0600, 최초 생성). 값은 출력하지 않는다.
+  marker_key_file: .local/sg/marker.key   # in-band 마커 HMAC 키 (0600)
+  # 게이트웨이 route 모델명 = 전체 모드. 전환은 scripts: `python -m rfa_mas.nemoclaw switch-route <mode>`
+  #   rfa-auto     : 마커(채널·에이전트)로 alias 결정 (정상 운영)
+  #   rfa-internal : 마커와 무관하게 전부 로컬 (kill switch, 외부 egress 0)
+  #   rfa-external : 마커 없는 요청도 external 로 (검열 필수) — 데모/검증용
+  default_mode: rfa-auto
+  unattributed_alias: rfa-internal        # 검증된 마커가 없는 요청의 안전 기본값(로컬)
+
+backends:
+  ollama:
+    kind: openai
+    url: http://127.0.0.1:11434/v1
+    auth: none
+  build:
+    kind: openai
+    url: https://integrate.api.nvidia.com/v1
+    credential_env: NVIDIA_API_KEY        # 값은 env_file 에서만 읽는다 (0600, git-ignore 검증)
+    env_file: .env.dev
+
+aliases:
+  rfa-internal: { backend: ollama, model: nemotron-3-nano:4b, censor: none,     exposure: 0 }
+  rfa-external: { backend: build,  model: nvidia/nemotron-3-super-120b-a12b, censor: external, exposure: 1 }
+  rfa-censor:   { backend: ollama, model: nemotron-3-nano:4b, censor: bypass,   exposure: 0 }   # 검열 LLM 자체. 재귀 방지 하드코딩 우회
+
+channels:
+  internal: { alias: rfa-internal, profile: none }
+  external: { alias: rfa-external, profile: external }
+
+entry:
+  bind: 127.0.0.1:8799                    # 채널 API 진입점 + 감사 로그 화면 + 브로커 admin (loopback)
+  default_channel: internal
+  hosted_turn_timeout_seconds: 90
+  assistant_sandbox: rfa-assistant
+  assistant_agent: main
+
+broker:
+  bind: 0.0.0.0:8798                      # MCP(HTTPS, managed) 또는 REST 폴백. 둘 다 bearer 필수
+  path: /mcp
+  tls_dir: .local/sg/tls                  # 로컬 CA + IP SAN 인증서 (bootstrap 이 생성)
+  credential_env: RFA_BROKER_MCP_TOKEN
+  key_file: .local/sg/broker-api.key
+  task_turn_timeout_seconds: 120

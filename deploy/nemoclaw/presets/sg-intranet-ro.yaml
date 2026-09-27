@@ -1,0 +1,24 @@
+# 보안 그룹 intranet-ro 의 network preset. 사내 지식 API(knowledge facade, `rfa knowledge-facade`)
+# 읽기 경로만 허용한다. 적용: nemoclaw <sb> policy add --from-file this.yaml --trusted-private-host <lan_ip>
+# __HOST__ 는 컨트롤러가 assignments.yaml host.lan_ip 로 치환한다.
+preset:
+  name: sg-intranet-ro
+  description: "RFA security group intranet-ro: knowledge facade read-only (GET /tasks, POST /tasks/*/ask)"
+network_policies:
+  sg_intranet_ro:
+    name: sg_intranet_ro
+    endpoints:
+      - host: __HOST__
+        port: 8791
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: "/healthz" }
+          - allow: { method: GET, path: "/tasks" }
+          - allow: { method: POST, path: "/tasks/*/ask" }
+    binaries:
+      - { path: /usr/bin/curl }
+      - { path: /usr/bin/python3 }
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/node }
+      - { path: /usr/bin/node }
