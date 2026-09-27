@@ -22,7 +22,7 @@ _DEFAULT = Path(__file__).resolve().parents[3] / ".local" / "sg" / "audit.db"
 _lock = threading.Lock()
 _seq = 0
 KINDS = ("inference", "broker", "channel", "policy", "request", "approval", "relocation", "censor", "ask", "team",
-         "chat", "options", "rules", "blocklist", "tasks")
+         "chat", "options", "rules", "blocklist", "tasks", "admin")
 
 
 def db_path() -> Path:

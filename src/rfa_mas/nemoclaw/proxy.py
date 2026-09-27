@@ -25,6 +25,7 @@ from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from rfa_mas.nemoclaw import audit, logs
+from rfa_mas.nemoclaw import usage as llm_usage
 from rfa_mas.nemoclaw.censor import CensorPipeline, CensorResult
 from rfa_mas.nemoclaw.config import AUTO_MODE, Routing
 from rfa_mas.nemoclaw.markers import find_markers
@@ -221,26 +222,34 @@ class EgressProxy:
         url = f"{backend.url.rstrip('/')}/chat/completions"
         payload = upstream_payload(body, alias.model, messages, backend.chat_template_kwargs, backend.extras,
                                    backend.tool_call_extras)
-        timer = logs.Timer()
-        try:
-            response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
-            logs.external(f"upstream:{alias.backend}", response.status_code, timer.ms, model=alias.model,
-                          messages=len(messages))
-        except httpx.HTTPError as exc:
-            logs.external(f"upstream:{alias.backend}", type(exc).__name__, timer.ms, model=alias.model)
-            return 502, {"error": {"message": f"upstream {alias.backend} unreachable: {type(exc).__name__}", "type": "upstream_error"}}
-        if response.status_code != 200:
-            # the provider's error body is diagnostic text, not user content: keep a masked, truncated copy
-            logs.error("upstream_error", target=f"upstream:{alias.backend}", status=response.status_code,
-                       model=alias.model, body=response.text[:600],
-                       request_fields=sorted(payload), tools=len(payload.get("tools") or []),
-                       roles=[m.get("role") for m in messages][-6:])
-            return 502, {"error": {"message": f"upstream {alias.backend} returned HTTP {response.status_code}", "type": "upstream_error"}}
-        try:
-            data = response.json()
-        except ValueError:
-            return 502, {"error": {"message": "upstream returned non-JSON", "type": "upstream_error"}}
-        return 200, normalize_completion(data, alias.model)
+        for attempt in (1, 2):
+            timer = logs.Timer()
+            try:
+                response = await self.client.post(url, json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
+                logs.external(f"upstream:{alias.backend}", response.status_code, timer.ms, model=alias.model,
+                              messages=len(messages))
+            except httpx.HTTPError as exc:
+                logs.external(f"upstream:{alias.backend}", type(exc).__name__, timer.ms, model=alias.model)
+                return 502, {"error": {"message": f"upstream {alias.backend} unreachable: {type(exc).__name__}", "type": "upstream_error"}}
+            if response.status_code != 200:
+                # the provider's error body is diagnostic text, not user content: keep a masked, truncated copy
+                logs.error("upstream_error", target=f"upstream:{alias.backend}", status=response.status_code,
+                           model=alias.model, body=response.text[:600],
+                           request_fields=sorted(payload), tools=len(payload.get("tools") or []),
+                           roles=[m.get("role") for m in messages][-6:])
+                return 502, {"error": {"message": f"upstream {alias.backend} returned HTTP {response.status_code}", "type": "upstream_error"}}
+            try:
+                data = response.json()
+            except ValueError:
+                return 502, {"error": {"message": "upstream returned non-JSON", "type": "upstream_error"}}
+            if attempt == 1 and malformed_function_call(data):
+                # Gemini sometimes ends with finish_reason "…MALFORMED_FUNCTION_CALL" and no content: OpenClaw then
+                # fails the agent's turn ("LLM request failed."). The same request usually succeeds on a retry.
+                logs.event("upstream_retry", target=f"upstream:{alias.backend}", model=alias.model,
+                           reason="malformed_function_call", ms=timer.ms)
+                continue
+            return 200, normalize_completion(data, alias.model)
+        return 200, normalize_completion(data, alias.model)  # the retry was malformed too: OpenClaw reports it
 
     # ---- main route ------------------------------------------------------------------------
 
@@ -267,6 +276,7 @@ class EgressProxy:
         base_detail = {
             "mode": mode, "alias": alias_name, "reason": reason, "backend": alias.backend,
             "messages": len(messages), "tampered_markers": attr.tampered, "stream": stream,
+            "context": llm_usage.context_breakdown(body),  # admin 컨텍스트 사용량 (D-19)
         }
         # request side
         if censoring:
@@ -324,7 +334,8 @@ class EgressProxy:
         audit.record(kind="inference", verdict=verdict, action="completion", channel=attr.channel,
                      profile=profile, sandbox=attr.sandbox, agent=attr.agent, session_id=attr.session_id,
                      detail={**base_detail, "response_redactions": response_redactions, "ms": _ms(started),
-                             "upstream_model": alias.model})
+                             "upstream_model": alias.model, "usage": llm_usage.usage_summary(data.get("usage")),
+                             "context": llm_usage.scale_to_usage(base_detail["context"], data.get("usage"))})
         return self._respond(mode, data, stream)
 
     def _respond(self, mode: str, data: dict, stream: bool):
@@ -369,6 +380,12 @@ def _with_tool_call_extras(message: dict, extras: dict) -> dict:
             call = {**call, **extras}
         calls.append(call)
     return {**message, "tool_calls": calls}
+
+
+def malformed_function_call(data: dict) -> bool:
+    """Gemini's finish_reason for a tool call it could not form (``function_call_filter: MALFORMED_FUNCTION_CALL``)."""
+    return any("MALFORMED_FUNCTION_CALL" in str(c.get("finish_reason") or "").upper()
+               for c in (data.get("choices") or []) if isinstance(c, dict))
 
 
 def normalize_completion(data: dict, model: str) -> dict:
