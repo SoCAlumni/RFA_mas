@@ -401,7 +401,7 @@ async def ask(req: AskRequest, deps: AskDeps) -> AskOutcome:
     hints = deps.learned.reasons(req.audience, task.id)
     detail["hints"] = len(hints)
     reply = await deps.tasks.ask(decision.agent, decision.query, sid, channel, task.id)
-    detail["task_agent"] = {k: v for k, v in reply.detail.items() if k != "error"} | {"ok": reply.ok}
+    detail["task_agent"] = {k: (str(v)[:240] if k == "error" else v) for k, v in reply.detail.items()} | {"ok": reply.ok}
     if not reply.ok:
         return finish(_refuse(req, profile, "no_knowledge", f"task agent failed: {reply.detail.get('error') or 'error'}", task),
                       "error", decision.agent)

@@ -137,7 +137,8 @@ class Broker:
                      profile=self.routing.channels[channel].profile, sandbox=decision.sandbox, agent=agent,
                      session_id=sid, detail={"caller_sandbox": caller_sandbox, "ms": ms, "alias": decision.alias})
         return {"ok": status == "ok", "agent": agent, "sandbox": decision.sandbox, "route": decision.kind,
-                "channel": channel, "session_id": sid, "reply": reply, "ms": ms}
+                "channel": channel, "session_id": sid, "reply": reply, "ms": ms,
+                **({"error": reply} if status != "ok" else {})}
 
     def _turn(self, decision: RouteDecision, sid: str, message: str) -> tuple[str, str]:
         timeout = self.routing.broker.task_turn_timeout_seconds
@@ -154,7 +155,8 @@ class Broker:
         except (ValueError, AttributeError):
             text = ""
         if not result.ok and not text:
-            return f"task agent turn failed (rc={result.returncode})", "error"
+            tail = " ".join((result.stderr or result.stdout).strip().split())[-240:]
+            return f"task agent turn failed (rc={result.returncode}): {tail}", "error"
         return strip_markers(text) or "(empty reply)", "ok"
 
     # ---- drain (relocation) -----------------------------------------------------------------

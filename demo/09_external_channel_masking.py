@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo 03 — external 채널 응답 마스킹: (A) egress-proxy 가 external 마커가 붙은 요청을 hosted 모델로 보내며
+"""Demo 09 — external 채널 응답 마스킹: (A) egress-proxy 가 external 마커가 붙은 요청을 hosted 모델로 보내며
 요청·응답의 수치/키워드/이메일을 마스킹하고 감사 로그에 남긴다. (B) 채널 API 진입점으로 같은 질문을 보내면
 assistant → broker → task 에이전트 경로의 최종 응답이 같은 censor 함수를 통과한다 (hosted 턴 90초 제한)."""
 
@@ -44,4 +44,4 @@ def body(demo):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main("03", "external 채널 응답에서 수치·키워드 마스킹 (proxy + 채널 API)", body))
+    raise SystemExit(main("09", "external 채널 응답에서 수치·키워드 마스킹 (proxy + 채널 API)", body))

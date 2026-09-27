@@ -124,14 +124,14 @@ class Demo:
         return 0 if header["ok"] else 1
 
 
-def main(number: str, title: str, body) -> int:
+def main(number: str, title: str, body, budget: float = BUDGET_SECONDS) -> int:
     parser = argparse.ArgumentParser(description=f"demo {number}: {title}")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--live", action="store_true", help="run against the live sandboxes (records a replay)")
     group.add_argument("--replay", action="store_true", help="print the recorded run (default when no --live)")
     parser.add_argument("--no-fallback", action="store_true", help="do not fall back to the recording on failure")
     args = parser.parse_args()
-    demo = Demo(number, title)
+    demo = Demo(number, title, budget=budget)
     if not args.live:
         demo.mode = "replay"
         return demo.replay()
@@ -161,6 +161,17 @@ def proxy_key() -> str:
 
 def marker_secret() -> bytes:
     return (ROOT / ".local" / "sg" / "marker.key").read_bytes().strip()
+
+
+def ask_token() -> str:
+    """RFA_ASK_TOKEN from .env.dev (host-side; the value is never printed or recorded)."""
+    for line in (ROOT / ".env.dev").read_text(encoding="utf-8").splitlines():
+        if line.startswith("RFA_ASK_TOKEN="):
+            return line.split("=", 1)[1].strip().strip('"').strip("'")
+    raise DemoFailure("RFA_ASK_TOKEN missing in .env.dev")
+
+
+ENTRY = "http://127.0.0.1:8799"
 
 
 def nemoclaw_bin() -> str:

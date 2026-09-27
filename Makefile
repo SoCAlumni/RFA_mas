@@ -2,7 +2,7 @@
 # NemoClaw 0.0.124 + OpenShell 0.0.116 (Colima/Docker), Ollama, uv and openssl installed.
 #
 #   make bootstrap   preflight → egress-proxy/broker up → retire rfa-demo → onboard 4 sandboxes → reconcile → seed
-#   make demo        run demo/01..08 (replay by default; DEMO_MODE=live for live runs)
+#   make demo        run demo/01..09 (replay by default; DEMO_MODE=live for live runs)
 #   make mock-e2e    desk(C)/approval(A) mocks against /ask: fake agents by default, MOCK_FLAGS="--ask-url http://127.0.0.1:8799" for live
 #   make teardown    destroy the declared sandboxes and stop the host services
 #
@@ -26,7 +26,7 @@ MCP_FLAGS ?=
 MOCK_FLAGS ?= --fake-agents
 
 .PHONY: help bootstrap demo teardown serve serve-stop status plan apply test validate render kb-seed \
-        verify-baseline demo-01 demo-02 demo-03 demo-04 demo-05 demo-06 demo-07 demo-08 knowledge-facade knowledge-facade-stop \
+        verify-baseline demo-01 demo-02 demo-03 demo-04 demo-05 demo-06 demo-07 demo-08 demo-09 knowledge-facade knowledge-facade-stop \
         mock-e2e mock-approval openapi
 
 help:
@@ -109,7 +109,7 @@ teardown:
 
 # ---- demos ----------------------------------------------------------------------------------
 
-demo: demo-01 demo-02 demo-03 demo-04 demo-05 demo-06 demo-07 demo-08
+demo: demo-01 demo-02 demo-03 demo-04 demo-05 demo-06 demo-07 demo-08 demo-09
 
 demo-01:
 	$(UV) python demo/01_external_curl_blocked.py --$(DEMO_MODE)
@@ -127,3 +127,5 @@ demo-07:
 	$(UV) python demo/07_agents_apply_runtime_add.py --$(DEMO_MODE)
 demo-08:
 	$(UV) python demo/08_demote_workspace_scan.py --$(DEMO_MODE)
+demo-09:
+	$(UV) python demo/09_external_channel_masking.py --$(DEMO_MODE)
