@@ -1,0 +1,201 @@
+schema_version: '1.0'
+id: P1-008F
+title: 팀원 교체 전 단일 명령 로컬 PoC 실행
+objective: 기존 UI·core·수동 검토·모의 게시를 영속 저장소와 함께 한 명령으로 실행한다. core LocalRuntime은 교체 가능한 로컬 실행이며 sandbox가
+  아니다.
+kind: task
+source_tasks:
+- P0-025A
+- P1-008C
+- P1-008D
+requirement_refs:
+- docs/LOCAL_MODULES.md
+priority: P0
+status: done
+spec_state: ready
+unresolved: []
+workstream: integration/evaluation
+execution_role: worker
+estimated_effort: 2.0
+product_owner: 민섭(사용자 승인 기본 대체 구현); 최종 팀원 소유권 유지
+execution_class: 이 저장소 구현(교체 가능한 local stand-in)
+product_mode: local/mock; simulated=true. 실제 MCP/게시/OpenShell/UI gate는 별도 not_run.
+scope:
+  included:
+  - 기존 bootstrap/포트/UI/reference approval 재사용; 새 모듈 bootstrap에만 adapter 배선
+  - 단일 loopback 포트·전용 영속 데이터 경로·중복 실행 lock·안전한 shutdown
+  - 환경변수/실제 env 파일과 격리된 mock 기본값; 명시적 local/mock 표시
+  excluded:
+  - NVIDIA 재검증·실제 게시·OpenShell 강제·팀원 원본 지원 주장
+  - 공유 graph/DTO/settings/기존 bootstrap/lock 변경
+  owned_paths:
+  - src/rfa_mas/poc
+  - tests/test_poc.py
+  - docs/POC.md
+  read_only_paths:
+  - src/rfa_mas/bootstrap.py
+  - src/rfa_mas/ui
+  - src/rfa_mas/reference/local_response.py
+  - src/rfa_mas/reference/local_security.py
+  - src/rfa_mas/api/app.py
+  planned_paths:
+  - src/rfa_mas/poc
+  - tests/test_poc.py
+  - docs/POC.md
+  shared_resources: []
+depends_on:
+- id: P0-025A
+  condition: integrated_done
+  required_output: 검증된 로컬 기능과 교체 경계
+- id: P1-008C
+  condition: integrated_done
+  required_output: 검증된 로컬 기능과 교체 경계
+- id: P0-026
+  condition: integrated_done
+  required_output: 검증된 로컬 기능과 교체 경계
+contract_refs:
+- id: RFA-DTO
+  version: '1.0'
+  digest: 8c81649ea4ea160991b53e91cdfc97d7565952dbdbba572ea6f1529296a52ff6
+  role: consumer
+- id: RFA-EXTENDED
+  version: '1.1'
+  digest: ea22d943b8560609b7bcc965e258e4edd0e44df7548f57a0507535153361b6cb
+  role: consumer
+context:
+  global_refs:
+  - docs/PROJECT_CONTEXT.md
+  - TASK_EXECUTION_RULES.md
+  read:
+  - path: src/rfa_mas/bootstrap.py
+    section: factory/lifecycle/HTTP transport
+    reason: 기존 구현 재사용; graph 또는 계약 복제 금지
+  - path: src/rfa_mas/ui
+    section: factory/lifecycle/HTTP transport
+    reason: 기존 구현 재사용; graph 또는 계약 복제 금지
+  - path: src/rfa_mas/reference/local_response.py
+    section: factory/lifecycle/HTTP transport
+    reason: 기존 구현 재사용; graph 또는 계약 복제 금지
+  - path: src/rfa_mas/reference/local_security.py
+    section: factory/lifecycle/HTTP transport
+    reason: 기존 구현 재사용; graph 또는 계약 복제 금지
+  - path: src/rfa_mas/api/app.py
+    section: factory/lifecycle/HTTP transport
+    reason: 기존 구현 재사용; graph 또는 계약 복제 금지
+  handoff: tasks/P1-008F/handoff.md
+  dependency_results:
+  - tasks/P0-025A/handoff.md
+  - tasks/P1-008C/handoff.md
+  - tasks/P0-026/handoff.md
+deliverables:
+- path: src/rfa_mas/poc
+  availability: planned
+  description: PoC 조립/실행·회귀·사용법
+- path: tests/test_poc.py
+  availability: planned
+  description: PoC 조립/실행·회귀·사용법
+- path: docs/POC.md
+  availability: planned
+  description: PoC 조립/실행·회귀·사용법
+acceptance_criteria:
+- id: AC1
+  given: 깨끗한 env 또는 오염된 provider env에서 명령 실행
+  expect: 키/env 파일 없이 loopback UI·코어·manual review가 준비되며 노트→공개 질의→승인 대기→수동 승인→모의 게시까지 동작
+  required: true
+- id: AC2
+  given: 동일 data dir 재시작·중복 실행·오류/공격 요청
+  expect: 세션/승인 대기와 receipt 보존; 중복 서버는 거절; 외부 Host/Origin·CSRF 거절 및 비밀 미노출
+  required: true
+- id: AC3
+  given: 실행 도움말과 교체 설명
+  expect: 실제 명령/경로·정지/재시작·포트 충돌 오류·로컬 runtime/mock publication/비sandbox 범위가 명확; 외부 write나 조용한 backend
+    fallback 없음
+  required: true
+verification:
+- id: V1
+  ac_ids:
+  - AC1
+  - AC2
+  - AC3
+  type: command
+  availability: planned
+  prerequisites:
+  - 독립 worktree; 합성 자료·tmp_path·loopback subprocess; env 파일/외부 네트워크 사용 없음
+  cwd: .
+  argv:
+  - .venv/bin/python
+  - -m
+  - pytest
+  - -q
+  - tests/test_poc.py
+  timeout_seconds: 180
+  procedure: []
+  assertions:
+  - 키/env 파일 없이 loopback UI·코어·manual review가 준비되며 노트→공개 질의→승인 대기→수동 승인→모의 게시까지 동작
+  - 세션/승인 대기와 receipt 보존; 중복 서버는 거절; 외부 Host/Origin·CSRF 거절 및 비밀 미노출
+  - 실제 명령/경로·정지/재시작·포트 충돌 오류·로컬 runtime/mock publication/비sandbox 범위가 명확; 외부 write나 조용한 backend fallback
+    없음
+  runner: pytest
+evidence_dir: .agent/evidence/P1-008F
+latest_evidence_file: .agent/evidence/P1-008F/poc-target-01/result.json
+verification_summary:
+  state: passed
+  spec_revision: 1
+  spec_digest: 2b0331236815190dab73868248b418ccf42b1d47fc948191e8b078dfb849122e
+  contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+  source_fingerprint: 7984f323e8d70719c0edb9b0a6ee65ce30745c59fae818ff0445965a7588428f
+  evidence: .agent/evidence/P1-008F/poc-target-01/result.json
+integration:
+  state: integrated
+  target: main canonical control checkout
+  reason: null
+  reservation: false
+  submission_generation: 1
+  submission:
+    head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
+    baseline_head: ff25b53ef1f3cf091243205f10eab4856441867d
+    worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P1-008F-poc
+    branch: task/P1-008F-poc
+    evidence: .agent/evidence/P1-008F/poc-worker-01/result.json
+    changed_files:
+      docs/POC.md: 95247229fc8e46930b64593331552bb81cf6b36f969b7f9b5781ec36d7297117
+      src/rfa_mas/poc/__init__.py: ee23e07b87180f6a825c0cbbe74584040efbba0b6437d270c6f9b474865ae399
+      src/rfa_mas/poc/__main__.py: dbf450dacf989faf5895a77032125635beb5088802166735fcf4e16f1c5666d2
+      src/rfa_mas/poc/bootstrap.py: 0f9effe9cb381f3caa45201df65c86df768fb18e1fbc8d16a2f5d104adb0e008
+      tests/test_poc.py: bae7124d4417beb3081df9a424ab5854e5a43ddc40a6425fbb07510f3b9db0fc
+  result:
+    verification_summary:
+      state: passed
+      spec_revision: 1
+      spec_digest: 2b0331236815190dab73868248b418ccf42b1d47fc948191e8b078dfb849122e
+      contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+      source_fingerprint: 7984f323e8d70719c0edb9b0a6ee65ce30745c59fae818ff0445965a7588428f
+      evidence: .agent/evidence/P1-008F/poc-target-01/result.json
+    head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
+  evidence: .agent/evidence/P1-008F/poc-target-01/result.json
+revision: 10
+spec_revision: 1
+claim_generation: 1
+claim: null
+attempts:
+  count: 2
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: poc-target-01
+  evidence_refs:
+  - .agent/evidence/P1-008F/poc-worker-01/result.json
+  approaches: []
+blocker: null
+migration:
+  original_status: new_user_authorized
+  source_ref: 2026-09-27 사용자 팀원 교체 전 local PoC 승인
+  prior_claim: 기본 UI와 stand-in 완료, 단일 실행 명령은 없음
+  implementation_facts: 기존 완료 task/evidence 보존; 새 조립 산출물만 추가
+  previous_evidence: []
+  checks_this_migration:
+  - 기존 factory/lifecycle·포트 경계 확인
+  judgment: 독립 실행 산출물로 split; 실제 교체 gate 보존
+  initial_spec_revision: 1
+updated_at: '2026-09-27T03:03:20+00:00'
+concise_result: Integrated target and required AC verified; see immutable evidence
+next_action: 단일 local composition/launcher 구현 후 실제 프로세스와 재시작·수동 승인·모의 게시 검증

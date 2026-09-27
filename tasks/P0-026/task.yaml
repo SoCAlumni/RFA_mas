@@ -11,7 +11,7 @@ requirement_refs:
 - docs/EVALUATION_CONTEXT.md
 - RFA_E2E_Test_Scenarios_10_ko.md
 priority: P0
-status: done
+status: verifying
 spec_state: ready
 unresolved: []
 workstream: integration/evaluation
@@ -333,26 +333,26 @@ verification:
   - 비밀 원문 없는 attempt/source/version/명령/시간/assertion·성능 원시 값·실패 재현/후속 task가 연결된다.
   runner: manual
 evidence_dir: .agent/evidence/P0-026
-latest_evidence_file: .agent/evidence/P0-026/completion-integration-0927015649/result.json
+latest_evidence_file: .agent/evidence/P0-026/completion-worker-0927030422/result.json
 verification_summary:
   state: passed
   spec_revision: 29
   spec_digest: d41967ff0e8acfaee8de90aec7d48e1be27ee8350b87513ec8be3106755a103c
   contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
-  source_fingerprint: 8812e1aa9b49931a158c4310a6901d8f462c2fe4c187411e465b78d5adbefd1e
-  evidence: .agent/evidence/P0-026/completion-integration-0927015649/result.json
+  source_fingerprint: e9f030bbbabaac993b082db6fda399d9ce24226104c147debe1ecc934b3923d7
+  evidence: .agent/evidence/P0-026/completion-worker-0927030422/result.json
 integration:
-  state: integrated
+  state: pending
   target: canonical integration branch after OPS-000
   reason: null
-  reservation: false
-  submission_generation: 1
+  reservation: true
+  submission_generation: 2
   submission:
-    head: d6aaa9127cddd71f6b76e9c967dacb8f31c023cb
-    baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+    head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
+    baseline_head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
     worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-026-completion
     branch: task/P0-026-completion
-    evidence: .agent/evidence/P0-026/completion-worker-0927015257/result.json
+    evidence: .agent/evidence/P0-026/completion-worker-0927030422/result.json
     changed_files:
       docs/DEMO.md: cf894d22013cdec88fbe305fb4683b2753c4adb232bd50a438d682186872ca4b
       fixtures/demo/materials.jsonl: 4c9cd51fa84afcd165b3860c839312212531a568bcfb0e19359c7d97d51f6850
@@ -379,30 +379,88 @@ integration:
       tests/e2e/test_real_model.py: b987dbef0bf7dab925ef6126a4ad17c78f1609f82732a3a510cc0ca43b317ed8
       tests/e2e/test_rfa_scenarios.py: f9704b774f77b6ea311062a27a1b1423c540db83a2b5760523c4ce273d5456bc
       tests/test_demo_e2e.py: 8b5a40ade99a3d49123a5592d3706db0cc9690171dcc8b0c4f6b6576d5d34246
-  result:
+  result: null
+  evidence: null
+revision: 50
+spec_revision: 29
+claim_generation: 2
+claim: null
+attempts:
+  count: 6
+  cycles: 1
+  no_progress_count: 0
+  latest_attempt: completion-integration-0927030918
+  evidence_refs:
+  - .agent/evidence/P0-026/completion-worker-0927014552/result.json
+  - .agent/evidence/P0-026/completion-worker-0927014920/result.json
+  - .agent/evidence/P0-026/completion-worker-0927015257/result.json
+  - .agent/evidence/P0-026/completion-worker-0927030422/result.json
+  approaches:
+  - kind: integrated_revalidation
+    generation: 2
+    baseline_head: 6c92479db7c4c34e05ff87ca13a4b69f7d6c5b11
+    reason: New isolated PoC source module expands final acceptance source manifest; one fixed-head scoped
+      revalidation only, no prerequisite cascade.
+    at: '2026-09-27T03:04:16+00:00'
+    cycles: 3
+    no_progress_count: 0
+    claim: null
+    integration:
+      state: integrated
+      target: canonical integration branch after OPS-000
+      reason: null
+      reservation: true
+      submission_generation: 1
+      submission:
+        head: d6aaa9127cddd71f6b76e9c967dacb8f31c023cb
+        baseline_head: 93ae0a3760b1848d72a7c9324513075b98b856e8
+        worktree: /Users/minseop/Dev/projects/nvidia_hackathon_2026/rfa_mas_worktrees/P0-026-completion
+        branch: task/P0-026-completion
+        evidence: .agent/evidence/P0-026/completion-worker-0927015257/result.json
+        changed_files:
+          docs/DEMO.md: cf894d22013cdec88fbe305fb4683b2753c4adb232bd50a438d682186872ca4b
+          fixtures/demo/materials.jsonl: 4c9cd51fa84afcd165b3860c839312212531a568bcfb0e19359c7d97d51f6850
+          fixtures/e2e/acceptance_config.json: ef45a7ead9449bee83779a06dcc70e9be83f07b7521254e0a3f829d46f80c2e7
+          fixtures/e2e/access_matrix.json: 0e20b7af8c1dc24bf45d5a62d5a2201adcb8d993280bff698546c023b010101c
+          fixtures/e2e/golden_questions.jsonl: 9fad979df4435e911b5ebd4a9efed295ae402154b75fe576aed0f676fd20982a
+          fixtures/e2e/ingest/confluence_pages.json: 075a9b332d023ab73c05308f82a75bfc5069a12cdbf07d6cd11b3dcdc2ebac50
+          fixtures/e2e/ingest/github_issues.json: 528b3a74d8b44e959b235ca19bbb482f718cfd6d5874f749475a2044664e8336
+          fixtures/e2e/ingest/notes.jsonl: 2a3a3561ec97bf9c25d58cd753ff7c1b6066f8a47f7d41e5ec9b0bbc4d3bb83b
+          fixtures/e2e/load_corpus.json: 1e77dead0902e23ce33289a21647fb6bc7a1341251e72cf088f169ae47d99ec8
+          fixtures/e2e/manifest.json: 21e6145a01f400524cdfacd1833aee2fd07956f6c46cf76ca8539cd972ae0558
+          fixtures/e2e/materials_v1.json: a08e5c573e7af26155d633ec19a1174f9cac933c5a54992fadb6b33b7c5d3fa6
+          fixtures/e2e/personas.json: f48fd2c7f75f8ac7251032a97486b882dd33784059ef8b4f7e49478c7b854e7e
+          fixtures/e2e/scenarios.json: fe2931d54c0bf985b8cca60e4f9c3b703e440d029363d9e73489ad53667178b8
+          fixtures/e2e/sources.json: a3a5757ce2b90a26353bb6f7b8ffca5a086686a9f3da1a0eff2f841fc2622d80
+          fixtures/e2e/variants.json: b7f2d0250b165fc878cad3beb201ec1c865aff45c855276751793f1dcd54afc5
+          src/rfa_mas/cli.py: 8a07ebba78f5fd855dc39cb1d61bb25f98b61a6fb3cee274edd908ab992db062
+          tests/e2e/conftest.py: 1091b087cc993c47aed912c42b95a184aaeb0f2390c586a037eebe270ba17c82
+          tests/e2e/fixture_pack.py: cae2ae27da38d7f737b51b1fe4a9eb80c1c133b1f481620b6cdeb317a640d10e
+          tests/e2e/harness.py: 51b91744235bafe850d1de6426186e5153b560f0f85d42e02870c004f483a8d1
+          tests/e2e/test_fixture_pack.py: c568ef650c7ca651ae9d3703ffcd387739f4e3213982fcea8a9c011d701be275
+          tests/e2e/test_load.py: 2d0f83bc88669e9d1f479d7e45e68698b37500c669599d6b6e07c7c92f291a2e
+          tests/e2e/test_process_recovery.py: 023cfaefe68a889d21f26c65e97204a620ef2e8580fb7159559791d8844f594e
+          tests/e2e/test_real_model.py: b987dbef0bf7dab925ef6126a4ad17c78f1609f82732a3a510cc0ca43b317ed8
+          tests/e2e/test_rfa_scenarios.py: f9704b774f77b6ea311062a27a1b1423c540db83a2b5760523c4ce273d5456bc
+          tests/test_demo_e2e.py: 8b5a40ade99a3d49123a5592d3706db0cc9690171dcc8b0c4f6b6576d5d34246
+      result:
+        verification_summary:
+          state: passed
+          spec_revision: 29
+          spec_digest: d41967ff0e8acfaee8de90aec7d48e1be27ee8350b87513ec8be3106755a103c
+          contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
+          source_fingerprint: 8812e1aa9b49931a158c4310a6901d8f462c2fe4c187411e465b78d5adbefd1e
+          evidence: .agent/evidence/P0-026/completion-integration-0927015649/result.json
+        head: d6aaa9127cddd71f6b76e9c967dacb8f31c023cb
+      evidence: .agent/evidence/P0-026/completion-integration-0927015649/result.json
     verification_summary:
-      state: passed
+      state: stale
       spec_revision: 29
       spec_digest: d41967ff0e8acfaee8de90aec7d48e1be27ee8350b87513ec8be3106755a103c
       contract_digest: eaf5cd7076ca55532ea0fc68edba738c5a20165916f7fd72355c18f409a879c2
       source_fingerprint: 8812e1aa9b49931a158c4310a6901d8f462c2fe4c187411e465b78d5adbefd1e
       evidence: .agent/evidence/P0-026/completion-integration-0927015649/result.json
-    head: d6aaa9127cddd71f6b76e9c967dacb8f31c023cb
-  evidence: .agent/evidence/P0-026/completion-integration-0927015649/result.json
-revision: 44
-spec_revision: 29
-claim_generation: 1
-claim: null
-attempts:
-  count: 4
-  cycles: 3
-  no_progress_count: 0
-  latest_attempt: completion-integration-0927015649
-  evidence_refs:
-  - .agent/evidence/P0-026/completion-worker-0927014552/result.json
-  - .agent/evidence/P0-026/completion-worker-0927014920/result.json
-  - .agent/evidence/P0-026/completion-worker-0927015257/result.json
-  approaches: []
+    latest_evidence_file: .agent/evidence/P0-026/completion-integration-0927015649/result.json
 blocker: null
 migration:
   original_status: todo
@@ -415,6 +473,8 @@ migration:
   - 원문 ID·상태·AC·의존성·수정 대상·예상시간 매핑
   judgment: ID·상태·기능 AC 유지; TASKS.md 수정 책임은 generated view로 전환. 상세 상태/검증은 이 원본에서 관리.
   initial_spec_revision: 2
-updated_at: '2026-09-27T02:00:16+00:00'
-concise_result: Integrated target and required AC verified; see immutable evidence
-next_action: Review final V3/V4 and V5 gate matrix, submit once
+updated_at: '2026-09-27T03:09:20+00:00'
+concise_result: 'Recovery inspected: New isolated PoC source module expands final acceptance source manifest;
+  one fixed-head scoped revalidation only, no prerequisite cascade.'
+next_action: 'Coordinator: inspect changed source/spec/contract, recover reservation, reverify impacted
+  AC'

@@ -955,3 +955,15 @@ task별 `.agent/evidence/<ID>/<attempt>/`에 불변 저장한다. 비밀 값·�
 - 최종 원본 집계: done 65 / verifying 5 / todo 1 / blocked 4 / deferred 9 / cancelled 1, 총85개. 실행 중 task는 없다. OPS-001~006은 기존 구현이 있으나 현재 baseline의 관리 도구 감사가 덜 끝난 6개로 유지한다(verifying5/todo1). 이를 제품 미구현이나 완료로 바꾸지 않는다. 관리 체계 재개발·전체 회귀 cascade는 시작하지 않았다.
 - blocked: P1-007B의 RFA 역할별 실제 OpenShell identity, P1-008A/B의 실제 팀원 승인·게시/runtime·UI 교체, P1-009의 로그인 필요 공식 폼 본문 확인. 기본 교체형 로컬 모듈은 제공되지만 이 실제 gate를 대신하지 않는다. 기존 deferred9/cancelled1 이력은 유지한다.
 - 마지막 확인은 task 원본/파생 view 정합성과 diff 검사에 한정한다. 이후 commit은 task 상태·handoff·이 로그·안전한 불변 evidence JSON만 보존하며 제품 소스나 실행 조건을 바꾸지 않는다. 사용자 `.gitignore` 변경은 여전히 별도 보존한다.
+
+## P1-008F — 팀원 교체 전 실행 가능한 PoC (2026-09-27 사용자 추가 승인)
+
+- `6c92479`: 기존 core·UI·검토 모듈을 단일 실행 명령으로 조립했다. `uv run python -m rfa_mas.poc --data-dir .local/poc --port 8780`, 화면은 `http://127.0.0.1:8780/ui/`. 사용법/교체 경계는 `docs/POC.md`가 현재 PoC의 기준이다. 기존 README의 UI factory-only 설명은 이 새 진입점 이전 core 기준이며 `rfa api` 자체는 여전히 UI를 mount하지 않는다.
+- 변경 범위는 새 `src/rfa_mas/poc/`, `tests/test_poc.py`, `docs/POC.md`뿐이다. 공통 bootstrap/settings/DTO/graph/lock/UI는 변경하지 않았다. 새로운 서버/framework/dependency 도입 없음. core LocalRuntime을 사용하며 실제 sandbox가 아니다.
+- core의 1.0 검토로는 1.1 게시 ApprovalReference가 발급되지 않던 연결 공백을 PoC mapper에서 해결했다. 현재 ResumePolicy를 실제 검사한 뒤 버전/hash/target/source/policy를 1.1 초안에 연결한다. UI 게시도 core publication API의 권한 재검사·durable idempotency를 거친다. 수동 승인 원본은 별도 review SQLite, 게시 결과는 mock receipt이며 외부 write는 없다.
+- 기본값은 환경변수/실제 env 파일과 격리한 local/mock이다. 서비스 token은 매 시작 메모리에서만 생성하고 브라우저·파일에 남기지 않는다. loopback 한 포트, 내부 ASGI 계약, Host/Origin/CSRF, 별도 data-dir process lock과 영속 core/review DB를 사용한다.
+- 개발 오류/보수: cycle1(4 pass/2 fail) 필수 `max_read_retries` 누락 → 명시1; cycle2(4 pass/2 fail) EffectGuardedResponse의 없는 observer 접근 → service.observations 사용. `service.start`가 effect ledger를 다시 적용하는 기존 경계를 확인했다. cycle3는6 pass. 실패 요약은 `.agent/evidence/P1-008F/development/failures.json`, 실제 cycle2 로그는 `.agent/input/poc-cycle2.log`에 보존한다.
+- 정식 worker/target 각각6 passed, 실패/skip0. 실제 subprocess 세 번 재시작·pending 승인 복구·수동 승인·모의 게시·같은 key 재조회/다른 key 거절·receipt 보존, 정책 변경 후 게시 거절, 환경 격리·Host/Origin/CSRF·포트 충돌·중복 data-dir lock을 확인했다. ruff check/format 및 diff check 통과. 기존 내부 subgraph의 durability warning은 숨기지 않았다.
+- 실제 Chrome154에서도 세션·비공개 노트·공개 FAQ 초안·수동 승인·completed 재개·mock 영수증을 확인했다. 외부 outbound/JS 오류/browser storage0. 첫 시도는 같은 이름 버튼2개를 잡는 browser selector 오류였고 #work-result/현재 draft card로 범위를 지정한 두 번째 시도가 통과했다. 증거 `.agent/evidence/P1-008F/poc-browser-02/browser.json`, 합성 스크린샷 `/tmp/rfa-poc-browser-0927/ui.png`.
+- P1-008F는 integrated/done이다. main에서 사용자용 `.local/poc`,8780 서버를 시작하고 status200/core reachable/review mock을 확인했다. 브라우저 검사용18780 서버는 중지했으며 데이터는 삭제하지 않았다. NVIDIA·실제 게시·OpenShell을 새로 호출하지 않았다.
+- 새 src 진입점 때문에 전체 src를 fingerprint하는 P0-026만 stale이 됐다. 고정6c92479에서 해당 최종 인수만 재확인한다. 기존 완료 task 전체 cascade나 실제 모델 재호출은 하지 않는다. 기존 실제 교체 gate(P1-007B/P1-008A/B)와 폼 확인(P1-009)은 별도 유지한다.
