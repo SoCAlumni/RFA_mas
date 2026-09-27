@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 import uvicorn
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 from pydantic_settings import SettingsError
 
 from rfa_mas.adapters.scheduler import ManualClock
@@ -39,6 +39,7 @@ from rfa_mas.contracts import (
 )
 from rfa_mas.dev_env import initialize_dev_env
 from rfa_mas.errors import BackendNotImplementedError, ConfigurationError, RfaError
+from rfa_mas.knowledge_facade.app import create_knowledge_facade_app
 from rfa_mas.settings import PLANNED_SETTINGS, Settings
 
 
@@ -144,6 +145,32 @@ def _parser() -> argparse.ArgumentParser:
 
     openapi = subparsers.add_parser("openapi", help="Export the generated OpenAPI document")
     openapi.add_argument("--output", default="openapi.json")
+    openapi.add_argument(
+        "--app",
+        choices=("core", "knowledge-facade"),
+        default="core",
+        help="core: RFA MAS API; knowledge-facade: RFA_module knowledge contract provider",
+    )
+
+    facade = subparsers.add_parser(
+        "knowledge-facade",
+        help="Serve RFA_module's knowledge contract (GET /tasks, POST /tasks/{id}/ask)",
+    )
+    facade.add_argument(
+        "--host", default="127.0.0.1", help="RequestForApproval modules.yaml runs it on 0.0.0.0"
+    )
+    facade.add_argument("--port", type=int, default=8791)
+    facade.add_argument(
+        "--audience",
+        choices=("public", "company", "business_unit"),
+        default="public",
+        help="Evidence audience the writer channel may receive (default public)",
+    )
+    facade.add_argument(
+        "--api-key-env",
+        default="KNOWLEDGE_FACADE_API_KEY",
+        help="Env var holding the bearer key required for a non-public audience",
+    )
     return parser
 
 
@@ -970,6 +997,56 @@ def _evaluate_compare(args: argparse.Namespace) -> None:
     raise SystemExit(_RELEASE_EXIT[comparison.release_gate])
 
 
+def _knowledge_facade(args: argparse.Namespace, settings: Settings) -> int:
+    """Serve 승희's knowledge contract from the local core (P1-010).
+
+    A public facade may bind a non-loopback host without a key because it serves public,
+    shareable evidence only. Any other audience needs a bearer key from the environment
+    (never a CLI argument, so it does not land in process listings or shell history).
+    """
+    import os
+
+    audience = Audience(args.audience)
+    api_key = None
+    if audience != Audience.PUBLIC:
+        raw = os.environ.get(args.api_key_env)
+        if not raw:
+            print(
+                json.dumps(
+                    {
+                        "code": "configuration_error",
+                        "message": f"{args.api_key_env} is required for a {audience.value} facade",
+                    }
+                )
+            )
+            return 2
+        api_key = SecretStr(raw)
+    try:
+        settings.ensure_ready()
+        app = create_knowledge_facade_app(
+            build_container(settings), audience=audience, api_key=api_key
+        )
+    except (ConfigurationError, BackendNotImplementedError) as exc:
+        print(json.dumps({"code": exc.code, "message": exc.safe_message}, ensure_ascii=False))
+        return 2
+    print(
+        json.dumps(
+            {
+                "service": "knowledge-facade",
+                "host": args.host,
+                "port": args.port,
+                "audience": audience.value,
+                "authenticated": api_key is not None,
+                "contract": "RFA_module contracts/knowledge.openapi.yaml",
+            },
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
+    uvicorn.run(app, host=args.host, port=args.port, reload=False, proxy_headers=False)
+    return 0
+
+
 def main() -> None:
     parser = _parser()
     args = parser.parse_args()
@@ -1050,6 +1127,8 @@ def main() -> None:
             reload=False,
         )
         return
+    if args.command == "knowledge-facade":
+        raise SystemExit(_knowledge_facade(args, settings))
     if args.command == "doctor":
         raise SystemExit(_doctor(settings))
     if args.command == "langfuse-retention":
@@ -1073,8 +1152,12 @@ def main() -> None:
         settings.ensure_ready()
         path = Path(args.output)
         path.parent.mkdir(parents=True, exist_ok=True)
+        if args.app == "knowledge-facade":
+            document = create_knowledge_facade_app(build_container(settings)).openapi()
+        else:
+            document = create_app(settings).openapi()
         path.write_text(
-            json.dumps(create_app(settings).openapi(), ensure_ascii=False, indent=2) + "\n",
+            json.dumps(document, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
         print(path)

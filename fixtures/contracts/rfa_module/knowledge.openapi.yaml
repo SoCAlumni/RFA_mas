@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: RFA knowledge contract (실무대장 ↔ 언론사)
+  version: 0.1.0
+  description: |
+    언론사(writer)가 지식을 얻는 유일한 창구. 제공자는 민섭님의 실무대장(Task supervisor).
+    RFA_module 에는 같은 계약을 지키는 stub(services/knowledge_stub)이 있다.
+    "DB 검색"이 아니라 "task supervisor 에게 질문" 의미: 뒤에서 task 에이전트가 동적으로 생기든
+    토론을 하든, 호출자는 answer 와 sources 만 받는다.
+servers:
+  - url: http://127.0.0.1:8791
+paths:
+  /tasks:
+    get:
+      operationId: listTasks
+      summary: 지금 살아 있는 task 목록 (동적)
+      responses:
+        "200":
+          description: task 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TaskInfo" }
+  /tasks/{task_id}/ask:
+    post:
+      operationId: askTask
+      summary: task supervisor 에게 질문
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AskRequest" }
+      responses:
+        "200":
+          description: 답변과 근거
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KnowledgeResult" }
+        "404":
+          description: 없는 task
+components:
+  schemas:
+    TaskInfo:
+      type: object
+      required: [id, name, description, updated_at]
+      properties:
+        id: { type: string, examples: [orbit] }
+        name: { type: string }
+        description: { type: string }
+        updated_at: { type: string, format: date }
+    AskRequest:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string }
+    KnowledgeResult:
+      type: object
+      required: [task_id, answer, confidence, sources]
+      properties:
+        task_id: { type: string }
+        answer: { type: string, description: supervisor 가 정리한 답 }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        sources:
+          type: array
+          description: answer 의 근거를 한 줄씩. editor 근거 대조와 censor 출처 추적에 쓴다. 없으면 []
+          items: { type: string, examples: ["ORBIT 9월 진행 현황: INT4 이후 소폭 하락"] }
