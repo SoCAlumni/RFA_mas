@@ -10,7 +10,7 @@
 version: 1
 
 host:
-  lan_ip: 192.168.0.5                 # 샌드박스 → 호스트 REST/MCP 목적지 (OpenShell preset host)
+  lan_ip: 192.168.123.191                 # 샌드박스 → 호스트 REST/MCP 목적지 (OpenShell preset host)
   sandbox_host_alias: host.openshell.internal   # 샌드박스 → egress-proxy inference route 목적지
   nemoclaw_bin: nemoclaw                  # PATH 에 ~/.hermes/node/bin 을 포함해 실행 (Makefile 참고)
 
