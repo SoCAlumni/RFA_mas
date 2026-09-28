@@ -13,6 +13,6 @@
 - 결과 공개 일정이 공개 자료에 없으면 날짜를 추정하지 않는다.
 - 업무 내부 등급 요청에는 수치를 근거 id 와 함께 그대로 쓴다.
 
-근거 출처: 사내 지식 API task `inference_optimization` (ORBIT 진행 노트·회귀 메모·캘리브레이션 실험 기록·공개 발표 자료·README·이슈 대화·결재 규칙·수치표). 보조로 `quantization_research`(INT4·INT8 연구 노트)와 `triv3`(벤치마크 절차). research 는 `inference_optimization` 을 먼저 조회한다. 노트 제목의 `[샘플·공개|사내]` 가 공개 등급이다 — 결재 9 규칙(공개 논문 비교는 수치 없이 방향만)을 따른다.
+근거 출처: 사내 지식 API task `inference_optimization` (ORBIT 진행 노트·회귀 메모·캘리브레이션 실험 기록·공개 발표 자료·README·이슈 대화·결재 규칙·수치표). 보조로 `quantization_research`(INT4·INT8 연구 노트)와 `triv3`(벤치마크 절차). research 는 `inference_optimization` 을 먼저 조회한다. 노트 제목의 `[공개|사내]` 가 공개 등급이다 — 결재 9 규칙(공개 논문 비교는 수치 없이 방향만)을 따른다.
 
 답변 형식: 결론 1문장 → 근거 요약(수치는 등급 규칙대로) → `근거: <source ids>` → `검증: pass|revise`.

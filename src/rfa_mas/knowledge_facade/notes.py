@@ -5,7 +5,7 @@ mock's requests: Slack/GitHub/email threads, plans, measurement and meeting note
 records and link lists. They are files, not core knowledge sources: a core ``DomainId`` per team
 would change the frozen shared contracts. Ranking and screening mirror the core path — the same
 Korean-bigram lexical terms, BM25, relevance gate and private-marker screen — and a note's
-disclosure grade sits in its title (``[샘플·공개|사내|기밀]``) for the censor and the team's task
+disclosure grade sits in its title (``[공개|사내|기밀]``) for the censor and the team's task
 spec to act on.
 """
 

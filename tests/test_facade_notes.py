@@ -10,7 +10,7 @@ from rfa_mas.knowledge_facade.notes import KB_DIR, NOTE_TASKS, NoteStore, NoteTa
 from rfa_mas.knowledge_facade.service import KnowledgeFacadeService
 from rfa_mas.nemoclaw.config import load_teams
 
-GRADE = re.compile(r"^\[샘플·(공개|사내|기밀)\] ")
+GRADE = re.compile(r"^\[(공개|사내|기밀)\] ")
 
 
 def test_every_team_has_a_graded_mixed_kb():
@@ -46,7 +46,7 @@ def test_request_questions_find_their_notes():
 
 def test_unrelated_question_and_private_markers_return_nothing(tmp_path):
     note = {"key": "k1", "domain_id": "x", "kind": "doc", "grade": "공개",
-            "title": "[샘플·공개] Conv3D", "content": "Conv3D 우회 SYNTHETIC_PRIVATE_CANARY_ABC"}
+            "title": "[공개] Conv3D", "content": "Conv3D 우회 SYNTHETIC_PRIVATE_CANARY_ABC"}
     line = json.dumps(note, ensure_ascii=False) + "\n"
     (tmp_path / "t-x.jsonl").write_text(line, encoding="utf-8")
     store = NoteStore(tasks=(NoteTask("x", "X", "d", "t-x.jsonl"),), kb_dir=tmp_path)
