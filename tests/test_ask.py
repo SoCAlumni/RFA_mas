@@ -265,3 +265,11 @@ def test_committed_openapi_matches_generated():
     assert schema["Refusal"]["properties"]["code"]["enum"] == ["no_task", "blocked_by_policy", "no_knowledge"]
     assert set(schema["AskResponse"]["required"]) == {"request_id", "knowledge", "task", "refusal", "censor"}
     assert "feedback" in schema["AskRequest"]["properties"] and "request_id" in schema["AskRequest"]["required"]
+
+
+def test_citations_include_task_team_notes():
+    # 태스크 팀 노트(knowledge_facade/notes.py)는 [note:<key>] 로 인용된다 — 결재함 「근거 N건 인용」이 셀 수 있어야 한다
+    from rfa_mas.nemoclaw.ask import citations
+
+    text = "근거: [note:t-npu-kb-04], [note:t-npu-kb-09], [source_8d14aa01] [triv3-public-overview@1] [note:t-npu-kb-04]"
+    assert citations(text) == ["note:t-npu-kb-04", "note:t-npu-kb-09", "source_8d14aa01", "triv3-public-overview@1"]

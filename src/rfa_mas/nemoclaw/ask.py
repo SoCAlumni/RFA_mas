@@ -56,11 +56,14 @@ AGENT_FAILURE_TEXTS = frozenset({"No response from OpenClaw.", "LLM request fail
 NO_EVIDENCE = re.compile(r"근거(가|를)?\s*(없|찾을 수 없|부족)|no (relevant )?evidence|NO_EVIDENCE|could not find", re.IGNORECASE)
 
 
-_CITATION = re.compile(r"\[((?:source_[0-9a-f]{6,})|(?:[a-z0-9][a-z0-9_.-]{2,60}@\d+))\]")
+# [source_…] 코어 지식, [id@N] 공개 fixture, [note:<key>] 태스크 팀 노트(knowledge_facade/notes.py)
+_CITATION = re.compile(
+    r"\[((?:source_[0-9a-f]{6,})|(?:[a-z0-9][a-z0-9_.-]{2,60}@\d+)|(?:note:[a-z0-9][a-z0-9_.-]{2,60}))\]"
+)
 
 
 def citations(text: str, limit: int = 10) -> list[str]:
-    """Evidence ids a task agent cited (``[source_8d14…]``, ``[triv3-public-overview@1]``) — ids only."""
+    """Evidence ids a task agent cited (``[source_8d14…]``, ``[triv3-public-overview@1]``, ``[note:t-npu-kb-04]``) — ids only."""
     return list(dict.fromkeys(m.group(1) for m in _CITATION.finditer(text or "")))[:limit]
 
 
