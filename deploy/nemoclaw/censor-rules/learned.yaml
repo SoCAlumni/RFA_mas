@@ -1,4 +1,10 @@
 # 되먹임된 거절 사유. `/ask` 가 feedback[].reason 을 {audience, task, reason, at} 로 누적한다(사람 입력이므로 신뢰).
 # censor LLM 단계 프롬프트와 head 프롬프트에 같은 audience·task 의 사유가 주입된다. 손으로 편집해도 된다.
 version: 1
-learned: []
+learned:
+- audience: public
+  task: triv3
+  reason: '게시 불가 내용 포함: ''http://aurora-dash.intra.local:8791/tasks/triv3)에서'' (자동
+    판정 규칙)'
+  at: 2026-09-28T11:04:47+0900
+  request_id: 01_public_ok-110303-r2
